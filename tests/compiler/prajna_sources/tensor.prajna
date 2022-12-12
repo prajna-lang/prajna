@@ -1,0 +1,14 @@
+@test
+func testTensor(){
+    var shape = [10, 20];
+    var ts = Tensor<i64, 2>::create(shape);
+    var bs = ts;
+
+    ts.at([1, 2]) = 2;
+    testing::Assert(ts.at([1,2]) == 2);
+    testing::Assert(bs.at([1,2]) == ts.at([1,2]));
+    testing::Assert(ts.data[22] == 2);
+
+    var ts1 = Tensor<f32, 2>::create(shape);
+    ts1.at([1,2]) = 3.1415;
+}

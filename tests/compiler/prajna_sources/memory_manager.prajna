@@ -1,0 +1,73 @@
+
+struct TestA {
+    data: i8*;
+    name: str;
+}
+
+implement TestA {
+
+    @static
+    func create(bytes: i64)->TestA{
+        var self: TestA;
+        self.data = bindings::malloc(bytes);
+        "malloc memory\n".print();
+        self.name = "create_self";
+        bindings::registerReferenceCount(self.data);
+        bindings::incReferenceCount(self.data);
+        return self; // 调用 copy函数
+        // 退出时会调用destropy 函数
+    }
+
+    func initialize(){
+        this.name = "undef";
+        this.data = ptr<i8>::null();
+        bindings::registerReferenceCount(this.data);
+        "TestA initialize\n".print();
+    }
+
+    func destroy(){
+        (this.name + " TestA destropy callback\n").print();
+        bindings::decReferenceCount(this.data);
+
+        var ref_count = bindings::getReferenceCount(this.data);
+        (this.name + " ref count: " + ref_count.tostr() + "\n").print();
+
+        if (ref_count == 0){
+            bindings::free(this.data);
+            "free memory\n".print();
+        }
+    }
+
+    func copy(){
+        (this.name + " TestA copy callback\n").print();
+        bindings::incReferenceCount(this.data);
+
+        var ref_count = bindings::getReferenceCount(this.data);
+        (this.name + " ref count: " + ref_count.tostr() + "\n").print();
+    }
+}
+
+@test
+func testMemoryManager(){
+    // var a0 : TestA;
+    // a0.name = "a0";
+
+    var a1 = TestA::create(10); // 调用copy函数, 然后调用destroy函数
+    a1.name = "a1";
+    testing::Assert(bindings::getReferenceCount(a1.data) == 1);
+
+    var a2 = a1; // 调用copy函数
+    a2.name = "a2";
+    testing::Assert(bindings::getReferenceCount(a1.data) == 2);
+
+    {
+        var sub_a0 = a1; // 变量拷贝, 调用copy函数
+        sub_a0.name = "sub_a0";
+        testing::Assert(bindings::getReferenceCount(a1.data) == 3);
+
+        TestA::create(100); // 调用destroy 函数
+    }
+
+    testing::Assert(bindings::getReferenceCount(a1.data) == 2);
+}
+

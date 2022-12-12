@@ -1,0 +1,57 @@
+#include "prajna/transform/transform.h"
+
+#include "prajna/transform/extract_gpu_grid_pass.hpp"
+#include "prajna/transform/make_compatiable_with_llvm_pass.hpp"
+#include "prajna/transform/transform_to_ssa_pass.hpp"
+
+namespace prajna::transform {
+
+std::shared_ptr<ir::Module> flatternBlock(std::shared_ptr<ir::Module> ir_module) {
+    FlatternBlockPass flattern_block_pass;
+    for (auto ir_function : ir_module->functions) {
+        flattern_block_pass.runOnFunction(ir_function);
+    }
+    return ir_module;
+}
+
+std::shared_ptr<ir::Module> convertVariableToPointer(std::shared_ptr<ir::Module> ir_module) {
+    ConvertVariableToPointerPass var_to_pointer_pass;
+    for (auto ir_function : ir_module->functions) {
+        var_to_pointer_pass.runOnFunction(ir_function);
+    }
+    return ir_module;
+}
+
+std::shared_ptr<ir::Module> extractGpuGrid(std::shared_ptr<ir::Module> ir_module) {
+    ExtractGpuGridPass extract_gpu_grid_pass;
+    for (auto ir_function : ir_module->functions) {
+        extract_gpu_grid_pass.runOnFunction(ir_function);
+    }
+    return ir_module;
+}
+
+std::shared_ptr<ir::Module> makeCompatiableWithLlvm(std::shared_ptr<ir::Module> ir_module) {
+    MakeCompatiableWithLlvmPass make_compatiable_with_llvm_pass;
+    for (auto ir_function : ir_module->functions) {
+        make_compatiable_with_llvm_pass.runOnFunction(ir_function);
+    }
+    return ir_module;
+}
+
+std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module) {
+    for (auto iter_function = ir_module->functions.begin();
+         iter_function != ir_module->functions.end();) {
+        auto ir_function = *iter_function;
+        if (std::count(RANGE(ir_function->function_type->annotations["target"]), "nvptx")) {
+            auto ir_nvptx_module = ir_module->getOrCreateTargetModule(ir::Target::nvptx);
+            ir_function->parent_module = ir_nvptx_module;
+            ir_nvptx_module->functions.push_back(ir_function);
+            iter_function = ir_module->functions.erase(iter_function);
+        } else {
+            ++iter_function;
+        }
+    }
+    return ir_module;
+}
+
+}  // namespace prajna::transform

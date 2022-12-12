@@ -1,0 +1,34 @@
+
+struct People{
+    name: str;
+    _age: i64;
+}
+
+implement People{
+    // 属性的置值函数, "age"表示属性名, getter表示置值
+    @property("age", "getter")
+    func age_getter()->i64{
+        // "get age\n".print();
+        return this._age;
+    }
+
+    // 属性的取值函数, "age"表示属性名, setter表示取值
+    // 值得注意的是, Prajna要求属性同时有getter和setter函数, 某种意义上是不必要的, 但这样会代码的使用更加简单
+    @property("age", "setter")
+    func age_setter(v: i64){
+        this._age = v;
+    }
+}
+
+@test
+func testProperty(){
+    var people = People("Mike", 18);
+    testing::Assert(people._age == 18);
+    // 我们可以像字段一样使用属性
+    testing::Assert(people.age == 18);
+    people.age = 22;
+    testing::Assert(people._age == 22);
+    testing::Assert(people.age == 22);
+
+    people.age;
+}

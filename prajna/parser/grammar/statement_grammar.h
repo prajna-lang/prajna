@@ -1,0 +1,72 @@
+#pragma once
+
+#include <vector>
+
+#include "boost/spirit/include/lex_lexertl.hpp"
+#include "boost/spirit/include/qi.hpp"
+#include "prajna/ast/ast.hpp"
+#include "prajna/parser/grammar/expression_grammar.h"
+#include "prajna/parser/grammar/handler.hpp"
+
+namespace prajna::parser::grammar {
+
+namespace qi = boost::spirit::qi;
+namespace ascii = boost::spirit::ascii;
+
+template <typename Iterator, typename Lexer>
+struct StatementGrammer
+    : qi::grammar<Iterator, ast::Statements(), qi::in_state_skipper<typename Lexer::lexer_def>> {
+    typedef qi::grammar<Iterator, ast::Statements(),
+                        qi::in_state_skipper<typename Lexer::lexer_def>>
+        base_type;
+
+    typedef Iterator iterator_type;
+    typedef qi::in_state_skipper<typename Lexer::lexer_def> skipper_type;
+    ExpressionGrammer<Iterator, Lexer> expr;
+
+    __attribute__((no_sanitize("address")))
+    StatementGrammer(const Lexer& tok, issue_handler<base_iterator_type, Iterator>& eh);
+
+    template <typename _T>
+    using rule = qi::rule<Iterator, _T(), skipper_type>;
+
+    rule<ast::PostfixType> type;
+    rule<ast::Identifier> identifier;
+    rule<ast::IdentifiersResolution> identifiers_resolution;
+    rule<ast::Import> import;
+    rule<ast::Export> export_;
+    rule<ast::StringLiteral> string;
+    rule<ast::Statements> statements;
+    rule<ast::Block> block;
+    rule<ast::Statement> statement;
+    rule<ast::Annotation> annotation;
+    rule<ast::Annotations> annotations;
+    rule<ast::VariableDeclaration> variable_declaration;
+    rule<ast::Assignment> assignment;
+    rule<ast::Return> return_;
+    rule<ast::Break> break_;
+    rule<ast::Continue> continue_;
+    rule<ast::If> if_;
+    rule<ast::While> while_;
+    rule<ast::For> for_;
+
+    rule<ast::Field> field;
+    rule<ast::TemplateParameter> template_parameter;
+    rule<ast::TemplateParameters> template_parameters;
+    rule<ast::Struct> struct_;
+
+    rule<ast::Interface> interface;
+    rule<ast::ImplementStructForInterface> implement_struct_for_interface;
+    rule<ast::ImplementStruct> implement_struct;
+
+    rule<ast::Parameter> parameter;
+    rule<ast::Parameters> parameters;
+    rule<ast::FunctionHeader> function_header;
+
+    rule<ast::Identifier> binary_operator;
+    rule<ast::Identifier> unary_operator;
+    rule<ast::FunctionHeader> operator_header;
+    rule<ast::Function> function;
+};
+
+}  // namespace prajna::parser::grammar

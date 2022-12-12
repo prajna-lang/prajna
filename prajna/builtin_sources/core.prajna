@@ -1,0 +1,159 @@
+struct str{
+    data: char*;
+    size: i64;
+    buffer_size : i64;
+}
+
+implement str{
+    @static
+    func create(size: i64)->str{
+        var str_re: str;
+        str_re.size = size;
+        str_re.buffer_size = (str_re.size + 1) * 2;
+        str_re.data = cast<char *>(bindings::malloc(str_re.buffer_size));
+        str_re.data[str_re.size] = '\0';
+        return str_re;
+    }
+
+    @static
+    func from_char_ptr(data: char*)->str {
+        var str_re: str;
+        str_re.size = 0;
+        while (data[str_re.size] != '\0'){
+            str_re.size = str_re.size + 1;
+        }
+        str_re.data = cast<char *>(bindings::malloc(str_re.size + 100));
+
+        var i = 0;
+        while (i != str_re.size + 1){
+            str_re.data[i] = data[i];
+            i = i + 1;
+        }
+
+        return str_re;
+    }
+
+    func print(){
+        print_c(this.data);
+        return;
+    }
+
+    func append(v: char){
+        this.size = this.size + 1;
+        if (this.size > this.buffer_size){
+            this.buffer_size = this.size * 2;
+            var new_data = cast<char *>(bindings::malloc(this.buffer_size));
+            var i = 0;
+            while (i != this.size - 1){
+                new_data[i] = this.data[i];
+                i = i + 1;
+            }
+            this.data = new_data;
+        }
+        this.data[this.size-1] = v;
+        this.data[this.size] = '\0';
+    }
+
+    operator +(str_re: str)->str{
+        var new_str = str::create(this.size + str_re.size);
+        var i = 0;
+        while (i < this.size){
+            new_str.data[i] = this.data[i];
+            i = i + 1;
+        }
+        var j = 0;
+        while ( i < new_str.size ){
+            new_str.data[i] = str_re.data[j];
+            j = j + 1;
+            i = i + 1;
+        }
+
+        return new_str;
+    }
+
+    func tostr()->str{
+        return this;
+    }
+}
+
+func print(ss: str){
+    ss.print();
+}
+
+export str;
+export print;
+
+
+struct Tensor<T : template, RANK : template> {
+    data : T*;
+    shape: i64[RANK];
+    rank: i64;
+    stride: i64[RANK];
+}
+
+
+implement Tensor<T : template, RANK: template> {
+    @static
+    func create(shape :i64[RANK])->Tensor<T, RANK>{
+        var self: Tensor<T, RANK>;
+        self.shape = shape;
+        self.rank = RANK;
+
+        var stride: i64[RANK];
+        var i = RANK - 1;
+        stride[i] = 1;
+        while (i > 0){
+            i = i - 1;
+            stride[i] = shape[i + 1] * stride[i + 1];
+        }
+        self.stride =  stride;
+        var bytes = shape[0] * stride[0] * sizeof(T);
+
+        self.data = cast<T *>(bindings::bindings::malloc(bytes));
+        bindings::registerReferenceCount(cast<i8*>(self.data));
+        bindings::incReferenceCount(cast<i8*>(self.data));
+
+        return self;
+    }
+
+    func index2offset(idx: i64[RANK])->i64 {
+        var offset = 0;
+        var i =  RANK - 1;
+        while (i >= 0){
+            offset = offset + idx[i] * this.stride[i];
+            i = i - 1;
+        }
+        return offset;
+    }
+
+    func initialize(){
+        this.data = ptr<T>::null();
+        bindings::registerReferenceCount(cast<i8*>(this.data));
+    }
+
+    func copy(){
+        bindings::incReferenceCount(cast<i8*>(this.data));
+    }
+
+    func destroy(){
+        bindings::decReferenceCount(cast<i8*>(this.data));
+        if (bindings::getReferenceCount(cast<i8*>(this.data)) == 0){
+            bindings::free(cast<i8*>(this.data));
+        }
+    }
+
+    @property("at", "setter")
+    func at_setter(idx: i64[RANK], value: T){
+        var offset = this.index2offset(idx);
+        this.data[offset] = value;
+    }
+
+    @property("at", "getter")
+    func at_getter(idx: i64[RANK])->T{
+        var offset = this.index2offset(idx);
+        return this.data[offset];
+    }
+
+}
+
+export Tensor;

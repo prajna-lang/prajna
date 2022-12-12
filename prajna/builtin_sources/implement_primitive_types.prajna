@@ -1,0 +1,366 @@
+
+@intrinsic("llvm.sin.f32")
+func sin_f32(v: f32)->f32;
+
+implement bool {
+    @instruction("ICmp", "ICMP_EQ")
+    operator ==(rhs : bool)->bool;
+
+    @instruction("ICmp", "ICMP_NE")
+    operator !=(rhs : bool)->bool;
+
+    @instruction("BinaryOperator", "And")
+    operator &(rhs: bool)->bool;
+
+    @instruction("BinaryOperator", "Or")
+    operator |(rhs: bool)->bool;
+
+    @instruction("BinaryOperator", "Xor")
+    operator ^(rhs: bool)->bool;
+
+    operator \!()->bool{
+        return true ^ this;
+    }
+}
+
+implement char {
+    @instruction("ICmp", "ICMP_EQ")
+    operator ==(rhs : char)->bool;
+
+    @instruction("ICmp", "ICMP_NE")
+    operator !=(rhs : char)->bool;
+
+    @instruction("CastInst", "SExt", "i64")
+    func toi64()->i64;
+}
+
+implement i8 {
+    @instruction("ICmp", "ICMP_EQ")
+    operator ==(rhs : i8)->bool;
+
+    @instruction("ICmp", "ICMP_NE")
+    operator !=(rhs : i8)->bool;
+
+    @instruction("ICmp", "ICMP_SGT")
+    operator >(rhs : i8)->bool;
+
+    @instruction("ICmp", "ICMP_SLT")
+    operator <(rhs : i8)->bool;
+
+    @instruction("ICmp", "ICMP_SGE")
+    operator >=(rhs : i8)->bool;
+
+    @instruction("ICmp", "ICMP_SLE")
+    operator <=(rhs : i8)->bool;
+
+    @instruction("BinaryOperator", "Add")
+    operator +(rhs: i8)->i8;
+
+    @instruction("BinaryOperator", "Sub")
+    operator -(rhs: i8)->i8;
+
+    @instruction("BinaryOperator", "Mul")
+    operator *(rhs: i8)->i8;
+
+    @instruction("BinaryOperator", "SDiv")
+    operator /(rhs: i8)->i8;
+
+    @instruction("BinaryOperator", "SRem")
+    operator %(rhs: i8)->i8;
+
+    operator \+()->i8{
+        return this;
+    }
+
+    operator \-()->i8{
+        return 0i8 - this;
+    }
+
+    @instruction("CastInst", "SExt", "i64")
+    func toi64()->i64;
+
+    @instruction("CastInst", "SIToFP", "f32")
+    func tof32()->f32;
+
+    @instruction("CastInst", "Trunc", "char")
+    func tochar()->char;
+}
+
+implement i16 {
+    @instruction("ICmp", "ICMP_EQ")
+    operator ==(rhs : i16)->bool;
+
+    @instruction("ICmp", "ICMP_NE")
+    operator !=(rhs : i16)->bool;
+
+    @instruction("ICmp", "ICMP_SGT")
+    operator >(rhs : i16)->bool;
+
+    @instruction("ICmp", "ICMP_SLT")
+    operator <(rhs : i16)->bool;
+
+    @instruction("ICmp", "ICMP_SGE")
+    operator >=(rhs : i16)->bool;
+
+    @instruction("ICmp", "ICMP_SLE")
+    operator <=(rhs : i16)->bool;
+
+    @instruction("BinaryOperator", "Add")
+    operator +(rhs: i16)->i16;
+
+    @instruction("BinaryOperator", "Sub")
+    operator -(rhs: i16)->i16;
+
+    @instruction("BinaryOperator", "Mul")
+    operator *(rhs: i16)->i16;
+
+    @instruction("BinaryOperator", "SDiv")
+    operator /(rhs: i16)->i16;
+
+    @instruction("BinaryOperator", "SRem")
+    operator %(rhs: i16)->i16;
+
+    operator \+()->i16{
+        return this;
+    }
+
+    operator \-()->i16{
+        return 0i16 - this;
+    }
+
+    @instruction("CastInst", "SExt", "i64")
+    func toi64()->i64;
+
+    @instruction("CastInst", "SIToFP", "f32")
+    func tof32()->f32;
+
+    @instruction("CastInst", "Trunc", "char")
+    func tochar()->char;
+}
+
+implement i32 {
+    @instruction("ICmp", "ICMP_EQ")
+    operator ==(rhs : i32)->bool;
+
+    @instruction("ICmp", "ICMP_NE")
+    operator !=(rhs : i32)->bool;
+
+    @instruction("ICmp", "ICMP_SGT")
+    operator >(rhs : i32)->bool;
+
+    @instruction("ICmp", "ICMP_SLT")
+    operator <(rhs : i32)->bool;
+
+    @instruction("ICmp", "ICMP_SGE")
+    operator >=(rhs : i32)->bool;
+
+    @instruction("ICmp", "ICMP_SLE")
+    operator <=(rhs : i32)->bool;
+
+    @instruction("BinaryOperator", "Add")
+    operator +(rhs: i32)->i32;
+
+    @instruction("BinaryOperator", "Sub")
+    operator -(rhs: i32)->i32;
+
+    @instruction("BinaryOperator", "Mul")
+    operator *(rhs: i32)->i32;
+
+    @instruction("BinaryOperator", "SDiv")
+    operator /(rhs: i32)->i32;
+
+    @instruction("BinaryOperator", "SRem")
+    operator %(rhs: i32)->i32;
+
+    operator \+()->i32{
+        return this;
+    }
+
+    operator \-()->i32{
+        return 0i32 - this;
+    }
+
+    @instruction("CastInst", "SExt", "i64")
+    func toi64()->i64;
+
+    @instruction("CastInst", "SIToFP", "f32")
+    func tof32()->f32;
+
+    @instruction("CastInst", "Trunc", "char")
+    func tochar()->char;
+}
+
+implement i64 {
+    @instruction("ICmp", "ICMP_EQ")
+    operator ==(rhs : i64)->bool;
+
+    @instruction("ICmp", "ICMP_NE")
+    operator !=(rhs : i64)->bool;
+
+    @instruction("ICmp", "ICMP_SGT")
+    operator >(rhs : i64)->bool;
+
+    @instruction("ICmp", "ICMP_SLT")
+    operator <(rhs : i64)->bool;
+
+    @instruction("ICmp", "ICMP_SGE")
+    operator >=(rhs : i64)->bool;
+
+    @instruction("ICmp", "ICMP_SLE")
+    operator <=(rhs : i64)->bool;
+
+    @instruction("BinaryOperator", "Add")
+    operator +(rhs: i64)->i64;
+
+    @instruction("BinaryOperator", "Sub")
+    operator -(rhs: i64)->i64;
+
+    @instruction("BinaryOperator", "Mul")
+    operator *(rhs: i64)->i64;
+
+    @instruction("BinaryOperator", "SDiv")
+    operator /(rhs: i64)->i64;
+
+    @instruction("BinaryOperator", "SRem")
+    operator %(rhs: i64)->i64;
+
+    operator \+()->i64{
+        return this;
+    }
+
+    operator \-()->i64{
+        return 0 - this;
+    }
+
+    @instruction("CastInst", "SIToFP", "f32")
+    func tof32()->f32;
+
+    @instruction("CastInst", "Trunc", "i32")
+    func toi32()->i32;
+
+    @instruction("CastInst", "Trunc", "u32")
+    func tou32()->u32;
+
+    @instruction("CastInst", "Trunc", "char")
+    func tochar()->char;
+}
+
+implement u32 {
+    @instruction("ICmp", "ICMP_EQ")
+    operator ==(rhs : u32)->bool;
+
+    @instruction("ICmp", "ICMP_NE")
+    operator !=(rhs : u32)->bool;
+
+    @instruction("ICmp", "ICMP_SGT")
+    operator >(rhs : u32)->bool;
+
+    @instruction("ICmp", "ICMP_SLT")
+    operator <(rhs : u32)->bool;
+
+    @instruction("ICmp", "ICMP_SGE")
+    operator >=(rhs : u32)->bool;
+
+    @instruction("ICmp", "ICMP_SLE")
+    operator <=(rhs : u32)->bool;
+
+    @instruction("BinaryOperator", "Add")
+    operator +(rhs: u32)->u32;
+
+    @instruction("BinaryOperator", "Sub")
+    operator -(rhs: u32)->u32;
+
+    @instruction("BinaryOperator", "Mul")
+    operator *(rhs: u32)->u32;
+
+    @instruction("BinaryOperator", "UDiv")
+    operator /(rhs: u32)->u32;
+
+    @instruction("BinaryOperator", "URem")
+    operator %(rhs: u32)->u32;
+
+    operator \+()->u32{
+        return this;
+    }
+
+    // operator \-()->u32{
+    //     return 0 - this;
+    // }
+
+    @instruction("CastInst", "ZExt", "i64")
+    func toi64()->i64;
+
+    @instruction("CastInst", "UIToFP", "f32")
+    func tof32()->f32;
+
+    @instruction("CastInst", "Trunc", "char")
+    func tochar()->char;
+}
+
+implement f32 {
+    @instruction("FCmp", "FCMP_OEQ")
+    operator ==(rhs : f32)->bool;
+
+    @instruction("FCmp", "FCMP_ONE")
+    operator !=(rhs : f32)->bool;
+
+    @instruction("FCmp", "FCMP_OGT")
+    operator >(rhs : f32)->bool;
+
+    @instruction("FCmp", "FCMP_OLT")
+    operator <(rhs : f32)->bool;
+
+    @instruction("FCmp", "FCMP_OGE")
+    operator >=(rhs : f32)->bool;
+
+    @instruction("FCmp", "FCMP_OLE")
+    operator <=(rhs : f32)->bool;
+
+    @instruction("BinaryOperator", "FAdd")
+    operator +(rhs: f32)->f32;
+
+    @instruction("BinaryOperator", "FSub")
+    operator -(rhs: f32)->f32;
+
+    @instruction("BinaryOperator", "FMul")
+    operator *(rhs: f32)->f32;
+
+    @instruction("BinaryOperator", "FDiv")
+    operator /(rhs: f32)->f32;
+
+    @instruction("BinaryOperator", "FRem")
+    operator %(rhs: f32)->f32;
+
+    operator \+()->f32{
+        return this;
+    }
+
+    operator \-()->f32{
+        return 0.0 - this;
+    }
+
+    @instruction("CastInst", "FPToSI", "i64")
+    func toi64()->i64;
+
+    func sin()->f32{
+        return sin_f32(this);
+    }
+}
+
+struct ptr<T: template>{
+
+}
+
+implement ptr<T: template>{
+    @static
+    func null()->T *{
+        var pointer: T*;
+        // @warning 注意不同位数平台可能产生问题,
+        *cast<i64 *>(&pointer) = 0;
+        return pointer;
+    }
+}
+
+export ptr;
+
+export sin_f32;

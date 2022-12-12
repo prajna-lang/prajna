@@ -1,0 +1,48 @@
+@test
+func testTypes(){
+    // Prajna是强类型, 赋值只能在类型一致的时候才能进行
+    var tmp0: i64 = 0; // 整数默认就是i64的类型
+    var tmp1: i64 = 0i64; // i表示是有符号整型, 64表示64位, 所以其是64位有符号整型
+    var tmp2: u8 = 2u8; // u表示无符合整型
+    // i8/16/32/64和u8/16/32/64都是已支持的类型
+
+    var f0: f32 = 0.0; // 0.0形式的小数默认就是f32类型
+    var f1: f32 = 3.1415f32; //
+    var f2: f64 = 3.1415f64; // f表示浮点数, 64表示位数
+    // f16/32/64是目前支持的类型
+
+    // 布尔型
+    var b0: bool = true;
+    var b1: bool = false;
+
+    var a: char = 'a';
+    //转义字符和C一样的用法
+    var newline: char = '\n';
+    var back_slash : char = '\\';
+
+    var arr0 : i64[3];
+    var arr1 = [0, 1, 2];
+    var arr2 = [3.0, 4.2, 6.4];
+    var arr3 = [10.0f64, 100.0f64];
+
+    var pointer: i8* = bindings::malloc(3);
+    *pointer = 12i8;
+    testing::Assert(*pointer == 12i8);
+    // 不同于C++, Prajna的指针是没有加减运算的, 但可以用下标索引
+    pointer[2] = 64i8;
+    testing::Assert(pointer[2] == 64i8);
+    bindings::free(pointer);
+
+    var num: i64 = 1024;
+    // 获取num的地址, 只要属于变量范畴的都可以获取地址,如字段, 数组索引, 全局变量等.
+    var num_pointer: i64* = &num;
+    *num_pointer = 0;
+    testing::Assert(num == 0);
+
+    // str类型
+    var hello = "Hello";
+    var word = "World";
+    var hello_word = hello + ", " + word;
+    hello_word.append(newline);
+    hello_word.print();
+}

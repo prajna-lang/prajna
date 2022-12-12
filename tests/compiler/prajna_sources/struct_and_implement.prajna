@@ -1,0 +1,25 @@
+struct People{
+    name: str;
+    age: i64;
+}
+
+implement People{
+    func sayHi(){
+        ("Hi, My name is " + this.name + ".\n").print();
+    }
+
+    // static注解则为静态成员函数
+    @static
+    func getAge(people: People)->i64{
+        return people.age;
+    }
+}
+
+@test
+func testStructAndImplement(){
+    var mike = People("Mike", 18);
+    // "."索引成员函数
+    mike.sayHi();
+    // 注意域成员都是通过::来索引的
+    testing::Assert(People::getAge(mike) == 18);
+}

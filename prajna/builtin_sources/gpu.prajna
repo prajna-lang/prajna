@@ -1,0 +1,151 @@
+func init(){
+    cuda::cuInit(0i32);
+}
+
+func maxThreadPerBlock(device: i64)->i64{
+    var count: i32;
+    cuda::cuDeviceGetAttribute(&count, 1i32, device.toi32());
+    return count.toi64();
+}
+
+func multiProcessorsCount(device: i64)->i64{
+    var count: i32;
+    cuda::cuDeviceGetAttribute(&count, 16i32, device.toi32());
+    return count.toi64();
+}
+
+func launchKernel(kernel_function_pointer: i8*, gridDim: i64[3], blockDim: i64[3], kernel_params: i8**)->i64{
+    var re = cuda::cuLaunchKernel(kernel_function_pointer, gridDim[0].tou32(), gridDim[1].tou32(), gridDim[2].tou32(), blockDim[0].tou32(), blockDim[1].tou32(), blockDim[2].tou32(), 0u32, ptr<i8>::null(), kernel_params, cast<i8**>(ptr<i8>::null()));
+    return re.toi64();
+}
+
+func launchKernelGridDim1(kernel_function_pointer: i8*, paramters: i8**){
+
+}
+
+
+struct Tensor<T : template, RANK : template> {
+    data : T*;
+    shape: i64[RANK];
+}
+
+
+implement Tensor<T : template, RANK: template> {
+    @static
+    func create(shape :i64[RANK])->Tensor<T, RANK>{
+        var self: Tensor<T, RANK>;
+        self.shape = shape;
+        var size = 1;
+        for i in 0 to RANK {
+            size = size * shape[i];
+        }
+        var bytes = size * sizeof(T);
+        // bytes.tostr().print();
+        var re = cuda::cuMemAlloc(cast<i8**>(&self.data), bytes);
+        // "cuMemAlloc".print();
+        // re.tostr().print();
+        return self;
+    }
+
+    func toHost()->::Tensor<T, RANK>{
+        var host_tensor = ::Tensor<T, RANK>::create(this.shape);
+        var size = 1;
+        for i in 0 to RANK {
+            size = size * this.shape[i];
+        }
+        // print("toHost: size");
+        // size.tostr().print();
+        // print("re: ");
+        var re =  cuda::cudaMemcpy(cast<i8*>(host_tensor.data), cast<i8*>(this.data), size * sizeof(T), 2i32);
+        // re.tostr().print();
+        return host_tensor;
+    }
+}
+
+implement ::Tensor<T : template, RANK: template> {
+    func toCuda()->Tensor<T, RANK>{
+        var cuda_tensor = Tensor<T, RANK>::create(this.shape);
+        var size = 1;
+        for i in 0 to RANK {
+            size = size * this.shape[i];
+        }
+        // print("tocuda: size");
+        // size.tostr().print();
+        // print("re: ");
+        var re = cuda::cudaMemcpy(cast<i8*>(cuda_tensor.data), cast<i8*>(this.data), size * sizeof(T), 1i32);
+        // re.tostr().print();
+        return cuda_tensor;
+    }
+}
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.tid.x")
+func __thread_idx_x()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.tid.y")
+func __thread_idx_y()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.tid.z")
+func __thread_idx_z()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.ntid.x")
+func __block_dim_x()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.ntid.y")
+func __block_dim_y()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.ntid.z")
+func __block_dim_z()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x")
+func __block_idx_x()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.ctaid.y")
+func __block_idx_y()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.ctaid.z")
+func __block_idx_z()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x")
+func __grid_dim_x()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y")
+func __grid_dim_y()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z")
+func __grid_dim_z()->u32;
+
+@target("nvptx")
+@intrinsic("llvm.nvvm.read.ptx.sreg.warpsize")
+func __warp_size()->u32;
+
+@target("nvptx")
+func threadIdx()->i64[3] {
+    return [__thread_idx_x().toi64(), __thread_idx_y().toi64(), __thread_idx_z().toi64()];
+}
+
+@target("nvptx")
+func blockDim()->i64[3] {
+    return [__block_dim_x().toi64(), __block_dim_y().toi64(), __block_dim_z().toi64()];
+}
+
+@target("nvptx")
+func blockIdx()->i64[3] {
+    return [__block_idx_x().toi64(), __block_idx_y().toi64(), __block_idx_z().toi64()];
+}
+
+@target("nvptx")
+func gridDim()->i64[3] {
+    return [__grid_dim_x().toi64(), __grid_dim_y().toi64(), __grid_dim_z().toi64()];
+}

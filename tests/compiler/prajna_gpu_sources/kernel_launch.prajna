@@ -1,0 +1,30 @@
+import gpu::__thread_idx_x;
+
+@kernel
+@target("nvptx")
+func myKernel(tensor: gpu::Tensor<i64, 1>, value: i64){
+    tensor.data[__thread_idx_x().toi64()] = value;
+}
+
+@test
+func testKernel(){
+    var gridDim = [1,1,1];
+    var blockDim = [1,1,1];
+
+    var shape = [1];
+    var host_tensor = Tensor<i64, 1>::create(shape);
+    var gpu_tensor = host_tensor.toCuda();
+    var parameters: i8*[2];
+    parameters[0] = cast<i8*>(&gpu_tensor);
+    var value = 1023;
+    parameters[1] = cast<i8*>(&value);
+    var parameters_ptr = &parameters[0];
+
+    var re = ::gpu::launchKernel(cast<i8*>(myKernel), gridDim, blockDim, parameters_ptr);
+    testing::Assert(re == 0);
+
+    host_tensor = gpu_tensor.toHost();
+    "\ndata[0] is: ".print();
+    host_tensor.at([0]).tostr().print();
+    "\n".print();
+}

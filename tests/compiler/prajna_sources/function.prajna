@@ -1,0 +1,20 @@
+// func表示声明一个函数, -> i64表示返回值类型
+func add(lhs: i64, rhs: i64) -> i64{
+    return lhs + rhs;
+}
+
+
+// 若没有返回值类型, 则表示为void
+func printHi(){
+    "Hi\n".print();
+}
+
+@test // @test表示函数的注解, 会被当做测试函数而执行
+func testFunction(){
+    testing::Assert(add(3, 7) == 10);
+    printHi();
+    // fun_address表示存储printHi函数的变量, 其类型是函数"指针"类型,
+    var fun_address = printHi;
+    // var fun_address = &printHi;  // error 不同于c++, 这是错误的用法
+    fun_address();
+}

@@ -1,0 +1,36 @@
+
+func testIfElse(a: bool)->i64 {
+    var b: i64;
+    if (a){
+        b = 4;
+    } else {
+        b = 5;
+    }
+
+    return b;
+}
+
+func testWhile(size: i64)->i64{
+    var tmp = 0;
+    var i = 0;
+    while (i < size) {
+        if (i % 2 == 0){
+            tmp = tmp + i;
+        }
+        i = i + 1;
+    }
+
+    return tmp;
+}
+
+@test
+func testControlFlow(){
+    testing::Assert(testIfElse(true) == 4);
+    testing::Assert(testIfElse(false) == 5);
+
+    testing::Assert(testWhile(0) == 0);
+    testing::Assert(testWhile(5) == 6);
+    testing::Assert(testWhile(10) == 20);
+
+    return;
+}

@@ -1,0 +1,31 @@
+
+struct Node<T: template>{
+    value: T;
+    next: Node<T> *;
+}
+
+// 模板
+implement Node<T: template>{
+    func nextValue()->T{
+        return (*this.next).value;
+    }
+}
+
+// 特化模板, 值得注意的Prajna不会支持部分特化模板
+implement Node<f32>{
+    func getCurrentValue()->f32{
+        return this.value;
+    }
+}
+
+@test
+func test(){
+    var root: Node<f32>;
+    root.value = 1.0;
+    var next_node: Node<f32>;
+    next_node.value = 2.0;
+    root.next = &next_node;
+    testing::Assert(root.nextValue() == 2.0);
+    testing::Assert(root.getCurrentValue() == 1.0);
+}
+

@@ -220,11 +220,19 @@ git clone https://github.com/matazure/prajna.git
 # 配置release版本的cmake, 如果想要使用gpu版本, 则需要在有cuda环境的机器里开启-DPRAJNA_WITH_GPU=ON.
 ./scripts/configure.sh release -DPRAJNA_WITH_GPU=OFF
 # 编译代码
-./scripts/build.sh debug
+./scripts/build.sh release
 # 运行测试
-./scripts/test.sh debug
+./scripts/test.sh release
 ```
 由于没有库管理, 可以直接修改tests/compiler/prajna_sources里的源码进行试用.
+
+英伟达GPU运行依赖CUDA环境, 需要提前安装. 此外还需要安装llvm的llc程序, 可以通过如下方式安装
+```bash
+cd build_release/third_party/llvm-project/llvm
+make install
+cd -
+sudo cp -r build_release/install/* /usr
+```
 
 
 ## 其他

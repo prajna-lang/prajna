@@ -9,6 +9,7 @@
 
 #include <setjmp.h>
 
+#include <algorithm>
 #include <atomic>
 #include <filesystem>
 #include <fstream>
@@ -22,6 +23,9 @@
 #include "prajna/ir/ir.hpp"
 
 namespace prajna::jit {
+
+// cudaMalloc是一个重载函数, 故重新包装了一下
+cudaError_t cudaMalloc(void **devPtr, size_t size) { return ::cudaMalloc(devPtr, size); }
 
 inline void checkCudaErrors(bool re) { PRAJNA_ASSERT(re == 0); }
 
@@ -70,7 +74,7 @@ ExecutionEngine::ExecutionEngine() {
 size_t ExecutionEngine::getAddress(std::string name) {
     auto expect_symbol = _up_lljit->lookup(name);
     PRAJNA_ASSERT(expect_symbol);
-    return expect_symbol->getValue();
+    return expect_symbol->getAddress();
 }
 
 void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
@@ -86,6 +90,16 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (ir_sub_module == nullptr) continue;
 
+        // @todo 没有核函数,则无需编译, 可优化为没有核函数调用则无需编译, 在transform优化,
+        // 先不做处理
+        // 这个步骤会消耗显卡内存, 后期优化尽量释放,
+        if (std::none_of(RANGE(ir_sub_module->functions),
+                         [](std::shared_ptr<ir::Function> ir_function) {
+                             return ir_function->function_type->annotations.count("kernel");
+                         })) {
+            continue;
+        }
+
         // 目前仅支持nvptx后端的gpu
         PRAJNA_ASSERT(ir_target == ir::Target::nvptx);
         auto file_base = (std::filesystem::temp_directory_path() /
@@ -95,24 +109,31 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
         llvm::raw_fd_ostream llvm_fs(file_base + ".ll", err_code);
         ir_sub_module->llvm_module->print(llvm_fs, nullptr);
         llvm_fs.close();
-        auto re = std::system(("llc " + file_base + ".ll" + " -o " + file_base + ".ptx").c_str());
-        PRAJNA_ASSERT(re == 0);
+        PRAJNA_VERIFY(
+            std::system(("llc " + file_base + ".ll" + " -o " + file_base + ".ptx").c_str()) == 0);
 
-        cuInit(0);
-        CUdevice cuDevice;
-        cuDeviceGet(&cuDevice, 0);
-        cudaSetDevice(cuDevice);
-        CUcontext cuContext;
-        cuCtxCreate(&cuContext, 0, cuDevice);
+        auto cu_re = cuInit(0);
+        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
+        CUdevice cu_device;
+        cu_re = cuDeviceGet(&cu_device, 0);
+        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
+        auto cuda_re = cudaSetDevice(cu_device);
+        PRAJNA_ASSERT(cuda_re == cudaSuccess);
+        CUcontext cu_context;
+        cu_re = cuCtxCreate(&cu_context, 0, cu_device);
+        if (cu_re == CUDA_ERROR_OUT_OF_MEMORY) {
+            throw std::runtime_error("cuda error out of memory");
+        }
+        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
 
-        CUjit_option options[6];
-        void *optionVals[6];
+        const size_t options_size = 6;
+        CUjit_option options[options_size];
+        void *optionVals[options_size];
         float walltime;
         char error_log[8192], info_log[8192];
         unsigned int logSize = 8192;
         void *cuOut;
         size_t outSize;
-
         // Setup linker options
         // Return walltime from JIT compilation
         options[0] = CU_JIT_WALL_TIME;
@@ -133,30 +154,28 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
         options[5] = CU_JIT_LOG_VERBOSE;
         optionVals[5] = (void *)1;
 
-        CUmodule hModule = 0;
-        CUfunction hKernel = 0;
-        CUlinkState lState;
-        int *d_data = 0;
-        int *h_data = 0;
+        CUmodule cu_module = 0;
+        CUfunction cu_kernel_funciton = 0;
+        CUlinkState cu_link_state;
 
-        PRAJNA_ASSERT(cuLinkCreate(6, options, optionVals, &lState) == CUDA_SUCCESS,
-                      std::string(error_log));
+        cu_re = cuLinkCreate(options_size, options, optionVals, &cu_link_state);
+        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
         std::fstream fs(file_base + ".ptx");
         std::stringstream ss;
         ss << fs.rdbuf();
         auto ptx_source = ss.str();
 
-        PRAJNA_ASSERT(
-            cuLinkAddData(lState, CU_JIT_INPUT_PTX, const_cast<char *>(ptx_source.c_str()),
-                          strlen(ptx_source.c_str()) + 1, 0, 0, 0, 0) == CUDA_SUCCESS,
-            std::string(error_log));
+        cu_re =
+            cuLinkAddData(cu_link_state, CU_JIT_INPUT_PTX, const_cast<char *>(ptx_source.c_str()),
+                          strlen(ptx_source.c_str()) + 1, 0, 0, 0, 0);
+        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
 
-        PRAJNA_ASSERT(cuLinkComplete(lState, &cuOut, &outSize) == CUDA_SUCCESS,
-                      std::string(error_log));
+        cu_re = cuLinkComplete(cu_link_state, &cuOut, &outSize);
+        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
 
         // printf("CUDA Link Completed in %fms. Linker Output:\n%s\n", walltime, info_log);
-
-        PRAJNA_ASSERT(cuModuleLoadData(&hModule, cuOut) == CUDA_SUCCESS);
+        cu_re = cuModuleLoadData(&cu_module, cuOut);
+        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
 
         for (auto ir_function : ir_sub_module->functions) {
             if (ir_function->function_type->annotations.count("kernel")) {
@@ -164,10 +183,13 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
                 auto test_kernel_fun =
                     reinterpret_cast<CUfunction *>(this->getAddress(kernel_fun_address_name));
                 std::string function_name = mangleNvvmName(ir_function->fullname);
-                auto re = cuModuleGetFunction(test_kernel_fun, hModule, function_name.c_str());
-                PRAJNA_ASSERT(re == CUDA_SUCCESS, std::string(error_log));
+                cu_re = cuModuleGetFunction(test_kernel_fun, cu_module, function_name.c_str());
+                PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
             }
         }
+
+        // @todo 一旦释放, 核函数等对象就无效了, 后面需要再进一步优化
+        // cuCtxDestroy(cu_context);
     }
 #endif
 }
@@ -212,7 +234,10 @@ void ExecutionEngine::bindBuiltinFunction() {
     this->bindCFunction(reinterpret_cast<void *>(cuDeviceGetAttribute),
                         "::cuda::cuDeviceGetAttribute");
     this->bindCFunction(reinterpret_cast<void *>(cuLaunchKernel), "::cuda::cuLaunchKernel");
+    this->bindCFunction(reinterpret_cast<void *>(cudaSetDevice), "::cuda::cudaSetDevice");
     this->bindCFunction(reinterpret_cast<void *>(::cudaMemcpy), "::cuda::cudaMemcpy");
+    // cudaMalloc是一个重载函数, 故重新包装了一下
+    this->bindCFunction(reinterpret_cast<void *>(cudaMalloc), "::cuda::cudaMalloc");
     this->bindCFunction(reinterpret_cast<void *>(::cuMemAlloc), "::cuda::cuMemAlloc");
 #endif
 }

@@ -1,18 +1,18 @@
-#pragma once
+// #pragma once
 
-#include <memory>
+// #include <memory>
 
-namespace prajna {
+// namespace prajna {
 
-class CompileError {
-   protected:
-    CompileError() = default;
+// class CompileError {
+//    public:
+//     CompileError() = default;
 
-   public:
-    static std::shared_ptr<CompileError> create() {
-        std::shared_ptr<CompileError> self(new CompileError);
-        return self;
-    }
-};
+//     //    public:
+//     //     static std::shared_ptr<CompileError> create() {
+//     //         std::shared_ptr<CompileError> self(new CompileError);
+//     //         return self;
+//     //     }
+// };
 
-}  // namespace prajna
+// }  // namespace prajna

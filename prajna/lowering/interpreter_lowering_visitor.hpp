@@ -8,8 +8,8 @@ namespace detail {
 
 ast::Identifier getIdentifier(ast::Operand ast_operand) {
     return boost::apply_visitor(
-        overloaded{[](auto x) -> ast::Identifier {
-                       printf("%s ++\n", typeid(x).name());
+        overloaded{[=](auto x) -> ast::Identifier {
+                       PRAJNA_TODO;
                        return ast::Identifier();
                    },
                    [](ast::KernelFunctionCall ast_kernel_function_call) {
@@ -113,10 +113,13 @@ class InterpreterLoweringVisitor {
         _symbol_result = (*_statement_lowering_visitor)(ast_variable_declaration, true);
     }
 
+    void operator()(const ast::Blank) { return; }
+
     void operator()(const ast::Assignment& ast_assignment) {
         auto wrap_function_guard = this->wrapCommandLineWithFunction();
         auto ir_utility = _statement_lowering_visitor->ir_utility;
 
+        // 需要处理一下
         std::string identifier = detail::getIdentifier(ast_assignment.left);
         if (identifier.empty() || ir_utility->symbol_table->has(identifier)) {
             _symbol_result = (*_statement_lowering_visitor)(ast_assignment);

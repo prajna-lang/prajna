@@ -69,22 +69,23 @@ class StatementLoweringVisitor {
         //确定变量的type
         if (ast_variable_declaration.initialize) {
             ir_initial_value =
-                expression_lowering_visitor->apply((*ast_variable_declaration.initialize).value);
+                expression_lowering_visitor->apply(*ast_variable_declaration.initialize);
 
             if (!ir_type) {
                 ir_type = ir_initial_value->type;
             } else {
                 if (ir_type != ir_initial_value->type) {
-                    logger->log(LogLevel::error, {{CH, std::string("类型不匹配")}},
-                                (*ast_variable_declaration.initialize).assign_operator.position);
-                    throw CompileError::create();
+                    logger->error(fmt::format("the declaration type is \"{}\", but the initialize "
+                                              "value's type is \"{}\"",
+                                              ir_type->name, ir_initial_value->type->name),
+                                  *ast_variable_declaration.initialize);
                 }
             }
         }
 
         // 类型不确定
         if (!ir_type) {
-            PRAJNA_TODO;
+            logger->error("the declaration type is unsure", ast_variable_declaration);
         }
 
         std::shared_ptr<ir::VariableLiked> ir_variable_liked;
@@ -116,12 +117,16 @@ class StatementLoweringVisitor {
             return ir_lhs;
         }
 
-        if (auto ir_property = cast<ir::Property>(ir_lhs)) {
+        if (auto ir_property = cast<ir::AccessProperty>(ir_lhs)) {
+            if (not ir_property->property->setter_function) {
+                logger->error("the property has not a setter function", ast_assignment.left);
+            }
             ir_utility->create<ir::WriteProperty>(ir_rhs, ir_property);
             return ir_lhs;
         }
 
-        PRAJNA_TODO;
+        logger->error("the left side is not writeable", ast_assignment.left);
+
         return nullptr;
     }
 
@@ -138,20 +143,24 @@ class StatementLoweringVisitor {
     auto applyAnnotations(ast::Annotations ast_annotations) {
         std::map<std::string, std::vector<std::string>> annotations;
         for (auto ast_annotation : ast_annotations) {
-            annotations.insert({ast_annotation.property, ast_annotation.values});
+            std::vector<std::string> values;
+            std::transform(RANGE(ast_annotation.values), std::back_inserter(values),
+                           [](ast::StringLiteral string_literal) { return string_literal.value; });
+            annotations.insert({ast_annotation.property, values});
         }
         return annotations;
     }
 
-    bool verifyReturnType(std::shared_ptr<ir::Block> ir_block, std::shared_ptr<ir::Type> ir_type) {
+    bool allBranchIsTerminated(std::shared_ptr<ir::Block> ir_block,
+                               std::shared_ptr<ir::Type> ir_type) {
         PRAJNA_ASSERT(!is<ir::VoidType>(ir_type));
         auto ir_last_value = ir_block->values.back();
         if (auto ir_return = cast<ir::Return>(ir_last_value)) {
             return ir_return->value() && ir_return->value()->type == ir_type;
         }
         if (auto ir_if = cast<ir::If>(ir_last_value)) {
-            auto re = this->verifyReturnType(ir_if->trueBlock(), ir_type) &&
-                      this->verifyReturnType(ir_if->falseBlock(), ir_type);
+            auto re = this->allBranchIsTerminated(ir_if->trueBlock(), ir_type) &&
+                      this->allBranchIsTerminated(ir_if->falseBlock(), ir_type);
             if (re) {
                 // //插入一个Return避免错误
                 // auto ir
@@ -164,7 +173,7 @@ class StatementLoweringVisitor {
             }
         }
         if (auto ir_block_ = cast<ir::Block>(ir_last_value)) {
-            return this->verifyReturnType(ir_block_, ir_type);
+            return this->allBranchIsTerminated(ir_block_, ir_type);
         }
 
         return false;
@@ -206,6 +215,7 @@ class StatementLoweringVisitor {
         ir_utility->ir_current_function = ir_function;
         // 进入参数域,
         ir_utility->pushSymbolTable();
+        ir_utility->ir_return_type = ir_function->function_type->return_type;
 
         // @note 将function的第一个block作为最上层的block
         auto ir_block = ir::Block::create();
@@ -239,18 +249,22 @@ class StatementLoweringVisitor {
 
             (*this)(*ast_function.body);
 
+            // TODO 返回型需要进一步处理
             // void返回类型直接补一个Return即可, 让后端去优化冗余的指令
             if (is<ir::VoidType>(ir_function->function_type->return_type)) {
                 ir_utility->create<ir::Return>(ir::VoidValue::create());
             } else {
-                PRAJNA_ASSERT(this->verifyReturnType(ir_function->blocks.back(),
-                                                     ir_function->function_type->return_type),
-                              "Error");
+                if (not this->allBranchIsTerminated(ir_function->blocks.back(),
+                                                    ir_function->function_type->return_type)) {
+                    logger->error("not all branch have been terminated", ast_function.declaration);
+                }
             }
+
         } else {
             ir_function->function_type->annotations.insert({"declare", {}});
         }
 
+        ir_utility->ir_return_type = nullptr;
         ir_utility->ir_current_block = nullptr;
         ir_utility->popSymbolTable();
 
@@ -265,6 +279,13 @@ class StatementLoweringVisitor {
         } else {
             auto ir_void_value = ir_utility->create<ir::VoidValue>();
             ir_return = ir_utility->create<ir::Return>(ir_void_value);
+        }
+
+        if (ir_return->type != ir_utility->ir_return_type) {
+            logger->error(
+                fmt::format("the type is {} , but then function return type is {}",
+                            ir_return->type->fullname, ir_utility->ir_return_type->fullname),
+                ast_return);
         }
 
         return ir_return;
@@ -304,29 +325,35 @@ class StatementLoweringVisitor {
         return ir_while;
     }
 
-    Symbol operator()(ast::For ast_grid) {
-      // TODO 后面看下如何处理类型的问题
-      auto ir_first = expression_lowering_visitor->apply(ast_grid.first);
-      auto ir_last = expression_lowering_visitor->apply(ast_grid.last);
-      auto ir_index =
-          ir_utility->create<ir::LocalVariable>(ir::IntType::create(64, true));
-      ir_utility->symbol_table->setWithName(ir_index, ast_grid.index);
-      PRAJNA_ASSERT(ir_first->type == ir_last->type &&
-                    ir_first->type == ir_index->type);
+    Symbol operator()(ast::For ast_for) {
+        auto ir_first = expression_lowering_visitor->apply(ast_for.first);
+        auto ir_last = expression_lowering_visitor->apply(ast_for.last);
+        auto ir_index = ir_utility->create<ir::LocalVariable>(ir::IntType::create(64, true));
+        ir_utility->symbol_table->setWithName(ir_index, ast_for.index);
+        if (not expression_lowering_visitor->isIndexType(ir_first->type)) {
+            logger->error("the index type must be i64", ast_for.first);
+        }
+        if (not expression_lowering_visitor->isIndexType(ir_last->type)) {
+            logger->error("the index type must be i64", ast_for.last);
+        }
 
-      auto ir_loop_block = ir::Block::create();
-      auto ir_for = ir_utility->create<ir::For>(ir_index, ir_first, ir_last,
-                                                ir_loop_block);
+        auto ir_loop_block = ir::Block::create();
+        auto ir_for = ir_utility->create<ir::For>(ir_index, ir_first, ir_last, ir_loop_block);
 
-      ir_utility->pushBlock(ir_for->loopBlock());
-      (*this)(ast_grid.body);
-      ir_utility->popBlock(ir_for->loopBlock());
+        ir_utility->pushBlock(ir_for->loopBlock());
+        (*this)(ast_for.body);
+        ir_utility->popBlock(ir_for->loopBlock());
 
-      for (auto ast_annotation : ast_grid.annotations) {
-        ir_for->annotations.insert(
-            {ast_annotation.property, ast_annotation.values});
-      }
-      return ir_for;
+        for (auto ast_annotation : ast_for.annotations) {
+            std::vector<std::string> values;
+            std::transform(RANGE(ast_annotation.values), std::back_inserter(values),
+                           [](ast::StringLiteral string_literal) { return string_literal.value; });
+            ir_for->annotations.insert({ast_annotation.property, values});
+        }
+
+        PRAJNA_ASSERT(not ir_for->loopBlock()->parent_block);
+
+        return ir_for;
     }
 
     void createStructConstructor(std::shared_ptr<ir::StructType> ir_struct_type) {
@@ -382,16 +409,17 @@ class StatementLoweringVisitor {
         return ir_struct_type;
     }
 
-    std::list<ast::Identifier> getTemplateParametersIdentifiers(
+    std::list<std::string> getTemplateParametersIdentifiers(
         std::list<ast::TemplateParameter> template_parameters) {
         std::set<ast::Identifier> template_parameter_identifier_set;
-        std::list<ast::Identifier> template_parameter_identifier_list;
+        std::list<std::string> template_parameter_identifier_list;
         for (auto template_parameter : template_parameters) {
+            if (template_parameter_identifier_set.count(template_parameter)) {
+                logger->error("the template parameter is defined already", template_parameter);
+            }
             template_parameter_identifier_list.push_back(template_parameter);
             template_parameter_identifier_set.insert(template_parameter);
         }
-        PRAJNA_ASSERT(template_parameter_identifier_list.size() ==
-                      template_parameter_identifier_set.size());
 
         return template_parameter_identifier_list;
     }
@@ -409,6 +437,8 @@ class StatementLoweringVisitor {
             auto logger = this->logger;
 
             auto template_struct = std::make_shared<TemplateStruct>();
+            template_struct->template_parameter_identifier_list =
+                template_parameter_identifier_list;
 
             // 外部使用算子, 必须值捕获
             auto template_struct_generator =
@@ -453,6 +483,172 @@ class StatementLoweringVisitor {
         }
     }
 
+    void processUnaryFunction(std::shared_ptr<ir::Type> ir_type,
+                              std::shared_ptr<ir::Function> ir_function,
+                              ast::Function ast_function) {
+        if (not ir_function->function_type->annotations.count("unary")) return;
+
+        if (ir_function->function_type->argument_types.size() != 1) {
+            logger->error("the parameters size of a unary function must be 1",
+                          ast_function.declaration.parameters);
+        }
+        auto unary_annotation = ir_function->function_type->annotations["unary"];
+        auto iter_unary_annotation = std::find_if(
+            RANGE(ast_function.declaration.annotations),
+            [](ast::Annotation ast_annotation) { return ast_annotation.property == "unary"; });
+        if (unary_annotation.size() != 1) {
+            logger->error("the unary annotation should only have one value to represent operator",
+                          *iter_unary_annotation);
+        }
+        auto operator_token = unary_annotation[0];
+        std::set<std::string> unary_operators_set = {"+", "-", "*", "&", "!"};
+        if (not unary_operators_set.count(operator_token)) {
+            logger->error("not valid unary operator", iter_unary_annotation->values[0]);
+        }
+        ir_type->unary_functions[operator_token] = ir_function;
+    }
+
+    void processBinaryFunction(std::shared_ptr<ir::Type> ir_type,
+                               std::shared_ptr<ir::Function> ir_function,
+                               ast::Function ast_function) {
+        if (not ir_function->function_type->annotations.count("binary")) return;
+
+        if (ir_function->function_type->argument_types.size() != 2) {
+            logger->error("the parameters size of a binary function must be 2",
+                          ast_function.declaration.parameters);
+        }
+        auto binary_annotation = ir_function->function_type->annotations["binary"];
+        auto iter_binary_annotation = std::find_if(
+            RANGE(ast_function.declaration.annotations),
+            [](ast::Annotation ast_annotation) { return ast_annotation.property == "binary"; });
+        if (binary_annotation.size() != 1) {
+            logger->error("the binary annotation should only have one value to represent operator",
+                          *iter_binary_annotation);
+        }
+        auto operator_token = binary_annotation[0];
+        std::set<std::string> binary_operators_set = {
+            "==", "!=", "<",  "<=", ">", ">=", "+", "-", "*",
+            "/",  "%",  "<<", ">>", "&", "|",  "^", "!"};
+        if (not binary_operators_set.count(operator_token)) {
+            logger->error("not valid binary operator", iter_binary_annotation->values[0]);
+        }
+        ir_type->binary_functions[operator_token] = ir_function;
+    }
+
+    void processInitializeCopyDestroyFunction(std::shared_ptr<ir::Type> ir_type,
+                                              std::shared_ptr<ir::Function> ir_function,
+                                              ast::Function ast_function) {
+        // 处理copy等回调函数
+        std::set<std::string> copy_destroy_callback_names = {"initialize", "copy", "destroy"};
+        if (not copy_destroy_callback_names.count(ir_function->name)) return;
+
+        if (ir_function->function_type->annotations.count("static") != 0) {
+            auto iter_static_annotation = std::find_if(
+                RANGE(ast_function.declaration.annotations),
+                [](ast::Annotation ast_annotation) { return ast_annotation.property == "static"; });
+            logger->error(fmt::format("the {} function can not be static", ir_function->name),
+                          *iter_static_annotation);
+        }
+
+        if (not is<ir::VoidType>(ir_function->function_type->return_type)) {
+            logger->error(
+                fmt::format("the {} function return type must be void", ir_function->name),
+                *ast_function.declaration.return_type);
+        }
+        // this pointer argument
+        if (ir_function->function_type->argument_types.size() != 1) {
+            logger->error(
+                fmt::format("the {} function should has no parameters", ir_function->name),
+                ast_function.declaration.parameters);
+        }
+
+        if (ir_function->name == "initialize") {
+            ir_type->initialize_function = ir_function;
+        }
+        if (ir_function->name == "copy") {
+            ir_type->copy_function = ir_function;
+        }
+        if (ir_function->name == "destroy") {
+            ir_type->destroy_function = ir_function;
+        }
+    }
+
+    bool isPropertyGetterSetterFunctionTypeMatched(
+        std::shared_ptr<ir::FunctionType> ir_getter_function_type,
+        std::shared_ptr<ir::FunctionType> ir_setter_function_type) {
+        if (ir_getter_function_type->argument_types.size() + 1 !=
+            ir_setter_function_type->argument_types.size()) {
+            return false;
+        }
+
+        for (size_t i = 0; i < ir_getter_function_type->argument_types.size(); ++i) {
+            if (ir_getter_function_type->argument_types[i] !=
+                ir_setter_function_type->argument_types[i]) {
+                return false;
+            }
+        }
+
+        if (ir_getter_function_type->return_type !=
+            ir_setter_function_type->argument_types.back()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    void processPropertyFunction(std::shared_ptr<ir::Type> ir_type,
+                                 std::shared_ptr<ir::Function> ir_function,
+                                 ast::Function ast_function) {
+        if (not ir_function->function_type->annotations.count("property")) return;
+
+        auto iter_property_annotation = std::find_if(
+            RANGE(ast_function.declaration.annotations),
+            [](ast::Annotation ast_annotation) { return ast_annotation.property == "properties"; });
+        auto property_annotation = ir_function->function_type->annotations["property"];
+        if (property_annotation.size() != 2) {
+            logger->error("the property annoation should only have two values",
+                          iter_property_annotation->values[0]);
+        }
+
+        auto property_name = property_annotation[0];
+        auto property_tag = property_annotation[1];
+        if (property_tag != "setter" && property_tag != "getter") {
+            logger->error("should be setter or getter", iter_property_annotation->values[0]);
+        }
+
+        auto ir_setter_function_type = ir_function->function_type;
+        if (not ir_type->properties[property_name]) {
+            ir_type->properties[property_name] = std::make_shared<ir::Property>();
+        }
+        auto property = ir_type->properties[property_name];
+        if (property_tag == "setter") {
+            if (property->setter_function) {
+                logger->error("the property setter has defined", *iter_property_annotation);
+            }
+            if (property->getter_function) {
+                if (not isPropertyGetterSetterFunctionTypeMatched(
+                        property->getter_function->function_type, ir_function->function_type)) {
+                    logger->error("the property setter getter functiontype are not matched",
+                                  ast_function.declaration);
+                }
+            }
+            property->setter_function = ir_function;
+        } else {
+            if (property->getter_function) {
+                logger->error("the property getter has defined", *iter_property_annotation);
+            }
+
+            if (property->setter_function) {
+                if (not isPropertyGetterSetterFunctionTypeMatched(
+                        ir_function->function_type, property->setter_function->function_type)) {
+                    logger->error("the property setter getter functiontype are not matched",
+                                  ast_function.declaration);
+                }
+            }
+            property->getter_function = ir_function;
+        }
+    }
+
     void applyImplementStructWithOutTemplates(std::shared_ptr<ir::Type> ir_type,
                                               ast::ImplementStruct ast_implement_struct) {
         ir_utility->pushSymbolTable();
@@ -481,21 +677,16 @@ class StatementLoweringVisitor {
                 ir_type->static_functions[ir_function->name] = ir_function;
             }
 
-            std::set<std::string> copy_destroy_callback_names = {"initialize", "copy", "destroy"};
-            if (copy_destroy_callback_names.count(ir_function->name)) {
-                PRAJNA_ASSERT(ir_function->function_type->annotations.count("static") == 0);
-                PRAJNA_ASSERT(is<ir::VoidType>(ir_function->function_type->return_type));
-                // this pointer argument
-                PRAJNA_ASSERT(ir_function->function_type->argument_types.size() == 1);
-                if (ir_function->name == "initialize") {
-                    ir_type->initialize_function = ir_function;
-                }
-                if (ir_function->name == "copy") {
-                    ir_type->copy_function = ir_function;
-                }
-                if (ir_function->name == "destroy") {
-                    ir_type->destroy_function = ir_function;
-                }
+            this->processUnaryFunction(ir_type, ir_function, ast_function);
+            this->processBinaryFunction(ir_type, ir_function, ast_function);
+            this->processInitializeCopyDestroyFunction(ir_type, ir_function, ast_function);
+            this->processPropertyFunction(ir_type, ir_function, ast_function);
+        }
+
+        for (auto [property_name, ir_property] : ir_type->properties) {
+            if (not ir_property->getter_function) {
+                logger->error(fmt::format("the property { } getter must be defined", property_name),
+                              ast_implement_struct.struct_);
             }
         }
 
@@ -507,7 +698,9 @@ class StatementLoweringVisitor {
             auto ir_symbol = expression_lowering_visitor->applyIdentifiersResolution(
                 ast_implement_struct.struct_);
             auto ir_type = symbolGet<ir::Type>(ir_symbol);
-            PRAJNA_ASSERT(ir_type);
+            if (ir_type == nullptr) {
+                logger->error("the symbol must be a type", ast_implement_struct.struct_);
+            }
             this->applyImplementStructWithOutTemplates(ir_type, ast_implement_struct);
 
         } else {
@@ -517,7 +710,15 @@ class StatementLoweringVisitor {
             auto ir_symbol = expression_lowering_visitor->applyIdentifiersResolution(
                 ast_implement_struct.struct_);
             auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
-            PRAJNA_ASSERT(template_struct);
+            if (template_struct == nullptr) {
+                logger->error("it's not a template struct but with template parameters",
+                              ast_implement_struct.template_paramters);
+            }
+            if (template_struct->template_parameter_identifier_list.size() !=
+                template_parameter_identifier_list.size()) {
+                logger->error("the template parameters are not matched",
+                              ast_implement_struct.template_paramters);
+            }
 
             auto symbol_table = ir_utility->symbol_table;
             auto logger = this->logger;
@@ -557,13 +758,12 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::Import ast_import) {
-        auto symbol = this->applyIdentifiersResolution(ast_import.identifiers_resolution);
-        PRAJNA_ASSERT(symbol.which() != 0);  // TODO ERROR
-
-        PRAJNA_ASSERT(!ast_import.identifiers_resolution.identifiers.empty());
+        auto symbol = this->applyIdentifiersResolution(ast_import.identifier_path);
+        PRAJNA_ASSERT(symbol.which() != 0);
+        PRAJNA_ASSERT(!ast_import.identifier_path.identifiers.empty());
         // setWithName 不能改变symbol的名字
-        ir_utility->symbol_table->set(
-            symbol, ast_import.identifiers_resolution.identifiers.back().identifier);
+        ir_utility->symbol_table->set(symbol,
+                                      ast_import.identifier_path.identifiers.back().identifier);
 
         if (ast_import.as) {
             ir_utility->symbol_table->set(symbol, *ast_import.as);
@@ -574,30 +774,38 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::Export ast_export) {
         auto symbol = ir_utility->symbol_table->get(ast_export.identifier);
-        PRAJNA_ASSERT(symbol.which() != 0);
+        if (symbol.which() == 0) {
+            logger->error("the symbol is not found", ast_export.identifier);
+        }
 
         auto parent_symbol_table = ir_utility->symbol_table->parent_symbol_table;
         PRAJNA_ASSERT(parent_symbol_table, "不可能为nullptr, 因为文件名本身也是一层名字空间");
-        PRAJNA_ASSERT(!parent_symbol_table->currentTableHas(ast_export.identifier), "error");
+
+        if (parent_symbol_table->currentTableHas(ast_export.identifier)) {
+            logger->error("the identifier is exist already", ast_export.identifier);
+        }
+
         parent_symbol_table->set(symbol, ast_export.identifier);
 
         return symbol;
     }
 
-template <typename _Statement>
-Symbol operator()(_Statement ast_statement) {
-    PRAJNA_ASSERT(false, typeid(ast_statement).name());
-    return nullptr;
-}
+    Symbol operator()(ast::Blank) { return nullptr; }
 
-std::shared_ptr<ir::Value> applyExpression(ast::Expression ast_expression) {
-    return expression_lowering_visitor->apply(ast_expression);
-}
+    template <typename _Statement>
+    Symbol operator()(_Statement ast_statement) {
+        PRAJNA_ASSERT(false, typeid(ast_statement).name());
+        return nullptr;
+    }
 
-public:
-std::shared_ptr<ExpressionLoweringVisitor> expression_lowering_visitor = nullptr;
-std::shared_ptr<IrUtility> ir_utility = nullptr;
-std::shared_ptr<Logger> logger = nullptr;
+    std::shared_ptr<ir::Value> applyExpression(ast::Expression ast_expression) {
+        return expression_lowering_visitor->apply(ast_expression);
+    }
+
+   public:
+    std::shared_ptr<ExpressionLoweringVisitor> expression_lowering_visitor = nullptr;
+    std::shared_ptr<IrUtility> ir_utility = nullptr;
+    std::shared_ptr<Logger> logger = nullptr;
 };
 
 }  // namespace prajna::lowering

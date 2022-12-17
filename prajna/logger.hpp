@@ -7,6 +7,8 @@
 #include "fmt/format.h"
 #include "prajna/assert.hpp"
 #include "prajna/ast/ast.hpp"
+#include "prajna/exception.hpp"
+#include "prajna/rich_bash.hpp"
 
 namespace prajna {
 
@@ -51,39 +53,64 @@ struct formatter<prajna::LogLevel> {
 
 namespace prajna {
 
-enum Language { EN = 1, CH };
+class CompileError {
+   public:
+    CompileError() = default;
+};
 
 class Logger {
    protected:
     Logger() = default;
 
    public:
-    static std::shared_ptr<Logger> create(std::string code, Language language) {
+    static std::shared_ptr<Logger> create(std::string code) {
         std::shared_ptr<Logger> self(new Logger);
         boost::split(self->_code_lines, code, boost::is_any_of("\n"));
-        self->_language = language;
         return self;
     }
 
-    void log(LogLevel level, std::map<Language, std::string> messages,
-             ast::SourcePosition position) {
-        PRAJNA_ASSERT(messages.count(_language), "对应语言的信息没有输入");
+    void error(std::string message, ast::SourcePosition first_position,
+               ast::SourcePosition last_position, std::string ascii_color = std::string(BLU)) {
+        if (first_position.file.empty()) {
+            fmt::print("{}:{}: {}: {}\n", first_position.line, first_position.column,
+                       fmt::styled("error", fmt::fg(fmt::color::red)), message);
+        } else {
+            fmt::print("{}:{}:{}: {}: {}\n", first_position.file, first_position.line,
+                       first_position.column, fmt::styled("error", fmt::fg(fmt::color::red)),
+                       message);
+        }
 
-        fmt::print("{}", fmt::underlying(fmt::color::red), "0fdsafsda0");
-        auto message = messages[_language];
-        fmt::print("{}:{}:{}: {}: {}\n", position.file, position.line, position.column, level,
-                   message);
-        // 行数和列数是从1开始计数的, 所以减一
-        PRAJNA_ASSERT(position.line - 1 > 0 && position.line - 1 < _code_lines.size());
-        auto code_line = _code_lines[position.line - 1];
-        //符号不对
-        PRAJNA_ASSERT(position.column - 1 > 0 && position.column - 1 < code_line.size());
-        code_line.insert(code_line.begin() + position.column - 1, '^');
-        fmt::print("{}\n", fmt::styled(code_line, fmt::bg(fmt::color::blue)));
+        if (last_position.column - 1 > _code_lines[last_position.line - 1].size()) {
+            std::string spaces(
+                last_position.column - 1 - _code_lines[last_position.line - 1].size(), ' ');
+            _code_lines[last_position.line - 1].append(spaces);
+        }
+        _code_lines[last_position.line - 1].insert(last_position.column - 1, std::string(RESET));
+        // 不存在越界的情况
+        PRAJNA_ASSERT(first_position.column - 1 >= 0);
+        _code_lines[first_position.line - 1].insert(first_position.column - 1, ascii_color);
+        std::string code_region;
+        for (size_t i = first_position.line; i <= last_position.line; ++i) {
+            PRAJNA_ASSERT(i - 1 >= 0 and i - 1 < _code_lines.size());
+            code_region.append(_code_lines[i - 1]);
+            code_region.append("\n");
+        }
+
+        // fmt::print(code_region); // has bug
+        std::cout << code_region;
+
+        throw CompileError();
+    }
+
+    void error(std::string message, ast::SourceLocation source_location) {
+        error(message, source_location.first_position, source_location.last_position);
+    }
+
+    void error(std::string message, ast::Operand ast_operand) {
+        boost::apply_visitor([&](auto x) { this->error(message, x); }, ast_operand);
     }
 
    private:
-    Language _language;
     std::vector<std::string> _code_lines;
 };
 

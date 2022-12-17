@@ -22,6 +22,11 @@ namespace prajna::ir {
 class Function;
 struct Field;
 
+struct Property {
+    std::shared_ptr<ir::Function> setter_function;
+    std::shared_ptr<ir::Function> getter_function;
+};
+
 using Annotations = std::map<std::string, std::vector<std::string>>;
 
 class Type : public Named {
@@ -41,6 +46,9 @@ class Type : public Named {
     std::shared_ptr<Function> destroy_function = nullptr;
     std::map<std::string, std::shared_ptr<Function>> member_functions;
     std::map<std::string, std::shared_ptr<Function>> static_functions;
+    std::map<std::string, std::shared_ptr<Function>> unary_functions;
+    std::map<std::string, std::shared_ptr<Function>> binary_functions;
+    std::map<std::string, std::shared_ptr<Property>> properties;
     std::vector<std::shared_ptr<Field>> fields;
 
     llvm::Type* llvm_type = nullptr;
@@ -52,7 +60,7 @@ class NullType : public Type {
 
    public:
     static std::shared_ptr<NullType> create() {
-        for (auto ir_type : context.created_types) {
+        for (auto ir_type : global_context.created_types) {
             if (auto ir_null_type = cast<NullType>(ir_type)) {
                 return ir_null_type;
             }
@@ -63,7 +71,7 @@ class NullType : public Type {
         self->bytes = 0;
         self->name = "NullType";
         self->fullname = "NullType";
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 };
@@ -74,7 +82,7 @@ class BoolType : public Type {
 
    public:
     static std::shared_ptr<BoolType> create() {
-        for (auto ir_type : context.created_types) {
+        for (auto ir_type : global_context.created_types) {
             if (auto ir_bool_type = cast<BoolType>(ir_type)) {
                 return ir_bool_type;
             }
@@ -85,7 +93,7 @@ class BoolType : public Type {
         self->bytes = 1;
         self->name = "bool";
         self->fullname = "bool";
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 
@@ -106,7 +114,7 @@ class FloatType : public RealNumberType {
 
    public:
     static std::shared_ptr<FloatType> create(int64_t bits) {
-        for (auto ir_type : context.created_types) {
+        for (auto ir_type : global_context.created_types) {
             if (auto ir_float_type = cast<FloatType>(ir_type)) {
                 if (ir_float_type->bits == bits) {
                     return ir_float_type;
@@ -119,7 +127,7 @@ class FloatType : public RealNumberType {
         self->bytes = bits / 8;
         self->name = "f" + std::to_string(bits);
         self->fullname = "f" + std::to_string(bits);
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 };
@@ -130,7 +138,7 @@ class IntType : public RealNumberType {
 
    public:
     static std::shared_ptr<IntType> create(int64_t bits, bool is_signed) {
-        for (auto ir_type : context.created_types) {
+        for (auto ir_type : global_context.created_types) {
             if (auto ir_int_type = cast<IntType>(ir_type)) {
                 if (ir_int_type->bits == bits && ir_int_type->is_signed == is_signed) {
                     return ir_int_type;
@@ -144,7 +152,7 @@ class IntType : public RealNumberType {
         self->is_signed = is_signed;
         self->name = std::string(is_signed ? "i" : "u") + std::to_string(bits);
         self->fullname = std::string(is_signed ? "i" : "u") + std::to_string(bits);
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 
@@ -158,7 +166,7 @@ class CharType : public Type {
 
    public:
     static std::shared_ptr<CharType> create() {
-        for (auto ir_type : context.created_types) {
+        for (auto ir_type : global_context.created_types) {
             if (auto ir_char_type = cast<CharType>(ir_type)) {
                 return ir_char_type;
             }
@@ -168,7 +176,7 @@ class CharType : public Type {
         self->name = "char";
         self->bytes = 1;
         self->fullname = "char";
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 };
@@ -179,7 +187,7 @@ class VoidType : public Type {
 
    public:
     static std::shared_ptr<VoidType> create() {
-        for (auto ir_type : context.created_types) {
+        for (auto ir_type : global_context.created_types) {
             if (auto ir_void_type = cast<VoidType>(ir_type)) {
                 return ir_void_type;
             }
@@ -189,7 +197,7 @@ class VoidType : public Type {
         self->name = "void";
         self->bytes = 0;  // 应该是个无效值
         self->fullname = "void";
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 };
@@ -204,7 +212,7 @@ class FunctionType : public Type {
         std::shared_ptr<Type> ir_return_type,
         std::vector<std::shared_ptr<Type>> ir_argument_types) {
         // @note 不同函数的, 函数类型不应该是用一个指针, 下面的代码更适合判断动态分发的时候使用
-        // for (auto ir_type : context.created_types) {
+        // for (auto ir_type : global_context.created_types) {
         //     if (auto ir_fun_type = cast<FunctionType>(ir_type)) {
         //         if (ir_fun_type->return_type == ir_return_type &&
         //             ir_fun_type->argument_types.size() == ir_argument_types.size() &&
@@ -217,7 +225,7 @@ class FunctionType : public Type {
         std::shared_ptr<FunctionType> self(new FunctionType);
         self->return_type = ir_return_type;
         self->argument_types = ir_argument_types;
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 
@@ -238,7 +246,7 @@ class PointerType : public Type {
     static std::shared_ptr<PointerType> create(std::shared_ptr<Type> value_type) {
         PRAJNA_ASSERT(not is<VoidType>(value_type));
 
-        for (auto ir_type : context.created_types) {
+        for (auto ir_type : global_context.created_types) {
             if (auto ir_pointer_type = cast<PointerType>(ir_type)) {
                 if (ir_pointer_type->value_type == value_type) {
                     return ir_pointer_type;
@@ -248,10 +256,10 @@ class PointerType : public Type {
 
         std::shared_ptr<PointerType> self(new PointerType);
         self->value_type = value_type;
-        self->bytes = context.target_bits / 8;
+        self->bytes = global_context.target_bits / 8;
         self->name = value_type->name + "*";
         self->fullname = self->name;
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 
@@ -265,7 +273,7 @@ class ArrayType : public Type {
 
    public:
     static std::shared_ptr<ArrayType> create(std::shared_ptr<Type> value_type, size_t size) {
-        for (auto ir_type : context.created_types) {
+        for (auto ir_type : global_context.created_types) {
             if (auto ir_array_type = cast<ArrayType>(ir_type)) {
                 if (ir_array_type->value_type == value_type && ir_array_type->size == size) {
                     return ir_array_type;
@@ -279,7 +287,7 @@ class ArrayType : public Type {
         self->bytes = value_type->bytes * size;
         self->name = value_type->name + "[" + std::to_string(size) + "]";
         self->fullname = self->name;
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         return self;
     }
 
@@ -317,7 +325,7 @@ class StructType : public Type {
         // 每次取得都不是同一个类型
         std::shared_ptr<StructType> self(new StructType);
         self->fields = fields;
-        context.created_types.push_back(self);
+        global_context.created_types.push_back(self);
         self->name = "PleaseDefineStructTypeName";
         self->fullname = "PleaseDefineStructTypeFullname";
         self->update();

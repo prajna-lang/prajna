@@ -5,6 +5,8 @@
 
 #define RANGE(container) container.begin(), container.end()
 
+#define POSITIONS(token) token.first_position, token.last_position
+
 namespace prajna {
 
 template <class... Ts>

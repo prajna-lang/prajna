@@ -39,11 +39,17 @@ void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
 std::shared_ptr<ir::Module> Compiler::compileCode(
     std::string code, std::shared_ptr<lowering::SymbolTable> symbol_table, std::string file_name,
     bool is_interpreter) {
-    auto logger = Logger::create(code, CH);
+    auto logger = Logger::create(code);
     auto ast = prajna::parser::parse(code, file_name, logger);
     PRAJNA_ASSERT(ast);
     auto ir_lowering_module = prajna::lowering::lower(ast, symbol_table, logger, is_interpreter);
     ir_lowering_module->name = file_name;
+    ir_lowering_module->fullname = ir_lowering_module->name;
+    for (auto [ir_target, ir_sub_module] : ir_lowering_module->modules) {
+        if (ir_sub_module == nullptr) continue;
+        ir_sub_module->name = ir_lowering_module->name + "_" + ir::targetToString(ir_target);
+        ir_sub_module->fullname = ir_sub_module->name;
+    }
     auto ir_ssa_module = prajna::transform::transform(ir_lowering_module);
     auto ir_codegen_module = prajna::codegen::llvmCodegen(ir_ssa_module, ir::Target::host);
     jit_engine->addIRModule(ir_codegen_module);
@@ -64,7 +70,7 @@ void Compiler::compileCommandLine(std::string command_line_code) {
                 fun_ptr();
             }
         }
-    } catch (std::shared_ptr<CompileError> compile_error) {
+    } catch (CompileError &) {
         // Do  None
     }
 }
@@ -94,7 +100,7 @@ void Compiler::compileFile(std::string prajna_source_dir, std::string prajna_sou
         auto current_symbol_table =
             lowering::createSymbolTableTree(_symbol_table, prajna_source_file);
         this->compileCode(code, current_symbol_table, prajna_source_full_path, false);
-    } catch (std::shared_ptr<CompileError> compile_error) {
+    } catch (CompileError &) {
         // Do none
     }
 }

@@ -23,6 +23,18 @@ func testWhile(size: i64)->i64{
     return tmp;
 }
 
+func testFor(){
+    var first = 0;
+    var last = 100;
+    var tmp = 0;
+
+    for i in first to 100{
+        tmp = tmp + i;
+    }
+
+    testing::Assert(tmp == 5000);
+}
+
 @test
 func testControlFlow(){
     testing::Assert(testIfElse(true) == 4);

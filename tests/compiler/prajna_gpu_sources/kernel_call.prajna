@@ -1,15 +1,15 @@
-import gpu::launchKernel;
-
 @kernel
 @target("nvptx")
 func myKernel(tensor: gpu::Tensor<i64, 1>){
-    var thread_idx = gpu::threadIdx();
+    var thread_idx = gpu::threadIndex();
     var thread_idx_x = thread_idx[0];
     tensor.data[thread_idx_x] = thread_idx_x;
 }
 
 @test
 func testKernel(){
+    // gpu::setDevice(0); // error,  会释放核函数的资源, 待修复
+
     var size = 13;
     var gridDim = [1,1,1];
     var blockDim = [size, 1, 1];
@@ -21,6 +21,7 @@ func testKernel(){
 
     var host_tensor = gpu_tensor.toHost();
     for i in 0 to size{
+        // host_tensor.data[i].tostr().print();
         testing::Assert(host_tensor.data[i] == i);
     }
 }

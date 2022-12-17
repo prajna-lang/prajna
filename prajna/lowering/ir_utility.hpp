@@ -69,6 +69,7 @@ class IrUtility {
     void popBlock(std::shared_ptr<ir::Block> ir_block) {
         PRAJNA_ASSERT(ir_block == ir_current_block);
         ir_current_block = ir_current_block->parent_block;
+        ir_block->parent_block = nullptr;
     }
 
     void pushSymbolTableAndBlock() {
@@ -93,10 +94,11 @@ class IrUtility {
     }
 
    public:
-    std::shared_ptr<SymbolTable> symbol_table;
-    std::shared_ptr<ir::Block> ir_current_block;
-    std::shared_ptr<ir::Function> ir_current_function;
-    std::shared_ptr<ir::Module> module;
+    std::shared_ptr<SymbolTable> symbol_table = nullptr;
+    std::shared_ptr<ir::Block> ir_current_block = nullptr;
+    std::shared_ptr<ir::Function> ir_current_function = nullptr;
+    std::shared_ptr<ir::Module> module = nullptr;
+    std::shared_ptr<ir::Type> ir_return_type = nullptr;
 };
 
 }  // namespace prajna::lowering

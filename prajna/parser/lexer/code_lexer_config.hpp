@@ -13,9 +13,10 @@ typedef spirit::classic::position_iterator2<std::string::iterator> base_iterator
 
 // @brief 词法解析器的token类型
 typedef lex::lexertl::position_token<
-    base_iterator_type, boost::mpl::vector<prajna::ast::AstBase, prajna::ast::CharLiteral,
-                                           ast::StringLiteral, ast::IntLiteral, ast::FloatLiteral,
-                                           ast::BoolLiteral, ast::Operator, ast::Identifier>>
+    base_iterator_type,
+    boost::mpl::vector<prajna::ast::SourceLocation, prajna::ast::CharLiteral, ast::StringLiteral,
+                       ast::IntLiteral, ast::FloatLiteral, ast::BoolLiteral, ast::Operator,
+                       ast::Identifier, ast::Break, ast::Continue>>
     TokenType;
 
 // @brief 应该是词法解析器的引擎

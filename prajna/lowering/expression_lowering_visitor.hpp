@@ -19,10 +19,10 @@ namespace prajna::lowering {
 class UndefinedSymbolException : public std::exception {
    public:
     UndefinedSymbolException(ast::IdentifiersResolution ast_identifiers_resolution) {
-        this->identifiers_resolution = ast_identifiers_resolution;
+        this->identifier_path = ast_identifiers_resolution;
     }
 
-    ast::IdentifiersResolution identifiers_resolution;
+    ast::IdentifiersResolution identifier_path;
 };
 
 class ExpressionLoweringVisitor {
@@ -74,7 +74,7 @@ class ExpressionLoweringVisitor {
         return (*this)(ast_expression);
     }
 
-    std::shared_ptr<ir::Value> operator()(boost::blank) {
+    std::shared_ptr<ir::Value> operator()(ast::Blank) {
         PRAJNA_UNREACHABLE;
         return nullptr;
     }
@@ -106,11 +106,13 @@ class ExpressionLoweringVisitor {
             ir_utility->create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
         ast::IdentifiersResolution ast_identifiers_resolution;
         ast_identifiers_resolution.is_root = ast::Operator("::");
-        ast_identifiers_resolution.identifiers = {{std::string("str"), {}}};
+        ast_identifiers_resolution.identifiers.resize(1);
+        ast_identifiers_resolution.identifiers.front().identifier = "str";
         auto string_type = cast<ir::StructType>(
             symbolGet<ir::Type>(this->applyIdentifiersResolution(ast_identifiers_resolution)));
         auto ir_string_from_char_pat = string_type->static_functions["from_char_ptr"];
 
+        // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
         return ir_utility->create<ir::Call>(
             ir_string_from_char_pat, std::vector<std::shared_ptr<ir::Value>>{ir_c_string_address});
     }
@@ -163,7 +165,8 @@ class ExpressionLoweringVisitor {
             return ir_float;
         }
 
-        PRAJNA_TODO;
+        logger->error(fmt::format("{} is invalid number postfix", postfix),
+                      ast_int_literal_postfix.postfix);
         return nullptr;
     };
 
@@ -185,8 +188,6 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::FloatLiteralPostfix ast_float_literal_postfix) {
-        // -1表示位数和是否有符号尚未确定
-        // TODO需要进一步处理
         std::string postfix = ast_float_literal_postfix.postfix;
         auto value = ast_float_literal_postfix.float_literal.value;
 
@@ -194,14 +195,13 @@ class ExpressionLoweringVisitor {
         if (ir_float) {
             return ir_float;
         } else {
-            PRAJNA_TODO;
+            logger->error(fmt::format("{} is invalid number postfix", postfix),
+                          ast_float_literal_postfix.postfix);
             return nullptr;
         }
     };
 
     std::shared_ptr<ir::Value> operator()(ast::FloatLiteral ast_float_literal) {
-        // -1表示位数尚未确定
-        // TODO 需要进一步处理
         auto ir_float_type = ir::FloatType::create(32);
         return ir_utility->create<ir::ConstantFloat>(ir_float_type, ast_float_literal.value);
     }
@@ -216,12 +216,13 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> operator()(ast::Identifier ast_identifier) {
         if (!ir_utility->symbol_table->has(ast_identifier)) {
-            PRAJNA_TODO;
+            logger->error(fmt::format("{} not found", ast_identifier), ast_identifier);
         }
 
         auto symbol = ir_utility->symbol_table->get(ast_identifier);
         if (!symbolIs<ir::Value>(symbol)) {
-            PRAJNA_TODO;
+            PRAJNA_UNREACHABLE;
+            logger->error(fmt::format("{} is not a valid value"), ast_identifier);
         }
 
         return symbolGet<ir::Value>(symbol);
@@ -229,8 +230,10 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> operator()(ast::Expression ast_expresion) {
         auto ir_lhs = applyOperand(ast_expresion.first);
+        ir_lhs->source_location = ast_expresion;
         for (auto optoken_and_rhs : ast_expresion.rest) {
             ir_lhs = applyBinaryOperation(ir_lhs, optoken_and_rhs);
+            ir_lhs->source_location = optoken_and_rhs;
         }
         return ir_lhs;
     }
@@ -238,7 +241,8 @@ class ExpressionLoweringVisitor {
     std::shared_ptr<ir::Value> applyBinaryOperationAccessField(
         std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
         if (ast_binary_operation.operand.type() != typeid(ast::Identifier)) {
-            PRAJNA_TODO;  /// 操作数需要时identifier
+            PRAJNA_UNREACHABLE;
+            logger->error("access operand must be a identifier", ast_binary_operation);
         }
 
         auto ir_type = ir_lhs->type;
@@ -247,7 +251,7 @@ class ExpressionLoweringVisitor {
         if (auto member_function = ir_type->member_functions[member_name]) {
             auto ir_this_pointer =
                 ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-            return ir::MemberFunction::create(ir_this_pointer, member_function);
+            return ir::MemberFunctionWithThisPointer::create(ir_this_pointer, member_function);
         }
 
         auto iter_field = std::find_if(
@@ -260,63 +264,111 @@ class ExpressionLoweringVisitor {
         }
 
         // 索引property
-        for (auto [name, ir_function] : ir_type->member_functions) {
-            if (ir_function == nullptr) continue;
+        if (auto ir_property = ir_type->properties[member_name]) {
+            auto ir_this_pointer =
+                ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+            return ir_utility->create<ir::AccessProperty>(ir_this_pointer, ir_property);
+        }
 
-            if (ir_function->function_type->annotations.count("property")) {
-                if (ir_function->function_type->annotations["property"][0] == member_name) {
-                    auto ir_this_pointer =
-                        ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-                    return ir_utility->create<ir::Property>(ir_this_pointer, member_name);
-                }
+        logger->error(fmt::format("{} is not a member", member_name), ast_binary_operation.operand);
+        return nullptr;
+    }
+
+    bool isIndexType(std::shared_ptr<ir::Type> ir_type) {
+        if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+            if (ir_int_type->is_signed and ir_int_type->bits == 64) {
+                return true;
             }
         }
 
-        PRAJNA_ASSERT(false, member_name);
-        return nullptr;
+        return false;
     }
 
     std::shared_ptr<ir::Value> applyBinaryOperationIndexArray(
         std::shared_ptr<ir::Value> ir_object, ast::BinaryOperation ast_binary_operation) {
         auto ir_variable_liked = ir_utility->variableLikedNormalize(ir_object);
+        auto ir_index = this->applyOperand(ast_binary_operation.operand);
+        if (not this->isIndexType(ir_index->type)) {
+            logger->error(
+                fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
+                ast_binary_operation.operand);
+        }
         if (is<ir::ArrayType>(ir_object->type)) {
-            auto ir_index = this->applyOperand(ast_binary_operation.operand);
-            PRAJNA_ASSERT(is<ir::IntType>(ir_index->type));
             return ir_utility->create<ir::IndexArray>(ir_variable_liked, ir_index);
         } else if (is<ir::PointerType>(ir_object->type)) {
-            auto ir_index = this->applyOperand(ast_binary_operation.operand);
-            PRAJNA_ASSERT(is<ir::IntType>(ir_index->type));
             return ir_utility->create<ir::IndexPointer>(ir_variable_liked, ir_index);
         } else {
-            PRAJNA_TODO;
+            logger->error("the object has not a index function", ast_binary_operation);
         }
 
-        PRAJNA_UNREACHABLE;
         return nullptr;
     }
 
     std::shared_ptr<ir::Value> applyBinaryOperationCall(std::shared_ptr<ir::Value> ir_lhs,
                                                         ast::BinaryOperation ast_binary_operaton) {
         auto ir_arguments = *cast<ir::ValueCollection>(applyOperand(ast_binary_operaton.operand));
-        if (auto ir_member_function = cast<ir::MemberFunction>(ir_lhs)) {
-            auto ir_argument_collection =
-                cast<ir::ValueCollection>(applyOperand(ast_binary_operaton.operand));
+        PRAJNA_ASSERT(ast_binary_operaton.operand.type() == typeid(ast::Expressions));
+        auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operaton.operand);
+        if (auto ir_member_function = cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
+            auto ir_function_type = ir_member_function->function_prototype->function_type;
+            if (ir_arguments.size() + 1 != ir_function_type->argument_types.size()) {
+                logger->error(
+                    fmt::format(
+                        "the arguments size is not matched, require {} argument, but give {}",
+                        ir_function_type->argument_types.size() - 1, ir_arguments.size()),
+                    ast_expressions);
+            }
+            for (size_t i = 0; i < ir_arguments.size(); ++i) {
+                if (ir_arguments[i]->type != ir_function_type->argument_types[i + 1]) {
+                    logger->error("the argument type is not matched", ast_expressions[i]);
+                }
+            }
             ir_arguments.insert(ir_arguments.begin(), ir_member_function->this_pointer);
-            return ir_utility->create<ir::Call>(ir_member_function->global_function, ir_arguments);
+            return ir_utility->create<ir::Call>(ir_member_function->function_prototype,
+                                                ir_arguments);
         }
 
         if (ir_lhs->isFunction()) {
+            auto ir_function_type = ir_lhs->getFunctionType();
+            if (ir_arguments.size() != ir_function_type->argument_types.size()) {
+                logger->error(
+                    fmt::format(
+                        "the arguments size is not matched, require {} argument, but give {}",
+                        ir_function_type->argument_types.size(), ir_arguments.size()),
+                    ast_expressions);
+            }
+            for (size_t i = 0; i < ir_arguments.size(); ++i) {
+                if (ir_arguments[i]->type != ir_function_type->argument_types[i]) {
+                    logger->error("the argument type is not matched", ast_expressions[i]);
+                }
+            }
             return ir_utility->create<ir::Call>(ir_lhs, ir_arguments);
         }
 
-        if (auto ir_property = cast<ir::Property>(ir_lhs)) {
+        if (auto ir_property = cast<ir::AccessProperty>(ir_lhs)) {
+            // getter函数必须存在
+            auto ir_getter_function_type = ir_property->property->getter_function->function_type;
+            if (ir_arguments.size() != ir_getter_function_type->argument_types.size() - 1) {
+                logger->error(
+                    fmt::format("the property arguments size is not matched, require {} argument, "
+                                "but give {}",
+                                ir_getter_function_type->argument_types.size() - 1,
+                                ir_arguments.size()),
+                    ast_expressions);
+            }
+            for (size_t i = 0; i < ir_arguments.size(); ++i) {
+                if (ir_arguments[i]->type != ir_getter_function_type->argument_types[i + 1]) {
+                    logger->error("the argument type is not matched", ast_expressions[i]);
+                }
+            }
+            // 移除, 在末尾插入, 应为参数应该在属性访问的前面
             ir_property->parent_block->values.remove(ir_property);
             ir_utility->ir_current_block->values.push_back(ir_property);
             ir_property->arguments(ir_arguments);
             return ir_property;
         }
 
-        PRAJNA_TODO;
+        logger->error("not a valid callable", ast_binary_operaton);
         return nullptr;
     }
 
@@ -331,10 +383,11 @@ class ExpressionLoweringVisitor {
         if (ast_binary_operation.operator_ == ast::Operator("[")) {
             return this->applyBinaryOperationIndexArray(ir_lhs, ast_binary_operation);
         } else {
+            // 将其余的运算都转换为函数调用
             return this->convertBinaryOperationToCallFunction(ir_lhs, ast_binary_operation);
         }
 
-        PRAJNA_TODO;
+        PRAJNA_UNREACHABLE;
         return nullptr;
     }
 
@@ -353,28 +406,25 @@ class ExpressionLoweringVisitor {
         return ir_utility->create<ir::DeferencePointer>(ir_operand);
     }
 
-    std::shared_ptr<ir::Value> applyUnaryOperatorGetAddressOfVariableLiked(
-        std::shared_ptr<ir::Value> ir_operand) {
-        auto ir_variable_liked = cast<ir::VariableLiked>(ir_operand);
-        PRAJNA_ASSERT(ir_variable_liked);  // 错误信息
-        return ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-        // return ir_utility->create<ir::DeferencePointer>(ir_operand);
-    }
-
     std::shared_ptr<ir::Value> operator()(ast::Unary ast_unary) {
         auto ir_operand = this->applyOperand(ast_unary.operand);
         if (ast_unary.operator_ == ast::Operator("*")) {
             return this->applyUnaryOperatorDereferencePointer(ir_operand);
         }
         if (ast_unary.operator_ == ast::Operator("&")) {
-            return this->applyUnaryOperatorGetAddressOfVariableLiked(ir_operand);
+            auto ir_variable_liked = cast<ir::VariableLiked>(ir_operand);
+            if (ir_variable_liked == nullptr) {
+                logger->error("only could get the address of a VariableLiked", ast_unary);
+            }
+            return ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         }
 
         auto ir_variable_liked = ir_utility->variableLikedNormalize(ir_operand);
-        auto member_function_name = ast_unary.operator_.string_token;
-        // Prajna不支持函数重载, 故一元算子在前面加"/"和二元算子区分
-        auto ir_function = ir_variable_liked->type->member_functions["\\" + member_function_name];
-        PRAJNA_ASSERT(ir_function);
+        auto unary_operator_name = ast_unary.operator_.string_token;
+        auto ir_function = ir_variable_liked->type->unary_functions[unary_operator_name];
+        if (not ir_function) {
+            logger->error("unary operator not found", ast_unary.operator_);
+        }
 
         auto ir_this_pointer = ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         std::vector<std::shared_ptr<ir::Value>> ir_arguemnts(1);
@@ -384,9 +434,13 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> operator()(ast::Cast ast_cast) {
         auto ir_type = this->applyType(ast_cast.type);
-        PRAJNA_ASSERT(is<ir::PointerType>(ir_type));
+        if (not is<ir::PointerType>(ir_type)) {
+            logger->error("the target type of the cast must be a pointer type", ast_cast.type);
+        }
         auto ir_value = this->apply(ast_cast.value);
-        PRAJNA_ASSERT(is<ir::PointerType>(ir_value->type));
+        if (not is<ir::PointerType>(ir_value->type)) {
+            logger->error("the type of the cast operand must be pointer type", ast_cast.value);
+        }
         return ir_utility->create<ir::BitCast>(ir_value, ir_type);
     }
 
@@ -394,7 +448,7 @@ class ExpressionLoweringVisitor {
         auto symbol_type = this->applyIdentifiersResolution(ast_postfix_type.base_type);
 
         if (!symbolIs<ir::Type>(symbol_type)) {
-            PRAJNA_TODO;
+            logger->error("the symbol is not a type", ast_postfix_type);
         }
         auto ir_type = symbolGet<ir::Type>(symbol_type);
 
@@ -402,6 +456,7 @@ class ExpressionLoweringVisitor {
         for (auto postfix_operator : ast_postfix_type.postfix_type_operators) {
             boost::apply_visitor(
                 overloaded{[&](ast::Operator ast_star) {
+                               // parser 处理了
                                PRAJNA_ASSERT(ast_star == ast::Operator("*"));
                                ir_type = ir::PointerType::create(ir_type);
                            },
@@ -412,6 +467,7 @@ class ExpressionLoweringVisitor {
                                auto symbol_const_int =
                                    ir_utility->symbol_table->get(ast_identifier);
                                auto ir_constant_int = symbolGet<ir::ConstantInt>(symbol_const_int);
+                               // parser 处理了
                                PRAJNA_ASSERT(ir_constant_int);
                                ir_type = ir::ArrayType::create(ir_type, ir_constant_int->value);
                            }},
@@ -429,6 +485,7 @@ class ExpressionLoweringVisitor {
             symbol = ir_utility->symbol_table;
         }
 
+        // 不应该存在
         PRAJNA_ASSERT(symbol.which() != 0);
 
         for (auto iter_ast_identifier = ast_identifiers_resolution.identifiers.begin();
@@ -441,14 +498,22 @@ class ExpressionLoweringVisitor {
                         return nullptr;
                     },
                     [&](std::shared_ptr<ir::Value> ir_value) -> Symbol {
-                        PRAJNA_TODO;
+                        logger->error("not a valid scope access", *iter_ast_identifier);
                         return nullptr;
                     },
                     [&](std::shared_ptr<ir::Type> ir_type) -> Symbol {
-                        PRAJNA_ASSERT(!iter_ast_identifier->template_arguments, "ERROR");
-                        auto ir_static_fun =
-                            ir_type->static_functions[iter_ast_identifier->identifier];
-                        PRAJNA_ASSERT(ir_static_fun, iter_ast_identifier->identifier);
+                        auto static_function_identifier = iter_ast_identifier->identifier;
+                        auto ir_static_fun = ir_type->static_functions[static_function_identifier];
+                        if (ir_static_fun == nullptr) {
+                            logger->error(fmt::format("the static function {} is not exit",
+                                                      static_function_identifier),
+                                          static_function_identifier);
+                        }
+
+                        if (iter_ast_identifier->template_arguments) {
+                            logger->error("the template arguments is invalid",
+                                          *iter_ast_identifier);
+                        }
                         return ir_static_fun;
                     },
                     [&](std::shared_ptr<TemplateStruct> template_strcut) -> Symbol {
@@ -457,18 +522,25 @@ class ExpressionLoweringVisitor {
                     },
                     [&](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
                         auto symbol = symbol_table->get(iter_ast_identifier->identifier);
+                        if (symbol.which() == 0) {
+                            logger->error("the symbol is not found",
+                                          iter_ast_identifier->identifier);
+                        }
 
                         if (!iter_ast_identifier->template_arguments) {
                             return symbol;
                         } else {
                             auto template_struct = symbolGet<TemplateStruct>(symbol);
-                            PRAJNA_ASSERT(template_struct);
+                            if (template_struct == nullptr) {
+                                logger->error(
+                                    "it's not a template struct but with template arguments",
+                                    *iter_ast_identifier);
+                            }
                             std::list<Symbol> symbol_template_arguments;
-                            PRAJNA_ASSERT(iter_ast_identifier->template_arguments);
                             for (auto ast_template_argument :
                                  *iter_ast_identifier->template_arguments) {
                                 auto symbol_template_argument = boost::apply_visitor(
-                                    overloaded{[&](boost::blank) -> Symbol {
+                                    overloaded{[&](ast::Blank) -> Symbol {
                                                    PRAJNA_UNREACHABLE;
                                                    return nullptr;
                                                },
@@ -489,20 +561,21 @@ class ExpressionLoweringVisitor {
                                     ast_template_argument);
                                 symbol_template_arguments.push_back(symbol_template_argument);
                             }
+                            if (template_struct->template_parameter_identifier_list.size() !=
+                                symbol_template_arguments.size()) {
+                                logger->error("the template arguments size are not matched",
+                                              *iter_ast_identifier->template_arguments);
+                            }
                             auto ir_template_type = template_struct->getStructInstance(
                                 symbol_template_arguments, ir_utility->module);
+                            // 错误应该在之前特化的时候就被拦截, 不会到达这里, 故断言
                             PRAJNA_ASSERT(ir_template_type);
                             return ir_template_type;
                         }
                     }},
                 symbol);
 
-            if (symbol.which() == 0) {
-                auto identifier = iter_ast_identifier->identifier;
-                this->logger->log(LogLevel::error, {{CH, fmt::format("{} not found", identifier)}},
-                                  identifier.position);
-                PRAJNA_TODO;
-            }
+            PRAJNA_ASSERT(symbol.which() != 0);
         }
 
         return symbol;
@@ -512,19 +585,25 @@ class ExpressionLoweringVisitor {
         auto symbol = this->applyIdentifiersResolution(ast_identifiers_resolution);
         PRAJNA_ASSERT(symbol.which() != 0);
         return boost::apply_visitor(
-            overloaded{[](std::shared_ptr<ir::Value> ir_value) -> std::shared_ptr<ir::Value> {
-                           return ir_value;
-                       },
-                       [](std::shared_ptr<ir::Type> ir_type) -> std::shared_ptr<ir::Value> {
-                           PRAJNA_ASSERT(ir_type->constructor);
-                           return ir_type->constructor;
-                       },
-                       [](std::shared_ptr<ir::ConstantInt> ir_constant_int)
-                           -> std::shared_ptr<ir::Value> { return ir_constant_int; },
-                       [](auto x) {
-                           PRAJNA_TODO;
-                           return nullptr;
-                       }},
+            overloaded{
+                [](std::shared_ptr<ir::Value> ir_value) -> std::shared_ptr<ir::Value> {
+                    return ir_value;
+                },
+                [=](std::shared_ptr<ir::Type> ir_type) -> std::shared_ptr<ir::Value> {
+                    if (ir_type->constructor == nullptr) {
+                        logger->error(fmt::format("{} has no constructor", ir_type->fullname),
+                                      ast_identifiers_resolution);
+                    }
+                    return ir_type->constructor;
+                },
+                [](std::shared_ptr<ir::ConstantInt> ir_constant_int) -> std::shared_ptr<ir::Value> {
+                    return ir_constant_int;
+                },
+                [=](auto x) {
+                    logger->error(fmt::format("use invalid symbol as a value"),
+                                  ast_identifiers_resolution);
+                    return nullptr;
+                }},
             symbol);
     }
 
@@ -539,6 +618,9 @@ class ExpressionLoweringVisitor {
                 this->ir_utility->create<ir::ConstantInt>(ir::IntType::create(64, true), i);
             auto ir_index_array = this->ir_utility->create<ir::IndexArray>(ir_array, ir_idx);
             auto ir_value = this->applyOperand(ast_array.values[i]);
+            if (ir_value->type != ir_value_type) {
+                logger->error("the array element type are not the same", ast_array.values[i]);
+            }
             this->ir_utility->create<ir::WriteVariableLiked>(ir_value, ir_index_array);
         }
 
@@ -546,20 +628,47 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::KernelFunctionCall ast_kernel_function_call) {
-        auto ir_kernel_function = (*this)(ast_kernel_function_call.kernel_function);
+        auto ir_function = (*this)(ast_kernel_function_call.kernel_function);
         if (ast_kernel_function_call.operation) {
-            if (auto ir_function_type = ir_kernel_function->getFunctionType()) {
-                auto ir_grid_dim = (*this)(ast_kernel_function_call.operation->grid_dim);
-                auto ir_block_dim = (*this)(ast_kernel_function_call.operation->block_dim);
-                auto ir_arguments = cast<ir::ValueCollection>(
-                    (*this)(ast_kernel_function_call.operation->arguments));
-                return this->ir_utility->create<ir::KernelFunctionCall>(
-                    ir_kernel_function, ir_grid_dim, ir_block_dim, *ir_arguments);
-            } else {
-                PRAJNA_TODO;
+            // TODO 核函数必须有判断@kernel
+            auto ir_function_type = ir_function->getFunctionType();
+            if (ir_function_type == nullptr) {
+                logger->error("not callable", ast_kernel_function_call.kernel_function);
             }
+            auto ir_grid_dim = (*this)(ast_kernel_function_call.operation->grid_dim);
+            auto ir_block_dim = (*this)(ast_kernel_function_call.operation->block_dim);
+            auto ir_arguments =
+                *cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
+            // TODO arguments
+            auto ir_dim3_type = ir::ArrayType::create(ir::IntType::create(64, true), 3);
+            if (ir_grid_dim->type != ir_dim3_type) {
+                logger->error("the grid dim type must be i64[3]",
+                              ast_kernel_function_call.operation->grid_dim);
+            }
+            if (ir_block_dim->type != ir_dim3_type) {
+                logger->error("the block dim type must be i64[3]",
+                              ast_kernel_function_call.operation->block_dim);
+            }
+
+            if (ir_arguments.size() != ir_function_type->argument_types.size()) {
+                logger->error(
+                    fmt::format(
+                        "the arguments size is not matched, require {} argument, but give {}",
+                        ir_function_type->argument_types.size(), ir_arguments.size()),
+                    ast_kernel_function_call.operation->arguments);
+            }
+            for (size_t i = 0; i < ir_arguments.size(); ++i) {
+                if (ir_arguments[i]->type != ir_function_type->argument_types[i]) {
+                    logger->error("the argument type is not matched",
+                                  ast_kernel_function_call.operation->arguments[i]);
+                }
+            }
+
+            return this->ir_utility->create<ir::KernelFunctionCall>(ir_function, ir_grid_dim,
+                                                                    ir_block_dim, ir_arguments);
+
         } else {
-            return ir_kernel_function;
+            return ir_function;
         }
 
         PRAJNA_UNREACHABLE;
@@ -581,34 +690,28 @@ class ExpressionLoweringVisitor {
         std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
         // 会把binary operator转换为成员函数的调用
         auto ir_variable_liked = ir_utility->variableLikedNormalize(ir_lhs);
-        auto member_function_name = ast_binary_operation.operator_.string_token;
-        auto ir_function = ir_variable_liked->type->member_functions[member_function_name];
-        if (!ir_function) {
-            logger->log(LogLevel::error, {{CH, fmt::format("{}函数不存在", member_function_name)}},
-                        ast_binary_operation.operator_.position);
+        auto binary_operator_name = ast_binary_operation.operator_.string_token;
+        auto ir_function = ir_variable_liked->type->binary_functions[binary_operator_name];
+        if (not ir_function) {
+            logger->error(
+                fmt::format("{} operator not found", ast_binary_operation.operator_.string_token),
+                ast_binary_operation.operator_);
         }
         auto ir_this_pointer = ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         std::vector<std::shared_ptr<ir::Value>> ir_arguemnts(2);
         ir_arguemnts[0] = ir_this_pointer;
         ir_arguemnts[1] = this->applyOperand(ast_binary_operation.operand);
+        if (ir_arguemnts[1]->type != ir_function->function_type->argument_types[1]) {
+            logger->error(
+                fmt::format("the type {} is not matched", ir_arguemnts[1]->type->fullname),
+                ast_binary_operation.operand);
+        }
         return ir_utility->create<ir::Call>(ir_function, ir_arguemnts);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::SizeOf ast_sizeof) {
         auto ir_type = this->applyType(ast_sizeof.type);
-        PRAJNA_ASSERT(ir_type);
         return ir_utility->create<ir::ConstantInt>(ir::IntType::create(64, true), ir_type->bytes);
-    }
-
-    bool isArgumentMatched(std::shared_ptr<ir::Value> argument0,
-                           std::shared_ptr<ir::Value> argument1) {
-        if (argument0->type == argument1->type) {
-            return true;
-        }
-
-        // TODO 需要兼容位数不定的浮点数 整数等
-
-        return false;
     }
 
    private:

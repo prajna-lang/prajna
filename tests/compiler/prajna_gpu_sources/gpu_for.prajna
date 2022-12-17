@@ -1,0 +1,24 @@
+
+
+@test
+func testMain(){
+    gpu::init();
+
+    var shape = [1000];
+    var gpu_tensor = gpu::Tensor<i64, 1>::create(shape);
+
+    var b = 4;
+
+    var a = 0;
+
+    @gpu
+    for i in a to shape[0]{
+        gpu_tensor.data[i] = i;
+    }
+
+    var host_tensor =  gpu_tensor.toHost();
+
+    print("value: ");
+    host_tensor.data[9999].tostr().print();
+    "\n".print();
+}

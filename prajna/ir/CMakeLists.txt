@@ -1,5 +1,5 @@
 add_library(prajna_ir
-    context.cpp
+    global_context.cpp
 )
 
 target_link_libraries(prajna_ir

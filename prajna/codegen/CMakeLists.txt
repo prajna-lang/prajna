@@ -9,7 +9,7 @@ target_link_libraries(prajna_codegen
     PRIVATE LLVMCodeGen
     PRIVATE LLVMAnalysis
     PRIVATE LLVMTarget
-    PRIVATE LLVMSupport
+    PUBLIC LLVMSupport # 外部会用到, 后面有时间在处理, 应该需要-DLLVM_ENABLE_ABI_BREAKING_CHECKS=OFF才可以关闭
     PRIVATE LLVMX86Desc
     PRIVATE LLVMX86Info
     PRIVATE LLVMX86CodeGen

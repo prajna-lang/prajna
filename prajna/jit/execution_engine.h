@@ -1,8 +1,10 @@
 
 #pragma once
 
+#include <memory>
+
+#include "llvm/ExecutionEngine/JITLink/JITLinkMemoryManager.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
-#include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 
 namespace prajna::ir {
 class Module;

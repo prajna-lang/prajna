@@ -31,7 +31,7 @@ struct CodeLexer : lex::lexer<Lexer> {
 
     lex::token_def<ast::Operator> shift_left, shift_right;
 
-    lex::token_def<ast::AstBase> assign;
+    lex::token_def<ast::SourceLocation> assign;
 
     lex::token_def<ast::Operator> l_bracket;    // left bracket
     lex::token_def<lex::omit> r_bracket;        // right bracket
@@ -49,7 +49,6 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<lex::omit> at;     // @
 
     lex::token_def<lex::omit> func;
-    lex::token_def<lex::omit> operator_;
     lex::token_def<lex::omit> struct_;
     lex::token_def<lex::omit> implement;
     lex::token_def<lex::omit> interface;
@@ -60,8 +59,8 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<lex::omit> if_, else_, while_, for_, in, to;
 
     lex::token_def<lex::omit> return_;
-    lex::token_def<lex::omit> break_;
-    lex::token_def<lex::omit> continue_;
+    lex::token_def<ast::Break> break_;
+    lex::token_def<ast::Continue> continue_;
 
     lex::token_def<lex::omit> var;
     lex::token_def<ast::Identifier> this_;

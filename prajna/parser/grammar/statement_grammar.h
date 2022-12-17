@@ -11,6 +11,7 @@
 namespace prajna::parser::grammar {
 
 namespace qi = boost::spirit::qi;
+namespace lex = boost::spirit::lex;
 namespace ascii = boost::spirit::ascii;
 
 template <typename Iterator, typename Lexer>
@@ -25,20 +26,22 @@ struct StatementGrammer
     ExpressionGrammer<Iterator, Lexer> expr;
 
     __attribute__((no_sanitize("address")))
-    StatementGrammer(const Lexer& tok, issue_handler<base_iterator_type, Iterator>& eh);
+    StatementGrammer(const Lexer &tok, ErrorHandler<Iterator> error_handler,
+                     SuccessHandler<Iterator> success_handler);
 
     template <typename _T>
     using rule = qi::rule<Iterator, _T(), skipper_type>;
 
     rule<ast::PostfixType> type;
     rule<ast::Identifier> identifier;
-    rule<ast::IdentifiersResolution> identifiers_resolution;
+    rule<ast::IdentifiersResolution> identifier_path;
     rule<ast::Import> import;
     rule<ast::Export> export_;
-    rule<ast::StringLiteral> string;
     rule<ast::Statements> statements;
     rule<ast::Block> block;
     rule<ast::Statement> statement;
+    rule<ast::Statement> single_statement;
+    rule<ast::Blank> semicolon_statement;
     rule<ast::Annotation> annotation;
     rule<ast::Annotations> annotations;
     rule<ast::VariableDeclaration> variable_declaration;
@@ -61,11 +64,8 @@ struct StatementGrammer
 
     rule<ast::Parameter> parameter;
     rule<ast::Parameters> parameters;
+    rule<boost::optional<ast::Block>> function_implement;
     rule<ast::FunctionHeader> function_header;
-
-    rule<ast::Identifier> binary_operator;
-    rule<ast::Identifier> unary_operator;
-    rule<ast::FunctionHeader> operator_header;
     rule<ast::Function> function;
 };
 

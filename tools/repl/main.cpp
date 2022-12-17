@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
         std::getline(std::cin, code_line);
         if (code_line.back() != ';' || code_line.back() != '}') {
             code_line.push_back(';');
+            code_line.push_back('\n');
         }
         compiler->compileCommandLine(code_line);
     }

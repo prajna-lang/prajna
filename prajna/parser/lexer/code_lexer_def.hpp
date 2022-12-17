@@ -4,6 +4,12 @@ namespace prajna::parser {
 
 template <typename Lexer>
 CodeLexer<Lexer>::CodeLexer() {
+    // newline = "[\\r\\n]";
+    space = "\\s";
+    c_comment = "\\/\\*[^*]*\\*+([^/*][^*]*\\*+)*\\/";
+    line_comment = "\\/\\/[^\\n]*\\n";
+    this->self("WS") = space | c_comment | line_comment;
+
     // 需要在前面否在会干扰其他一个字符的运算符
     shift_left = "<<";
     shift_right = ">>";
@@ -25,9 +31,6 @@ CodeLexer<Lexer>::CodeLexer() {
     left_angle_brackets = "<<<";
     right_angle_brackets = ">>>";
     this->self += left_angle_brackets | right_angle_brackets;
-
-    backslash = "\\\\";
-    this->self += backslash;
 
     and_ = "&|and";
     or_ = "\\||or";
@@ -66,7 +69,6 @@ CodeLexer<Lexer>::CodeLexer() {
     this->self += at;
 
     func = "func";
-    operator_ = "operator";
     struct_ = "struct";
     implement = "implement";
     interface = "interface";
@@ -74,8 +76,7 @@ CodeLexer<Lexer>::CodeLexer() {
     import = "import";
     export_ = "export";
     as = "as";
-    this->self +=
-        func | operator_ | struct_ | implement | interface | template_ | import | as | export_;
+    this->self += func | struct_ | implement | interface | template_ | import | as | export_;
 
     if_ = "if";
     else_ = "else";
@@ -86,8 +87,7 @@ CodeLexer<Lexer>::CodeLexer() {
     return_ = "return";
     break_ = "break";
     continue_ = "continue";
-    this->self +=
-        if_ | else_ | for_ | in | to | while_ | return_ | break_ | continue_;
+    this->self += if_ | else_ | for_ | in | to | while_ | return_ | break_ | continue_;
 
     var = "var";
     this_ = "this";
@@ -114,13 +114,6 @@ CodeLexer<Lexer>::CodeLexer() {
 
     identifier = "[a-zA-Z_][a-zA-Z0-9_]*";
     this->self += identifier;
-
-    newline = "[\\n]";
-    space = " ";
-    c_comment = "\\/\\*[^*]*\\*+([^/*][^*]*\\*+)*\\/";
-    line_comment = "\\/\\/[^\\n]*\\n";
-
-    this->self("WS") = space | c_comment | line_comment | newline;
 }
 
 }  // namespace prajna::parser

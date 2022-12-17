@@ -7,6 +7,7 @@
 #include "prajna/logger.hpp"
 #include "prajna/lowering/statement_lowering_visitor.hpp"
 #include "prajna/parser/parse.h"
+#include "prajna/transform/extract_gpu_grid_pass.hpp"
 #include "prajna/transform/initializer_and_copy_destroy_callback.hpp"
 #include "prajna/transform/transform_pass.hpp"
 #include "prajna/transform/utility.hpp"
@@ -25,8 +26,6 @@ std::shared_ptr<ir::Module> flatternBlock(std::shared_ptr<ir::Module> ir_module)
 
 std::shared_ptr<ir::Module> convertVariableToPointer(std::shared_ptr<ir::Module> ir_module);
 
-std::shared_ptr<ir::Module> extractGpuGrid(std::shared_ptr<ir::Module> ir_module);
-
 std::shared_ptr<ir::Module> makeCompatiableWithLlvm(std::shared_ptr<ir::Module> ir_module);
 
 std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module);
@@ -35,14 +34,14 @@ std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module)
 inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
     std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
-        auto ir_properties = utility::getValuesInFunction<ir::Property>(ir_function);
-        for (auto ir_property : ir_properties) {
-            auto ir_block = ir_property->parent_block;
+        auto ir_access_properties = utility::getValuesInFunction<ir::AccessProperty>(ir_function);
+        for (auto ir_access_property : ir_access_properties) {
+            auto ir_block = ir_access_property->parent_block;
             utility::IrBuilder ir_builder;
-            ir_builder.ir_block = ir_block;
-            ir_builder.iter = std::find(RANGE(ir_block->values), ir_property);
+            ir_builder.block = ir_block;
+            ir_builder.iter = std::find(RANGE(ir_block->values), ir_access_property);
 
-            auto instructions_with_index_set_copy = ir_property->instruction_with_index_list;
+            auto instructions_with_index_set_copy = ir_access_property->instruction_with_index_list;
             PRAJNA_ASSERT(instructions_with_index_set_copy.size() <= 1);
             if (instructions_with_index_set_copy.size() == 1) {
                 auto ir_inst = instructions_with_index_set_copy.begin()->instruction;
@@ -52,29 +51,29 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
 
                 if (is<ir::WriteProperty>(ir_inst) && op_idx == 1) {
                     auto ir_write_property = cast<ir::WriteProperty>(ir_inst);
-                    auto ir_arguments = ir_property->arguments();
-                    ir_arguments.insert(ir_arguments.begin(), ir_property->thisPointer());
+                    auto ir_arguments = ir_access_property->arguments();
+                    ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
                     ir_arguments.push_back(ir_write_property->value());
-                    auto ir_setter_call =
-                        ir_builder.create<ir::Call>(ir_property->setterFunction(), ir_arguments);
+                    auto ir_setter_call = ir_builder.create<ir::Call>(
+                        ir_access_property->property->setter_function, ir_arguments);
                     utility::removeFromParent(ir_write_property);
                     ir_write_property->finalize();
                 } else {
-                    auto ir_arguments = ir_property->arguments();
-                    ir_arguments.insert(ir_arguments.begin(), ir_property->thisPointer());
-                    auto ir_getter_call =
-                        ir_builder.create<ir::Call>(ir_property->getterFunction(), ir_arguments);
+                    auto ir_arguments = ir_access_property->arguments();
+                    ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
+                    auto ir_getter_call = ir_builder.create<ir::Call>(
+                        ir_access_property->property->getter_function, ir_arguments);
                     ir_inst->operand(ir_getter_call, op_idx);
                 }
             } else {
-                auto ir_arguments = ir_property->arguments();
-                ir_arguments.insert(ir_arguments.begin(), ir_property->thisPointer());
-                auto ir_getter_call =
-                    ir_builder.create<ir::Call>(ir_property->getterFunction(), ir_arguments);
+                auto ir_arguments = ir_access_property->arguments();
+                ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
+                auto ir_getter_call = ir_builder.create<ir::Call>(
+                    ir_access_property->property->getter_function, ir_arguments);
             }
 
-            utility::removeFromParent(ir_property);
-            ir_property->finalize();
+            utility::removeFromParent(ir_access_property);
+            ir_access_property->finalize();
         }
     }
     return ir_module;
@@ -93,7 +92,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             auto ir_block = ir_kernel_function_call->parent_block;
 
             utility::IrBuilder ir_builder;
-            ir_builder.ir_block = ir_block;
+            ir_builder.block = ir_block;
             ir_builder.iter = std::find(RANGE(ir_block->values), ir_kernel_function_call);
 
             // 构建::cuda::launchKernel的逻辑
@@ -112,10 +111,11 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
                 auto ir_array_index_write = ir_builder.create<ir::WriteVariableLiked>(
                     ir_kernel_argument_address_i8ptr, ir_array_index);
             }
-            // @note 确保::cuda::launchKernel
-            // @todo 后面需要修复
-            auto ir_launch_function =
-                lowering::symbolGet<ir::Value>(ir_module->symbol_table->get("launchKernel"));
+
+            auto ir_launch_function = lowering::symbolGet<ir::Value>(
+                lowering::symbolGet<lowering::SymbolTable>(
+                    ir_module->symbol_table->rootSymbolTable()->get("gpu"))
+                    ->get("launchKernel"));
             PRAJNA_ASSERT(ir_launch_function);
             std::vector<std::shared_ptr<ir::Value>> ir_arguments(4);
             ir_arguments[0] = ir_builder.create<ir::BitCast>(
@@ -190,6 +190,8 @@ inline sp<ir::Module> convertGlobalVariableToPointer(sp<ir::Module> ir_module) {
         ir_module->global_allocas.push_back(ir_global_alloca);
     }
 
+    ir_module->global_variables.clear();
+
     for (auto ir_function : ir_module->functions) {
         auto ir_instructions = utility::getValuesInFunction<ir::Instruction>(ir_function);
         for (auto ir_instruction : ir_instructions) {
@@ -257,15 +259,14 @@ inline std::shared_ptr<ir::Module> cloneExternalNvptxValue(std::shared_ptr<ir::M
     auto ir_cloner = std::make_shared<ir::Cloner>();
     std::transform(RANGE(ir_external_functions), ir_external_functions.begin(),
                    [=](std::shared_ptr<ir::Function> ir_function) {
-                       auto ir_new = ir_function->clone(ir_cloner);
-                       ir_cloner->value_dict[ir_function] = ir_new;
-                       return cast<ir::Function>(ir_new);
+                       auto ir_new_function = cast<ir::Function>(ir_function->clone(ir_cloner));
+                       ir_new_function->parent_module = ir_nvptx_module;
+                       return ir_new_function;
                    });
 
-    for (auto ir_external_function : ir_external_functions) {
-        ir_external_function->parent_module = ir_nvptx_module;
-        ir_nvptx_module->functions.push_back(ir_external_function);
-    }
+    auto ir_all_functions = ir_external_functions;
+    ir_all_functions.merge(ir_nvptx_module->functions);
+    ir_nvptx_module->functions = ir_all_functions;
 
     return ir_module;
 }
@@ -317,9 +318,9 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     ir_module = insertInitializeAndCopyAndDestroyCallback(ir_module);
     ir_module = flatternBlock(ir_module);
     ir_module = removeValuesAfterReturn(ir_module);
+    ir_module = extractGpuFor(ir_module);
     ir_module = convertKernelFunctionCallToKernelLaunch(ir_module);
     ir_module = convertKernelFunctionOperandToAddress(ir_module);
-    // ir_module = extractGpuGrid(ir_module);
     ir_module = convertGlobalVariableToPointer(ir_module);
     ir_module = convertVariableToPointer(ir_module);
     ir_module = sperateModule(ir_module);

@@ -11,22 +11,30 @@ std::shared_ptr<ir::Module> flatternBlock(std::shared_ptr<ir::Module> ir_module)
     for (auto ir_function : ir_module->functions) {
         flattern_block_pass.runOnFunction(ir_function);
     }
+
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+
+        flatternBlock(ir_sub_module);
+    }
+
     return ir_module;
 }
 
 std::shared_ptr<ir::Module> convertVariableToPointer(std::shared_ptr<ir::Module> ir_module) {
+    PRAJNA_ASSERT(ir_module);
+
     ConvertVariableToPointerPass var_to_pointer_pass;
     for (auto ir_function : ir_module->functions) {
         var_to_pointer_pass.runOnFunction(ir_function);
     }
-    return ir_module;
-}
 
-std::shared_ptr<ir::Module> extractGpuGrid(std::shared_ptr<ir::Module> ir_module) {
-    ExtractGpuGridPass extract_gpu_grid_pass;
-    for (auto ir_function : ir_module->functions) {
-        extract_gpu_grid_pass.runOnFunction(ir_function);
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+
+        convertVariableToPointer(ir_sub_module);
     }
+
     return ir_module;
 }
 
@@ -43,7 +51,7 @@ std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module)
          iter_function != ir_module->functions.end();) {
         auto ir_function = *iter_function;
         if (std::count(RANGE(ir_function->function_type->annotations["target"]), "nvptx")) {
-            auto ir_nvptx_module = ir_module->getOrCreateTargetModule(ir::Target::nvptx);
+            auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
             ir_function->parent_module = ir_nvptx_module;
             ir_nvptx_module->functions.push_back(ir_function);
             iter_function = ir_module->functions.erase(iter_function);

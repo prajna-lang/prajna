@@ -1,3 +1,5 @@
+#pragma once
+
 #include <list>
 #include <map>
 #include <set>
@@ -113,7 +115,7 @@ class FlatternBlockPass : public FunctionPass {
                 }
 
                 auto ir_builder = std::make_shared<utility::IrBuilder>();
-                ir_builder->ir_block = ir_block;
+                ir_builder->block = ir_block;
                 ir_builder->iter = iter;
 
                 auto ir_write_first =
@@ -126,13 +128,13 @@ class FlatternBlockPass : public FunctionPass {
                 ir_for->loopBlock()->pushFront(ir_label_loop);
                 // insertCallMemmberFunction会插入ir_condition
                 auto ir_condition =
-                    ir_builder->callMemberFunction(ir_for->index(), "<", {ir_for->last()});
+                    ir_builder->callBinaryOeprator(ir_for->index(), "<", {ir_for->last()});
                 auto ir_label_after_loop = ir::Label::create();
                 auto ir_condition_branch = ir_builder->create<ir::ConditionBranch>(
                     ir_condition, ir_label_loop, ir_label_after_loop);
 
                 std::string code = "i = i + 1;";
-                auto logger = Logger::create(code, CH);
+                auto logger = Logger::create(code);
                 auto ast = prajna::parser::parse(code, "//None", logger);
                 auto symbol_table = ir_block->getParentFunction()->parent_module->symbol_table;
                 auto statement_lowering_visitor =
@@ -285,7 +287,6 @@ class ConvertVariableToPointerPass : public FunctionPass {
                 ir_inst->operand(ir_deference_pointer, op_idx);
             }
 
-            // 全局变量会在Module中存在, 不能finalize
             ir_variable->finalize();
         }
 
@@ -415,9 +416,9 @@ class ConvertVariableToPointerPass : public FunctionPass {
             auto iter_deference_pointer =
                 ir_deference_pointer->parent_block->find(ir_deference_pointer);
             auto instructions_with_index_copy = ir_deference_pointer->instruction_with_index_list;
-            for (auto instruction_with_index_list : instructions_with_index_copy) {
-                auto ir_inst = instruction_with_index_list.instruction;
-                size_t op_idx = instruction_with_index_list.operand_index;
+            for (auto instruction_with_index : instructions_with_index_copy) {
+                auto ir_inst = instruction_with_index.instruction;
+                size_t op_idx = instruction_with_index.operand_index;
 
                 if (is<ir::WriteVariableLiked>(ir_inst) && op_idx == 1) {
                     auto ir_write_variable_liked = cast<ir::WriteVariableLiked>(ir_inst);

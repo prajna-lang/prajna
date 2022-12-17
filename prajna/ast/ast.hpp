@@ -16,14 +16,17 @@
 namespace prajna::ast {
 
 struct SourcePosition {
-    int line;
-    int column;
+    int line = -1;
+    int column = -1;
     std::string file;
 };
 
-struct AstBase {
-    SourcePosition position;
+struct SourceLocation {
+    SourcePosition first_position;
+    SourcePosition last_position;
 };
+
+struct Blank : SourceLocation {};
 
 struct Unary;
 struct PostfixUnary;
@@ -36,9 +39,9 @@ struct Array;
 /// @note  operator const char*() const 函数在boost::spirit的debug node的模式下是需要的,
 /// 但用处不大故直接删除了
 
-struct Null : AstBase {};
+struct Null : SourceLocation {};
 
-struct Operator : AstBase {
+struct Operator : SourceLocation {
     Operator() = default;
 
     explicit Operator(const std::string& chars_) : string_token(chars_) {}
@@ -54,14 +57,19 @@ inline bool operator!=(const Operator& lhs, const Operator& rhs) {
     return !(lhs.string_token == rhs.string_token);
 }
 
-struct Identifier : public std::string, public AstBase {
+struct Identifier : public std::string, public SourceLocation {
     Identifier() : std::string() {}
-    Identifier(const Identifier& rhs) : std::string(rhs) { position = rhs.position; }
-    Identifier(const std::string& s) : std::string(s) {}
+    Identifier(const Identifier& rhs) : std::string(rhs) {
+        first_position = rhs.first_position;
+        last_position = rhs.last_position;
+    }
+
+    explicit Identifier(const std::string& s) : std::string(s) {}
 
     Identifier& operator=(const Identifier& other) {
         std::string::operator=(other);
-        position = other.position;
+        first_position = other.first_position;
+        last_position = other.last_position;
         return *this;
     }
 
@@ -71,139 +79,134 @@ struct Identifier : public std::string, public AstBase {
     }
 };
 
-struct BoolLiteral : AstBase {
+struct BoolLiteral : SourceLocation {
     bool value;
 };
 
-struct IntLiteral : AstBase {
+struct IntLiteral : SourceLocation {
     int64_t value;
 
     // TODO 后期再做处理, 我们先不处理
     boost::multiprecision::cpp_int mp_int_value;
 };
 
-struct IntLiteralPostfix {
+struct IntLiteralPostfix : SourceLocation {
     IntLiteral int_literal;
     Identifier postfix;
 };
 
-struct FloatLiteral : AstBase {
+struct FloatLiteral : SourceLocation {
     double value;
 };
 
-struct FloatLiteralPostfix {
+struct FloatLiteralPostfix : SourceLocation {
     FloatLiteral float_literal;
     Identifier postfix;
 };
 
-struct CharLiteral : AstBase {
+struct CharLiteral : SourceLocation {
     char value;
 };
 
-struct StringLiteral : AstBase {
+struct StringLiteral : SourceLocation {
     std::string value;
 };
 
 struct Type;
 struct IdentifiersResolution;
 
-using TemplateArgument = boost::variant<boost::blank, boost::recursive_wrapper<Type>, IntLiteral>;
-using TemplateArguments = std::list<TemplateArgument>;
+using TemplateArgument = boost::variant<Blank, boost::recursive_wrapper<Type>, IntLiteral>;
+// using TemplateArguments = std::list<TemplateArgument>;
 
-struct IdentifierWithTemplateArguments {
+struct TemplateArguments : SourceLocation, std::list<TemplateArgument> {};
+
+struct IdentifierWithTemplateArguments : SourceLocation {
     Identifier identifier;
     // @note boost::optional是不可以省略的, 会有未知错误,
     // 可能和boost::recursive_wrapper混合使用有关, 目前就不省略了
     boost::optional<TemplateArguments> template_arguments;
 };
 
-struct IdentifiersResolution {
+struct IdentifiersResolution : SourceLocation {
     boost::optional<Operator> is_root;
     std::vector<IdentifierWithTemplateArguments> identifiers;
 };
 
-struct Import : AstBase {
-    IdentifiersResolution identifiers_resolution;
+struct Import : SourceLocation {
+    IdentifiersResolution identifier_path;
     boost::optional<Identifier> as;
 };
 
-struct Export : AstBase {
+struct Export : SourceLocation {
     Identifier identifier;
 };
 
 using PostfixTypeOperator = boost::variant<Operator, IntLiteral, Identifier>;
 
-struct Type {
+struct Type : SourceLocation {
     IdentifiersResolution base_type;
     std::vector<PostfixTypeOperator> postfix_type_operators;
 };
 
 using PostfixType = Type;
 
-struct SizeOf : AstBase {
+struct SizeOf : SourceLocation {
     Type type;
 };
 
-typedef boost::variant<boost::blank, Null, CharLiteral, StringLiteral, BoolLiteral, IntLiteral,
-                       FloatLiteral, Identifier, IdentifiersResolution, IntLiteralPostfix,
-                       FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
-                       boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
-                       boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Cast>,
-                       boost::recursive_wrapper<Array>, SizeOf,
-                       boost::recursive_wrapper<KernelFunctionCall>>
+typedef boost::variant<
+    Blank, Null, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral, Identifier,
+    IdentifiersResolution, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
+    boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
+    boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Cast>,
+    boost::recursive_wrapper<Array>, SizeOf, boost::recursive_wrapper<KernelFunctionCall>>
     Operand;
 
-struct Unary : AstBase {
+struct Unary : SourceLocation {
     Operator operator_;
     Operand operand;
 };
 
-struct PostfixUnary : AstBase {
+struct PostfixUnary : SourceLocation {
     Operand operand;
     std::vector<Operator> operators;
 };
 
-struct BinaryOperation : AstBase {
+struct BinaryOperation : SourceLocation {
     Operator operator_;
     Operand operand;
 };
 
-struct Expression : AstBase {
+struct Expression : SourceLocation {
     Operand first;
     std::vector<BinaryOperation> rest;
 };
 
-struct Cast : AstBase {
+struct Cast : SourceLocation {
     Type type;
     Expression value;
 };
 
-struct Expressions : AstBase, std::vector<Expression> {};
+struct Expressions : SourceLocation, std::vector<Expression> {};
 
-struct Array : AstBase {
+struct Array : SourceLocation {
     std::vector<Operand> values;
 };
 
-struct InitialValue {
-    AstBase assign_operator;
-    Expression value;
-};
-
-struct VariableDeclaration : AstBase {
+struct VariableDeclaration : SourceLocation {
     Identifier name;
     boost::optional<Type> type;
-    boost::optional<InitialValue> initialize;
+    boost::optional<Expression> initialize;
 };
 
-struct Assignment : AstBase {
+struct Assignment : SourceLocation {
     Expression left;
-    AstBase assign_operator;
     Expression right;
 };
 
-struct Break : AstBase {};
+struct Break : SourceLocation {};
 
-struct Continue : AstBase {};
+struct Continue : SourceLocation {};
 
 struct If;
 struct While;
@@ -220,20 +223,20 @@ struct Operator;
 struct Namespace;
 struct Block;
 
-struct require_statement : AstBase {
+struct require_statement : SourceLocation {
     StringLiteral path;
 };
 
-struct using_statement : AstBase {
+struct using_statement : SourceLocation {
     Operand object;
 };
 
-struct Annotation {
+struct Annotation : SourceLocation {
     std::string property;
-    std::vector<std::string> values;
+    std::vector<StringLiteral> values;
 };
 
-using Annotations = std::list<Annotation>;
+struct Annotations : SourceLocation, std::list<Annotation> {};
 
 template <typename _T>
 struct Annotated {
@@ -242,35 +245,33 @@ struct Annotated {
 };
 
 typedef boost::variant<
-    boost::recursive_wrapper<Block>, Import, Export, VariableDeclaration,
-    Assignment, Expression, boost::recursive_wrapper<If>,
-    boost::recursive_wrapper<While>, boost::recursive_wrapper<For>, Break,
-    Continue, boost::recursive_wrapper<Function>,
+    Blank, boost::recursive_wrapper<Block>, Import, Export, VariableDeclaration, Assignment,
+    Expression, boost::recursive_wrapper<If>, boost::recursive_wrapper<While>,
+    boost::recursive_wrapper<For>, Break, Continue, boost::recursive_wrapper<Function>,
     boost::recursive_wrapper<Return>, boost::recursive_wrapper<Struct>,
-    boost::recursive_wrapper<Interface>,
-    boost::recursive_wrapper<ImplementStructForInterface>,
+    boost::recursive_wrapper<Interface>, boost::recursive_wrapper<ImplementStructForInterface>,
     boost::recursive_wrapper<ImplementStruct>>
     Statement;
 
 // @note需要声明为class, 因为之前才能在其他模块使用前置声明.
-struct Statements : public std::list<Statement> {};
+struct Statements : SourceLocation, public std::list<Statement> {};
 
-struct Block : AstBase {
+struct Block : SourceLocation {
     Statements statements;
 };
 
-struct If : AstBase {
+struct If : SourceLocation {
     Expression condition;
     Block then;
     boost::optional<Block> else_;
 };
 
-struct While : AstBase {
+struct While : SourceLocation {
     Expression condition;
     Block body;
 };
 
-struct For : AstBase {
+struct For : SourceLocation {
     Annotations annotations;
     Identifier index;
     Expression first;
@@ -278,57 +279,57 @@ struct For : AstBase {
     Block body;
 };
 
-struct Return : AstBase {
+struct Return : SourceLocation {
     boost::optional<Expression> expr;
 };
 
-struct Parameter : AstBase {
+struct Parameter : SourceLocation {
     Identifier name;
     Type type;
 };
 
-using Parameters = std::vector<Parameter>;
+struct Parameters : SourceLocation, std::vector<Parameter> {};
 
-struct FunctionHeader : AstBase {
+struct FunctionHeader : SourceLocation {
     Annotations annotations;
     Identifier name;
     Parameters parameters;
     boost::optional<Type> return_type;
 };
 
-struct Function : AstBase {
+struct Function : SourceLocation {
     FunctionHeader declaration;
     boost::optional<Block> body;
 };
 
-struct Field : AstBase {
+struct Field : SourceLocation {
     Identifier name;
     Type type;
 };
 
 using TemplateParameter = Identifier;
-using TemplateParameters = std::list<TemplateParameter>;
+struct TemplateParameters : SourceLocation, std::list<TemplateParameter> {};
 
-struct Struct : AstBase {
+struct Struct : SourceLocation {
     Annotations annotations;
     Identifier name;
     TemplateParameters template_parameters;
     std::vector<Field> fields;
 };
 
-struct Interface : AstBase {
+struct Interface : SourceLocation {
     Identifier name;
     // 函数声明也采用Function, 但其没有实现
     std::vector<Function> function_declarations;
 };
 
-struct ImplementStructForInterface : AstBase {
+struct ImplementStructForInterface : SourceLocation {
     Type struct_;
     Type interface;
     std::vector<Function> functions;
 };
 
-struct ImplementStruct : AstBase {
+struct ImplementStruct : SourceLocation {
     IdentifiersResolution struct_;
     TemplateParameters template_paramters;
     std::vector<Function> functions;
@@ -340,7 +341,7 @@ struct KernelFunctionCallOperation {
     Expressions arguments;
 };
 
-struct KernelFunctionCall : AstBase {
+struct KernelFunctionCall : SourceLocation {
     Expression kernel_function;
     boost::optional<KernelFunctionCallOperation> operation;
 };
@@ -352,14 +353,12 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Cast, type, value)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Unary, operator_, operand)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixUnary, operand, operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::BinaryOperation, operator_, operand)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Assignment, left, assign_operator, right)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Assignment, left, right)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Expression, first, rest)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InitialValue, assign_operator, value)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::VariableDeclaration, name, type, initialize)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::If, condition, then, else_)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::While, condition, body)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::For, annotations, index, first, last,
-                          body)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::For, annotations, index, first, last, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Return, expr)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Field, name, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierWithTemplateArguments, identifier,
@@ -374,7 +373,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStructForInterface, interface, s
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStruct, struct_, template_paramters, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifiersResolution, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifiers_resolution, as)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifier_path, as)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Export, identifier)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IntLiteralPostfix, int_literal, postfix)

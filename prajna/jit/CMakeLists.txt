@@ -8,7 +8,7 @@ target_link_libraries(prajna_jit
     PRIVATE LLVMExecutionEngine
     PRIVATE LLVMIRReader
     PRIVATE LLVMJITLink
-    PRIVATE LLVMOrcJIT
+    PUBLIC LLVMOrcJIT
     PRIVATE LLVMMCJIT
     PRIVATE LLVMX86CodeGen
     PRIVATE LLVMX86AsmParser
@@ -18,6 +18,10 @@ target_link_libraries(prajna_jit
     PRIVATE LLVMSupport
     PRIVATE LLVMX86Desc
     PRIVATE LLVMX86Info
+    PRIVATE LLVMAArch64Info
+    PRIVATE LLVMAArch64CodeGen
+    PRIVATE LLVMAArch64AsmParser
+    PRIVATE LLVMAArch64Desc
     PRIVATE LLVMCore
 )
 

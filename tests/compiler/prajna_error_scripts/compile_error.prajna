@@ -1,0 +1,62 @@
+// postfix
+12345u24;
+12435dd;
+3.1415f31;
+3.1415tt;
+var a: i64 = 1024u32;
+// invalid symbol
+t;
+core::Tensor;
+// access filed
+var tmp_str = "Hi\n";
+tmp_str.+;
+tmp_str.data2;
+tmp_str[3];
+tmp_str(3);
+//
+&3;
+var p:int8*;
+var g = cast<f32>(p);
+var gg = cast<f32*>(3);
+
+//
+var s0 = 3;
+var t:s0;
+
+//
+// st<i8>;
+str::create2(10);
+Tensor<i64, 1>::create<i32>([10]);
+core::Tensor2;
+core::str<i64>;
+
+Tensor<i, 1>;
+// Tensor<i64, 3.13415>;
+Tensor<>;
+var s22 = 3034;
+s22::tmp();
+s22<<<tmp, tmp>>>(ttt);
+
+var bb0 = "Hi\n";
+bb0 - 2;
+bb0 + 3;
+
+var tt0:i32 = 1024;
+var tt1;
+
+for i in 3.14 to 10{}
+for i in 10 to 3.14{}
+// 4 = 6; 需要修复
+
+struct Tmp<t: template, t:template>{}
+
+Tensor<i64, 1, 2>::create([10]);
+
+func get(a: i64, b: f32){}
+get(1, 1);
+
+str::create(3.1341);
+
+var tt: Tensor<i64, 1>;
+tt.at(12.3);
+

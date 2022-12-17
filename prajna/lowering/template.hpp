@@ -117,6 +117,8 @@ class TemplateStruct : public Named {
         template_implements_processed;
     std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::StructType>>
         struct_type_instance_dict;
+
+    std::list<std::string> template_parameter_identifier_list;
 };
 
 }  // namespace prajna::lowering

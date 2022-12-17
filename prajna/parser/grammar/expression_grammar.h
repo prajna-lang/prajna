@@ -25,7 +25,8 @@ struct ExpressionGrammer
     typedef qi::in_state_skipper<typename Lexer::lexer_def> skipper_type;
 
     __attribute__((no_sanitize("address")))
-    ExpressionGrammer(const Lexer& tok, issue_handler<base_iterator_type, Iterator>& eh);
+    ExpressionGrammer(const Lexer& tok, ErrorHandler<Iterator> error_handler,
+                      SuccessHandler<Iterator> success_handler);
 
     template <typename _T>
     using rule = qi::rule<Iterator, _T(), skipper_type>;
@@ -37,12 +38,13 @@ struct ExpressionGrammer
     rule<ast::IntLiteralPostfix> int_literal_postfix;
     rule<ast::FloatLiteralPostfix> float_literal_postfix;
     rule<ast::StringLiteral> string_literal;
+    rule<ast::PostfixTypeOperator> type_array_postfix_operator;
     rule<ast::PostfixTypeOperator> type_postfix_operator;
     rule<ast::PostfixType> type;
     rule<ast::TemplateArgument> template_argument;
-    rule<ast::IdentifiersResolution> identifiers_resolution;
+    rule<ast::IdentifiersResolution> identifier_path;
     rule<ast::TemplateArguments> template_arguments;
-    rule<ast::IdentifierWithTemplateArguments> identifier_template;
+    rule<ast::IdentifierWithTemplateArguments> identifier_with_templates;
 
     rule<ast::Operator> logical_op;
     rule<ast::Operator> equality_op;
@@ -57,6 +59,7 @@ struct ExpressionGrammer
     rule<ast::Expression> multiplicative_expr;
     rule<ast::Operand> unary_expr;
     rule<ast::Array> array;
+    rule<ast::Expressions> arguments;
     rule<ast::BinaryOperation> member_access;
     rule<ast::BinaryOperation> call;
     rule<ast::BinaryOperation> index;

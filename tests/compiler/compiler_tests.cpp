@@ -26,9 +26,9 @@ struct PrintFileName {
     }
 };
 
-class CompilerCommandLineTests : public testing::TestWithParam<std::string> {};
+class CompilerScriptTests : public testing::TestWithParam<std::string> {};
 
-TEST_P(CompilerCommandLineTests, TestFromDirectory) {
+TEST_P(CompilerScriptTests, TestFromDirectory) {
     auto compiler = std::make_shared<compiler::Compiler>();
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
 
@@ -38,29 +38,55 @@ TEST_P(CompilerCommandLineTests, TestFromDirectory) {
     while (ifs.good()) {
         std::string code;
         std::getline(ifs, code);
+        // 修复//注释的问题
+        code.append("\n");
         compiler->compileCommandLine(code);
+        std::cout << std::endl;
     }
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    CompilerCommandLineTestsInstance, CompilerCommandLineTests,
-    testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_scripts")));
+    CompilerScriptTestsInstance, CompilerScriptTests,
+    testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_scripts")), PrintFileName());
 
 // 会遍历整个文件夹里的文件
 INSTANTIATE_TEST_SUITE_P(
     CompilerSourceTestsInstance, CompilerSourceTests,
     testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_sources")), PrintFileName());
 
+INSTANTIATE_TEST_SUITE_P(
+    CompilerErrorScriptTestsInstance, CompilerScriptTests,
+    testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_error_scripts")),
+    PrintFileName());
+
+// 会遍历整个文件夹里的文件
+INSTANTIATE_TEST_SUITE_P(
+    CompilerErrorSourceTestsInstance, CompilerSourceTests,
+    testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_error_sources")),
+    PrintFileName());
+
 #ifdef PRAJNA_WITH_GPU
 
 INSTANTIATE_TEST_SUITE_P(
-    CompilerCommandLineTestsGpuInstance, CompilerCommandLineTests,
-    testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_gpu_scripts")));
+    CompilerScriptTestsGpuInstance, CompilerScriptTests,
+    testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_gpu_scripts")),
+    PrintFileName());
 
 // 会遍历整个文件夹里的文件
 INSTANTIATE_TEST_SUITE_P(
     CompilerSourceTestsGpuInstance, CompilerSourceTests,
     testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_gpu_sources")),
+    PrintFileName());
+
+INSTANTIATE_TEST_SUITE_P(
+    CompilerErrorScriptTestsGpuInstance, CompilerScriptTests,
+    testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_error_gpu_scripts")),
+    PrintFileName());
+
+// 会遍历整个文件夹里的文件
+INSTANTIATE_TEST_SUITE_P(
+    CompilerErrorSourceTestsGpuInstance, CompilerSourceTests,
+    testing::ValuesIn(prajna::tests::getFiles("tests/compiler/prajna_error_gpu_sources")),
     PrintFileName());
 
 #endif

@@ -1,0 +1,33 @@
+
+// func test1(){
+//     var a: i64 = 1024u32;
+// }
+
+// struct Tmp2{}
+
+var a;
+
+implement Tmp2{
+    // @static
+    // func initialize(){}
+
+    // func copy()->i64{ return 0;}
+
+    func destroy(a:i64)
+}
+
+
+
+// implement core{
+
+// }
+
+// implement str<i: template>{}
+
+// import core::tt;
+
+// export tt;
+
+implement Tensor<T:template, RANK:template, G:template>{
+
+}

@@ -3,9 +3,7 @@
 #include "boost/spirit/include/qi.hpp"
 #include "prajna/ast/ast.hpp"
 
-namespace boost {
-namespace spirit {
-namespace traits {
+namespace boost::spirit::traits {
 
 namespace {
 
@@ -59,17 +57,27 @@ inline char get_escape_char(char c) {
 }
 
 template <typename Iterator>
-prajna::ast::SourcePosition get_source_position(const Iterator& first) {
-    auto pos = first.get_position();
+prajna::ast::SourcePosition get_source_position(const Iterator& iter) {
+    auto pos = iter.get_position();
     return prajna::ast::SourcePosition{pos.line, pos.column, pos.file};
 }
 
 }  // namespace
 
 template <typename Iterator>
-struct assign_to_attribute_from_iterators<prajna::ast::AstBase, Iterator> {
-    static void call(const Iterator& first, const Iterator& last, prajna::ast::AstBase& ast_base) {
-        ast_base.position = get_source_position(first);
+struct assign_to_attribute_from_iterators<prajna::ast::Blank, Iterator> {
+    static void call(const Iterator& first, const Iterator& last, prajna::ast::Blank& attr) {
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
+    }
+};
+
+template <typename Iterator>
+struct assign_to_attribute_from_iterators<prajna::ast::SourceLocation, Iterator> {
+    static void call(const Iterator& first, const Iterator& last,
+                     prajna::ast::SourceLocation& attr) {
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
     }
 };
 
@@ -79,22 +87,41 @@ struct assign_to_attribute_from_iterators<prajna::ast::Identifier, Iterator> {
         // attr = prajna::ast::Identifier(first, last);
         auto str = std::string(first, last);
         attr = prajna::ast::Identifier(str);
-        attr.position = get_source_position(first);
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
     }
 };
 
 template <typename Iterator>
 struct assign_to_attribute_from_iterators<prajna::ast::Operator, Iterator> {
     static void call(const Iterator& first, const Iterator& last, prajna::ast::Operator& attr) {
-        attr.position = get_source_position(first);
         attr.string_token = std::string(first, last);
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
+    }
+};
+
+template <typename Iterator>
+struct assign_to_attribute_from_iterators<prajna::ast::Break, Iterator> {
+    static void call(const Iterator& first, const Iterator& last, prajna::ast::Break& attr) {
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
+    }
+};
+
+template <typename Iterator>
+struct assign_to_attribute_from_iterators<prajna::ast::Continue, Iterator> {
+    static void call(const Iterator& first, const Iterator& last, prajna::ast::Continue& attr) {
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
     }
 };
 
 template <typename Iterator>
 struct assign_to_attribute_from_iterators<prajna::ast::CharLiteral, Iterator> {
     static void call(const Iterator& first, const Iterator& last, prajna::ast::CharLiteral& attr) {
-        attr.position = get_source_position(first);
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
 
         auto tmp = std::string(first, last);
         auto first1 = tmp.begin();
@@ -117,7 +144,8 @@ template <typename Iterator>
 struct assign_to_attribute_from_iterators<prajna::ast::StringLiteral, Iterator> {
     static void call(const Iterator& first, const Iterator& last,
                      prajna::ast::StringLiteral& attr) {
-        attr.position = get_source_position(first);
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
 
         auto tmp = std::string(first, last);
         for (auto it = tmp.begin() + 1; it != tmp.end() - 1; ++it) {
@@ -134,7 +162,8 @@ struct assign_to_attribute_from_iterators<prajna::ast::StringLiteral, Iterator> 
 template <typename Iterator>
 struct assign_to_attribute_from_iterators<prajna::ast::BoolLiteral, Iterator> {
     static void call(const Iterator& first, const Iterator& last, prajna::ast::BoolLiteral& attr) {
-        attr.position = get_source_position(first);
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
 
         auto tmp = std::string(first, last);
         if (tmp == "true") {
@@ -151,7 +180,8 @@ struct assign_to_attribute_from_iterators<prajna::ast::BoolLiteral, Iterator> {
 template <typename Iterator>
 struct assign_to_attribute_from_iterators<prajna::ast::IntLiteral, Iterator> {
     static void call(const Iterator& first, const Iterator& last, prajna::ast::IntLiteral& attr) {
-        attr.position = get_source_position(first);
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
 
         qi::parse(first, last, int_type(), attr.value);
         // qi::parse(first, last, int_type(), attr.mp_int_value);
@@ -161,7 +191,8 @@ struct assign_to_attribute_from_iterators<prajna::ast::IntLiteral, Iterator> {
 template <typename Iterator>
 struct assign_to_attribute_from_iterators<prajna::ast::FloatLiteral, Iterator> {
     static void call(const Iterator& first, const Iterator& last, prajna::ast::FloatLiteral& attr) {
-        attr.position = get_source_position(first);
+        attr.first_position = get_source_position(first);
+        attr.last_position = get_source_position(last);
 
         qi::parse(first, last, float_type(), attr.value);
     }
@@ -172,7 +203,8 @@ struct assign_to_container_from_value<prajna::ast::Identifier, prajna::ast::Stri
     static void call(prajna::ast::StringLiteral ast_string_literal,
                      prajna::ast::Identifier& ast_identifier) {
         ast_identifier = ast_string_literal.value;
-        ast_identifier.position = ast_string_literal.position;
+        ast_identifier.first_position = ast_string_literal.first_position;
+        ast_identifier.last_position = ast_string_literal.last_position;
     }
 };
 
@@ -201,6 +233,10 @@ struct assign_to_container_from_value<prajna::ast::Identifier, std::vector<prajn
     }
 };
 
-}  // namespace traits
-}  // namespace spirit
-}  // namespace boost
+// template <typename Attribute, typename Iterator, typename AttributeTypes, typename HasState,
+//           typename Idtype>
+// struct assign_to_attribute_from_value<
+//     prajna::ast::Blank, lex::lexertl::token<Iterator, AttributeTypes, HasState, Idtype>> {
+//     static void call(lex::lexertl::token<Iterator, AttributeTypes, HasState, Idtype> const& t,
+//                      prajna::ast::Blank& attr) {}  // namespace traits
+}  // namespace boost::spirit::traits

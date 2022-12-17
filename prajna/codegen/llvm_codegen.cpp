@@ -265,7 +265,7 @@ class LlvmCodegen {
             return;
         }
 
-        PRAJNA_TODO;
+        PRAJNA_ASSERT(false, ir_value->tag);
     }
 
     void emitConstant(std::shared_ptr<ir::Constant> ir_constant, ir::Target ir_target) {
@@ -445,11 +445,11 @@ class LlvmCodegen {
             };
 
             auto annotation_type = annotations_instruction[2];
-            auto iter_type = std::find_if(RANGE(ir::context.created_types),
+            auto iter_type = std::find_if(RANGE(ir::global_context.created_types),
                                           [&](std::shared_ptr<ir::Type> ir_type) {
                                               return ir_type->name == annotation_type;
                                           });
-            PRAJNA_ASSERT(iter_type != ir::context.created_types.end());
+            PRAJNA_ASSERT(iter_type != ir::global_context.created_types.end());
             auto ir_cast_type = *iter_type;
 
             PRAJNA_ASSERT(annotations_instruction.size() == 3);
@@ -628,15 +628,16 @@ class LlvmCodegen {
             return;
         }
 
-        PRAJNA_ASSERT(false, typeid(ir_instruction).name());
+        PRAJNA_ASSERT(false, ir_instruction->tag);
     }
 };
 
-std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module, ir::Target ir_target) {
+std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
+                                        ir::Target ir_target) {
     auto llvm_codegen = LlvmCodegen::create();
 
     // emit type
-    for (auto type : ir::context.created_types) {
+    for (auto type : ir::global_context.created_types) {
         llvm_codegen->emitType(type);
     }
 
@@ -650,9 +651,8 @@ std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module, i
     llvm::verifyModule(*ir_module->llvm_module, &llvm::dbgs());
 #endif
 
-    for (auto [ir_target, ir_sub_module]: ir_module->modules){
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (ir_sub_module == nullptr) continue;
-
         llvmCodegen(ir_sub_module, ir_target);
     }
 

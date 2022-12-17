@@ -12,9 +12,10 @@
 #include "boost/multiprecision/cpp_bin_float.hpp"
 #include "boost/multiprecision/cpp_int.hpp"
 #include "boost/noncopyable.hpp"
+#include "prajna/ast/ast.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/cloner.hpp"
-#include "prajna/ir/context.h"
+#include "prajna/ir/global_context.h"
 #include "prajna/ir/type.hpp"
 
 namespace llvm {
@@ -97,7 +98,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     Value(const Value& other) {
         this->type = other.type;
         this->annotations = other.annotations;
-        this->_tag = other._tag;
+        this->tag = other.tag;
 
         this->name = other.name;
         this->fullname = other.fullname;
@@ -111,7 +112,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     static std::shared_ptr<Value> create(std::shared_ptr<Type> ir_type) {
         std::shared_ptr<Value> self(new Value);
         self->type = ir_type;
-        self->_tag = "Value";
+        self->tag = "Value";
         return self;
     }
 
@@ -138,16 +139,14 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         return nullptr;
     }
 
+    std::shared_ptr<Block> getRootBlock();
+
     bool isFunction() { return getFunctionType() != nullptr; }
 
     virtual std::shared_ptr<Value> clone(std::shared_ptr<Cloner> cloner) {
         PRAJNA_UNIMPLEMENT;
         return nullptr;
     }
-
-   protected:
-    // 用于方便调试, 否则无法有效辨别他们
-    std::string _tag = "";
 
    public:
     std::shared_ptr<Type> type = nullptr;
@@ -158,8 +157,14 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     // 最后需要释放以解除智能指针的引用计数
     std::shared_ptr<Block> parent_block = nullptr;
     std::list<InstructionWithOperandIndex> instruction_with_index_list;
+
+    ast::SourceLocation source_location;
+
     // 用于llvm的codegen, 仅引用, 不管理内存
     llvm::Value* llvm_value = nullptr;
+
+    // 用于方便调试, 否则无法有效辨别他们
+    std::string tag = "";
 };
 
 class VoidValue : public Value {
@@ -170,7 +175,7 @@ class VoidValue : public Value {
     static std::shared_ptr<VoidValue> create() {
         std::shared_ptr<VoidValue> self(new VoidValue);
         self->type = VoidType::create();
-        self->_tag = "VoidValue";
+        self->tag = "VoidValue";
         return self;
     }
 
@@ -188,7 +193,7 @@ class Argument : public Value {
     static std::shared_ptr<Argument> create(std::shared_ptr<Type> ir_type) {
         std::shared_ptr<Argument> self(new Argument);
         self->type = ir_type;
-        self->_tag = "Argument";
+        self->tag = "Argument";
         return self;
     }
 
@@ -214,7 +219,7 @@ class ConstantBool : public Constant {
         std::shared_ptr<ConstantBool> self(new ConstantBool);
         self->type = BoolType::create();
         self->value = value;
-        self->_tag = "ConstantBool";
+        self->tag = "ConstantBool";
         return self;
     }
 
@@ -241,7 +246,7 @@ class ConstantInt : public ConstantRealNumber {
         std::shared_ptr<ConstantInt> self(new ConstantInt);
         self->type = type;
         self->value = value;
-        self->_tag = "ConstantInt";
+        self->tag = "ConstantInt";
         return self;
     }
 
@@ -263,7 +268,7 @@ class ConstantFloat : public Constant {
         std::shared_ptr<ConstantFloat> self(new ConstantFloat);
         self->type = type;
         self->value = value;
-        self->_tag = "ConstantFloat";
+        self->tag = "ConstantFloat";
         return self;
     }
 
@@ -285,7 +290,7 @@ class ConstantChar : public Constant {
         std::shared_ptr<ConstantChar> self(new ConstantChar);
         self->type = CharType::create();
         self->value = value;
-        self->_tag = "ConstantChar";
+        self->tag = "ConstantChar";
         return self;
     }
 
@@ -306,7 +311,7 @@ class ConstantNull : public Constant {
     static std::shared_ptr<ConstantNull> create() {
         std::shared_ptr<ConstantNull> self(new ConstantNull);
         self->type = PointerType::create(nullptr);
-        self->_tag = "ConstantNull";
+        self->tag = "ConstantNull";
         return self;
     }
 };
@@ -320,7 +325,7 @@ class ConstantArray : public Constant {
         std::shared_ptr<ArrayType> ir_array_type,
         std::vector<std::shared_ptr<Constant>> ir_init_constants) {
         std::shared_ptr<ConstantArray> self(new ConstantArray);
-        self->_tag = "ConstantArray";
+        self->tag = "ConstantArray";
         self->type = ir_array_type;
         self->initialize_constants = ir_init_constants;
         return self;
@@ -351,7 +356,7 @@ class ConstantStruct : public Constant {
         std::shared_ptr<ConstantStruct> self(new ConstantStruct);
         self->type = type;
         self->fileds = fields;
-        self->_tag = "ConstantStruct";
+        self->tag = "ConstantStruct";
         return self;
     };
 
@@ -375,7 +380,7 @@ class Block : public Value {
         std::shared_ptr<Block> self(new Block);
         auto p = self->shared_from_this();
         self->type = nullptr;
-        self->_tag = "Block";
+        self->tag = "Block";
         return self;
     }
 
@@ -463,7 +468,7 @@ class Function : public Value {
         self->function_type = function_type;
         // @warning 事实上llvm::Function是一个指针类型
         self->type = PointerType::create(function_type);
-        self->_tag = "Function";
+        self->tag = "Function";
         return self;
     }
 
@@ -474,14 +479,17 @@ class Function : public Value {
 
     std::shared_ptr<Value> clone(std::shared_ptr<Cloner> cloner) override {
         std::shared_ptr<Function> ir_new(new Function(*this));
-        ir_new->arguments.clear();
-        ir_new->blocks.clear();
 
+        ir_new->arguments.clear();
         for (size_t i = 0; i < arguments.size(); ++i) {
             auto ir_new_argument = arguments[i]->clone(cloner);
             cloner->value_dict[arguments[i]] = ir_new_argument;
             ir_new->arguments.push_back(ir_new_argument);
         }
+
+        // 需要再开头, 因为函数有可能存在递归
+        cloner->value_dict[shared_from_this()] = ir_new;
+        ir_new->blocks.clear();
         for (auto ir_block : blocks) {
             auto ir_new_block = cast<Block>(ir_block->clone(cloner));
             ir_new_block->parent_function = ir_new;
@@ -533,22 +541,22 @@ inline std::shared_ptr<Function> getPropertyGetter(std::shared_ptr<Type> ir_type
 }
 
 /// @brief 在lowering时需要用到的辅助IR, 并不应该在lowering后出现
-class MemberFunction : public Value {
+class MemberFunctionWithThisPointer : public Value {
    protected:
-    MemberFunction() = default;
+    MemberFunctionWithThisPointer() = default;
 
    public:
-    static std::shared_ptr<MemberFunction> create(std::shared_ptr<Value> ir_this_pointer,
-                                                  std::shared_ptr<Function> ir_global_function) {
-        std::shared_ptr<MemberFunction> self(new MemberFunction);
+    static std::shared_ptr<MemberFunctionWithThisPointer> create(
+        std::shared_ptr<Value> ir_this_pointer, std::shared_ptr<Function> ir_global_function) {
+        std::shared_ptr<MemberFunctionWithThisPointer> self(new MemberFunctionWithThisPointer);
         self->this_pointer = ir_this_pointer;
-        self->global_function = ir_global_function;
-        self->_tag = "MemberFunction";
+        self->function_prototype = ir_global_function;
+        self->tag = "MemberFunctionWithThisPointer";
         return self;
     }
 
     std::shared_ptr<Value> this_pointer;
-    std::shared_ptr<Function> global_function;
+    std::shared_ptr<Function> function_prototype;
 };
 
 class WriteReadAble : virtual public Value {
@@ -578,7 +586,7 @@ class LocalVariable : public Variable {
         PRAJNA_ASSERT(not is<VoidType>(type));
         std::shared_ptr<LocalVariable> self(new LocalVariable);
         self->type = type;
-        self->_tag = "LocalVariable";
+        self->tag = "LocalVariable";
         return self;
     }
 
@@ -657,7 +665,7 @@ class ThisWrapper : virtual public VariableLiked, virtual public Instruction {
         auto ir_pointer_type = cast<PointerType>(ir_this_pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
-        self->_tag = "ThisWrapper";
+        self->tag = "ThisWrapper";
         return self;
     }
 
@@ -686,7 +694,7 @@ class AccessField : virtual public VariableLiked, virtual public Instruction {
         self->object(ir_object);
         self->field = field;
         self->type = field->type;
-        self->_tag = "FieldAccess";
+        self->tag = "FieldAccess";
         return self;
     }
 
@@ -719,7 +727,7 @@ class IndexArray : virtual public VariableLiked, virtual public Instruction {
         auto ir_array_type = cast<ArrayType>(ir_object->type);
         PRAJNA_ASSERT(ir_array_type);
         self->type = ir_array_type->value_type;
-        self->_tag = "IndexArray";
+        self->tag = "IndexArray";
         return self;
     }
 
@@ -752,7 +760,7 @@ class IndexPointer : virtual public VariableLiked, virtual public Instruction {
         auto ir_pointer_type = cast<PointerType>(ir_object->type);
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
-        self->_tag = "IndexPointer";
+        self->tag = "IndexPointer";
         return self;
     }
 
@@ -783,7 +791,7 @@ class GetStructElementPointer : public Instruction {
         self->pointer(ir_pointer);
         self->field = ir_field;
         self->type = PointerType::create(ir_field->type);
-        self->_tag = "GetStructElementPointer";
+        self->tag = "GetStructElementPointer";
         return self;
     }
 
@@ -821,7 +829,7 @@ class GetArrayElementPointer : public Instruction {
         auto ir_array_type = cast<ArrayType>(ir_pointer_type->value_type);
         PRAJNA_ASSERT(ir_array_type);
         self->type = PointerType::create(ir_array_type->value_type);
-        self->_tag = "GetArrayElementPointer";
+        self->tag = "GetArrayElementPointer";
         return self;
     }
 
@@ -855,7 +863,7 @@ class GetPointerElementPointer : public Instruction {
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
         PRAJNA_ASSERT(is<PointerType>(self->type));
-        self->_tag = "GetPointerElementPointer";
+        self->tag = "GetPointerElementPointer";
         return self;
     }
 
@@ -885,7 +893,7 @@ class DeferencePointer : virtual public VariableLiked, virtual public Instructio
         auto ir_pointer_type = cast<PointerType>(ir_pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
-        self->_tag = "DeferencePointer";
+        self->tag = "DeferencePointer";
         return self;
     }
 
@@ -915,7 +923,7 @@ class WriteVariableLiked : public Instruction {
         self->operandResize(2);
         self->variable(ir_variable);
         self->value(ir_value);
-        self->_tag = "WriteVariableLiked";
+        self->tag = "WriteVariableLiked";
         return self;
     }
 
@@ -946,7 +954,7 @@ class GetAddressOfVariableLiked : public Instruction {
         self->operandResize(1);
         self->variable(ir_variable_liked);
         self->type = PointerType::create(ir_variable_liked->type);
-        self->_tag = "GetAddressOfVariableLiked";
+        self->tag = "GetAddressOfVariableLiked";
         return self;
     }
 
@@ -972,7 +980,7 @@ class Alloca : public Instruction {
             cast<Alloca>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Alloca)));
         self->operandResize(0);
         self->type = PointerType::create(type);
-        self->_tag = "Alloca";
+        self->tag = "Alloca";
         return self;
     }
 
@@ -997,7 +1005,7 @@ class GlobalAlloca : public Instruction {
         std::shared_ptr<GlobalAlloca> self(new GlobalAlloca);
         self->operandResize(0);
         self->type = PointerType::create(type);
-        self->_tag = "GlobalAlloca";
+        self->tag = "GlobalAlloca";
         return self;
     }
 
@@ -1027,7 +1035,7 @@ class LoadPointer : public Instruction {
         auto ir_pointer_type = cast<PointerType>(pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
-        self->_tag = "LoadPointer";
+        self->tag = "LoadPointer";
         return self;
     }
 
@@ -1055,7 +1063,7 @@ class StorePointer : public Instruction {
         self->operandResize(2);
         self->pointer(pointer);
         self->value(value);
-        self->_tag = "StorePointer";
+        self->tag = "StorePointer";
         return self;
     }
 
@@ -1084,7 +1092,7 @@ class Return : public Instruction {
         self->operandResize(1);
         self->type = value->type;
         self->value(value);
-        self->_tag = "Return";
+        self->tag = "Return";
         return self;
     }
 
@@ -1110,7 +1118,7 @@ class BitCast : public Instruction {
         self->operandResize(1);
         self->value(ir_value);
         self->type = ir_type;
-        self->_tag = "BitCast";
+        self->tag = "BitCast";
         return self;
     };
 
@@ -1136,13 +1144,14 @@ class Call : public Instruction {
         self->function(ir_value);
         auto ir_function_type = ir_value->getFunctionType();
         PRAJNA_ASSERT(ir_function_type);
+        PRAJNA_ASSERT(ir_function_type->argument_types.size() == arguments.size());
         for (size_t i = 0; i < arguments.size(); ++i) {
             PRAJNA_ASSERT(ir_function_type->argument_types[i] == arguments[i]->type);
             self->argument(i, arguments[i]);
         }
 
         self->type = ir_function_type->return_type;
-        self->_tag = "Call";
+        self->tag = "Call";
         return self;
     }
 
@@ -1176,7 +1185,7 @@ class ConditionBranch : public Instruction {
         self->condition(condition);
         self->trueBlock(ir_true_block);
         self->falseBlock(ir_false_block);
-        self->_tag = "ConditionBranch";
+        self->tag = "ConditionBranch";
         return self;
     }
 
@@ -1205,7 +1214,7 @@ class JumpBranch : public Instruction {
         std::shared_ptr<JumpBranch> self(new JumpBranch);
         self->operandResize(1);
         self->nextBlock(ir_next);
-        self->_tag = "JumpBranch";
+        self->tag = "JumpBranch";
         return self;
     }
 
@@ -1227,7 +1236,7 @@ class Label : public Block {
    public:
     static std::shared_ptr<Label> create() {
         std::shared_ptr<Label> self(new Label);
-        self->_tag = "Label";
+        self->tag = "Label";
         return self;
     }
 
@@ -1254,7 +1263,7 @@ class If : public Instruction {
         self->condition(ir_condition);
         self->trueBlock(ir_true_block);
         self->falseBlock(ir_false_block);
-        self->_tag = "If";
+        self->tag = "If";
         return self;
     }
 
@@ -1289,7 +1298,7 @@ class While : public Instruction {
         self->condition(ir_condition);
         self->conditionBlock(ir_condition_block);
         self->trueBlock(ir_true_block);
-        self->_tag = "While";
+        self->tag = "While";
         return self;
     }
 
@@ -1329,7 +1338,7 @@ class For : public Instruction {
         self->first(ir_first);
         self->last(ir_last);
         self->loopBlock(ir_loop_block);
-        self->_tag = "For";
+        self->tag = "For";
         return self;
     }
 
@@ -1365,7 +1374,7 @@ class GlobalVariable : public Variable {
     static std::shared_ptr<GlobalVariable> create(std::shared_ptr<Type> ir_type) {
         std::shared_ptr<GlobalVariable> self(new GlobalVariable);
         self->type = ir_type;
-        self->_tag = "GlobalVariable";
+        self->tag = "GlobalVariable";
         return self;
     }
 
@@ -1375,72 +1384,55 @@ class GlobalVariable : public Variable {
     std::shared_ptr<Module> parent_module = nullptr;
 };
 
-class Property : public WriteReadAble, virtual public Instruction {
+class AccessProperty : public WriteReadAble, virtual public Instruction {
    protected:
-    Property() = default;
+    AccessProperty() = default;
 
    public:
-    static std::shared_ptr<Property> create(std::shared_ptr<Value> ir_this_pointer,
-                                            std::string property_name) {
-        std::shared_ptr<Property> self(new Property);
-
-        auto ir_property_getter =
-            getPropertyGetter(cast<PointerType>(ir_this_pointer->type)->value_type, property_name);
-        auto ir_property_setter =
-            getPropertySetter(cast<PointerType>(ir_this_pointer->type)->value_type, property_name);
-
-        PRAJNA_ASSERT(ir_property_getter and ir_property_setter);
-        self->type = ir_property_getter->function_type->return_type;
-
-        PRAJNA_ASSERT(is<VoidType>(ir_property_setter->function_type->return_type));
-        PRAJNA_ASSERT(ir_property_setter->function_type->argument_types.size() ==
-                      ir_property_getter->function_type->argument_types.size() + 1);
-        PRAJNA_ASSERT(ir_property_setter->function_type->argument_types.back() == self->type);
-
-        self->operandResize(3);
+    static std::shared_ptr<AccessProperty> create(std::shared_ptr<Value> ir_this_pointer,
+                                                  std::shared_ptr<ir::Property> ir_property) {
+        std::shared_ptr<AccessProperty> self(new AccessProperty);
+        PRAJNA_ASSERT(ir_property->getter_function);
+        self->type = ir_property->getter_function->function_type->return_type;
+        self->operandResize(1);
         self->thisPointer(ir_this_pointer);
+        self->property = ir_property;
+        self->tag = "AccessProperty";
 
-        self->getterFunction(ir_property_getter);
-        self->setterFunction(ir_property_setter);
+        if (not ir_property->setter_function) {
+            self->is_writeable = false;
+        }
 
-        self->property_name = property_name;
-        self->_tag = "Property";
         return self;
     }
 
     std::shared_ptr<Value> thisPointer() { return this->operand(0); }
     void thisPointer(std::shared_ptr<Value> ir_this_pointer) { this->operand(ir_this_pointer, 0); }
 
-    std::shared_ptr<Function> getterFunction() { return cast<Function>(this->operand(1)); }
-    void getterFunction(std::shared_ptr<Function> ir_getter) { this->operand(ir_getter, 1); }
-
-    std::shared_ptr<Function> setterFunction() { return cast<Function>(this->operand(2)); }
-    void setterFunction(std::shared_ptr<Function> ir_setter) { this->operand(ir_setter, 2); }
-
     void arguments(std::vector<std::shared_ptr<Value>> ir_arguments) {
-        this->operandResize(3 + ir_arguments.size());
+        this->operandResize(1 + ir_arguments.size());
         for (size_t i = 0; i < ir_arguments.size(); ++i) {
-            this->operand(ir_arguments[i], i + 3);
+            this->operand(ir_arguments[i], i + 1);
         }
     }
 
     std::vector<std::shared_ptr<Value>> arguments() {
-        std::vector<std::shared_ptr<Value>> ir_arguments(this->operandSize() - 3);
+        std::vector<std::shared_ptr<Value>> ir_arguments(this->operandSize() - 1);
         for (size_t i = 0; i < ir_arguments.size(); ++i) {
-            ir_arguments[i] = this->operand(3 + i);
+            ir_arguments[i] = this->operand(1 + i);
         }
 
         return ir_arguments;
     }
 
     std::shared_ptr<Value> clone(std::shared_ptr<Cloner> cloner) override {
-        std::shared_ptr<Property> ir_new(new Property(*this));
+        std::shared_ptr<AccessProperty> ir_new(new AccessProperty(*this));
         ir_new->cloneOperands(cloner);
         return ir_new;
     }
 
    public:
-    std::string property_name;
+    std::shared_ptr<ir::Property> property;
 };
 
 class WriteProperty : public Instruction {
@@ -1448,26 +1440,28 @@ class WriteProperty : public Instruction {
     WriteProperty() = default;
 
    public:
-    static std::shared_ptr<WriteProperty> create(std::shared_ptr<Value> ir_value,
-                                                 std::shared_ptr<Property> ir_property) {
+    static std::shared_ptr<WriteProperty> create(
+        std::shared_ptr<Value> ir_value, std::shared_ptr<AccessProperty> ir_access_property) {
         PRAJNA_ASSERT(ir_value);
-        PRAJNA_ASSERT(ir_property);
-        PRAJNA_ASSERT(ir_value->type == ir_property->type);
+        PRAJNA_ASSERT(ir_access_property);
+        PRAJNA_ASSERT(ir_value->type == ir_access_property->type);
 
         // 需要利用std::shared_ptr<Insturction>来初始化enable_shared_from_this的weak_ptr指针
         std::shared_ptr<WriteProperty> self(new WriteProperty);
         self->operandResize(2);
-        self->property(ir_property);
+        self->property(ir_access_property);
         self->value(ir_value);
-        self->_tag = "WriteProperty";
+        self->tag = "WriteProperty";
         return self;
     }
 
     std::shared_ptr<Value> value() { return this->operand(0); }
     void value(std::shared_ptr<Value> ir_value) { return this->operand(ir_value, 0); }
 
-    std::shared_ptr<Property> property() { return cast<Property>(this->operand(1)); }
-    void property(std::shared_ptr<Property> ir_property) { return this->operand(ir_property, 1); }
+    std::shared_ptr<AccessProperty> property() { return cast<AccessProperty>(this->operand(1)); }
+    void property(std::shared_ptr<AccessProperty> ir_access_property) {
+        return this->operand(ir_access_property, 1);
+    }
 
     std::shared_ptr<Value> clone(std::shared_ptr<Cloner> cloner) override {
         std::shared_ptr<WriteProperty> ir_new(new WriteProperty(*this));
@@ -1481,17 +1475,15 @@ class Module : public Named, public std::enable_shared_from_this<Module> {
     Module() = default;
 
    public:
-    static std::shared_ptr<Module> create() { return std::shared_ptr<Module>(new Module); }
+    static std::shared_ptr<Module> create() {
+        auto self = std::shared_ptr<Module>(new Module);
+        // @todo 后面需要进一步处理
+        self->modules[ir::Target::nvptx] = std::shared_ptr<Module>(new Module);
 
-    std::shared_ptr<Module> getOrCreateTargetModule(Target ir_target) {
-        if (!this->modules[ir_target]) {
-            this->modules[ir_target] = Module::create();
-            this->modules[ir_target]->name = this->name + "." + targetToString(ir_target);
-            this->modules[ir_target]->fullname = this->modules[ir_target]->name;
-            this->modules[ir_target]->parent_module = shared_from_this();
-        }
-        return this->modules[ir_target];
+        return self;
     }
+
+    // bool empty()
 
     std::list<std::shared_ptr<Function>> functions;
     std::list<std::shared_ptr<GlobalVariable>> global_variables;
@@ -1514,12 +1506,12 @@ class KernelFunctionCall : public Instruction {
 
    public:
     static std::shared_ptr<KernelFunctionCall> create(
-        std::shared_ptr<Value> ir_value, std::shared_ptr<Value> ir_grid_dim,
+        std::shared_ptr<Value> ir_function_value, std::shared_ptr<Value> ir_grid_dim,
         std::shared_ptr<Value> ir_block_dim, std::vector<std::shared_ptr<Value>> arguments) {
         std::shared_ptr<KernelFunctionCall> self(new KernelFunctionCall);
         self->operandResize(3 + arguments.size());
-        self->function(ir_value);
-        auto ir_function_type = ir_value->getFunctionType();
+        self->function(ir_function_value);
+        auto ir_function_type = ir_function_value->getFunctionType();
         PRAJNA_ASSERT(ir_function_type);
         PRAJNA_ASSERT(ir_function_type->annotations.count("kernel"));
         self->gridDim(ir_grid_dim);
@@ -1530,7 +1522,7 @@ class KernelFunctionCall : public Instruction {
         }
 
         self->type = ir_function_type->return_type;
-        self->_tag = "KernelFunctionCall";
+        self->tag = "KernelFunctionCall";
         return self;
     }
 
@@ -1565,6 +1557,16 @@ class KernelFunctionCall : public Instruction {
 inline std::shared_ptr<Function> Value::getParentFunction() {
     PRAJNA_ASSERT(parent_block);
     return parent_block->getParentFunction();
+}
+
+inline std::shared_ptr<Block> Value::getRootBlock() {
+    PRAJNA_ASSERT(this->parent_block);
+    auto root = this->parent_block;
+    while (root->parent_block) {
+        root = root->parent_block;
+    }
+
+    return root;
 }
 
 }  // namespace prajna::ir

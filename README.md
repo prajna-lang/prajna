@@ -60,7 +60,7 @@ import gpu::launchKernel;
 @kernel // 标注核函数
 @target("nvptx") // 标注平台, 后期会移除
 func myKernel(tensor: gpu::Tensor<i64, 1>){
-    var thread_idx = gpu::threadIdx();
+    var thread_idx = gpu::threadIndex();
     var thread_idx_x = thread_idx[0];
     tensor.data[thread_idx_x] = thread_idx_x;
 }
@@ -241,7 +241,7 @@ git clone https://github.com/matazure/prajna.git
 
 ### 寻求合作
 
-下一阶段, 般若会着力于AI芯片的可编程性, 故在这里寻求AI芯片厂商的合作, 有意联系
+般若编译器需要芯片, 自动驾驶, 科学计算(如有限元)等领域的合作伙伴.
 
 ### 招聘实习生
 

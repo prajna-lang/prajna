@@ -4,31 +4,39 @@ func sin_f32(v: f32)->f32;
 
 implement bool {
     @instruction("ICmp", "ICMP_EQ")
-    operator ==(rhs : bool)->bool;
+    @binary("==")
+    func __equal__(rhs : bool)->bool;
 
     @instruction("ICmp", "ICMP_NE")
-    operator !=(rhs : bool)->bool;
+    @binary("!=")
+    func __not_equal__(rhs : bool)->bool;
 
     @instruction("BinaryOperator", "And")
-    operator &(rhs: bool)->bool;
+    @binary("&")
+    func __and__(rhs: bool)->bool;
 
     @instruction("BinaryOperator", "Or")
-    operator |(rhs: bool)->bool;
+    @binary("|")
+    func __or__(rhs: bool)->bool;
 
     @instruction("BinaryOperator", "Xor")
-    operator ^(rhs: bool)->bool;
+    @binary("^")
+    func __xor__(rhs: bool)->bool;
 
-    operator \!()->bool{
+    @unary("!")
+    func __not__()->bool{
         return true ^ this;
     }
 }
 
 implement char {
     @instruction("ICmp", "ICMP_EQ")
-    operator ==(rhs : char)->bool;
+    @binary("==")
+    func __equal__(rhs : char)->bool;
 
     @instruction("ICmp", "ICMP_NE")
-    operator !=(rhs : char)->bool;
+    @binary("!=")
+    func __not_equal__(rhs : char)->bool;
 
     @instruction("CastInst", "SExt", "i64")
     func toi64()->i64;
@@ -36,43 +44,56 @@ implement char {
 
 implement i8 {
     @instruction("ICmp", "ICMP_EQ")
-    operator ==(rhs : i8)->bool;
+    @binary("==")
+    func __equal__(rhs : i8)->bool;
 
     @instruction("ICmp", "ICMP_NE")
-    operator !=(rhs : i8)->bool;
+    @binary("!=")
+    func __not_equal__(rhs : i8)->bool;
 
     @instruction("ICmp", "ICMP_SGT")
-    operator >(rhs : i8)->bool;
+    @binary(">")
+    func __greater__(rhs : i8)->bool;
 
     @instruction("ICmp", "ICMP_SLT")
-    operator <(rhs : i8)->bool;
+    @binary("<")
+    func __less__(rhs : i8)->bool;
 
     @instruction("ICmp", "ICMP_SGE")
-    operator >=(rhs : i8)->bool;
+    @binary(">=")
+    func __greater_or_equal__(rhs : i8)->bool;
 
     @instruction("ICmp", "ICMP_SLE")
-    operator <=(rhs : i8)->bool;
+    @binary("<=")
+    func __less_or_equal__(rhs : i8)->bool;
 
     @instruction("BinaryOperator", "Add")
-    operator +(rhs: i8)->i8;
+    @binary("+")
+    func __add__(rhs: i8)->i8;
 
     @instruction("BinaryOperator", "Sub")
-    operator -(rhs: i8)->i8;
+    @binary("-")
+    func __sub__(rhs: i8)->i8;
 
     @instruction("BinaryOperator", "Mul")
-    operator *(rhs: i8)->i8;
+    @binary("*")
+    func __multiply__(rhs: i8)->i8;
 
     @instruction("BinaryOperator", "SDiv")
-    operator /(rhs: i8)->i8;
+    @binary("/")
+    func __divide__(rhs: i8)->i8;
 
     @instruction("BinaryOperator", "SRem")
-    operator %(rhs: i8)->i8;
+    @binary("%")
+    func __remain__(rhs: i8)->i8;
 
-    operator \+()->i8{
+    @unary("+")
+    func __unary_add__()->i8{
         return this;
     }
 
-    operator \-()->i8{
+    @unary("-")
+    func __unary_sub__()->i8{
         return 0i8 - this;
     }
 
@@ -88,43 +109,56 @@ implement i8 {
 
 implement i16 {
     @instruction("ICmp", "ICMP_EQ")
-    operator ==(rhs : i16)->bool;
+    @binary("==")
+    func __equal__(rhs : i16)->bool;
 
     @instruction("ICmp", "ICMP_NE")
-    operator !=(rhs : i16)->bool;
+    @binary("!=")
+    func __not_equal__(rhs : i16)->bool;
 
     @instruction("ICmp", "ICMP_SGT")
-    operator >(rhs : i16)->bool;
+    @binary(">")
+    func __greater__(rhs : i16)->bool;
 
     @instruction("ICmp", "ICMP_SLT")
-    operator <(rhs : i16)->bool;
+    @binary("<")
+    func __less__(rhs : i16)->bool;
 
     @instruction("ICmp", "ICMP_SGE")
-    operator >=(rhs : i16)->bool;
+    @binary(">=")
+    func __greater_or_equal__(rhs : i16)->bool;
 
     @instruction("ICmp", "ICMP_SLE")
-    operator <=(rhs : i16)->bool;
+    @binary("<=")
+    func __less_or_equal__(rhs : i16)->bool;
 
     @instruction("BinaryOperator", "Add")
-    operator +(rhs: i16)->i16;
+    @binary("+")
+    func __add__(rhs: i16)->i16;
 
     @instruction("BinaryOperator", "Sub")
-    operator -(rhs: i16)->i16;
+    @binary("-")
+    func __sub__(rhs: i16)->i16;
 
     @instruction("BinaryOperator", "Mul")
-    operator *(rhs: i16)->i16;
+    @binary("*")
+    func __multiply__(rhs: i16)->i16;
 
     @instruction("BinaryOperator", "SDiv")
-    operator /(rhs: i16)->i16;
+    @binary("/")
+    func __divide__(rhs: i16)->i16;
 
     @instruction("BinaryOperator", "SRem")
-    operator %(rhs: i16)->i16;
+    @binary("%")
+    func __remain__(rhs: i16)->i16;
 
-    operator \+()->i16{
+    @unary("+")
+    func __unary_add__()->i16{
         return this;
     }
 
-    operator \-()->i16{
+    @unary("-")
+    func __unary_sub__()->i16{
         return 0i16 - this;
     }
 
@@ -140,43 +174,56 @@ implement i16 {
 
 implement i32 {
     @instruction("ICmp", "ICMP_EQ")
-    operator ==(rhs : i32)->bool;
+    @binary("==")
+    func __equal__(rhs : i32)->bool;
 
     @instruction("ICmp", "ICMP_NE")
-    operator !=(rhs : i32)->bool;
+    @binary("!=")
+    func __not_equal__(rhs : i32)->bool;
 
     @instruction("ICmp", "ICMP_SGT")
-    operator >(rhs : i32)->bool;
+    @binary(">")
+    func __greater__(rhs : i32)->bool;
 
     @instruction("ICmp", "ICMP_SLT")
-    operator <(rhs : i32)->bool;
+    @binary("<")
+    func __less__(rhs : i32)->bool;
 
     @instruction("ICmp", "ICMP_SGE")
-    operator >=(rhs : i32)->bool;
+    @binary(">=")
+    func __greater_or_equal__(rhs : i32)->bool;
 
     @instruction("ICmp", "ICMP_SLE")
-    operator <=(rhs : i32)->bool;
+    @binary("<=")
+    func __less_or_equal__(rhs : i32)->bool;
 
     @instruction("BinaryOperator", "Add")
-    operator +(rhs: i32)->i32;
+    @binary("+")
+    func __add__(rhs: i32)->i32;
 
     @instruction("BinaryOperator", "Sub")
-    operator -(rhs: i32)->i32;
+    @binary("-")
+    func __sub__(rhs: i32)->i32;
 
     @instruction("BinaryOperator", "Mul")
-    operator *(rhs: i32)->i32;
+    @binary("*")
+    func __multiply__(rhs: i32)->i32;
 
     @instruction("BinaryOperator", "SDiv")
-    operator /(rhs: i32)->i32;
+    @binary("/")
+    func __divide__(rhs: i32)->i32;
 
     @instruction("BinaryOperator", "SRem")
-    operator %(rhs: i32)->i32;
+    @binary("%")
+    func __remain__(rhs: i32)->i32;
 
-    operator \+()->i32{
+    @unary("+")
+    func __unary_add__()->i32{
         return this;
     }
 
-    operator \-()->i32{
+    @unary("-")
+    func __unary_sub__()->i32{
         return 0i32 - this;
     }
 
@@ -192,43 +239,56 @@ implement i32 {
 
 implement i64 {
     @instruction("ICmp", "ICMP_EQ")
-    operator ==(rhs : i64)->bool;
+    @binary("==")
+    func __equal__(rhs : i64)->bool;
 
     @instruction("ICmp", "ICMP_NE")
-    operator !=(rhs : i64)->bool;
+    @binary("!=")
+    func __not_equal__(rhs : i64)->bool;
 
     @instruction("ICmp", "ICMP_SGT")
-    operator >(rhs : i64)->bool;
+    @binary(">")
+    func __greater__(rhs : i64)->bool;
 
     @instruction("ICmp", "ICMP_SLT")
-    operator <(rhs : i64)->bool;
+    @binary("<")
+    func __less__(rhs : i64)->bool;
 
     @instruction("ICmp", "ICMP_SGE")
-    operator >=(rhs : i64)->bool;
+    @binary(">=")
+    func __greater_or_equal__(rhs : i64)->bool;
 
     @instruction("ICmp", "ICMP_SLE")
-    operator <=(rhs : i64)->bool;
+    @binary("<=")
+    func __less_or_equal__(rhs : i64)->bool;
 
     @instruction("BinaryOperator", "Add")
-    operator +(rhs: i64)->i64;
+    @binary("+")
+    func __add__(rhs: i64)->i64;
 
     @instruction("BinaryOperator", "Sub")
-    operator -(rhs: i64)->i64;
+    @binary("-")
+    func __sub__(rhs: i64)->i64;
 
     @instruction("BinaryOperator", "Mul")
-    operator *(rhs: i64)->i64;
+    @binary("*")
+    func __multiply__(rhs: i64)->i64;
 
     @instruction("BinaryOperator", "SDiv")
-    operator /(rhs: i64)->i64;
+    @binary("/")
+    func __divide__(rhs: i64)->i64;
 
     @instruction("BinaryOperator", "SRem")
-    operator %(rhs: i64)->i64;
+    @binary("%")
+    func __remain__(rhs: i64)->i64;
 
-    operator \+()->i64{
+    @unary("+")
+    func __unary_add__()->i64{
         return this;
     }
 
-    operator \-()->i64{
+    @unary("-")
+    func __unary_sub__()->i64{
         return 0 - this;
     }
 
@@ -247,44 +307,57 @@ implement i64 {
 
 implement u32 {
     @instruction("ICmp", "ICMP_EQ")
-    operator ==(rhs : u32)->bool;
+    @binary("==")
+    func __equal__(rhs : u32)->bool;
 
     @instruction("ICmp", "ICMP_NE")
-    operator !=(rhs : u32)->bool;
+    @binary("!=")
+    func __not_equal__(rhs : u32)->bool;
 
     @instruction("ICmp", "ICMP_SGT")
-    operator >(rhs : u32)->bool;
+    @binary(">")
+    func __greater__(rhs : u32)->bool;
 
     @instruction("ICmp", "ICMP_SLT")
-    operator <(rhs : u32)->bool;
+    @binary("<")
+    func __less__(rhs : u32)->bool;
 
     @instruction("ICmp", "ICMP_SGE")
-    operator >=(rhs : u32)->bool;
+    @binary(">=")
+    func __greater_or_equal__(rhs : u32)->bool;
 
     @instruction("ICmp", "ICMP_SLE")
-    operator <=(rhs : u32)->bool;
+    @binary("<=")
+    func __less_or_equal__(rhs : u32)->bool;
 
     @instruction("BinaryOperator", "Add")
-    operator +(rhs: u32)->u32;
+    @binary("+")
+    func __add__(rhs: u32)->u32;
 
     @instruction("BinaryOperator", "Sub")
-    operator -(rhs: u32)->u32;
+    @binary("-")
+    func __sub__(rhs: u32)->u32;
 
     @instruction("BinaryOperator", "Mul")
-    operator *(rhs: u32)->u32;
+    @binary("*")
+    func __multiply__(rhs: u32)->u32;
 
     @instruction("BinaryOperator", "UDiv")
-    operator /(rhs: u32)->u32;
+    @binary("/")
+    func __divide__(rhs: u32)->u32;
 
     @instruction("BinaryOperator", "URem")
-    operator %(rhs: u32)->u32;
+    @binary("%")
+    func __remain__(rhs: u32)->u32;
 
-    operator \+()->u32{
+    @unary("+")
+    func __unary_add__()->u32{
         return this;
     }
 
-    // operator \-()->u32{
-    //     return 0 - this;
+    // @unary("-")
+    // func __unary_sub__()->u32{
+    // //     return 0 - this;
     // }
 
     @instruction("CastInst", "ZExt", "i64")
@@ -299,43 +372,56 @@ implement u32 {
 
 implement f32 {
     @instruction("FCmp", "FCMP_OEQ")
-    operator ==(rhs : f32)->bool;
+    @binary("==")
+    func __equal__(rhs : f32)->bool;
 
     @instruction("FCmp", "FCMP_ONE")
-    operator !=(rhs : f32)->bool;
+    @binary("!=")
+    func __not_equal__(rhs : f32)->bool;
 
     @instruction("FCmp", "FCMP_OGT")
-    operator >(rhs : f32)->bool;
+    @binary(">")
+    func __greater__(rhs : f32)->bool;
 
     @instruction("FCmp", "FCMP_OLT")
-    operator <(rhs : f32)->bool;
+    @binary("<")
+    func __less__(rhs : f32)->bool;
 
     @instruction("FCmp", "FCMP_OGE")
-    operator >=(rhs : f32)->bool;
+    @binary(">=")
+    func __greater_or_equal__(rhs : f32)->bool;
 
     @instruction("FCmp", "FCMP_OLE")
-    operator <=(rhs : f32)->bool;
+    @binary("<=")
+    func __less_or_equal__(rhs : f32)->bool;
 
     @instruction("BinaryOperator", "FAdd")
-    operator +(rhs: f32)->f32;
+    @binary("+")
+    func __add__(rhs: f32)->f32;
 
     @instruction("BinaryOperator", "FSub")
-    operator -(rhs: f32)->f32;
+    @binary("-")
+    func __sub__(rhs: f32)->f32;
 
     @instruction("BinaryOperator", "FMul")
-    operator *(rhs: f32)->f32;
+    @binary("*")
+    func __multiply__(rhs: f32)->f32;
 
     @instruction("BinaryOperator", "FDiv")
-    operator /(rhs: f32)->f32;
+    @binary("/")
+    func __divide__(rhs: f32)->f32;
 
     @instruction("BinaryOperator", "FRem")
-    operator %(rhs: f32)->f32;
+    @binary("%")
+    func __remain__(rhs: f32)->f32;
 
-    operator \+()->f32{
+    @unary("+")
+    func __unary_add__()->f32{
         return this;
     }
 
-    operator \-()->f32{
+    @unary("-")
+    func __unary_sub__()->f32{
         return 0.0 - this;
     }
 

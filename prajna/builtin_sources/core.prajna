@@ -54,7 +54,8 @@ implement str{
         this.data[this.size] = '\0';
     }
 
-    operator +(str_re: str)->str{
+    @binary("+")
+    func concat(str_re: str)->str{
         var new_str = str::create(this.size + str_re.size);
         var i = 0;
         while (i < this.size){

@@ -18,32 +18,28 @@ namespace prajna::parser {
 
 bool parse(std::string code, prajna::ast::Statements& ast, std::string file_name,
            std::shared_ptr<Logger> logger) {
-    typedef grammar::issue_handler<base_iterator_type, iterator_type> issue_handler_type;
-
-    issue_handler_type eh;
+    grammar::ErrorHandler<iterator_type> error_handler(logger);
+    grammar::SuccessHandler<iterator_type> success_handler(logger);
     CodeLexerType tokens;
-
     base_iterator_type first(RANGE(code), file_name);
     base_iterator_type last;
-
     iterator_type iter = tokens.begin(first, last);
     iterator_type end = tokens.end();
 
-    prajna::parser::grammar::StatementGrammer<iterator_type, CodeLexerType> program(tokens, eh);
-    auto t = boost::spirit::qi::in_state("WS")[tokens.self];
+    prajna::parser::grammar::StatementGrammer<iterator_type, CodeLexerType> statement_grammar(
+        tokens, error_handler, success_handler);
+    auto skip = boost::spirit::qi::in_state("WS")[tokens.self];
 
-    return boost::spirit::qi::phrase_parse(iter, end, program, t, ast);
+    return boost::spirit::qi::phrase_parse(iter, end, statement_grammar, skip,
+                                           boost::spirit::qi::skip_flag::postskip, ast);
 }
 
 std::shared_ptr<prajna::ast::Statements> parse(std::string code, std::string file_name,
                                                std::shared_ptr<Logger> logger) {
     auto ast = std::make_shared<prajna::ast::Statements>();
     auto re = parse(code, *ast, file_name, logger);
-    if (re) {
-        return ast;
-    } else {
-        return nullptr;
-    }
+    PRAJNA_ASSERT(re);
+    return ast;
 }
 
 }  // namespace prajna::parser

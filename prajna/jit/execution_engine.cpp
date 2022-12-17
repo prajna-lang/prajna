@@ -24,10 +24,12 @@
 
 namespace prajna::jit {
 
+#ifdef PRAJNA_WITH_GPU
 // cudaMalloc是一个重载函数, 故重新包装了一下
 cudaError_t cudaMalloc(void **devPtr, size_t size) { return ::cudaMalloc(devPtr, size); }
 
 inline void checkCudaErrors(bool re) { PRAJNA_ASSERT(re == 0); }
+#endif
 
 jmp_buf buf;
 

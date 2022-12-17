@@ -19,6 +19,6 @@ func testMain(){
     var host_tensor =  gpu_tensor.toHost();
 
     print("value: ");
-    host_tensor.data[9999].tostr().print();
+    host_tensor.data[3].tostr().print();
     "\n".print();
 }

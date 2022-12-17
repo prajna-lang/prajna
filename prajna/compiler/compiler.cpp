@@ -65,8 +65,7 @@ void Compiler::compileCommandLine(std::string command_line_code) {
         for (auto ir_function : ir_module->functions) {
             if (ir_function->function_type->annotations.count("\\command")) {
                 auto fun_fullname = ir_function->fullname;
-                auto fun_ptr =
-                    reinterpret_cast<void (*)(void)>(jit_engine->getAddress(fun_fullname));
+                auto fun_ptr = reinterpret_cast<void (*)(void)>(jit_engine->getValue(fun_fullname));
                 fun_ptr();
             }
         }
@@ -80,7 +79,7 @@ void Compiler::runTestFunctions() {
         if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
             if (auto ir_function = cast<ir::Function>(ir_value)) {
                 if (ir_function->function_type->annotations.count("test")) {
-                    auto function_pointer = this->jit_engine->getAddress(ir_function->fullname);
+                    auto function_pointer = this->jit_engine->getValue(ir_function->fullname);
                     this->jit_engine->catchRuntimeError();
                     reinterpret_cast<void (*)(void)>(function_pointer)();
                 }

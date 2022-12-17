@@ -71,10 +71,10 @@ ExecutionEngine::ExecutionEngine() {
     _up_lljit = std::move(*expect_up_lljit);
 }
 
-size_t ExecutionEngine::getAddress(std::string name) {
+size_t ExecutionEngine::getValue(std::string name) {
     auto expect_symbol = _up_lljit->lookup(name);
     PRAJNA_ASSERT(expect_symbol);
-    return expect_symbol->getAddress();
+    return expect_symbol->getValue();
 }
 
 void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
@@ -181,7 +181,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
             if (ir_function->function_type->annotations.count("kernel")) {
                 auto kernel_fun_address_name = getKernelFunctionAddressName(ir_function->fullname);
                 auto test_kernel_fun =
-                    reinterpret_cast<CUfunction *>(this->getAddress(kernel_fun_address_name));
+                    reinterpret_cast<CUfunction *>(this->getValue(kernel_fun_address_name));
                 std::string function_name = mangleNvvmName(ir_function->fullname);
                 cu_re = cuModuleGetFunction(test_kernel_fun, cu_module, function_name.c_str());
                 PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));

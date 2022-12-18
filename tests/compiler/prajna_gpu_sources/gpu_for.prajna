@@ -2,10 +2,12 @@
 func testMain(){
     var shape = [1000];
     var tmp_tensor = core::Tensor<i64, 1>::create(shape);
-    @gpu
+
+    @gpu // 标注后, 编译器会将tmp_tensor的内存拷贝到gpu, 并在gpu上执行下面的运算
     for i in 0 to shape[0]{
         tmp_tensor.data[i] = i;
     }
+    // 运行完后, gpu的数据会自动拷贝的tmp_tensor上
 
     for i in 0 to shape[0] {
         testing::Assert(tmp_tensor.data[i] == i);

@@ -96,7 +96,8 @@ class InterpreterLoweringVisitor {
             boost::apply_visitor(
                 overloaded{[=](auto x) {},
                            [=](std::shared_ptr<ir::Value> ir_result_value) {
-                               if (!ir_result_value->type->member_functions["tostr"]) return;
+                               if (not ir_result_value->type) return;
+                               if (not ir_result_value->type->member_functions["tostr"]) return;
                                auto ir_result_string =
                                    ir_utility->callMemberFunction(ir_result_value, "tostr", {});
                                ir_utility->callMemberFunction(ir_result_string, "print", {});

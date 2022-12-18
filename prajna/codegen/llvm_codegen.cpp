@@ -109,7 +109,7 @@ class LlvmCodegen {
             ir_struct_type->llvm_type = llvm_struct_type;
             std::vector<llvm::Type*> llvm_types(ir_struct_type->fields.size());
             std::transform(ir_struct_type->fields.begin(), ir_struct_type->fields.end(),
-                           llvm_types.begin(), [&](std::shared_ptr<ir::Field> field) {
+                           llvm_types.begin(), [=](std::shared_ptr<ir::Field> field) {
                                if (!field->type->llvm_type) {
                                    this->emitType(field->type);
                                }
@@ -301,7 +301,7 @@ class LlvmCodegen {
             std::vector<llvm::Constant*> llvm_contants(
                 ir_constant_array->initialize_constants.size());
             std::transform(RANGE(ir_constant_array->initialize_constants), llvm_contants.begin(),
-                           [&](auto ir_init) {
+                           [=](auto ir_init) {
                                auto llvm_constant =
                                    static_cast<llvm::Constant*>(ir_init->llvm_value);
                                PRAJNA_ASSERT(llvm_constant);
@@ -446,7 +446,7 @@ class LlvmCodegen {
 
             auto annotation_type = annotations_instruction[2];
             auto iter_type = std::find_if(RANGE(ir::global_context.created_types),
-                                          [&](std::shared_ptr<ir::Type> ir_type) {
+                                          [=](std::shared_ptr<ir::Type> ir_type) {
                                               return ir_type->name == annotation_type;
                                           });
             PRAJNA_ASSERT(iter_type != ir::global_context.created_types.end());

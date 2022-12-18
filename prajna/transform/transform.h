@@ -30,7 +30,7 @@ std::shared_ptr<ir::Module> makeCompatiableWithLlvm(std::shared_ptr<ir::Module> 
 
 std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module);
 
-// auto create = [&](auto )
+// auto create = [=](auto )
 inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
     std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
@@ -153,7 +153,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
 
                         sp<ir::GlobalVariable> ir_global_variable = nullptr;
                         auto iter_global_variable = std::find_if(
-                            RANGE(ir_module->global_variables), [&](sp<ir::GlobalVariable> x) {
+                            RANGE(ir_module->global_variables), [=](sp<ir::GlobalVariable> x) {
                                 return x->fullname == global_variable_fullname;
                             });
                         if (iter_global_variable != ir_module->global_variables.end()) {
@@ -200,7 +200,7 @@ inline sp<ir::Module> convertGlobalVariableToPointer(sp<ir::Module> ir_module) {
                 if (auto ir_global_variable =
                         cast<ir::GlobalVariable>(ir_instruction->operand(i))) {
                     auto iter_global_alloca =
-                        std::find_if(RANGE(ir_module->global_allocas), [&](sp<ir::GlobalAlloca> x) {
+                        std::find_if(RANGE(ir_module->global_allocas), [=](sp<ir::GlobalAlloca> x) {
                             return x->fullname == ir_global_variable->fullname;
                         });
                     sp<ir::GlobalAlloca> ir_global_alloca = nullptr;
@@ -284,7 +284,7 @@ inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
                 getKernelFunctionAddressName(ir_function->function_type->fullname);
             auto iter_global_variable = std::find_if(
                 RANGE(ir_module->global_variables),
-                [&](sp<ir::GlobalVariable> x) { return x->fullname == global_variable_fullname; });
+                [=](sp<ir::GlobalVariable> x) { return x->fullname == global_variable_fullname; });
             if (iter_global_variable == ir_module->global_variables.end()) {
                 auto ir_global_variable = ir::GlobalVariable::create(ir_function->type);
                 ir_global_variable->name = global_variable_fullname;

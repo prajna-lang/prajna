@@ -7,7 +7,7 @@
 
 namespace prajna::transform::utility {
 
-// auto create = [&](auto )
+// auto create = [=](auto )
 struct IrBuilder {
     inline std::shared_ptr<ir::Type> getIndexType() { return ir::IntType::create(64, true); }
 
@@ -143,7 +143,7 @@ template <typename _Value>
 inline std::list<std::shared_ptr<_Value>> getValuesInFunction(
     std::shared_ptr<ir::Function> ir_function) {
     std::list<std::shared_ptr<_Value>> ir_values;
-    utility::eachValue(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
+    utility::eachValue(ir_function, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
         if (auto ir_target_value = cast<_Value>(ir_value)) {
             ir_values.push_back(ir_target_value);
         }
@@ -155,7 +155,7 @@ inline std::list<std::shared_ptr<_Value>> getValuesInFunction(
 template <typename _Value>
 inline std::list<std::shared_ptr<_Value>> getValuesInModule(std::shared_ptr<ir::Module> ir_module) {
     std::list<std::shared_ptr<_Value>> ir_values;
-    eachValue(ir_module, [&](std::shared_ptr<ir::Value> ir_value) {
+    eachValue(ir_module, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
         if (auto ir_target_value = cast<_Value>(ir_value)) {
             ir_values.push_back(ir_target_value);
         }

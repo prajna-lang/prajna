@@ -90,7 +90,7 @@ class ExpressionLoweringVisitor {
         auto ir_char_string_type = ir::ArrayType::create(ir::CharType::create(), char_string_size);
         std::vector<std::shared_ptr<ir::Constant>> ir_inits(ir_char_string_type->size);
         std::transform(RANGE(ast_string_literal.value), ir_inits.begin(),
-                       [&](char value) -> std::shared_ptr<ir::Constant> {
+                       [=](char value) -> std::shared_ptr<ir::Constant> {
                            return ir_utility->create<ir::ConstantChar>(value);
                        });
         // 末尾补零
@@ -256,7 +256,7 @@ class ExpressionLoweringVisitor {
 
         auto iter_field = std::find_if(
             RANGE(ir_type->fields),
-            [&](std::shared_ptr<ir::Field> ir_field) { return ir_field->name == member_name; });
+            [=](std::shared_ptr<ir::Field> ir_field) { return ir_field->name == member_name; });
         if (iter_field != ir_type->fields.end()) {
             auto ir_field_access =
                 ir_utility->create<ir::AccessField>(ir_variable_liked, *iter_field);
@@ -455,22 +455,22 @@ class ExpressionLoweringVisitor {
         // @note 有数组类型后需要再处理一下
         for (auto postfix_operator : ast_postfix_type.postfix_type_operators) {
             boost::apply_visitor(
-                overloaded{[&](ast::Operator ast_star) {
-                               // parser 处理了
-                               PRAJNA_ASSERT(ast_star == ast::Operator("*"));
-                               ir_type = ir::PointerType::create(ir_type);
-                           },
-                           [&](ast::IntLiteral ast_int_literal) {
-                               ir_type = ir::ArrayType::create(ir_type, ast_int_literal.value);
-                           },
-                           [&](ast::Identifier ast_identifier) {
-                               auto symbol_const_int =
-                                   ir_utility->symbol_table->get(ast_identifier);
-                               auto ir_constant_int = symbolGet<ir::ConstantInt>(symbol_const_int);
-                               // parser 处理了
-                               PRAJNA_ASSERT(ir_constant_int);
-                               ir_type = ir::ArrayType::create(ir_type, ir_constant_int->value);
-                           }},
+                overloaded{
+                    [&ir_type](ast::Operator ast_star) {
+                        // parser 处理了
+                        PRAJNA_ASSERT(ast_star == ast::Operator("*"));
+                        ir_type = ir::PointerType::create(ir_type);
+                    },
+                    [&ir_type](ast::IntLiteral ast_int_literal) {
+                        ir_type = ir::ArrayType::create(ir_type, ast_int_literal.value);
+                    },
+                    [&ir_type, ir_utility = this->ir_utility](ast::Identifier ast_identifier) {
+                        auto symbol_const_int = ir_utility->symbol_table->get(ast_identifier);
+                        auto ir_constant_int = symbolGet<ir::ConstantInt>(symbol_const_int);
+                        // parser 处理了
+                        PRAJNA_ASSERT(ir_constant_int);
+                        ir_type = ir::ArrayType::create(ir_type, ir_constant_int->value);
+                    }},
                 postfix_operator);
         }
 
@@ -493,15 +493,15 @@ class ExpressionLoweringVisitor {
              ++iter_ast_identifier) {
             symbol = boost::apply_visitor(
                 overloaded{
-                    [&](auto x) -> Symbol {
+                    [=](auto x) -> Symbol {
                         PRAJNA_UNREACHABLE;
                         return nullptr;
                     },
-                    [&](std::shared_ptr<ir::Value> ir_value) -> Symbol {
+                    [=](std::shared_ptr<ir::Value> ir_value) -> Symbol {
                         logger->error("not a valid scope access", *iter_ast_identifier);
                         return nullptr;
                     },
-                    [&](std::shared_ptr<ir::Type> ir_type) -> Symbol {
+                    [=](std::shared_ptr<ir::Type> ir_type) -> Symbol {
                         auto static_function_identifier = iter_ast_identifier->identifier;
                         auto ir_static_fun = ir_type->static_functions[static_function_identifier];
                         if (ir_static_fun == nullptr) {
@@ -516,11 +516,11 @@ class ExpressionLoweringVisitor {
                         }
                         return ir_static_fun;
                     },
-                    [&](std::shared_ptr<TemplateStruct> template_strcut) -> Symbol {
+                    [=](std::shared_ptr<TemplateStruct> template_strcut) -> Symbol {
                         PRAJNA_UNREACHABLE;
                         return nullptr;
                     },
-                    [&](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
+                    [=](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
                         auto symbol = symbol_table->get(iter_ast_identifier->identifier);
                         if (symbol.which() == 0) {
                             logger->error("the symbol is not found",
@@ -540,11 +540,11 @@ class ExpressionLoweringVisitor {
                             for (auto ast_template_argument :
                                  *iter_ast_identifier->template_arguments) {
                                 auto symbol_template_argument = boost::apply_visitor(
-                                    overloaded{[&](ast::Blank) -> Symbol {
+                                    overloaded{[=](ast::Blank) -> Symbol {
                                                    PRAJNA_UNREACHABLE;
                                                    return nullptr;
                                                },
-                                               [&](ast::Type ast_type) -> Symbol {
+                                               [=](ast::Type ast_type) -> Symbol {
                                                    if (ast_type.postfix_type_operators.size() ==
                                                        0) {
                                                        return this->applyIdentifiersResolution(
@@ -553,7 +553,7 @@ class ExpressionLoweringVisitor {
                                                        return this->applyType(ast_type);
                                                    }
                                                },
-                                               [&](ast::IntLiteral ast_int_literal) -> Symbol {
+                                               [=](ast::IntLiteral ast_int_literal) -> Symbol {
                                                    return ir::ConstantInt::create(
                                                        ir::IntType::create(64, true),
                                                        ast_int_literal.value);

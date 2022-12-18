@@ -8,7 +8,7 @@ namespace prajna::lowering {
 inline std::shared_ptr<lowering::SymbolTable> createPrimitiveTypes() {
     auto new_symbol_table = lowering::SymbolTable::create(nullptr);
 
-    auto add_primite_type = [&](std::shared_ptr<ir::Type> ir_type) {
+    auto add_primite_type = [=](std::shared_ptr<ir::Type> ir_type) {
         new_symbol_table->set(ir_type, ir_type->name);
     };
 

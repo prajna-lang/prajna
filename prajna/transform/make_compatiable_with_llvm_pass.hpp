@@ -12,7 +12,7 @@ class MakeCompatiableWithLlvmPass : public FunctionPass {
    public:
     bool declaraExternalFunctionAndGlobalVariable(std::shared_ptr<ir::Function> ir_function) {
         bool changed = false;
-        utility::eachValue(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
+        utility::eachValue(ir_function, [=, &changed](std::shared_ptr<ir::Value> ir_value) {
             if (auto ir_call = cast<ir::Call>(ir_value)) {
                 auto ir_called_function_type = ir_call->function()->getFunctionType();
                 PRAJNA_ASSERT(ir_called_function_type);

@@ -90,12 +90,12 @@ class InterpreterLoweringVisitor {
         ir_utility->ir_current_block = ir_block;
         ir_function->blocks.push_back(ir_block);
 
-        return function_guard::create([&]() {
+        return function_guard::create([=]() {
             // 打印结果
             auto ir_utility = _statement_lowering_visitor->ir_utility;
             boost::apply_visitor(
-                overloaded{[&](auto x) {},
-                           [&](std::shared_ptr<ir::Value> ir_result_value) {
+                overloaded{[=](auto x) {},
+                           [=](std::shared_ptr<ir::Value> ir_result_value) {
                                if (!ir_result_value->type->member_functions["tostr"]) return;
                                auto ir_result_string =
                                    ir_utility->callMemberFunction(ir_result_value, "tostr", {});

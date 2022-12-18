@@ -62,8 +62,9 @@ ExecutionEngine::ExecutionEngine() {
     auto expect_up_lljit =
         llvm::orc::LLJITBuilder()
             .setObjectLinkingLayerCreator(
-                [&](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
+                [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
                     auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(
+                        // @note 需要确认机制是做什么用的
                         ES, std::make_unique<llvm::jitlink::InProcessMemoryManager>(64 * 1024));
                     ll->setAutoClaimResponsibilityForObjectSymbols(true);
                     return std::move(ll);

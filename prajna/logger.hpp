@@ -107,7 +107,7 @@ class Logger {
     }
 
     void error(std::string message, ast::Operand ast_operand) {
-        boost::apply_visitor([&](auto x) { this->error(message, x); }, ast_operand);
+        boost::apply_visitor([=](auto x) { this->error(message, x); }, ast_operand);
     }
 
    private:

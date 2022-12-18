@@ -103,10 +103,10 @@ namespace prajna::transform {
 //             })) {
 //             PRAJNA_TODO;
 //         }
-//         utility::eachValue(ir_gpu_for->loopBlock(), [&](auto ir_value) {
+//         utility::eachValue(ir_gpu_for->loopBlock(), [=](auto ir_value) {
 //             // 不能被修改
 //             if (auto ir_write_variable_liked = cast<ir::WriteVariableLiked>(ir_value)) {
-//                 if (std::any_of(RANGE(ir_captured_variable_vector), [&](auto
+//                 if (std::any_of(RANGE(ir_captured_variable_vector), [=](auto
 //                 ir_captured_variable) {
 //                         return utility::isReferedTo(ir_captured_variable,
 //                                                     ir_write_variable_liked->variable());
@@ -116,7 +116,7 @@ namespace prajna::transform {
 //             }
 //             // 不能获取地址, 因为是通过值拷贝捕获的
 //             if (auto ir_get_address_of = cast<ir::GetAddressOfVariableLiked>(ir_value)) {
-//                 if (std::any_of(RANGE(ir_captured_variable_vector), [&](auto
+//                 if (std::any_of(RANGE(ir_captured_variable_vector), [=](auto
 //                 ir_captured_variable) {
 //                         return ir_captured_variable == ir_get_address_of->variable();
 //                     })) {
@@ -352,7 +352,8 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
             gpu_host_tensor_dict;
         std::transform(
             RANGE(ir_captured_variables_list), std::back_inserter(ir_arguments),
-            [&](std::shared_ptr<ir::Variable> ir_captured_variable) -> std::shared_ptr<ir::Value> {
+            [=, &gpu_host_tensor_dict](
+                std::shared_ptr<ir::Variable> ir_captured_variable) -> std::shared_ptr<ir::Value> {
                 if (utility::isHostTensorType(ir_captured_variable->type)) {
                     auto ir_gpu_tensor =
                         ir_builder->callMemberFunction(ir_captured_variable, "toGpu", {});

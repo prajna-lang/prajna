@@ -133,7 +133,7 @@ class StatementLoweringVisitor {
     std::vector<std::shared_ptr<ir::Type>> applyParameters(
         std::vector<ast::Parameter> ast_parameters) {
         std::vector<std::shared_ptr<ir::Type>> types(ast_parameters.size());
-        std::transform(RANGE(ast_parameters), types.begin(), [&](ast::Parameter ast_parameter) {
+        std::transform(RANGE(ast_parameters), types.begin(), [=](ast::Parameter ast_parameter) {
             return this->applyType(ast_parameter.type);
         });
 

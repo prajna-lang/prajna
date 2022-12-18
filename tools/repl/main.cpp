@@ -26,6 +26,8 @@ bool determine_completeness(CPP_TERMINAL_MAYBE_UNUSED std::string command) {
 }
 
 int main() {
+    std::cout << "Prajna 0.0, all copyrights @ \"Zhang Zhimin\"" << std::endl;
+
     auto compiler = std::make_shared<prajna::compiler::Compiler>();
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
 

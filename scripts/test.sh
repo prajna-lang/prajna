@@ -1,5 +1,4 @@
 #! /bin/bash
-
 set -e
 
 build_dir=build_$1

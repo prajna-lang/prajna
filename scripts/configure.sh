@@ -1,3 +1,4 @@
+#! /bin/bash
 # set -e
 
 build_configure=$1

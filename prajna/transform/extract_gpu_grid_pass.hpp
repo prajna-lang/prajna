@@ -175,7 +175,13 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     ir_argument_types[0] = ir_gpu_for->first()->type;
     ir_argument_types[1] = ir_gpu_for->last()->type;
     std::transform(RANGE(ir_captured_variables_list), std::back_inserter(ir_argument_types),
-                   [](std::shared_ptr<ir::Value> ir_value) { return ir_value->type; });
+                   [](std::shared_ptr<ir::Value> ir_value) {
+                       if (utility::isHostTensorType(ir_value->type)) {
+                           return utility::getGpuTensorTypeOfHostTensorType(ir_value->type);
+                       } else {
+                           return ir_value->type;
+                       }
+                   });
 
     auto ir_kernel_function_type =
         ir::FunctionType::create(ir::VoidType::create(), ir_argument_types);
@@ -339,13 +345,31 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
         ir_builder->setDim3(ir_block_dim, 1, ir_builder->getIndexConstant(1));
         ir_builder->setDim3(ir_block_dim, 2, ir_builder->getIndexConstant(1));
 
-        std::list<std::shared_ptr<ir::Value>> ir_arguments_list(RANGE(ir_captured_variables_list));
-        ir_arguments_list.push_front(ir_gpu_for->last());
-        ir_arguments_list.push_front(ir_gpu_for->first());
-        std::vector<std::shared_ptr<ir::Value>> ir_arguments(RANGE(ir_arguments_list));
+        std::vector<std::shared_ptr<ir::Value>> ir_arguments;
+        ir_arguments.push_back(ir_gpu_for->first());
+        ir_arguments.push_back(ir_gpu_for->last());
+        std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Variable>>
+            gpu_host_tensor_dict;
+        std::transform(
+            RANGE(ir_captured_variables_list), std::back_inserter(ir_arguments),
+            [&](std::shared_ptr<ir::Variable> ir_captured_variable) -> std::shared_ptr<ir::Value> {
+                if (utility::isHostTensorType(ir_captured_variable->type)) {
+                    auto ir_gpu_tensor =
+                        ir_builder->callMemberFunction(ir_captured_variable, "toGpu", {});
+                    gpu_host_tensor_dict[ir_gpu_tensor] = ir_captured_variable;
+                    return ir_gpu_tensor;
+                } else {
+                    return ir_captured_variable;
+                }
+            });
 
         ir_builder->create<ir::KernelFunctionCall>(ir_kernel_function, ir_grid_dim, ir_block_dim,
                                                    ir_arguments);
+        for (auto [ir_gpu_tensor, ir_host_tensor_variable] : gpu_host_tensor_dict) {
+            PRAJNA_ASSERT(utility::isGpuTensorType(ir_gpu_tensor->type));
+            auto ir_host_tensor = ir_builder->callMemberFunction(ir_gpu_tensor, "toHost", {});
+            ir_builder->create<ir::WriteVariableLiked>(ir_host_tensor, ir_host_tensor_variable);
+        }
 
         utility::removeFromParent(ir_gpu_for);
         ir_gpu_for->finalize();

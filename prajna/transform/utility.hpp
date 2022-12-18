@@ -256,4 +256,38 @@ inline std::list<ir::Target> getTargets(std::shared_ptr<ir::Function> ir_functio
     return ir_target_list;
 }
 
+inline bool isHostTensorType(std::shared_ptr<ir::Type> ir_type) {
+    std::string host_tensor_type__fullname_prefix = "::core::Tensor";
+    if (ir_type->fullname.size() > host_tensor_type__fullname_prefix.size() &&
+        ir_type->fullname.substr(0, host_tensor_type__fullname_prefix.size()) ==
+            host_tensor_type__fullname_prefix) {
+        return true;
+    }
+
+    return false;
+}
+
+inline bool isGpuTensorType(std::shared_ptr<ir::Type> ir_type) {
+    std::string host_tensor_type__fullname_prefix = "::gpu::Tensor";
+    if (ir_type->fullname.size() > host_tensor_type__fullname_prefix.size() &&
+        ir_type->fullname.substr(0, host_tensor_type__fullname_prefix.size()) ==
+            host_tensor_type__fullname_prefix) {
+        return true;
+    }
+
+    return false;
+}
+
+inline std::shared_ptr<ir::Type> getGpuTensorTypeOfHostTensorType(
+    std::shared_ptr<ir::Type> ir_type) {
+    PRAJNA_ASSERT(isHostTensorType(ir_type));
+    auto ir_gpu_tensor_type_fullname = "::gpu" + ir_type->fullname.substr(6);  //"::core"
+    for (auto ir_type : ir::global_context.created_types) {
+        if (ir_type->fullname == ir_gpu_tensor_type_fullname) return ir_type;
+    }
+
+    PRAJNA_ASSERT(false, "import gpu package before using host tensor");
+    return nullptr;
+}
+
 }  // namespace prajna::transform::utility

@@ -70,7 +70,7 @@ implement Tensor<T : template, RANK: template> {
 }
 
 implement ::Tensor<T : template, RANK: template> {
-    func toCuda()->Tensor<T, RANK>{
+    func toGpu()->Tensor<T, RANK>{
         var cuda_tensor = Tensor<T, RANK>::create(this.shape);
         var size = 1;
         for i in 0 to RANK {

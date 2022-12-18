@@ -1,24 +1,13 @@
-
-
 @test
 func testMain(){
-    gpu::init();
-
     var shape = [1000];
-    var gpu_tensor = gpu::Tensor<i64, 1>::create(shape);
-
-    var b = 4;
-
-    var a = 0;
-
+    var tmp_tensor = core::Tensor<i64, 1>::create(shape);
     @gpu
-    for i in a to shape[0]{
-        gpu_tensor.data[i] = i;
+    for i in 0 to shape[0]{
+        tmp_tensor.data[i] = i;
     }
 
-    var host_tensor =  gpu_tensor.toHost();
-
-    print("value: ");
-    host_tensor.data[3].tostr().print();
-    "\n".print();
+    for i in 0 to shape[0] {
+        testing::Assert(tmp_tensor.data[i] == i);
+    }
 }

@@ -13,7 +13,7 @@ func testKernel(){
 
     var shape = [1];
     var host_tensor = Tensor<i64, 1>::create(shape);
-    var gpu_tensor = host_tensor.toCuda();
+    var gpu_tensor = host_tensor.toGpu();
     var parameters: i8*[2];
     parameters[0] = cast<i8*>(&gpu_tensor);
     var value = 1023;

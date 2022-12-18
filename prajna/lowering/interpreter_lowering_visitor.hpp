@@ -58,6 +58,7 @@ class InterpreterLoweringVisitor {
     static std::shared_ptr<InterpreterLoweringVisitor> create(
         std::shared_ptr<lowering::SymbolTable> symbol_table, std::shared_ptr<Logger> logger) {
         std::shared_ptr<InterpreterLoweringVisitor> self(new InterpreterLoweringVisitor);
+        self->logger = logger;
         self->_statement_lowering_visitor = StatementLoweringVisitor::create(symbol_table, logger);
         return self;
     }
@@ -116,35 +117,9 @@ class InterpreterLoweringVisitor {
 
     void operator()(const ast::Blank) { return; }
 
-    void operator()(const ast::Assignment& ast_assignment) {
-        auto wrap_function_guard = this->wrapCommandLineWithFunction();
-        auto ir_utility = _statement_lowering_visitor->ir_utility;
-
-        // 需要处理一下
-        std::string identifier = detail::getIdentifier(ast_assignment.left);
-        if (identifier.empty() || ir_utility->symbol_table->has(identifier)) {
-            _symbol_result = (*_statement_lowering_visitor)(ast_assignment);
-        } else {
-            auto symbol_rhs = _statement_lowering_visitor->expression_lowering_visitor->operator()(
-                ast_assignment.right);
-            auto ir_rhs = symbolGet<ir::Value>(symbol_rhs);
-            PRAJNA_ASSERT(ir_rhs);
-
-            auto ir_global_variable = ir::GlobalVariable::create(ir_rhs->type);
-            ir_global_variable->parent_module = ir_utility->module;
-            ir_utility->module->global_variables.push_back(ir_global_variable);
-            ir_global_variable->name = identifier;
-            ir_global_variable->fullname =
-                concatFullname(ir_utility->symbol_table->fullname(), ir_global_variable->name);
-            ir_utility->symbol_table->set(ir_global_variable, identifier);
-            ir_utility->create<ir::WriteVariableLiked>(ir_rhs, ir_global_variable);
-            _symbol_result = ir_rhs;
-        }
-    }
-
-    void operator()(const ast::Return x) { PRAJNA_TODO; }
-    void operator()(const ast::Continue x) { PRAJNA_TODO; }
-    void operator()(const ast::Break x) { PRAJNA_TODO; }
+    void operator()(const ast::Return x) { logger->error("\"return\" not in a function", x); }
+    void operator()(const ast::Continue x) { logger->error("\"continue\" not in a loop", x); }
+    void operator()(const ast::Break x) { logger->error("\"break\" not in a loop", x); }
 
     void operator()(const ast::Function x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::Struct x) { (*_statement_lowering_visitor)(x); }
@@ -162,6 +137,7 @@ class InterpreterLoweringVisitor {
     Symbol _symbol_result = nullptr;
     std::shared_ptr<StatementLoweringVisitor> _statement_lowering_visitor = nullptr;
     static size_t _command_id;
+    std::shared_ptr<Logger> logger;
 };
 
 }  // namespace prajna::lowering

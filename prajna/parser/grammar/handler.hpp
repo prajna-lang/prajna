@@ -60,6 +60,8 @@ struct ErrorHandler {
     std::shared_ptr<Logger> logger;
 };
 
+// @note on_success存在多次重复调用的问题, 如break会在多个rule里触发(break_,
+// statement等),所以其位置最后会包含';'
 template <typename _Iterator>
 struct SuccessHandler {
     SuccessHandler(std::shared_ptr<Logger> logger) { this->logger = logger; }

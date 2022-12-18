@@ -4,6 +4,12 @@ func add(lhs: i64, rhs: i64) -> i64{
 }
 
 
+func callRecursively(i: i64)->i64{
+    if (i == 0) {return 0; }
+
+    return callRecursively(i - 1);
+}
+
 // 若没有返回值类型, 则表示为void
 func printHi(){
     "Hi\n".print();
@@ -17,4 +23,7 @@ func testFunction(){
     var fun_address = printHi;
     // var fun_address = &printHi;  // error 不同于c++, 这是错误的用法
     fun_address();
+
+    testing::Assert(callRecursively(4) == 0);
+    testing::Assert(callRecursively(5) == 0);
 }

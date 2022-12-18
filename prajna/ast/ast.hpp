@@ -232,7 +232,7 @@ struct using_statement : SourceLocation {
 };
 
 struct Annotation : SourceLocation {
-    std::string property;
+    Identifier name;
     std::vector<StringLiteral> values;
 };
 
@@ -366,7 +366,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierWithTemplateArguments, identifi
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Struct, annotations, name, template_parameters, fields)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Parameter, name, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotations, name, parameters, return_type)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, property, values)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Interface, name, function_declarations)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStructForInterface, interface, struct_, functions)

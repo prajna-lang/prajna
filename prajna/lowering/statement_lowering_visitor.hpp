@@ -146,7 +146,7 @@ class StatementLoweringVisitor {
             std::vector<std::string> values;
             std::transform(RANGE(ast_annotation.values), std::back_inserter(values),
                            [](ast::StringLiteral string_literal) { return string_literal.value; });
-            annotations.insert({ast_annotation.property, values});
+            annotations.insert({ast_annotation.name, values});
         }
         return annotations;
     }
@@ -348,7 +348,7 @@ class StatementLoweringVisitor {
             std::vector<std::string> values;
             std::transform(RANGE(ast_annotation.values), std::back_inserter(values),
                            [](ast::StringLiteral string_literal) { return string_literal.value; });
-            ir_for->annotations.insert({ast_annotation.property, values});
+            ir_for->annotations.insert({ast_annotation.name, values});
         }
 
         PRAJNA_ASSERT(not ir_for->loopBlock()->parent_block);
@@ -495,7 +495,7 @@ class StatementLoweringVisitor {
         auto unary_annotation = ir_function->function_type->annotations["unary"];
         auto iter_unary_annotation = std::find_if(
             RANGE(ast_function.declaration.annotations),
-            [](ast::Annotation ast_annotation) { return ast_annotation.property == "unary"; });
+            [](ast::Annotation ast_annotation) { return ast_annotation.name == "unary"; });
         if (unary_annotation.size() != 1) {
             logger->error("the unary annotation should only have one value to represent operator",
                           *iter_unary_annotation);
@@ -520,7 +520,7 @@ class StatementLoweringVisitor {
         auto binary_annotation = ir_function->function_type->annotations["binary"];
         auto iter_binary_annotation = std::find_if(
             RANGE(ast_function.declaration.annotations),
-            [](ast::Annotation ast_annotation) { return ast_annotation.property == "binary"; });
+            [](ast::Annotation ast_annotation) { return ast_annotation.name == "binary"; });
         if (binary_annotation.size() != 1) {
             logger->error("the binary annotation should only have one value to represent operator",
                           *iter_binary_annotation);
@@ -545,7 +545,7 @@ class StatementLoweringVisitor {
         if (ir_function->function_type->annotations.count("static") != 0) {
             auto iter_static_annotation = std::find_if(
                 RANGE(ast_function.declaration.annotations),
-                [](ast::Annotation ast_annotation) { return ast_annotation.property == "static"; });
+                [](ast::Annotation ast_annotation) { return ast_annotation.name == "static"; });
             logger->error(fmt::format("the {} function can not be static", ir_function->name),
                           *iter_static_annotation);
         }
@@ -603,7 +603,7 @@ class StatementLoweringVisitor {
 
         auto iter_property_annotation = std::find_if(
             RANGE(ast_function.declaration.annotations),
-            [](ast::Annotation ast_annotation) { return ast_annotation.property == "properties"; });
+            [](ast::Annotation ast_annotation) { return ast_annotation.name == "properties"; });
         auto property_annotation = ir_function->function_type->annotations["property"];
         if (property_annotation.size() != 2) {
             logger->error("the property annoation should only have two values",
@@ -655,7 +655,7 @@ class StatementLoweringVisitor {
         for (auto ast_function : ast_implement_struct.functions) {
             std::shared_ptr<ir::Function> ir_function = nullptr;
             if (std::none_of(RANGE(ast_function.declaration.annotations),
-                             [](auto x) { return x.property == "static"; })) {
+                             [](auto x) { return x.name == "static"; })) {
                 auto ir_this_pointer_type = ir::PointerType::create(ir_type);
                 auto symbol_function = (*this)(ast_function, ir_this_pointer_type);
                 ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));

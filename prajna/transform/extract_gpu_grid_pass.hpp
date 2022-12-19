@@ -200,9 +200,9 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     ir_block->parent_function = ir_kernel_function;
     ir_kernel_function->blocks.push_back(ir_block);
 
-    auto ir_builder = std::make_shared<utility::IrBuilder>();
-    ir_builder->block = ir_block;
-    ir_builder->iter = ir_block->values.end();
+    auto ir_builder = std::make_shared<lowering::IrBuilder>();
+    ir_builder->current_block = ir_block;
+    ir_builder->inserter_iterator = ir_block->values.end();
 
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> variables_dict;
     auto iter_captured_variable = ir_captured_variables_list.begin();
@@ -284,11 +284,11 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         auto ir_kernel_while_loop_block =
             cast<ir::Block>(ir_kernel_while->loopBlock()->values.front());
         PRAJNA_ASSERT(ir_kernel_while_loop_block);
-        auto ir_while_builer = std::make_shared<utility::IrBuilder>();
-        ir_while_builer->block = ir_kernel_while_loop_block;
-        ir_while_builer->iter = ir_kernel_while_loop_block->values.begin();
+        auto ir_while_builder = std::make_shared<lowering::IrBuilder>();
+        ir_while_builder->current_block = ir_kernel_while_loop_block;
+        ir_while_builder->inserter_iterator = ir_kernel_while_loop_block->values.begin();
         for (auto ir_value : ir_gpu_for->loopBlock()->values) {
-            ir_while_builer->insert(ir_value);
+            ir_while_builder->insert(ir_value);
         }
     }
 
@@ -314,9 +314,9 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
 
         auto ir_gpu_parent_block = ir_gpu_for->parent_block;
         auto iter_gpu_for = std::find(RANGE(ir_gpu_parent_block->values), ir_gpu_for);
-        auto ir_builder = std::make_shared<utility::IrBuilder>();
-        ir_builder->block = ir_gpu_parent_block;
-        ir_builder->iter = iter_gpu_for;
+        auto ir_builder = std::make_shared<lowering::IrBuilder>();
+        ir_builder->current_block = ir_gpu_parent_block;
+        ir_builder->inserter_iterator = iter_gpu_for;
 
         //
         auto symbol_table_gpu =

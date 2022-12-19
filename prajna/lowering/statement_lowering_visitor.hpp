@@ -11,7 +11,7 @@
 #include "prajna/logger.hpp"
 #include "prajna/lowering/builtin.hpp"
 #include "prajna/lowering/expression_lowering_visitor.hpp"
-#include "prajna/lowering/ir_utility.hpp"
+#include "prajna/lowering/ir_builder.hpp"
 #include "prajna/lowering/symbol_table.hpp"
 #include "prajna/lowering/template.hpp"
 
@@ -28,7 +28,7 @@ class StatementLoweringVisitor {
         std::shared_ptr<ir::Module> ir_module = nullptr) {
         std::shared_ptr<StatementLoweringVisitor> self(new StatementLoweringVisitor);
         if (!ir_module) ir_module = ir::Module::create();
-        self->ir_utility = std::make_shared<IrUtility>(symbol_table, ir_module);
+        self->ir_utility = std::make_shared<IrBuilder>(symbol_table, ir_module);
         self->logger = logger;
         self->expression_lowering_visitor =
             ExpressionLoweringVisitor::create(self->ir_utility, logger);
@@ -53,7 +53,7 @@ class StatementLoweringVisitor {
         ir_utility->pushSymbolTableAndBlock();
 
         (*this)(block.statements);
-        auto ir_block = ir_utility->ir_current_block;
+        auto ir_block = ir_utility->current_block;
         ir_utility->popSymbolTableAndBlock();
 
         return ir_block;
@@ -212,7 +212,7 @@ class StatementLoweringVisitor {
                       std::shared_ptr<ir::Type> ir_this_poiner_type = nullptr) {
         auto ir_function = applyFunctionHeader(ast_function.declaration, ir_this_poiner_type);
 
-        ir_utility->ir_current_function = ir_function;
+        ir_utility->current_function = ir_function;
         // 进入参数域,
         ir_utility->pushSymbolTable();
         ir_utility->ir_return_type = ir_function->function_type->return_type;
@@ -220,7 +220,7 @@ class StatementLoweringVisitor {
         // @note 将function的第一个block作为最上层的block
         auto ir_block = ir::Block::create();
         ir_block->parent_function = ir_function;
-        ir_utility->ir_current_block = ir_block;
+        ir_utility->pushBlock(ir_block);
         ir_function->blocks.push_back(ir_block);
 
         size_t j = 0;
@@ -265,7 +265,7 @@ class StatementLoweringVisitor {
         }
 
         ir_utility->ir_return_type = nullptr;
-        ir_utility->ir_current_block = nullptr;
+        ir_utility->popBlock(ir_block);
         ir_utility->popSymbolTable();
 
         return ir_function;
@@ -378,7 +378,7 @@ class StatementLoweringVisitor {
         auto ir_block = ir::Block::create();
         ir_block->parent_function = ir_constructor;
         ir_constructor->blocks.push_back(ir_block);
-        ir_utility->ir_current_block = ir_block;
+        ir_utility->pushBlock(ir_block);
         auto ir_variable = ir_utility->create<ir::LocalVariable>(ir_struct_type);
         for (size_t i = 0; i < ir_fields.size(); ++i) {
             auto ir_field = ir_fields[i];
@@ -387,7 +387,7 @@ class StatementLoweringVisitor {
                                                        ir_access_field);
         }
         ir_utility->create<ir::Return>(ir_variable);
-        ir_utility->ir_current_block = nullptr;
+        ir_utility->popBlock(ir_block);
     }
 
     std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
@@ -816,7 +816,7 @@ class StatementLoweringVisitor {
 
    public:
     std::shared_ptr<ExpressionLoweringVisitor> expression_lowering_visitor = nullptr;
-    std::shared_ptr<IrUtility> ir_utility = nullptr;
+    std::shared_ptr<IrBuilder> ir_utility = nullptr;
     std::shared_ptr<Logger> logger = nullptr;
 };
 

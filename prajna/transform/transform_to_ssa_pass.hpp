@@ -114,9 +114,9 @@ class FlatternBlockPass : public FunctionPass {
                     continue;
                 }
 
-                auto ir_builder = std::make_shared<utility::IrBuilder>();
-                ir_builder->block = ir_block;
-                ir_builder->iter = iter;
+                auto ir_builder = std::make_shared<lowering::IrBuilder>();
+                ir_builder->current_block = ir_block;
+                ir_builder->inserter_iterator = iter;
 
                 auto ir_write_first =
                     ir_builder->create<ir::WriteVariableLiked>(ir_for->first(), ir_for->index());

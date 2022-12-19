@@ -37,9 +37,9 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
         auto ir_access_properties = utility::getValuesInFunction<ir::AccessProperty>(ir_function);
         for (auto ir_access_property : ir_access_properties) {
             auto ir_block = ir_access_property->parent_block;
-            utility::IrBuilder ir_builder;
-            ir_builder.block = ir_block;
-            ir_builder.iter = std::find(RANGE(ir_block->values), ir_access_property);
+            lowering::IrBuilder ir_builder;
+            ir_builder.current_block = ir_block;
+            ir_builder.inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
 
             auto instructions_with_index_set_copy = ir_access_property->instruction_with_index_list;
 
@@ -93,9 +93,10 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             // auto ir_arguments = ir_kernel_function_call->arguments();
             auto ir_block = ir_kernel_function_call->parent_block;
 
-            utility::IrBuilder ir_builder;
-            ir_builder.block = ir_block;
-            ir_builder.iter = std::find(RANGE(ir_block->values), ir_kernel_function_call);
+            lowering::IrBuilder ir_builder;
+            ir_builder.current_block = ir_block;
+            ir_builder.inserter_iterator =
+                std::find(RANGE(ir_block->values), ir_kernel_function_call);
 
             // 构建::cuda::launchKernel的逻辑
             auto ir_kernel_arguments_address_array_i8ptr = ir_builder.create<ir::LocalVariable>(

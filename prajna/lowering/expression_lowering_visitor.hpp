@@ -10,7 +10,7 @@
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
 #include "prajna/logger.hpp"
-#include "prajna/lowering/ir_utility.hpp"
+#include "prajna/lowering/ir_builder.hpp"
 #include "prajna/lowering/symbol_table.hpp"
 #include "prajna/lowering/template.hpp"
 
@@ -29,7 +29,7 @@ class ExpressionLoweringVisitor {
     ExpressionLoweringVisitor() = default;
 
    public:
-    static std::shared_ptr<ExpressionLoweringVisitor> create(std::shared_ptr<IrUtility> ir_utility,
+    static std::shared_ptr<ExpressionLoweringVisitor> create(std::shared_ptr<IrBuilder> ir_utility,
                                                              std::shared_ptr<Logger> logger) {
         std::shared_ptr<ExpressionLoweringVisitor> self(new ExpressionLoweringVisitor);
         self->logger = logger;
@@ -419,7 +419,7 @@ class ExpressionLoweringVisitor {
             }
             // 移除, 在末尾插入, 应为参数应该在属性访问的前面
             ir_access_property->parent_block->values.remove(ir_access_property);
-            ir_utility->ir_current_block->values.push_back(ir_access_property);
+            ir_utility->current_block->values.push_back(ir_access_property);
             ir_access_property->arguments(ir_arguments);
             return ir_access_property;
         }
@@ -771,7 +771,7 @@ class ExpressionLoweringVisitor {
     }
 
    private:
-    std::shared_ptr<IrUtility> ir_utility;
+    std::shared_ptr<IrBuilder> ir_utility;
     std::shared_ptr<Logger> logger;
 };
 

@@ -88,7 +88,7 @@ class InterpreterLoweringVisitor {
         auto ir_utility = _statement_lowering_visitor->ir_utility;
         auto ir_block = ir::Block::create();
         ir_block->parent_function = ir_function;
-        ir_utility->ir_current_block = ir_block;
+        ir_utility->pushBlock(ir_block);
         ir_function->blocks.push_back(ir_block);
 
         return function_guard::create([=]() {
@@ -106,7 +106,7 @@ class InterpreterLoweringVisitor {
                 _symbol_result);
 
             ir_utility->create<ir::Return>(ir::VoidValue::create());
-            ir_utility->ir_current_block = nullptr;
+            ir_utility->popBlock(ir_block);
         });
     }
 

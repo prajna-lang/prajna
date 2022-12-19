@@ -21,7 +21,7 @@ class IrBuilder {
 
     IrBuilder() : IrBuilder(nullptr, nullptr) {}
 
-    inline std::shared_ptr<ir::Type> getIndexType() { return ir::IntType::create(64, true); }
+    inline std::shared_ptr<ir::Type> getIndexType() { return ir::global_context.index_type; }
 
     inline std::shared_ptr<ir::ConstantInt> getIndexConstant(int64_t value) {
         auto ir_value = ir::ConstantInt::create(getIndexType(), value);

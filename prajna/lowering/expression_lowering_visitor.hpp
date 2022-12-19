@@ -98,10 +98,9 @@ class ExpressionLoweringVisitor {
         auto ir_c_string_constant =
             ir_utility->create<ir::ConstantArray>(ir_char_string_type, ir_inits);
         auto ir_c_string_variable = ir_utility->variableLikedNormalize(ir_c_string_constant);
-        auto ir_constant0 = ir_utility->create<ir::ConstantInt>(ir::IntType::create(64, true), 0);
-
+        auto ir_constant_zero = ir_utility->getIndexConstant(0);
         auto ir_c_string_index0 =
-            ir_utility->create<ir::IndexArray>(ir_c_string_variable, ir_constant0);
+            ir_utility->create<ir::IndexArray>(ir_c_string_variable, ir_constant_zero);
         auto ir_c_string_address =
             ir_utility->create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
         ast::IdentifiersResolution ast_identifiers_resolution;
@@ -118,8 +117,7 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteral ast_int_literal) {
-        auto ir_int_type = ir::IntType::create(64, true);
-        return ir_utility->create<ir::ConstantInt>(ir_int_type, ast_int_literal.value);
+        return ir_utility->getIndexConstant(ast_int_literal.value);
     };
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteralPostfix ast_int_literal_postfix) {
@@ -330,15 +328,14 @@ class ExpressionLoweringVisitor {
 
                 PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
                 auto ast_arguments = boost::get<ast::Expressions>(ast_binary_operation.operand);
-                auto ir_int64_type = ir::IntType::create(64, true);
+                auto ir_index_type = ir_utility->getIndexType();
                 auto ir_array = this->ir_utility->create<ir::LocalVariable>(
-                    ir::ArrayType::create(ir_int64_type, ir_arguments.size()));
+                    ir::ArrayType::create(ir_index_type, ir_arguments.size()));
                 for (size_t i = 0; i < ir_arguments.size(); ++i) {
-                    auto ir_idx =
-                        this->ir_utility->create<ir::ConstantInt>(ir::IntType::create(64, true), i);
+                    auto ir_idx = this->ir_utility->getIndexConstant(i);
                     auto ir_index_array =
                         this->ir_utility->create<ir::IndexArray>(ir_array, ir_idx);
-                    if (ir_arguments[i]->type != ir_int64_type) {
+                    if (ir_arguments[i]->type != ir_index_type) {
                         logger->error("the index argument type must be i64", ast_arguments[i]);
                     }
                     this->ir_utility->create<ir::WriteVariableLiked>(ir_arguments[i],
@@ -611,7 +608,7 @@ class ExpressionLoweringVisitor {
                                                },
                                                [=](ast::IntLiteral ast_int_literal) -> Symbol {
                                                    return ir::ConstantInt::create(
-                                                       ir::IntType::create(64, true),
+                                                       ir::global_context.index_type,
                                                        ast_int_literal.value);
                                                }},
                                     ast_template_argument);
@@ -670,8 +667,7 @@ class ExpressionLoweringVisitor {
         auto ir_array = this->ir_utility->create<ir::LocalVariable>(
             ir::ArrayType::create(ir_value_type, ast_array.values.size()));
         for (size_t i = 0; i < ast_array.values.size(); ++i) {
-            auto ir_idx =
-                this->ir_utility->create<ir::ConstantInt>(ir::IntType::create(64, true), i);
+            auto ir_idx = this->ir_utility->getIndexConstant(i);
             auto ir_index_array = this->ir_utility->create<ir::IndexArray>(ir_array, ir_idx);
             auto ir_value = this->applyOperand(ast_array.values[i]);
             if (ir_value->type != ir_value_type) {
@@ -696,7 +692,7 @@ class ExpressionLoweringVisitor {
             auto ir_arguments =
                 *cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
             // TODO arguments
-            auto ir_dim3_type = ir::ArrayType::create(ir::IntType::create(64, true), 3);
+            auto ir_dim3_type = ir_utility->getDim3Type();
             if (ir_grid_dim->type != ir_dim3_type) {
                 logger->error("the grid dim type must be i64[3]",
                               ast_kernel_function_call.operation->grid_dim);
@@ -767,7 +763,7 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> operator()(ast::SizeOf ast_sizeof) {
         auto ir_type = this->applyType(ast_sizeof.type);
-        return ir_utility->create<ir::ConstantInt>(ir::IntType::create(64, true), ir_type->bytes);
+        return ir_utility->getIndexConstant(ir_type->bytes);
     }
 
    private:

@@ -109,8 +109,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
                         ir_builder.variableLikedNormalize(ir_argument)),
                     ir::PointerType::create(ir::IntType::create(8, true)));
                 auto ir_array_index = ir_builder.create<ir::IndexArray>(
-                    ir_kernel_arguments_address_array_i8ptr,
-                    ir_builder.create<ir::ConstantInt>(ir::IntType::create(64, true), i));
+                    ir_kernel_arguments_address_array_i8ptr, ir_builder.getIndexConstant(i));
                 auto ir_array_index_write = ir_builder.create<ir::WriteVariableLiked>(
                     ir_kernel_argument_address_i8ptr, ir_array_index);
             }
@@ -126,8 +125,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             ir_arguments[1] = ir_grid_dim;
             ir_arguments[2] = ir_block_dim;
             auto ir_array_index0 = ir_builder.create<ir::IndexArray>(
-                ir_kernel_arguments_address_array_i8ptr,
-                ir_builder.create<ir::ConstantInt>(ir::IntType::create(64, true), 0));
+                ir_kernel_arguments_address_array_i8ptr, ir_builder.getIndexConstant(0));
             auto ir_array_address = ir_builder.create<ir::BitCast>(
                 ir_builder.create<ir::GetAddressOfVariableLiked>(ir_array_index0),
                 ir::PointerType::create(ir::PointerType::create(ir::IntType::create(8, true))));

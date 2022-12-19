@@ -328,7 +328,7 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::For ast_for) {
         auto ir_first = expression_lowering_visitor->apply(ast_for.first);
         auto ir_last = expression_lowering_visitor->apply(ast_for.last);
-        auto ir_index = ir_utility->create<ir::LocalVariable>(ir::IntType::create(64, true));
+        auto ir_index = ir_utility->create<ir::LocalVariable>(ir_utility->getIndexType());
         ir_utility->symbol_table->setWithName(ir_index, ast_for.index);
         if (not expression_lowering_visitor->isIndexType(ir_first->type)) {
             logger->error("the index type must be i64", ast_for.first);

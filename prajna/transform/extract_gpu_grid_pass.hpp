@@ -60,18 +60,18 @@ namespace prajna::transform {
 //             auto symbol_table = ir_gpu_for->getParentFunction()->parent_module->symbol_table;
 //             auto statement_lowering_visitor =
 //                 lowering::StatementLoweringVisitor::create(symbol_table, logger);
-//             auto ir_utility = statement_lowering_visitor->ir_utility;
-//             ir_utility->pushSymbolTable();
-//             ir_utility->pushBlock(ir_top_block);
-//             // ir_utility->symbol_table->set(ir_tid_x_fun, "getThreadIdxX");
+//             auto ir_builder = statement_lowering_visitor->ir_builder;
+//             ir_builder->pushSymbolTable();
+//             ir_builder->pushBlock(ir_top_block);
+//             // ir_builder->symbol_table->set(ir_tid_x_fun, "getThreadIdxX");
 
 //             auto ast = prajna::parser::parse(code, "//None", logger);
 
 //             statement_lowering_visitor->apply(ast);
 
-//             ir_utility->create<ir::Return>(ir::VoidValue::create());
-//             ir_utility->popSymbolTable();
-//             ir_utility->popBlock(ir_top_block);
+//             ir_builder->create<ir::Return>(ir::VoidValue::create());
+//             ir_builder->popSymbolTable();
+//             ir_builder->popBlock(ir_top_block);
 //         }
 
 //         return ir_kernel_function;
@@ -264,19 +264,19 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         auto symbol_table = ir_module->symbol_table;
         auto statement_lowering_visitor =
             lowering::StatementLoweringVisitor::create(symbol_table, logger);
-        auto ir_utility = statement_lowering_visitor->ir_utility;
-        ir_utility->pushSymbolTable();
-        ir_utility->pushBlock(ir_block);
+        auto ir_builder = statement_lowering_visitor->ir_builder;
+        ir_builder->pushSymbolTable();
+        ir_builder->pushBlock(ir_block);
 
-        ir_utility->symbol_table->set(ir_index, "i");
-        ir_utility->symbol_table->set(ir_first, "first");
-        ir_utility->symbol_table->set(ir_last, "last");
+        ir_builder->symbol_table->set(ir_index, "i");
+        ir_builder->symbol_table->set(ir_first, "first");
+        ir_builder->symbol_table->set(ir_last, "last");
 
         auto ast = prajna::parser::parse(code, "//None", logger);
 
         statement_lowering_visitor->apply(ast);
-        ir_utility->popSymbolTable();
-        ir_utility->popBlock(ir_block);
+        ir_builder->popSymbolTable();
+        ir_builder->popBlock(ir_block);
 
         // 插入ir_gpu_for里的逻辑
         auto ir_kernel_while = cast<ir::While>(ir_block->values.back());

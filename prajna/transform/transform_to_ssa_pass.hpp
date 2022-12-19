@@ -133,19 +133,21 @@ class FlatternBlockPass : public FunctionPass {
                 auto ir_condition_branch = ir_builder->create<ir::ConditionBranch>(
                     ir_condition, ir_label_loop, ir_label_after_loop);
 
-                std::string code = "i = i + 1;";
-                auto logger = Logger::create(code);
-                auto ast = prajna::parser::parse(code, "//None", logger);
-                auto symbol_table = ir_block->getParentFunction()->parent_module->symbol_table;
-                auto statement_lowering_visitor =
-                    lowering::StatementLoweringVisitor::create(symbol_table, logger);
-                auto ir_utility = statement_lowering_visitor->ir_utility;
-                ir_utility->pushSymbolTable();
-                ir_utility->pushBlock(ir_for->loopBlock());
-                ir_utility->symbol_table->set(ir_for->index(), "i");
-                statement_lowering_visitor->apply(ast);
-                ir_utility->popSymbolTable();
-                ir_utility->popBlock(ir_for->loopBlock());
+                {
+                    std::string code = "i = i + 1;";
+                    auto logger = Logger::create(code);
+                    auto ast = prajna::parser::parse(code, "//None", logger);
+                    auto symbol_table = ir_block->getParentFunction()->parent_module->symbol_table;
+                    auto statement_lowering_visitor =
+                        lowering::StatementLoweringVisitor::create(symbol_table, logger);
+                    auto ir_builder = statement_lowering_visitor->ir_builder;
+                    ir_builder->pushSymbolTable();
+                    ir_builder->pushBlock(ir_for->loopBlock());
+                    ir_builder->symbol_table->set(ir_for->index(), "i");
+                    statement_lowering_visitor->apply(ast);
+                    ir_builder->popSymbolTable();
+                    ir_builder->popBlock(ir_for->loopBlock());
+                }
 
                 auto ir_jump_branch = ir::JumpBranch::create(ir_label_condition_entry);
                 ir_for->loopBlock()->pushBack(ir_jump_branch);

@@ -26,7 +26,7 @@ class InterpreterLoweringVisitor {
 
     std::shared_ptr<ir::Module> apply(std::shared_ptr<ast::Statements> sp_ast_statements) {
         (*this)(*sp_ast_statements);
-        return _statement_lowering_visitor->ir_utility->module;
+        return _statement_lowering_visitor->ir_builder->module;
     }
 
     std::unique_ptr<function_guard> wrapCommandLineWithFunction() {
@@ -35,31 +35,31 @@ class InterpreterLoweringVisitor {
         ir_function->function_type->annotations.insert({"\\command", {}});
         ir_function->name = "\\command" + std::to_string(_command_id++);
         ir_function->fullname = ir_function->name;
-        ir_function->parent_module = _statement_lowering_visitor->ir_utility->module;
-        _statement_lowering_visitor->ir_utility->module->functions.push_back(ir_function);
+        ir_function->parent_module = _statement_lowering_visitor->ir_builder->module;
+        _statement_lowering_visitor->ir_builder->module->functions.push_back(ir_function);
 
-        auto ir_utility = _statement_lowering_visitor->ir_utility;
+        auto ir_builder = _statement_lowering_visitor->ir_builder;
         auto ir_block = ir::Block::create();
         ir_block->parent_function = ir_function;
-        ir_utility->pushBlock(ir_block);
+        ir_builder->pushBlock(ir_block);
         ir_function->blocks.push_back(ir_block);
 
         return function_guard::create([=]() {
             // 打印结果
-            auto ir_utility = _statement_lowering_visitor->ir_utility;
+            auto ir_builder = _statement_lowering_visitor->ir_builder;
             boost::apply_visitor(
                 overloaded{[=](auto x) {},
                            [=](std::shared_ptr<ir::Value> ir_result_value) {
                                if (not ir_result_value->type) return;
                                if (not ir_result_value->type->member_functions["tostr"]) return;
                                auto ir_result_string =
-                                   ir_utility->callMemberFunction(ir_result_value, "tostr", {});
-                               ir_utility->callMemberFunction(ir_result_string, "print", {});
+                                   ir_builder->callMemberFunction(ir_result_value, "tostr", {});
+                               ir_builder->callMemberFunction(ir_result_string, "print", {});
                            }},
                 _symbol_result);
 
-            ir_utility->create<ir::Return>(ir::VoidValue::create());
-            ir_utility->popBlock(ir_block);
+            ir_builder->create<ir::Return>(ir::VoidValue::create());
+            ir_builder->popBlock(ir_block);
         });
     }
 

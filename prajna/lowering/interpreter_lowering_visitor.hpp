@@ -4,53 +4,6 @@
 
 namespace prajna::lowering {
 
-namespace detail {
-
-ast::Identifier getIdentifier(ast::Operand ast_operand) {
-    return boost::apply_visitor(
-        overloaded{[=](auto x) -> ast::Identifier {
-                       PRAJNA_TODO;
-                       return ast::Identifier();
-                   },
-                   [](ast::KernelFunctionCall ast_kernel_function_call) {
-                       if (ast_kernel_function_call.operation) {
-                           return ast::Identifier();
-                       } else {
-                           return getIdentifier(ast_kernel_function_call.kernel_function);
-                       }
-                   },
-                   [](ast::Expression ast_expression) {
-                       if (ast_expression.rest.empty()) {
-                           return getIdentifier(ast_expression.first);
-                       } else {
-                           return ast::Identifier();
-                       }
-                   },
-                   [](ast::PostfixUnary ast_postfix) {
-                       if (ast_postfix.operators.empty()) {
-                           return getIdentifier(ast_postfix.operand);
-                       } else {
-                           return ast::Identifier();
-                       }
-                   },
-                   [](ast::Identifier ast_identifier) { return ast_identifier; },
-                   [](ast::IdentifiersResolution ast_identifiers_resolution) {
-                       if (ast_identifiers_resolution.is_root) {
-                           return ast::Identifier();
-                       } else {
-                           auto& identifiers = ast_identifiers_resolution.identifiers;
-                           if (identifiers.size() != 1 || identifiers.front().template_arguments) {
-                               return ast::Identifier();
-                           }
-
-                           return identifiers.front().identifier;
-                       }
-                   }},
-        ast_operand);
-}
-
-}  // namespace detail
-
 class InterpreterLoweringVisitor {
     InterpreterLoweringVisitor() = default;
 

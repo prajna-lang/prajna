@@ -60,3 +60,5 @@ str::create(3.1341);
 var tt: Tensor<i64, 1>;
 tt.at(12.3);
 
+#error("unexpect code load");
+#warning("this is a warning!");

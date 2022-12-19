@@ -791,14 +791,18 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::Pragma ast_pragma) {
-        if (ast_pragma.name == "disable_raw_arary") {
-            this->ir_utility->enable_raw_array = false;
+        if (ast_pragma.name == "error") {
+            std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
+            logger->error(fmt::format("pragma error: {}", msg), ast_pragma);
+            return nullptr;
         }
-        if (ast_pragma.name == "enable_raw_arary") {
-            this->ir_utility->enable_raw_array = false;
+        if (ast_pragma.name == "warning") {
+            std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
+            logger->warning(fmt::format("pragma error: {}", msg), ast_pragma);
+            return nullptr;
         }
 
-        this->logger->error("the pragma is not defined", ast_pragma);
+        this->logger->error("the pragma is undefined", ast_pragma);
         return nullptr;
     }
 

@@ -18,4 +18,4 @@
 	url = https://github.com/catchorg/Catch2.git
 [submodule "third_party/cpp-terminal"]
 	path = third_party/cpp-terminal
-	url = https://github.com/jupyter-xeus/cpp-terminal.git
+	url = https://github.com/matazure/cpp-terminal

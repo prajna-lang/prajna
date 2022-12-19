@@ -44,13 +44,13 @@ void c_assert(bool t) {
 
 std::map<void *, std::atomic<int64_t>> ptr_count_dict;
 
-void registerReferenceCount(void *nullptr) { ptr_count_dict[nullptr].store(0); }
+void registerReferenceCount(void *ptr) { ptr_count_dict[ptr].store(0); }
 
-int64_t getReferenceCount(void *nullptr) { return ptr_count_dict[nullptr].load(); }
+int64_t getReferenceCount(void *ptr) { return ptr_count_dict[ptr].load(); }
 
-void incReferenceCount(void *nullptr) { ++ptr_count_dict[nullptr]; }
+void incReferenceCount(void *ptr) { ++ptr_count_dict[ptr]; }
 
-void decReferenceCount(void *nullptr) { --ptr_count_dict[nullptr]; }
+void decReferenceCount(void *ptr) { --ptr_count_dict[ptr]; }
 
 llvm::ExitOnError exit_on_error;
 
@@ -91,7 +91,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
 
 #ifdef PRAJNA_WITH_GPU
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (ir_sub_module == nullptr) continue;
+        if (ir_sub_module == ptr) continue;
 
         // @todo 没有核函数,则无需编译, 可优化为没有核函数调用则无需编译, 在transform优化,
         // 先不做处理
@@ -110,7 +110,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
                              .string();
         std::error_code err_code;
         llvm::raw_fd_ostream llvm_fs(file_base + ".ll", err_code);
-        ir_sub_module->llvm_module->print(llvm_fs, nullptr);
+        ir_sub_module->llvm_module->print(llvm_fs, ptr);
         llvm_fs.close();
         PRAJNA_VERIFY(
             std::system(("llc " + file_base + ".ll" + " -o " + file_base + ".ptx").c_str()) == 0);

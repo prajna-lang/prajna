@@ -66,7 +66,8 @@ CodeLexer<Lexer>::CodeLexer() {
     this->self += comma | colon | semicolon;
 
     at = '@';
-    this->self += at;
+    number_sign = '#';
+    this->self += at | number_sign;
 
     func = "func";
     struct_ = "struct";

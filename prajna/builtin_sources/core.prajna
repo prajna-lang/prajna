@@ -143,18 +143,48 @@ implement Tensor<T : template, RANK: template> {
         }
     }
 
-    @property("at", "setter")
-    func at_setter(idx: i64[RANK], value: T){
-        var offset = this.index2offset(idx);
-        this.data[offset] = value;
-    }
-
     @property("at", "getter")
     func at_getter(idx: i64[RANK])->T{
         var offset = this.index2offset(idx);
         return this.data[offset];
     }
 
+    @property("at", "setter")
+    func at_setter(idx: i64[RANK], value: T){
+        var offset = this.index2offset(idx);
+        this.data[offset] = value;
+    }
+
+    @property("[", "getter")
+    func index_getter(idx: i64[RANK])->T{
+        return this.at(idx);
+    }
+
+    @property("[", "setter")
+    func index_setter(idx: i64[RANK], value: T){
+        this.at(idx) = value;
+    }
+}
+
+struct Array<Type: template, Length: template>{
+    raw_array: Type[Length];
+}
+
+implement Array<T: template, Length: template>{
+    @property("length", "getter")
+    func lengthGetter()->i64{
+        return Length;
+    }
+
+    @property("[", "getter")
+    func index_getter(idx: i64)->T{
+        return this.raw_array[idx];
+    }
+
+    @property("[", "setter")
+    func index_setter(idx: i64, value: T){
+        this.raw_array[idx] = value;
+    }
 }
 
 export Tensor;

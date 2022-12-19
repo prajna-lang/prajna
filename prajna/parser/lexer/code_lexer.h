@@ -46,7 +46,8 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<lex::omit> colon;      //:
     lex::token_def<lex::omit> semicolon;  //;
 
-    lex::token_def<lex::omit> at;     // @
+    lex::token_def<lex::omit> at;           // @
+    lex::token_def<lex::omit> number_sign;  // #
 
     lex::token_def<lex::omit> func;
     lex::token_def<lex::omit> struct_;

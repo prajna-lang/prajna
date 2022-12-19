@@ -102,7 +102,7 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_success(call, success_handler_function);
 
     index.name("index");
-    index = tok.l_s_bracket > expr > tok.r_s_bracket;
+    index = tok.l_s_bracket > arguments > tok.r_s_bracket;
     on_error<fail>(index, error_handler_function);
     on_success(index, success_handler_function);
 

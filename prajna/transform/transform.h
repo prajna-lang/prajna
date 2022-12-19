@@ -42,10 +42,10 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
             ir_builder.iter = std::find(RANGE(ir_block->values), ir_access_property);
 
             auto instructions_with_index_set_copy = ir_access_property->instruction_with_index_list;
-            PRAJNA_ASSERT(instructions_with_index_set_copy.size() <= 1);
-            if (instructions_with_index_set_copy.size() == 1) {
-                auto ir_inst = instructions_with_index_set_copy.begin()->instruction;
-                size_t op_idx = instructions_with_index_set_copy.begin()->operand_index;
+
+            for (auto instruction_with_index : instructions_with_index_set_copy) {
+                auto ir_inst = instruction_with_index.instruction;
+                size_t op_idx = instruction_with_index.operand_index;
 
                 PRAJNA_ASSERT(not is<ir::GetAddressOfVariableLiked>(ir_inst));
 
@@ -65,7 +65,9 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
                         ir_access_property->property->getter_function, ir_arguments);
                     ir_inst->operand(ir_getter_call, op_idx);
                 }
-            } else {
+            }
+
+            if (instructions_with_index_set_copy.empty()) {
                 auto ir_arguments = ir_access_property->arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
                 auto ir_getter_call = ir_builder.create<ir::Call>(

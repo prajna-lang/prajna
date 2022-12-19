@@ -283,23 +283,78 @@ class ExpressionLoweringVisitor {
 
         return false;
     }
-
     std::shared_ptr<ir::Value> applyBinaryOperationIndexArray(
         std::shared_ptr<ir::Value> ir_object, ast::BinaryOperation ast_binary_operation) {
         auto ir_variable_liked = ir_utility->variableLikedNormalize(ir_object);
-        auto ir_index = this->applyOperand(ast_binary_operation.operand);
+        auto ir_arguments =
+            *cast<ir::ValueCollection>(this->applyOperand(ast_binary_operation.operand));
+        if (ir_arguments.empty()) {
+            logger->error("index should have one argument at least", ast_binary_operation.operand);
+        }
+        auto ir_index = ir_arguments.front();
         if (not this->isIndexType(ir_index->type)) {
             logger->error(
                 fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
         }
         if (is<ir::ArrayType>(ir_object->type)) {
+            if (ir_arguments.size() > 1) {
+                logger->error("too many index arguments", ast_binary_operation.operand);
+            }
             return ir_utility->create<ir::IndexArray>(ir_variable_liked, ir_index);
-        } else if (is<ir::PointerType>(ir_object->type)) {
-            return ir_utility->create<ir::IndexPointer>(ir_variable_liked, ir_index);
-        } else {
-            logger->error("the object has not a index function", ast_binary_operation);
         }
+        if (is<ir::PointerType>(ir_object->type)) {
+            if (ir_arguments.size() > 1) {
+                logger->error("too many index arguments", ast_binary_operation.operand);
+            }
+            return ir_utility->create<ir::IndexPointer>(ir_variable_liked, ir_index);
+        }
+        if (auto ir_property = ir_object->type->properties["["]) {
+            if (ir_arguments.size() == 1) {
+                if (ir_index->type !=
+                    ir_property->getter_function->function_type->argument_types.back()) {
+                    PRAJNA_TODO;
+                }
+                auto ir_this_pointer =
+                    ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+                auto ir_access_property =
+                    this->ir_utility->create<ir::AccessProperty>(ir_this_pointer, ir_property);
+                ir_access_property->arguments({ir_index});
+                return ir_access_property;
+            } else {
+                // "[" propert在生成的时候就会被限制
+                if (not is<ir::ArrayType>(
+                        ir_property->getter_function->function_type->argument_types.back())) {
+                    logger->error("too many index arguments", ast_binary_operation.operand);
+                }
+
+                PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
+                auto ast_arguments = boost::get<ast::Expressions>(ast_binary_operation.operand);
+                auto ir_int64_type = ir::IntType::create(64, true);
+                auto ir_array = this->ir_utility->create<ir::LocalVariable>(
+                    ir::ArrayType::create(ir_int64_type, ir_arguments.size()));
+                for (size_t i = 0; i < ir_arguments.size(); ++i) {
+                    auto ir_idx =
+                        this->ir_utility->create<ir::ConstantInt>(ir::IntType::create(64, true), i);
+                    auto ir_index_array =
+                        this->ir_utility->create<ir::IndexArray>(ir_array, ir_idx);
+                    if (ir_arguments[i]->type != ir_int64_type) {
+                        logger->error("the index argument type must be i64", ast_arguments[i]);
+                    }
+                    this->ir_utility->create<ir::WriteVariableLiked>(ir_arguments[i],
+                                                                     ir_index_array);
+                }
+
+                auto ir_this_pointer =
+                    ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+                auto ir_access_property =
+                    this->ir_utility->create<ir::AccessProperty>(ir_this_pointer, ir_property);
+                ir_access_property->arguments({ir_array});
+                return ir_access_property;
+            }
+        }
+
+        logger->error("the object has not a \"[\" property", ast_binary_operation);
 
         return nullptr;
     }
@@ -345,9 +400,10 @@ class ExpressionLoweringVisitor {
             return ir_utility->create<ir::Call>(ir_lhs, ir_arguments);
         }
 
-        if (auto ir_property = cast<ir::AccessProperty>(ir_lhs)) {
+        if (auto ir_access_property = cast<ir::AccessProperty>(ir_lhs)) {
             // getter函数必须存在
-            auto ir_getter_function_type = ir_property->property->getter_function->function_type;
+            auto ir_getter_function_type =
+                ir_access_property->property->getter_function->function_type;
             if (ir_arguments.size() != ir_getter_function_type->argument_types.size() - 1) {
                 logger->error(
                     fmt::format("the property arguments size is not matched, require {} argument, "
@@ -362,10 +418,10 @@ class ExpressionLoweringVisitor {
                 }
             }
             // 移除, 在末尾插入, 应为参数应该在属性访问的前面
-            ir_property->parent_block->values.remove(ir_property);
-            ir_utility->ir_current_block->values.push_back(ir_property);
-            ir_property->arguments(ir_arguments);
-            return ir_property;
+            ir_access_property->parent_block->values.remove(ir_access_property);
+            ir_utility->ir_current_block->values.push_back(ir_access_property);
+            ir_access_property->arguments(ir_arguments);
+            return ir_access_property;
         }
 
         logger->error("not a valid callable", ast_binary_operaton);

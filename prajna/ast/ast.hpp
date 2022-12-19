@@ -190,7 +190,7 @@ struct Cast : SourceLocation {
 struct Expressions : SourceLocation, std::vector<Expression> {};
 
 struct Array : SourceLocation {
-    std::vector<Operand> values;
+    std::vector<Expression> values;
 };
 
 struct VariableDeclaration : SourceLocation {
@@ -231,6 +231,11 @@ struct using_statement : SourceLocation {
     Operand object;
 };
 
+struct Pragma : SourceLocation {
+    Identifier name;
+    std::vector<StringLiteral> values;
+};
+
 struct Annotation : SourceLocation {
     Identifier name;
     std::vector<StringLiteral> values;
@@ -250,7 +255,7 @@ typedef boost::variant<
     boost::recursive_wrapper<For>, Break, Continue, boost::recursive_wrapper<Function>,
     boost::recursive_wrapper<Return>, boost::recursive_wrapper<Struct>,
     boost::recursive_wrapper<Interface>, boost::recursive_wrapper<ImplementStructForInterface>,
-    boost::recursive_wrapper<ImplementStruct>>
+    boost::recursive_wrapper<ImplementStruct>, Pragma>
     Statement;
 
 // @note需要声明为class, 因为之前才能在其他模块使用前置声明.
@@ -366,6 +371,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierWithTemplateArguments, identifi
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Struct, annotations, name, template_parameters, fields)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Parameter, name, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotations, name, parameters, return_type)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Pragma, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Interface, name, function_declarations)

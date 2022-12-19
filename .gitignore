@@ -28,7 +28,3 @@ build_release
 *.target.mk
 
 .*
-
-# 暂时移除
-docs
-paramita

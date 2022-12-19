@@ -42,6 +42,7 @@ struct StatementGrammer
     rule<ast::Statement> statement;
     rule<ast::Statement> single_statement;
     rule<ast::Blank> semicolon_statement;
+    rule<ast::Pragma> pragma;
     rule<ast::Annotation> annotation;
     rule<ast::Annotations> annotations;
     rule<ast::VariableDeclaration> variable_declaration;

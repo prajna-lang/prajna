@@ -1257,7 +1257,6 @@ class If : public Instruction {
     static std::shared_ptr<If> create(std::shared_ptr<Value> ir_condition,
                                       std::shared_ptr<Block> ir_true_block,
                                       std::shared_ptr<Block> ir_false_block) {
-        // std::shared_ptr<If> self(new If);
         std::shared_ptr<If> self(new If);
         self->operandResize(3);
         self->condition(ir_condition);

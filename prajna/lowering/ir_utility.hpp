@@ -99,6 +99,8 @@ class IrUtility {
     std::shared_ptr<ir::Function> ir_current_function = nullptr;
     std::shared_ptr<ir::Module> module = nullptr;
     std::shared_ptr<ir::Type> ir_return_type = nullptr;
+
+    bool enable_raw_array = true;
 };
 
 }  // namespace prajna::lowering

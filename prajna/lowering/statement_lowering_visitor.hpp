@@ -790,6 +790,18 @@ class StatementLoweringVisitor {
         return symbol;
     }
 
+    Symbol operator()(ast::Pragma ast_pragma) {
+        if (ast_pragma.name == "disable_raw_arary") {
+            this->ir_utility->enable_raw_array = false;
+        }
+        if (ast_pragma.name == "enable_raw_arary") {
+            this->ir_utility->enable_raw_array = false;
+        }
+
+        this->logger->error("the pragma is not defined", ast_pragma);
+        return nullptr;
+    }
+
     Symbol operator()(ast::Blank) { return nullptr; }
 
     template <typename _Statement>

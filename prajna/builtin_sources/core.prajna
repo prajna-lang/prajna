@@ -85,41 +85,62 @@ export str;
 export print;
 
 
-struct Tensor<T : template, RANK : template> {
-    data : T*;
-    shape: i64[RANK];
+struct Array<Type_: template, Length: template>{
+    raw_array: Type_[Length];
+}
+
+implement Array<Type_: template, Length: template>{
+    @property("length", "getter")
+    func lengthGetter()->i64{
+        return Length;
+    }
+
+    @property("[", "getter")
+    func index_getter(idx: i64)->Type_{
+        return this.raw_array[idx];
+    }
+
+    @property("[", "setter")
+    func index_setter(idx: i64, value: Type_){
+        this.raw_array[idx] = value;
+    }
+}
+
+struct Tensor<Type_ : template, Rank_ : template> {
+    data : Type_*;
+    shape: Array<i64, Rank_>;
     rank: i64;
-    stride: i64[RANK];
+    stride: Array<i64, Rank_>;
 }
 
 
-implement Tensor<T : template, RANK: template> {
+implement Tensor<Type_ : template, Rank_: template> {
     @static
-    func create(shape :i64[RANK])->Tensor<T, RANK>{
-        var self: Tensor<T, RANK>;
+    func create(shape :Array<i64, Rank_>)->Tensor<Type_, Rank_>{
+        var self: Tensor<Type_, Rank_>;
         self.shape = shape;
-        self.rank = RANK;
+        self.rank = Rank_;
 
-        var stride: i64[RANK];
-        var i = RANK - 1;
+        var stride: Array<i64, Rank_>;
+        var i = Rank_ - 1;
         stride[i] = 1;
         while (i > 0){
             i = i - 1;
             stride[i] = shape[i + 1] * stride[i + 1];
         }
         self.stride =  stride;
-        var bytes = shape[0] * stride[0] * sizeof(T);
+        var bytes = shape[0] * stride[0] * sizeof(Type_);
 
-        self.data = cast<T *>(bindings::bindings::malloc(bytes));
+        self.data = cast<Type_ *>(bindings::bindings::malloc(bytes));
         bindings::registerReferenceCount(cast<i8*>(self.data));
         bindings::incReferenceCount(cast<i8*>(self.data));
 
         return self;
     }
 
-    func index2offset(idx: i64[RANK])->i64 {
+    func index2offset(idx: Array<i64, Rank_>)->i64 {
         var offset = 0;
-        var i =  RANK - 1;
+        var i =  Rank_ - 1;
         while (i >= 0){
             offset = offset + idx[i] * this.stride[i];
             i = i - 1;
@@ -128,7 +149,7 @@ implement Tensor<T : template, RANK: template> {
     }
 
     func initialize(){
-        this.data = nullptr<T>::create();
+        this.data = nullptr<Type_>::create();
         bindings::registerReferenceCount(cast<i8*>(this.data));
     }
 
@@ -144,47 +165,27 @@ implement Tensor<T : template, RANK: template> {
     }
 
     @property("at", "getter")
-    func at_getter(idx: i64[RANK])->T{
+    func at_getter(idx: Array<i64, Rank_>)->Type_{
         var offset = this.index2offset(idx);
         return this.data[offset];
     }
 
     @property("at", "setter")
-    func at_setter(idx: i64[RANK], value: T){
+    func at_setter(idx: Array<i64, Rank_>, value: Type_){
         var offset = this.index2offset(idx);
         this.data[offset] = value;
     }
 
     @property("[", "getter")
-    func index_getter(idx: i64[RANK])->T{
+    func index_getter(idx: Array<i64, Rank_>)->Type_{
         return this.at(idx);
     }
 
     @property("[", "setter")
-    func index_setter(idx: i64[RANK], value: T){
+    func index_setter(idx: Array<i64, Rank_>, value: Type_){
         this.at(idx) = value;
     }
 }
 
-struct Array<Type: template, Length: template>{
-    raw_array: Type[Length];
-}
-
-implement Array<T: template, Length: template>{
-    @property("length", "getter")
-    func lengthGetter()->i64{
-        return Length;
-    }
-
-    @property("[", "getter")
-    func index_getter(idx: i64)->T{
-        return this.raw_array[idx];
-    }
-
-    @property("[", "setter")
-    func index_setter(idx: i64, value: T){
-        this.raw_array[idx] = value;
-    }
-}
-
+export Array;
 export Tensor;

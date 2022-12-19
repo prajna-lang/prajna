@@ -31,22 +31,22 @@ func launchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
 }
 
 
-struct Tensor<T : template, RANK : template> {
-    data : T*;
-    shape: i64[RANK];
+struct Tensor<Type_ : template, Rank_ : template> {
+    data : Type_*;
+    shape: Array<i64, Rank_>;
 }
 
 
-implement Tensor<T : template, RANK: template> {
+implement Tensor<Type_ : template, Rank_: template> {
     @static
-    func create(shape :i64[RANK])->Tensor<T, RANK>{
-        var self: Tensor<T, RANK>;
+    func create(shape :Array<i64, Rank_>)->Tensor<Type_, Rank_>{
+        var self: Tensor<Type_, Rank_>;
         self.shape = shape;
         var size = 1;
-        for i in 0 to RANK {
+        for i in 0 to Rank_ {
             size = size * shape[i];
         }
-        var bytes = size * sizeof(T);
+        var bytes = size * sizeof(Type_);
         // bytes.tostr().print();
         var re = cuda::cuMemAlloc(cast<i8**>(&self.data), bytes);
         // "cuMemAlloc".print();
@@ -54,32 +54,32 @@ implement Tensor<T : template, RANK: template> {
         return self;
     }
 
-    func toHost()->::Tensor<T, RANK>{
-        var host_tensor = ::Tensor<T, RANK>::create(this.shape);
+    func toHost()->::Tensor<Type_, Rank_>{
+        var host_tensor = ::Tensor<Type_, Rank_>::create(this.shape);
         var size = 1;
-        for i in 0 to RANK {
+        for i in 0 to Rank_ {
             size = size * this.shape[i];
         }
         // print("toHost: size");
         // size.tostr().print();
         // print("re: ");
-        var re =  cuda::cudaMemcpy(cast<i8*>(host_tensor.data), cast<i8*>(this.data), size * sizeof(T), 2i32);
+        var re =  cuda::cudaMemcpy(cast<i8*>(host_tensor.data), cast<i8*>(this.data), size * sizeof(Type_), 2i32);
         // re.tostr().print();
         return host_tensor;
     }
 }
 
-implement ::Tensor<T : template, RANK: template> {
-    func toGpu()->Tensor<T, RANK>{
-        var cuda_tensor = Tensor<T, RANK>::create(this.shape);
+implement ::Tensor<Type_ : template, Rank_: template> {
+    func toGpu()->Tensor<Type_, Rank_>{
+        var cuda_tensor = Tensor<Type_, Rank_>::create(this.shape);
         var size = 1;
-        for i in 0 to RANK {
+        for i in 0 to Rank_ {
             size = size * this.shape[i];
         }
         // print("tocuda: size");
         // size.tostr().print();
         // print("re: ");
-        var re = cuda::cudaMemcpy(cast<i8*>(cuda_tensor.data), cast<i8*>(this.data), size * sizeof(T), 1i32);
+        var re = cuda::cudaMemcpy(cast<i8*>(cuda_tensor.data), cast<i8*>(this.data), size * sizeof(Type_), 1i32);
         // re.tostr().print();
         return cuda_tensor;
     }

@@ -307,46 +307,34 @@ class ExpressionLoweringVisitor {
             }
             return ir_utility->create<ir::IndexPointer>(ir_variable_liked, ir_index);
         }
-        if (auto ir_property = ir_object->type->properties["["]) {
+        if (auto ir_index_property = ir_object->type->properties["["]) {
             if (ir_arguments.size() == 1) {
                 if (ir_index->type !=
-                    ir_property->getter_function->function_type->argument_types.back()) {
+                    ir_index_property->getter_function->function_type->argument_types.back()) {
                     PRAJNA_TODO;
                 }
                 auto ir_this_pointer =
                     ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-                auto ir_access_property =
-                    this->ir_utility->create<ir::AccessProperty>(ir_this_pointer, ir_property);
+                auto ir_access_property = this->ir_utility->create<ir::AccessProperty>(
+                    ir_this_pointer, ir_index_property);
                 ir_access_property->arguments({ir_index});
                 return ir_access_property;
             } else {
                 // "[" propert在生成的时候就会被限制
-                if (not is<ir::ArrayType>(
-                        ir_property->getter_function->function_type->argument_types.back())) {
+                if (not ir_utility->isArrayType(
+                        ir_index_property->getter_function->function_type->argument_types.back())) {
                     logger->error("too many index arguments", ast_binary_operation.operand);
                 }
 
                 PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
                 auto ast_arguments = boost::get<ast::Expressions>(ast_binary_operation.operand);
-                auto ir_index_type = ir_utility->getIndexType();
-                auto ir_array = this->ir_utility->create<ir::LocalVariable>(
-                    ir::ArrayType::create(ir_index_type, ir_arguments.size()));
-                for (size_t i = 0; i < ir_arguments.size(); ++i) {
-                    auto ir_idx = this->ir_utility->getIndexConstant(i);
-                    auto ir_index_array =
-                        this->ir_utility->create<ir::IndexArray>(ir_array, ir_idx);
-                    if (ir_arguments[i]->type != ir_index_type) {
-                        logger->error("the index argument type must be i64", ast_arguments[i]);
-                    }
-                    this->ir_utility->create<ir::WriteVariableLiked>(ir_arguments[i],
-                                                                     ir_index_array);
-                }
+                auto ir_array_argument = this->applyArray(ast_arguments);
 
                 auto ir_this_pointer =
                     ir_utility->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-                auto ir_access_property =
-                    this->ir_utility->create<ir::AccessProperty>(ir_this_pointer, ir_property);
-                ir_access_property->arguments({ir_array});
+                auto ir_access_property = this->ir_utility->create<ir::AccessProperty>(
+                    ir_this_pointer, ir_index_property);
+                ir_access_property->arguments({ir_array_argument});
                 return ir_access_property;
             }
         }
@@ -660,23 +648,64 @@ class ExpressionLoweringVisitor {
             symbol);
     }
 
-    std::shared_ptr<ir::Value> operator()(ast::Array ast_array) {
-        PRAJNA_ASSERT(ast_array.values.size() > 0);
-        auto ir_first_value = this->applyOperand(ast_array.values.front());
+    // std::shared_ptr<ir::Value> operator()(ast::Array ast_array) {
+    //     PRAJNA_ASSERT(ast_array.values.size() > 0);
+    //     auto ir_first_value = this->applyOperand(ast_array.values.front());
+    //     auto ir_value_type = ir_first_value->type;
+    //     auto ir_array = this->ir_utility->create<ir::LocalVariable>(
+    //         ir::ArrayType::create(ir_value_type, ast_array.values.size()));
+    //     for (size_t i = 0; i < ast_array.values.size(); ++i) {
+    //         auto ir_idx = this->ir_utility->getIndexConstant(i);
+    //         auto ir_index_array = this->ir_utility->create<ir::IndexArray>(ir_array, ir_idx);
+    //         auto ir_value = this->applyOperand(ast_array.values[i]);
+    //         if (ir_value->type != ir_value_type) {
+    //             logger->error("the array element type are not the same", ast_array.values[i]);
+    //         }
+    //         this->ir_utility->create<ir::WriteVariableLiked>(ir_value, ir_index_array);
+    //     }
+
+    //     return ir_array;
+    // }
+
+    std::shared_ptr<ir::Value> applyArray(std::vector<ast::Expression> ast_array_values) {
+        auto symbol_array = this->ir_utility->symbol_table->get("Array");
+        PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
+                      "system libs is bad");
+        auto array_template = symbolGet<TemplateStruct>(symbol_array);
+
+        // 获取数组类型
+        PRAJNA_ASSERT(ast_array_values.size() > 0);
+        auto ir_first_value = this->applyOperand(ast_array_values.front());
         auto ir_value_type = ir_first_value->type;
-        auto ir_array = this->ir_utility->create<ir::LocalVariable>(
-            ir::ArrayType::create(ir_value_type, ast_array.values.size()));
-        for (size_t i = 0; i < ast_array.values.size(); ++i) {
-            auto ir_idx = this->ir_utility->getIndexConstant(i);
-            auto ir_index_array = this->ir_utility->create<ir::IndexArray>(ir_array, ir_idx);
-            auto ir_value = this->applyOperand(ast_array.values[i]);
+        std::list<Symbol> symbol_template_arguments;
+        symbol_template_arguments.push_back(ir_value_type);
+        symbol_template_arguments.push_back(ir_utility->getIndexConstant(ast_array_values.size()));
+        auto ir_array_type =
+            array_template->getStructInstance(symbol_template_arguments, this->ir_utility->module);
+
+        auto ir_array_tmp = this->ir_utility->create<ir::LocalVariable>(ir_array_type);
+        auto ir_index_property = ir_array_type->properties["["];
+        PRAJNA_VERIFY(ir_index_property, "Array index property is missing");
+        for (size_t i = 0; i < ast_array_values.size(); ++i) {
+            auto ir_index = this->ir_utility->getIndexConstant(i);
+            // auto ir_index_array = this->ir_utility->create<ir::IndexArray>(ir_array_tmp, ir_idx);
+            auto ir_value = this->applyOperand(ast_array_values[i]);
             if (ir_value->type != ir_value_type) {
-                logger->error("the array element type are not the same", ast_array.values[i]);
+                logger->error("the array element type are not the same", ast_array_values[i]);
             }
-            this->ir_utility->create<ir::WriteVariableLiked>(ir_value, ir_index_array);
+            auto ir_array_tmp_this_pointer =
+                ir_utility->create<ir::GetAddressOfVariableLiked>(ir_array_tmp);
+            auto ir_access_property = ir_utility->create<ir::AccessProperty>(
+                ir_array_tmp_this_pointer, ir_index_property);
+            ir_access_property->arguments({ir_index});
+            ir_utility->create<ir::WriteProperty>(ir_value, ir_access_property);
         }
 
-        return ir_array;
+        return ir_array_tmp;
+    }
+
+    std::shared_ptr<ir::Value> operator()(ast::Array ast_array) {
+        return applyArray(ast_array.values);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::KernelFunctionCall ast_kernel_function_call) {

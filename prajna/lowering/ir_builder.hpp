@@ -100,6 +100,10 @@ class IrBuilder {
         return this->create<ir::Call>(ir_member_function, ir_arguments);
     }
 
+    bool isArrayType(std::shared_ptr<ir::Type> ir_type) {
+        return ir_type->fullname.size() > 13 && ir_type->fullname.substr(0, 13) == "::core::Array";
+    }
+
     void pushSymbolTable() {
         auto symbol_new_table = SymbolTable::create(symbol_table);
         symbol_table = symbol_new_table;

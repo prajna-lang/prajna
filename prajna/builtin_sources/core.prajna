@@ -128,7 +128,7 @@ implement Tensor<T : template, RANK: template> {
     }
 
     func initialize(){
-        this.data = ptr<T>::null();
+        this.data = nullptr<T>::create();
         bindings::registerReferenceCount(cast<i8*>(this.data));
     }
 

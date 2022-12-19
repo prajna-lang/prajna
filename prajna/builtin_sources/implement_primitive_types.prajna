@@ -433,13 +433,13 @@ implement f32 {
     }
 }
 
-struct ptr<T: template>{
+struct nullptr<T: template>{
 
 }
 
-implement ptr<T: template>{
+implement nullptr<T: template>{
     @static
-    func null()->T *{
+    func create()->T *{
         var pointer: T*;
         // @warning 注意不同位数平台可能产生问题,
         *cast<i64 *>(&pointer) = 0;
@@ -447,6 +447,6 @@ implement ptr<T: template>{
     }
 }
 
-export ptr;
+export nullptr;
 
 export sin_f32;

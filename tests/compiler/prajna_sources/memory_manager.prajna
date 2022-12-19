@@ -20,7 +20,7 @@ implement TestA {
 
     func initialize(){
         this.name = "undef";
-        this.data = ptr<i8>::null();
+        this.data = nullptr<i8>::create();
         bindings::registerReferenceCount(this.data);
         "TestA initialize\n".print();
     }

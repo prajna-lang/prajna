@@ -19,7 +19,7 @@ func multiProcessorsCount(device: i64)->i64{
 }
 
 func launchKernel(kernel_function_pointer: i8*, gridDim: i64[3], blockDim: i64[3], kernel_params: i8**)->i64{
-    var re = cuda::cuLaunchKernel(kernel_function_pointer, gridDim[0].tou32(), gridDim[1].tou32(), gridDim[2].tou32(), blockDim[0].tou32(), blockDim[1].tou32(), blockDim[2].tou32(), 0u32, ptr<i8>::null(), kernel_params, cast<i8**>(ptr<i8>::null()));
+    var re = cuda::cuLaunchKernel(kernel_function_pointer, gridDim[0].tou32(), gridDim[1].tou32(), gridDim[2].tou32(), blockDim[0].tou32(), blockDim[1].tou32(), blockDim[2].tou32(), 0u32, nullptr<i8>::create(), kernel_params, cast<i8**>(nullptr<i8>::create()));
     // "launch re: ".print();
     // re.tostr().print();
     // "\n".print();

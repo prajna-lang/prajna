@@ -44,13 +44,13 @@ void c_assert(bool t) {
 
 std::map<void *, std::atomic<int64_t>> ptr_count_dict;
 
-void registerReferenceCount(void *ptr) { ptr_count_dict[ptr].store(0); }
+void registerReferenceCount(void *nullptr) { ptr_count_dict[nullptr].store(0); }
 
-int64_t getReferenceCount(void *ptr) { return ptr_count_dict[ptr].load(); }
+int64_t getReferenceCount(void *nullptr) { return ptr_count_dict[nullptr].load(); }
 
-void incReferenceCount(void *ptr) { ++ptr_count_dict[ptr]; }
+void incReferenceCount(void *nullptr) { ++ptr_count_dict[nullptr]; }
 
-void decReferenceCount(void *ptr) { --ptr_count_dict[ptr]; }
+void decReferenceCount(void *nullptr) { --ptr_count_dict[nullptr]; }
 
 llvm::ExitOnError exit_on_error;
 

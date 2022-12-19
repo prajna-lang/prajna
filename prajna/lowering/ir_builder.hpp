@@ -157,13 +157,11 @@ class IrBuilder {
     std::shared_ptr<ir::Block> current_block = nullptr;
     std::shared_ptr<ir::Function> current_function = nullptr;
     std::shared_ptr<ir::Module> module = nullptr;
-    std::shared_ptr<ir::Type> ir_return_type = nullptr;
+    std::shared_ptr<ir::Type> return_type = nullptr;
 
     ir::Block::iterator inserter_iterator;
 
     std::function<void(std::shared_ptr<ir::Value>)> create_callback;
-
-    bool enable_raw_array = true;
 };
 
 }  // namespace prajna::lowering

@@ -62,3 +62,6 @@ tt.at(12.3);
 
 #error("unexpect code load");
 #warning("this is a warning!");
+
+var aa = 3;
+aa = 3.1415;

@@ -113,6 +113,9 @@ class StatementLoweringVisitor {
         auto ir_lhs = expression_lowering_visitor->applyOperand(ast_assignment.left);
 
         if (auto ir_variable_liked = cast<ir::VariableLiked>(ir_lhs)) {
+            if (ir_variable_liked->type != ir_rhs->type) {
+                logger->error("the type is not matched", ast_assignment);
+            }
             ir_builder->create<ir::WriteVariableLiked>(ir_rhs, ir_variable_liked);
             return ir_lhs;
         }
@@ -120,6 +123,10 @@ class StatementLoweringVisitor {
         if (auto ir_property = cast<ir::AccessProperty>(ir_lhs)) {
             if (not ir_property->property->setter_function) {
                 logger->error("the property has not a setter function", ast_assignment.left);
+            }
+            if (ir_property->property->setter_function->function_type->argument_types.back() !=
+                ir_rhs->type) {
+                logger->error("the type is not matched", ast_assignment);
             }
             ir_builder->create<ir::WriteProperty>(ir_rhs, ir_property);
             return ir_lhs;
@@ -215,7 +222,7 @@ class StatementLoweringVisitor {
         ir_builder->current_function = ir_function;
         // 进入参数域,
         ir_builder->pushSymbolTable();
-        ir_builder->ir_return_type = ir_function->function_type->return_type;
+        ir_builder->return_type = ir_function->function_type->return_type;
 
         // @note 将function的第一个block作为最上层的block
         auto ir_block = ir::Block::create();
@@ -264,7 +271,7 @@ class StatementLoweringVisitor {
             ir_function->function_type->annotations.insert({"declare", {}});
         }
 
-        ir_builder->ir_return_type = nullptr;
+        ir_builder->return_type = nullptr;
         ir_builder->popBlock(ir_block);
         ir_builder->popSymbolTable();
 
@@ -281,11 +288,10 @@ class StatementLoweringVisitor {
             ir_return = ir_builder->create<ir::Return>(ir_void_value);
         }
 
-        if (ir_return->type != ir_builder->ir_return_type) {
-            logger->error(
-                fmt::format("the type is {} , but then function return type is {}",
-                            ir_return->type->fullname, ir_builder->ir_return_type->fullname),
-                ast_return);
+        if (ir_return->type != ir_builder->return_type) {
+            logger->error(fmt::format("the type is {} , but then function return type is {}",
+                                      ir_return->type->fullname, ir_builder->return_type->fullname),
+                          ast_return);
         }
 
         return ir_return;
@@ -434,7 +440,6 @@ class StatementLoweringVisitor {
                 getTemplateParametersIdentifiers(ast_struct.template_parameters);
 
             auto symbol_table = ir_builder->symbol_table;
-            auto logger = this->logger;
 
             auto template_struct = std::make_shared<TemplateStruct>();
             template_struct->template_parameter_identifier_list =
@@ -442,8 +447,8 @@ class StatementLoweringVisitor {
 
             // 外部使用算子, 必须值捕获
             auto template_struct_generator =
-                [symbol_table, logger, ast_struct, template_parameter_identifier_list,
-                 template_struct](
+                [symbol_table, logger = this->logger, ast_struct,
+                 template_parameter_identifier_list, template_struct](
                     std::list<Symbol> symbol_list,
                     std::shared_ptr<ir::Module> ir_module) -> std::shared_ptr<ir::StructType> {
                 // 包裹一层名字空间, 避免被污染
@@ -721,9 +726,8 @@ class StatementLoweringVisitor {
             }
 
             auto symbol_table = ir_builder->symbol_table;
-            auto logger = this->logger;
             auto template_implement_struct_generator =
-                [symbol_table, logger, ast_implement_struct, template_struct,
+                [symbol_table, logger = this->logger, ast_implement_struct, template_struct,
                  template_parameter_identifier_list](std::list<Symbol> symbol_list,
                                                      std::shared_ptr<ir::Module> ir_module) {
                     // 包裹一层名字空间, 避免被污染
@@ -802,7 +806,7 @@ class StatementLoweringVisitor {
             return nullptr;
         }
 
-        this->logger->error("the pragma is undefined", ast_pragma);
+        logger->error("the pragma is undefined", ast_pragma);
         return nullptr;
     }
 

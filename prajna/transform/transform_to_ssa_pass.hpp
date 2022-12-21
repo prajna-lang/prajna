@@ -182,7 +182,7 @@ class FlatternBlockPass : public FunctionPass {
                 // 故应该先拷贝一份
                 auto instructions_with_index_copy = ir_label->instruction_with_index_list;
                 for (auto inst_with_idx : instructions_with_index_copy) {
-                    inst_with_idx.instruction->operand(blocks.back(), inst_with_idx.operand_index);
+                    inst_with_idx.instruction->operand(inst_with_idx.operand_index, blocks.back());
                 }
             } else {
                 blocks.back()->pushBack(ir_value);
@@ -253,7 +253,7 @@ class ConvertVariableToPointerPass : public FunctionPass {
                 auto ir_block = ir_inst->parent_block;
                 auto iter = std::find(ir_block->values.begin(), ir_block->values.end(), ir_inst);
                 ir_block->insert(iter, ir_deference_pointer);
-                ir_inst->operand(ir_deference_pointer, op_idx);
+                ir_inst->operand(op_idx, ir_deference_pointer);
             }
 
             ir_this_wrapper->parent_block->remove(ir_this_wrapper);
@@ -286,7 +286,7 @@ class ConvertVariableToPointerPass : public FunctionPass {
                 auto ir_block = ir_inst->parent_block;
                 auto iter = std::find(ir_block->values.begin(), ir_block->values.end(), ir_inst);
                 ir_block->insert(iter, ir_deference_pointer);
-                ir_inst->operand(ir_deference_pointer, op_idx);
+                ir_inst->operand(op_idx, ir_deference_pointer);
             }
 
             ir_variable->finalize();
@@ -317,7 +317,7 @@ class ConvertVariableToPointerPass : public FunctionPass {
                 auto ir_deference_pointer = ir::DeferencePointer::create(ir_struct_get_element_ptr);
                 auto iter_inst = std::find(RANGE(ir_inst->parent_block->values), ir_inst);
                 ir_inst->parent_block->insert(iter_inst, ir_deference_pointer);
-                ir_inst->operand(ir_deference_pointer, op_idx);
+                ir_inst->operand(op_idx, ir_deference_pointer);
             }
 
             ir_access_field->finalize();
@@ -346,7 +346,7 @@ class ConvertVariableToPointerPass : public FunctionPass {
                 auto ir_deference_pointer = ir::DeferencePointer::create(ir_array_get_element_ptr);
                 auto iter_inst = std::find(RANGE(ir_inst->parent_block->values), ir_inst);
                 ir_inst->parent_block->insert(iter_inst, ir_deference_pointer);
-                ir_inst->operand(ir_deference_pointer, op_idx);
+                ir_inst->operand(op_idx, ir_deference_pointer);
             }
 
             ir_index_array->finalize();
@@ -376,7 +376,7 @@ class ConvertVariableToPointerPass : public FunctionPass {
                     ir::DeferencePointer::create(ir_pointer_get_element_ptr);
                 auto iter_inst = std::find(RANGE(ir_inst->parent_block->values), ir_inst);
                 ir_inst->parent_block->insert(iter_inst, ir_deference_pointer);
-                ir_inst->operand(ir_deference_pointer, op_idx);
+                ir_inst->operand(op_idx, ir_deference_pointer);
             }
 
             ir_index_pointer->finalize();
@@ -399,7 +399,7 @@ class ConvertVariableToPointerPass : public FunctionPass {
                 PRAJNA_ASSERT(ir_deference_pointer,
                               "需要将VariableLiked都转换为DeferencePoitner后再执行该操作");
                 ir_deference_pointer->pointer();
-                ir_inst->operand(ir_deference_pointer->pointer(), op_idx);
+                ir_inst->operand(op_idx, ir_deference_pointer->pointer());
             }
 
             ir_get_address->parent_block->remove(ir_get_address);
@@ -430,7 +430,7 @@ class ConvertVariableToPointerPass : public FunctionPass {
                 } else {
                     auto ir_load = ir::LoadPointer::create(ir_pointer);
                     ir_deference_pointer->parent_block->insert(iter_deference_pointer, ir_load);
-                    ir_inst->operand(ir_load, op_idx);
+                    ir_inst->operand(op_idx, ir_load);
                 }
             }
             ir_deference_pointer->parent_block->erase(iter_deference_pointer);

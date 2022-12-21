@@ -85,7 +85,7 @@ namespace prajna::transform {
 //         //     [ir_instruction, idx] : instruction_with_index_list) {
 //         //         //  只处理相关的操作, ir_grid外的不处理
 //         //         if (ir_instruction->parent_block == ir_grid_block) {
-//         //             ir_instruction->operand(ir_argument, idx);
+//         //             ir_instruction->operand(idx, ir_argument);
 //         //         }
 //         //     }
 //         // }
@@ -232,7 +232,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
             auto ir_instruction = instruction_with_operand_index.instruction;
             auto operand_index = instruction_with_operand_index.operand_index;
             PRAJNA_ASSERT(variables_dict.count(ir_captured_variable));
-            ir_instruction->operand(variables_dict[ir_captured_variable], operand_index);
+            ir_instruction->operand(operand_index, variables_dict[ir_captured_variable]);
         }
     }
 
@@ -246,7 +246,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         if (ir_instruction == ir_gpu_for) continue;
 
         auto operand_index = inst_with_idx.operand_index;
-        ir_instruction->operand(ir_index, operand_index);
+        ir_instruction->operand(operand_index, ir_index);
     }
 
     {

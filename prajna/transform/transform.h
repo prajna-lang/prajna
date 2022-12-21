@@ -62,7 +62,7 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
                 auto ir_getter_call = ir_builder.create<ir::Call>(
                     ir_access_property->property->getter_function, ir_arguments);
-                ir_inst->operand(ir_getter_call, op_idx);
+                ir_inst->operand(op_idx, ir_getter_call);
             }
         }
 
@@ -176,7 +176,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
                             ir_module->global_variables.push_back(ir_global_variable);
                         }
 
-                        ir_instruction->operand(ir_global_variable, i);
+                        ir_instruction->operand(i, ir_global_variable);
                     }
                 }
             }
@@ -226,7 +226,7 @@ inline sp<ir::Module> convertGlobalVariableToPointer(sp<ir::Module> ir_module) {
                     auto iter =
                         std::find(ir_block->values.begin(), ir_block->values.end(), ir_instruction);
                     ir_block->insert(iter, ir_deference_pointer);
-                    ir_instruction->operand(ir_deference_pointer, i);
+                    ir_instruction->operand(i, ir_deference_pointer);
                 }
             }
         }
@@ -321,7 +321,7 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
                 auto instruction_with_index_list_copy = ir_callee->instruction_with_index_list;
                 for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
                     if (ir_instruction->getParentFunction()->parent_module == ir_module) {
-                        ir_instruction->operand(ir_function, op_idx);
+                        ir_instruction->operand(op_idx, ir_function);
                     }
                 }
             }

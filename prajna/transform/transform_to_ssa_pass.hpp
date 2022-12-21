@@ -128,7 +128,7 @@ class FlatternBlockPass : public FunctionPass {
                 ir_for->loopBlock()->pushFront(ir_label_loop);
                 // insertCallMemmberFunction会插入ir_condition
                 auto ir_condition =
-                    ir_builder->callBinaryOeprator(ir_for->index(), "<", {ir_for->last()});
+                    ir_builder->callBinaryOperator(ir_for->index(), "<", {ir_for->last()});
                 auto ir_label_after_loop = ir::Label::create();
                 auto ir_condition_branch = ir_builder->create<ir::ConditionBranch>(
                     ir_condition, ir_label_loop, ir_label_after_loop);
@@ -442,7 +442,6 @@ class ConvertVariableToPointerPass : public FunctionPass {
 
     bool runOnFunction(std::shared_ptr<ir::Function> ir_function) override {
         bool changed = false;
-        // @warning 编译器可能存在bug, changed在前面会直接跳过后面函数的执行
         changed = this->insertValueToBlock(ir_function) || changed;
         changed = this->convertThisWrapperToDeferencePointer(ir_function) || changed;
         changed = this->convertVariableToDeferencePointer(ir_function) || changed;

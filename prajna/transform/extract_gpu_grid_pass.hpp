@@ -292,7 +292,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         }
     }
 
-    ir_builder->create<ir::Return>(ir::VoidValue::create());
+    ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
 
     // @note 临时处理, 应该搞到外面才合理
     FlatternBlockPass flattern_block_pass;
@@ -317,6 +317,7 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
         auto ir_builder = std::make_shared<lowering::IrBuilder>();
         ir_builder->current_block = ir_gpu_parent_block;
         ir_builder->inserter_iterator = iter_gpu_for;
+        ir_builder->symbol_table = ir_module->symbol_table;
 
         //
         auto symbol_table_gpu =
@@ -335,12 +336,12 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
         auto ir_multi_process_count = ir_builder->create<ir::Call>(
             ir_multi_processor_count_function, std::vector<std::shared_ptr<ir::Value>>{ir_zero});
 
-        auto ir_grid_dim = ir_builder->getDim3Variable();
+        auto ir_grid_dim = ir_builder->create<ir::LocalVariable>(ir_builder->getDim3Type());
         ir_builder->setDim3(ir_grid_dim, 0, ir_multi_process_count);
         ir_builder->setDim3(ir_grid_dim, 1, ir_builder->getIndexConstant(1));
         ir_builder->setDim3(ir_grid_dim, 2, ir_builder->getIndexConstant(1));
 
-        auto ir_block_dim = ir_builder->getDim3Variable();
+        auto ir_block_dim = ir_builder->create<ir::LocalVariable>(ir_builder->getDim3Type());
         ir_builder->setDim3(ir_block_dim, 0, ir_max_thread_per_block);
         ir_builder->setDim3(ir_block_dim, 1, ir_builder->getIndexConstant(1));
         ir_builder->setDim3(ir_block_dim, 2, ir_builder->getIndexConstant(1));

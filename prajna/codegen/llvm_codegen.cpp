@@ -140,40 +140,22 @@ class LlvmCodegen {
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            if (ir_target == ir::Target::nvptx) {
-                if (std::count(RANGE(ir_function->function_type->annotations["target"]), "nvptx")) {
-                    this->emitFunctionDeclaration(ir_function, ir_target);
-                    if (ir_function->function_type->annotations.count("kernel")) {
-                        auto md_node = llvm::MDNode::get(
-                            static_llvm_context,
-                            {llvm::ValueAsMetadata::get(ir_function->llvm_value),
-                             llvm::MDString::get(static_llvm_context, "kernel"),
-                             llvm::ValueAsMetadata::get(llvm::ConstantInt::get(
-                                 llvm::Type::getInt32Ty(static_llvm_context), 1))});
-                        auto nvvm_annotations_md =
-                            ir_module->llvm_module->getOrInsertNamedMetadata("nvvm.annotations");
-                        nvvm_annotations_md->addOperand(md_node);
-                    }
-                }
-            } else {
-                this->emitFunctionDeclaration(ir_function, ir_target);
+            this->emitFunctionDeclaration(ir_function, ir_target);
+            if (ir_function->function_type->annotations.count("kernel")) {
+                auto md_node = llvm::MDNode::get(
+                    static_llvm_context, {llvm::ValueAsMetadata::get(ir_function->llvm_value),
+                                          llvm::MDString::get(static_llvm_context, "kernel"),
+                                          llvm::ValueAsMetadata::get(llvm::ConstantInt::get(
+                                              llvm::Type::getInt32Ty(static_llvm_context), 1))});
+                auto nvvm_annotations_md =
+                    ir_module->llvm_module->getOrInsertNamedMetadata("nvvm.annotations");
+                nvvm_annotations_md->addOperand(md_node);
             }
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            if (!ir_function->isIntrinsicOrInstructoin()) {
-                if (ir_target == ir::Target::nvptx) {
-                    if (std::count(RANGE(ir_function->function_type->annotations["target"]),
-                                   "nvptx")) {
-                        this->emitFunction(ir_function, ir_target);
-                    }
-                } else {
-                    if (ir_function->function_type->annotations.count("declare") == 0 &&
-                        std::count(RANGE(ir_function->function_type->annotations["target"]),
-                                   "nvptx") == 0) {
-                        this->emitFunction(ir_function, ir_target);
-                    }
-                }
+            if (not(ir_function->isIntrinsicOrInstructoin() or ir_function->is_declaration)) {
+                this->emitFunction(ir_function, ir_target);
             }
         }
     }
@@ -192,11 +174,6 @@ class LlvmCodegen {
                                        function_name, ir_function->parent_module->llvm_module);
             ir_function->llvm_value = llvm_fun;
         } else {
-            // 如果之前就有值了, 那么其被定义过,故只声明即可
-            if (ir_function->llvm_value) {
-                ir_function->function_type->annotations.insert({"declare", {}});
-            }
-
             auto function_fullname = ir_target == ir::Target::nvptx
                                          ? mangleNvvmName(ir_function->fullname)
                                          : ir_function->fullname;
@@ -545,7 +522,7 @@ class LlvmCodegen {
             return;
         }
         if (auto ir_condition_branch = cast<ir::ConditionBranch>(ir_instruction)) {
-            // 需要处理, 因为true/falseBlock不会加入到其他Block里
+            // 需要处理, 因为true/falseBlock在ir_condition_branch的后面
             this->emitBlock(ir_condition_branch->trueBlock(), ir_target);
             this->emitBlock(ir_condition_branch->falseBlock(), ir_target);
             PRAJNA_ASSERT(ir_condition_branch->trueBlock()->llvm_value);
@@ -653,6 +630,15 @@ std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (ir_sub_module == nullptr) continue;
+
+        // 如果没有核函数, 则不生成. 因为不会被使用, gpu会把所用的的ir都拷贝过去
+        if (std::none_of(RANGE(ir_sub_module->functions),
+                         [](std::shared_ptr<ir::Function> ir_function) {
+                             return ir_function->function_type->annotations.count("kernel");
+                         })) {
+            continue;
+        }
+
         llvmCodegen(ir_sub_module, ir_target);
     }
 

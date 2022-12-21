@@ -259,7 +259,7 @@ class StatementLoweringVisitor {
             // TODO 返回型需要进一步处理
             // void返回类型直接补一个Return即可, 让后端去优化冗余的指令
             if (is<ir::VoidType>(ir_function->function_type->return_type)) {
-                ir_builder->create<ir::Return>(ir::VoidValue::create());
+                ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
             } else {
                 if (not this->allBranchIsTerminated(ir_function->blocks.back(),
                                                     ir_function->function_type->return_type)) {
@@ -268,7 +268,7 @@ class StatementLoweringVisitor {
             }
 
         } else {
-            ir_function->function_type->annotations.insert({"declare", {}});
+            ir_function->is_declaration = true;
         }
 
         ir_builder->return_type = nullptr;

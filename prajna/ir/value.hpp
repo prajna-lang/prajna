@@ -127,7 +127,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
 
     virtual void finalize() { this->detach(); }
 
-    std::shared_ptr<Function> getParentFunction();
+    virtual std::shared_ptr<Function> getParentFunction();
 
     std::shared_ptr<FunctionType> getFunctionType() {
         if (auto ir_pointer_type = cast<PointerType>(this->type)) {
@@ -390,7 +390,7 @@ class Block : public Value {
         return self;
     }
 
-    std::shared_ptr<Function> getParentFunction() {
+    std::shared_ptr<Function> getParentFunction() override {
         if (this->parent_block) {
             return this->parent_block->getParentFunction();
         } else {
@@ -1180,6 +1180,15 @@ class Call : public Instruction {
         return self;
     }
 
+    static std::shared_ptr<Call> create(std::shared_ptr<Value> ir_value,
+                                        std::shared_ptr<Value> ir_argument) {
+        return create(ir_value, std::vector<std::shared_ptr<Value>>{ir_argument});
+    }
+
+    static std::shared_ptr<Call> create(std::shared_ptr<Value> ir_value) {
+        return create(ir_value, std::vector<std::shared_ptr<Value>>{});
+    }
+
     std::shared_ptr<Value> function() { return this->operand(0); }
     void function(std::shared_ptr<Value> ir_value) { this->operand(0, ir_value); }
 
@@ -1617,17 +1626,31 @@ class KernelFunctionCall : public Instruction {
 #pragma endregion("nvptx")
 
 inline std::shared_ptr<Function> Value::getParentFunction() {
-    PRAJNA_ASSERT(parent_block);
-    return parent_block->getParentFunction();
+    if (!parent_block) {
+        if (auto ir_block = cast<Block>(shared_from_this())) {
+            return ir_block->getParentFunction();
+        } else {
+            PRAJNA_UNREACHABLE;
+            return nullptr;
+        }
+    } else {
+        return parent_block->getParentFunction();
+    }
 }
 
 inline std::shared_ptr<Block> Value::getRootBlock() {
+    if (!this->parent_block) {
+        if (is<Block>(shared_from_this())) {
+            return cast<Block>(shared_from_this());
+        } else {
+            return nullptr;
+        }
+    }
     PRAJNA_ASSERT(this->parent_block);
     auto root = this->parent_block;
     while (root->parent_block) {
         root = root->parent_block;
     }
-
     return root;
 }
 

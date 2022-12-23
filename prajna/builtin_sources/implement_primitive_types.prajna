@@ -303,6 +303,16 @@ implement i64 {
 
     @instruction("CastInst", "Trunc", "char")
     func tochar()->char;
+
+    @static
+    func zero()->i64{
+        return 0;
+    }
+
+    @static
+    func one()->i64{
+        return 1;
+    }
 }
 
 implement u32 {
@@ -430,6 +440,16 @@ implement f32 {
 
     func sin()->f32{
         return sin_f32(this);
+    }
+
+    @static
+    func zero()->f32{
+        return 0.0;
+    }
+
+    @static
+    func one()->f32{
+        return 1.0;
     }
 }
 

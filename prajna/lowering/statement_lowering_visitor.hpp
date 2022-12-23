@@ -301,6 +301,8 @@ class StatementLoweringVisitor {
         auto ir_condition = applyExpression(ast_if.condition);
         auto ir_if =
             ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
+        ir_if->trueBlock()->parent_function = ir_builder->current_function;
+        ir_if->falseBlock()->parent_function = ir_builder->current_function;
 
         ir_builder->pushBlock(ir_if->trueBlock());
         (*this)(ast_if.then);
@@ -322,14 +324,17 @@ class StatementLoweringVisitor {
         ir_builder->loop_after_label_stack.push(ir_loop_after);
 
         auto ir_condition_block = ir::Block::create();
+        ir_condition_block->parent_function = ir_builder->current_function;
         ir_builder->pushBlock(ir_condition_block);
         // 把ir_loop_before插入到条件块的开头
         ir_builder->insert(ir_loop_before);
         auto ir_condition = applyExpression(ast_while.condition);
         ir_builder->popBlock(ir_condition_block);
 
-        auto ir_while = ir_builder->create<ir::While>(
-            ir_condition, ir_condition_block, ir::Block::create(), ir_loop_before, ir_loop_after);
+        auto ir_loop_block = ir::Block::create();
+        ir_loop_block->parent_function = ir_builder->current_function;
+        auto ir_while = ir_builder->create<ir::While>(ir_condition, ir_condition_block,
+                                                      ir_loop_block, ir_loop_before, ir_loop_after);
 
         ir_builder->pushBlock(ir_while->loopBlock());
         (*this)(ast_while.body);
@@ -345,13 +350,12 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::For ast_for) {
         auto ir_first = expression_lowering_visitor->apply(ast_for.first);
         auto ir_last = expression_lowering_visitor->apply(ast_for.last);
-        auto ir_index = ir_builder->create<ir::LocalVariable>(ir_builder->getIndexType());
-        ir_builder->symbol_table->setWithName(ir_index, ast_for.index);
-        if (not expression_lowering_visitor->isIndexType(ir_first->type)) {
-            logger->error("the index type must be i64", ast_for.first);
+        if (ir_last->type != ir_builder->getIndexType() and
+            !ir_builder->isArrayIndexType(ir_last->type)) {
+            logger->error("the index type must be i64 or i64 array", ast_for.last);
         }
-        if (not expression_lowering_visitor->isIndexType(ir_last->type)) {
-            logger->error("the index type must be i64", ast_for.last);
+        if (ir_last->type != ir_first->type) {
+            logger->error("the last firt type are not matched", ast_for.first);
         }
 
         auto ir_loop_before = ir::Label::create();
@@ -363,6 +367,9 @@ class StatementLoweringVisitor {
         auto ir_first_value = ir_builder->cloneValue(ir_first);
         auto ir_last_value = ir_builder->cloneValue(ir_last);
         auto ir_loop_block = ir::Block::create();
+        ir_loop_block->parent_function = ir_builder->current_function;
+        auto ir_index = ir_builder->create<ir::LocalVariable>(ir_last->type);
+        ir_builder->symbol_table->setWithName(ir_index, ast_for.index);
         auto ir_for = ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value,
                                                   ir_loop_block, ir_loop_before, ir_loop_after);
 
@@ -425,15 +432,19 @@ class StatementLoweringVisitor {
         ir_constructor->fullname = ir_constructor->name;
         ir_constructor->parent_module = ir_builder->module;
         ir_constructor->arguments.resize(ir_constructor_type->argument_types.size());
-        for (size_t i = 0; i < ir_constructor->arguments.size(); ++i) {
-            ir_constructor->arguments[i] =
-                ir::Argument::create(ir_constructor_type->argument_types[i]);
-        }
-        ir_builder->module->functions.push_back(ir_constructor);
+
         auto ir_block = ir::Block::create();
+        ir_block->parent_function = ir_builder->current_function;
         ir_block->parent_function = ir_constructor;
         ir_constructor->blocks.push_back(ir_block);
         ir_builder->pushBlock(ir_block);
+
+        for (size_t i = 0; i < ir_constructor->arguments.size(); ++i) {
+            ir_constructor->arguments[i] =
+                ir_builder->create<ir::Argument>(ir_constructor_type->argument_types[i]);
+        }
+        ir_builder->module->functions.push_back(ir_constructor);
+
         auto ir_variable = ir_builder->create<ir::LocalVariable>(ir_struct_type);
         for (size_t i = 0; i < ir_fields.size(); ++i) {
             auto ir_field = ir_fields[i];

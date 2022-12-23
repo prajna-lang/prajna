@@ -91,3 +91,16 @@ func tostr()->str{
 }
 
 }
+
+implement Array<Type_: template, Rank_: template>{
+    func tostr()->str{
+        var re = "[";
+        for i in 0 to Rank_ {
+            re = re + this[i].tostr() + ",";
+        }
+        re = re + "]";
+
+        return re;
+    }
+}
+

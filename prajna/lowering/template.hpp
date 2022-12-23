@@ -102,6 +102,7 @@ class TemplateStruct : public Named {
             }
         }
 
+        struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
         return struct_type_instance_dict[template_arguments];
     }
 

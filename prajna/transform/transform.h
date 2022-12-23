@@ -12,6 +12,7 @@
 #include "prajna/transform/initializer_and_copy_destroy_callback.hpp"
 #include "prajna/transform/transform_pass.hpp"
 #include "prajna/transform/utility.hpp"
+#include "prajna/transform/verify.hpp"
 
 namespace prajna::ir {
 class Module;
@@ -331,24 +332,98 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
     return ir_module;
 }
 
+inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
+    std::shared_ptr<ir::Module> ir_module) {
+    auto ir_fors = utility::getValuesInModule<ir::For>(ir_module);
+    for (auto ir_for : ir_fors) {
+        auto ir_builder = std::make_shared<lowering::IrBuilder>();
+        ir_builder->symbol_table = ir_module->symbol_table;
+        // 不是数组索引的for, 不做处理
+        if (not ir_builder->isArrayIndexType(ir_for->index()->type)) continue;
+
+        ir_builder->current_block = ir_for->parent_block;
+        ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
+        // fisrt =
+        auto ir_layout_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
+            ir_builder->getSymbolByPath(true, {"core", "Layout"}));
+        auto ir_array_first = ir_for->first();
+        auto ir_array_last = ir_for->last();
+        auto ir_array_type = ir_array_last->type;
+        // @todo 需要修复, 先设置为2
+        auto ir_array_template_arguments =
+            std::any_cast<std::list<lowering::Symbol>>(ir_array_type->template_arguments);
+        auto ir_rank = lowering::symbolGet<ir::ConstantInt>(ir_array_template_arguments.back());
+        std::list<lowering::Symbol> template_arguments = {ir_rank};
+        auto ir_layout_type =
+            ir_layout_template_struct->getStructInstance(template_arguments, ir_module);
+        auto ir_layout =
+            ir_builder->create<ir::Call>(ir_layout_type->static_functions["create"],
+                                         std::vector<std::shared_ptr<ir::Value>>{ir_for->last()});
+        auto ir_linear_first = ir_builder->getIndexConstant(0);
+
+        auto ir_array_one = ir_builder->create<ir::Call>(ir_array_type->static_functions["one"]);
+        auto ir_array_range = ir_builder->callBinaryOperator(
+            ir_builder->callBinaryOperator(ir_array_last, "-", ir_array_first), "-", ir_array_one);
+        auto ir_linear_last = ir_builder->callBinaryOperator(
+            ir_builder->callMemberFunction(ir_layout, "arrayIndexToLinearIndex", {ir_array_range}),
+            "+", ir_builder->getIndexConstant(1));
+
+        ir_for->first(ir_linear_first);
+        ir_for->last(ir_linear_last);
+        auto ir_array_index = ir_for->index();
+        auto ir_linear_index = ir_builder->create<ir::LocalVariable>(ir_builder->getIndexType());
+        ir_for->index(ir_linear_index);
+
+        ir_builder->current_block = ir_for->loopBlock();
+        ir_builder->inserter_iterator = ir_for->loopBlock()->values.begin();
+        ir_builder->create<ir::WriteVariableLiked>(
+            ir_builder->callBinaryOperator(
+                ir_builder->callMemberFunction(ir_layout, "linearIndexToArrayIndex",
+                                               {ir_linear_index}),
+                "+", ir_array_first),
+            ir_array_index);
+    }
+
+    return ir_module;
+}
+
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
+    ir_module = convertForMultiDimToFor1Dim(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertPropertyToFunctionCall(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = insertInitializeAndCopyAndDestroyCallback(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = flatternBlock(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = removeValuesAfterReturn(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = extractGpuFor(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertKernelFunctionCallToKernelLaunch(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = flatternBlock(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertPropertyToFunctionCall(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertKernelFunctionOperandToAddress(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertGlobalVariableToPointer(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertVariableToPointer(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = sperateModule(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = cloneExternalNvptxValue(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = defineKernelFunctionAddress(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertGlobalVariableToPointer(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     // 在sperateModule后面
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = declareExternalFunction(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     return ir_module;
 }
 }  // namespace prajna::transform

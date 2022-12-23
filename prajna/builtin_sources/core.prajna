@@ -84,15 +84,14 @@ func print(ss: str){
 export str;
 export print;
 
-
-struct Array<Type_: template, Length: template>{
-    raw_array: Type_[Length];
+struct Array<Type_: template, Length_: template>{
+    raw_array: Type_[Length_];
 }
 
-implement Array<Type_: template, Length: template>{
+implement Array<Type_: template, Length_: template>{
     @property("length", "getter")
     func lengthGetter()->i64{
-        return Length;
+        return Length_;
     }
 
     @property("[", "getter")
@@ -104,6 +103,91 @@ implement Array<Type_: template, Length: template>{
     func index_setter(idx: i64, value: Type_){
         this.raw_array[idx] = value;
     }
+
+    func cumprod()->Type_{
+        var re = Type_::one();
+        for i in 0 to Length_{
+            re = re * this[i];
+        }
+        return re;
+    }
+
+    @static
+    func one()->Array<Type_, Length_>{
+        var re_one : Array<Type_, Length_>;
+        for i in 0 to re_one.length {
+            re_one[i] = Type_::one();
+        }
+        return re_one;
+    }
+
+    @binary("-")
+    func sub(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
+        var re : Array<Type_, Length_>;
+        for i in 0 to this.length {
+            re[i] = this[i] - operand[i];
+        }
+
+        return re;
+    }
+
+    @binary("+")
+    func sub(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
+        var re : Array<Type_, Length_>;
+        for i in 0 to this.length {
+            re[i] = this[i] + operand[i];
+        }
+
+        return re;
+    }
+}
+
+struct Layout<Rank_ : template>{
+    shape: Array<i64, Rank_>;
+    stride: Array<i64, Rank_>;
+}
+
+implement Layout<Rank_ : template>{
+    @static
+    func create(shape: Array<i64, Rank_>)->Layout<Rank_>{
+        var self: Layout<Rank_>;
+        self.shape = shape;
+
+        var stride: Array<i64, Rank_>;
+        var i = Rank_ - 1;
+        stride[i] = 1;
+        while (i > 0){
+            i = i - 1;
+            stride[i] = shape[i + 1] * stride[i + 1];
+        }
+        self.stride = stride;
+
+        return self;
+    }
+
+    func linearIndexToArrayIndex(offset: i64)->Array<i64, Rank_>{
+        var array_idx: Array<i64, Rank_>;
+        var remain = offset;
+        var i = 0;
+        while (i < Rank_){
+            array_idx[i] = remain / this.stride[i];
+            remain = remain % this.stride[i];
+            i = i + 1;
+        }
+
+        return array_idx;
+    }
+
+    func arrayIndexToLinearIndex(idx: Array<i64, Rank_>)->i64{
+        var offset = 0;
+        var i =  Rank_ - 1;
+        while (i >= 0){
+            offset = offset + idx[i] * this.stride[i];
+            i = i - 1;
+        }
+        return offset;
+    }
+
 }
 
 struct Tensor<Type_ : template, Rank_ : template> {

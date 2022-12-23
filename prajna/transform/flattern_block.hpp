@@ -192,7 +192,6 @@ inline std::list<std::shared_ptr<ir::Block>> splitBlock(std::shared_ptr<ir::Bloc
 }  // namespace
 
 inline std::shared_ptr<ir::Module> flatternBlock(std::shared_ptr<ir::Module> ir_module) {
-    FlatternBlockPass flattern_block_pass;
     for (auto ir_function : ir_module->functions) {
         // @note 后面可能需要重构, 目前假设只有一个block时才需要展开
         if (ir_function->blocks.size() != 1) continue;

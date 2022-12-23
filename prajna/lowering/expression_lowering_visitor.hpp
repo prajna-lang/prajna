@@ -272,15 +272,6 @@ class ExpressionLoweringVisitor {
         return nullptr;
     }
 
-    bool isIndexType(std::shared_ptr<ir::Type> ir_type) {
-        if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
-            if (ir_int_type->is_signed and ir_int_type->bits == 64) {
-                return true;
-            }
-        }
-
-        return false;
-    }
     std::shared_ptr<ir::Value> applyBinaryOperationIndexArray(
         std::shared_ptr<ir::Value> ir_object, ast::BinaryOperation ast_binary_operation) {
         auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_object);
@@ -290,7 +281,7 @@ class ExpressionLoweringVisitor {
             logger->error("index should have one argument at least", ast_binary_operation.operand);
         }
         auto ir_index = ir_arguments.front();
-        if (not this->isIndexType(ir_index->type)) {
+        if (ir_index->type != ir_builder->getIndexType()) {
             logger->error(
                 fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
@@ -321,7 +312,7 @@ class ExpressionLoweringVisitor {
                 return ir_access_property;
             } else {
                 // "[" propert在生成的时候就会被限制
-                if (not ir_builder->isArrayType(
+                if (not ir_builder->isArrayIndexType(
                         ir_index_property->getter_function->function_type->argument_types.back())) {
                     logger->error("too many index arguments", ast_binary_operation.operand);
                 }
@@ -546,9 +537,10 @@ class ExpressionLoweringVisitor {
                         auto static_function_identifier = iter_ast_identifier->identifier;
                         auto ir_static_fun = ir_type->static_functions[static_function_identifier];
                         if (ir_static_fun == nullptr) {
-                            logger->error(fmt::format("the static function {} is not exit",
-                                                      static_function_identifier),
-                                          static_function_identifier);
+                            logger->error(
+                                fmt::format("the static function {} is not exit in type {}",
+                                            static_function_identifier, ir_type->fullname),
+                                static_function_identifier);
                         }
 
                         if (iter_ast_identifier->template_arguments) {

@@ -38,14 +38,31 @@ class IrBuilder {
         return ir_local_variable;
     }
 
-    std::shared_ptr<ir::StructType> getDim3Type() {
+    bool isArrayIndexType(std::shared_ptr<ir::Type> ir_type) {
+        return ir_type->fullname.size() > 17 &&
+               ir_type->fullname.substr(0, 17) == "::core::Array<i64";
+    }
+
+    Symbol getSymbolByPath(bool is_root, std::vector<std::string> names) {
+        PRAJNA_ASSERT(this->symbol_table);
+        auto tmp_symbol_table =
+            is_root ? this->symbol_table->rootSymbolTable() : this->symbol_table;
+        for (size_t i = 0; i < names.size() - 1; ++i) {
+            PRAJNA_ASSERT(tmp_symbol_table);
+            tmp_symbol_table = symbolGet<SymbolTable>(tmp_symbol_table->get(names[i]));
+        }
+
+        return tmp_symbol_table->get(names.back());
+    }
+
+    std::shared_ptr<ir::StructType> getArrayType(std::shared_ptr<ir::Type> ir_type, size_t length) {
         PRAJNA_ASSERT(symbol_table);
 
         std::list<Symbol> symbol_template_arguments;
-        symbol_template_arguments.push_back(this->getIndexType());
-        symbol_template_arguments.push_back(this->getIndexConstant(3));
+        symbol_template_arguments.push_back(ir_type);
+        symbol_template_arguments.push_back(this->getIndexConstant(length));
 
-        auto symbol_array = this->symbol_table->get("Array");
+        auto symbol_array = this->getSymbolByPath(true, {"core", "Array"});
         PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
                       "system libs is bad");
         auto array_template = symbolGet<TemplateStruct>(symbol_array);
@@ -54,9 +71,13 @@ class IrBuilder {
         return ir_dim3_type;
     }
 
+    std::shared_ptr<ir::StructType> getDim3Type() {
+        return this->getArrayType(this->getIndexType(), 3);
+    }
+
     std::shared_ptr<ir::WriteProperty> setDim3(std::shared_ptr<ir::Value> ir_dim3, int64_t index,
                                                std::shared_ptr<ir::Value> ir_value) {
-        PRAJNA_ASSERT(this->isArrayType(ir_dim3->type));
+        PRAJNA_ASSERT(this->isArrayIndexType(ir_dim3->type));
         auto ir_index_property = ir_dim3->type->properties["["];
         PRAJNA_VERIFY(ir_index_property, "Array index property is missing");
 
@@ -71,7 +92,7 @@ class IrBuilder {
     }
 
     template <typename _Value, typename... _Args>
-    std::shared_ptr<_Value> create(_Args &&...__args) {
+    std::shared_ptr<_Value> create(_Args&&... __args) {
         auto ir_value = _Value::create(std::forward<_Args>(__args)...);
         static_assert(std::is_base_of<ir::Value, _Value>::value);
         PRAJNA_ASSERT(current_block);
@@ -118,10 +139,6 @@ class IrBuilder {
         auto ir_member_function = ir_object->type->binary_functions[binary_operator];
         PRAJNA_ASSERT(ir_member_function);
         return this->create<ir::Call>(ir_member_function, ir_arguments);
-    }
-
-    bool isArrayType(std::shared_ptr<ir::Type> ir_type) {
-        return ir_type->fullname.size() > 13 && ir_type->fullname.substr(0, 13) == "::core::Array";
     }
 
     void pushSymbolTable() {

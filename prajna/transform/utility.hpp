@@ -99,6 +99,7 @@ inline void replaceInBlock(std::shared_ptr<ir::Value> ir_org, std::shared_ptr<ir
     PRAJNA_ASSERT(iter != ir_block->values.end());
     ir_block->insert(iter, ir_new);
     ir_block->erase(iter);
+    ir_org->finalize();
 }
 
 inline std::list<std::shared_ptr<ir::Variable>> captureExternalVariablesInBlock(

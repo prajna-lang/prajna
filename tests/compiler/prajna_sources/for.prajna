@@ -1,0 +1,11 @@
+@test
+func testFor(){
+    {
+        var first = [1, 1];
+        var last = [11, 11];
+        for idx in first to last {
+            var t________________t = 0;
+            idx.tostr().print();
+        }
+    }
+}

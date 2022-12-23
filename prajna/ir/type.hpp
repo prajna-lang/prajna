@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <list>
 #include <map>
 #include <memory>
@@ -50,6 +51,8 @@ class Type : public Named {
     std::map<std::string, std::shared_ptr<Function>> binary_functions;
     std::map<std::string, std::shared_ptr<Property>> properties;
     std::vector<std::shared_ptr<Field>> fields;
+
+    std::any template_arguments;
 
     llvm::Type* llvm_type = nullptr;
 };

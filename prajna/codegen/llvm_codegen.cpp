@@ -74,6 +74,10 @@ class LlvmCodegen {
 
             return;
         }
+        if (auto ir_undef_type = cast<ir::UndefType>(ir_type)) {
+            ir_undef_type->llvm_type = llvm::Type::getInt8Ty(static_llvm_context);
+            return;
+        }
         if (auto ir_void_type = cast<ir::VoidType>(ir_type)) {
             ir_void_type->llvm_type = llvm::Type::getVoidTy(static_llvm_context);
             return;

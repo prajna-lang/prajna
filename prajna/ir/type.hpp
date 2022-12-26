@@ -205,6 +205,27 @@ class VoidType : public Type {
     }
 };
 
+class UndefType : public Type {
+   protected:
+    UndefType() = default;
+
+   public:
+    static std::shared_ptr<UndefType> create() {
+        for (auto ir_type : global_context.created_types) {
+            if (auto ir_undef_type = cast<UndefType>(ir_type)) {
+                return ir_undef_type;
+            }
+        }
+
+        std::shared_ptr<UndefType> self(new UndefType);
+        self->name = "undef";
+        self->bytes = 0;  // 应该是个无效值
+        self->fullname = "undef";
+        global_context.created_types.push_back(self);
+        return self;
+    }
+};
+
 class FunctionType : public Type {
    protected:
     FunctionType() = default;

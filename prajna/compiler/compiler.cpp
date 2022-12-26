@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 
+#include "boost/algorithm/string.hpp"
 #include "prajna/assert.hpp"
 #include "prajna/codegen/llvm_codegen.h"
 #include "prajna/exception.hpp"
@@ -18,6 +19,32 @@ namespace prajna {
 inline namespace compiler {
 
 namespace fs = std::filesystem;
+
+namespace {
+
+inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
+    std::shared_ptr<lowering::SymbolTable> root_symbol_table, std::string prajna_source_file) {
+    auto source_file_path_string = fs::path(prajna_source_file).lexically_normal().string();
+    std::vector<std::string> result;
+    boost::split(result, source_file_path_string, boost::is_any_of("/"));
+    result.back() = fs::path(result.back()).stem().string();
+    auto symbol_table_tree = root_symbol_table;
+    for (auto path_part : result) {
+        if (symbol_table_tree->has(path_part)) {
+            symbol_table_tree =
+                lowering::symbolGet<lowering::SymbolTable>(symbol_table_tree->get(path_part));
+        } else {
+            auto new_symbol_table = lowering::SymbolTable::create(symbol_table_tree);
+            symbol_table_tree->set(new_symbol_table, path_part);
+            new_symbol_table->name = path_part;
+            symbol_table_tree = new_symbol_table;
+        }
+    }
+
+    return symbol_table_tree;
+}
+
+}  // namespace
 
 std::shared_ptr<Compiler> Compiler::create() {
     std::shared_ptr<Compiler> self(new Compiler);
@@ -109,7 +136,7 @@ void Compiler::compileFile(std::string prajna_source_dir, std::string prajna_sou
     PRAJNA_ASSERT(ifs.good());
     std::string code((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
-    auto current_symbol_table = lowering::createSymbolTableTree(_symbol_table, prajna_source_file);
+    auto current_symbol_table = createSymbolTableTree(_symbol_table, prajna_source_file);
     this->compileCode(code, current_symbol_table, prajna_source_full_path, false);
 }
 

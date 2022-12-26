@@ -20,7 +20,7 @@ int main() {
     ts(1, 2) = 6;
 
     auto matrix_add_f32 = reinterpret_cast<MatrixF32 (*)(MatrixF32 *, MatrixF32 *, MatrixF32 *)>(
-        compiler->getSymbolValue("::add::matrixAddF32"));
+        compiler->getSymbolValue("::examples::prajna_in_cpp::add::matrixAddF32"));
 
     auto ts_re = MatrixF32::create(shape);
     matrix_add_f32(&ts, &ts, &ts_re);

@@ -118,25 +118,6 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
     std::unordered_map<std::string, Symbol> current_symbol_dict;
 };
 
-inline std::shared_ptr<SymbolTable> createSymbolTableTree(
-    std::shared_ptr<SymbolTable> root_symbol_table, std::string prajna_source_file) {
-    fs::path source_file_path = fs::path(prajna_source_file);
-    auto symbol_table_tree = root_symbol_table;
-    for (auto path_part : source_file_path.stem()) {
-        if (symbol_table_tree->has(path_part)) {
-            symbol_table_tree =
-                lowering::symbolGet<lowering::SymbolTable>(symbol_table_tree->get(path_part));
-        } else {
-            auto new_symbol_table = lowering::SymbolTable::create(symbol_table_tree);
-            symbol_table_tree->set(new_symbol_table, path_part);
-            new_symbol_table->name = path_part;
-            symbol_table_tree = new_symbol_table;
-        }
-    }
-
-    return symbol_table_tree;
-}
-
 std::string symbolGetName(Symbol symbol);
 
 std::string symbolGetFullname(Symbol symbol);

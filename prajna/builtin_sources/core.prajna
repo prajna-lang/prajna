@@ -142,17 +142,17 @@ implement Array<Type_: template, Length_: template>{
     }
 }
 
-struct Layout<Rank_ : template>{
-    shape: Array<i64, Rank_>;
-    stride: Array<i64, Rank_>;
+struct Layout<Dim_ : template>{
+    shape: Array<i64, Dim_>;
+    stride: Array<i64, Dim_>;
 }
 
-implement Layout<Rank_ : template>{
+implement Layout<Dim_ : template>{
     @static
-    func create(shape: Array<i64, Rank_>)->Layout<Rank_>{
-        var self: Layout<Rank_>;
+    func create(shape: Array<i64, Dim_>)->Layout<Dim_>{
+        var self: Layout<Dim_>;
         self.shape = shape;
-        var i = Rank_ - 1;
+        var i = Dim_ - 1;
         self.stride[i] = 1;
         while (i > 0){
             i = i - 1;
@@ -161,11 +161,11 @@ implement Layout<Rank_ : template>{
         return self;
     }
 
-    func linearIndexToArrayIndex(offset: i64)->Array<i64, Rank_>{
-        var array_idx: Array<i64, Rank_>;
+    func linearIndexToArrayIndex(offset: i64)->Array<i64, Dim_>{
+        var array_idx: Array<i64, Dim_>;
         var remain = offset;
         var i = 0;
-        while (i < Rank_){
+        while (i < Dim_){
             array_idx[i] = remain / this.stride[i];
             remain = remain % this.stride[i];
             i = i + 1;
@@ -174,9 +174,9 @@ implement Layout<Rank_ : template>{
         return array_idx;
     }
 
-    func arrayIndexToLinearIndex(idx: Array<i64, Rank_>)->i64{
+    func arrayIndexToLinearIndex(idx: Array<i64, Dim_>)->i64{
         var offset = 0;
-        var i =  Rank_ - 1;
+        var i =  Dim_ - 1;
         while (i >= 0){
             offset = offset + idx[i] * this.stride[i];
             i = i - 1;
@@ -190,17 +190,17 @@ implement Layout<Rank_ : template>{
 
 }
 
-struct Tensor<Type_ : template, Rank_ : template> {
+struct Tensor<Type_ : template, Dim_ : template> {
     data : Type_*;
-    layout: Layout<Rank_>;
+    layout: Layout<Dim_>;
 }
 
 
-implement Tensor<Type_ : template, Rank_: template> {
+implement Tensor<Type_ : template, Dim_: template> {
     @static
-    func create(shape :Array<i64, Rank_>)->Tensor<Type_, Rank_>{
-        var self: Tensor<Type_, Rank_>;
-        self.layout = Layout<Rank_>::create(shape);
+    func create(shape :Array<i64, Dim_>)->Tensor<Type_, Dim_>{
+        var self: Tensor<Type_, Dim_>;
+        self.layout = Layout<Dim_>::create(shape);
 
         var bytes = self.layout.length() * sizeof(Type_);
         self.data = cast<Type_ *>(bindings::bindings::malloc(bytes));
@@ -227,24 +227,24 @@ implement Tensor<Type_ : template, Rank_: template> {
     }
 
     @property("at", "getter")
-    func at_getter(idx: Array<i64, Rank_>)->Type_{
+    func at_getter(idx: Array<i64, Dim_>)->Type_{
         var offset = this.layout.arrayIndexToLinearIndex(idx);
         return this.data[offset];
     }
 
     @property("at", "setter")
-    func at_setter(idx: Array<i64, Rank_>, value: Type_){
+    func at_setter(idx: Array<i64, Dim_>, value: Type_){
         var offset = this.layout.arrayIndexToLinearIndex(idx);
         this.data[offset] = value;
     }
 
     @property("[", "getter")
-    func index_getter(idx: Array<i64, Rank_>)->Type_{
+    func index_getter(idx: Array<i64, Dim_>)->Type_{
         return this.at(idx);
     }
 
     @property("[", "setter")
-    func index_setter(idx: Array<i64, Rank_>, value: Type_){
+    func index_setter(idx: Array<i64, Dim_>, value: Type_){
         this.at(idx) = value;
     }
 }

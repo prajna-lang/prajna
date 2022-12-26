@@ -31,19 +31,19 @@ func launchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
 }
 
 
-struct Tensor<Type_ : template, Rank_ : template> {
+struct Tensor<Type_ : template, Dim_ : template> {
     data : Type_*;
-    shape: Array<i64, Rank_>;
+    shape: Array<i64, Dim_>;
 }
 
 
-implement Tensor<Type_ : template, Rank_: template> {
+implement Tensor<Type_ : template, Dim_: template> {
     @static
-    func create(shape :Array<i64, Rank_>)->Tensor<Type_, Rank_>{
-        var self: Tensor<Type_, Rank_>;
+    func create(shape :Array<i64, Dim_>)->Tensor<Type_, Dim_>{
+        var self: Tensor<Type_, Dim_>;
         self.shape = shape;
         var size = 1;
-        for i in 0 to Rank_ {
+        for i in 0 to Dim_ {
             size = size * shape[i];
         }
         var bytes = size * sizeof(Type_);
@@ -54,10 +54,10 @@ implement Tensor<Type_ : template, Rank_: template> {
         return self;
     }
 
-    func toHost()->::Tensor<Type_, Rank_>{
-        var host_tensor = ::Tensor<Type_, Rank_>::create(this.shape);
+    func toHost()->::Tensor<Type_, Dim_>{
+        var host_tensor = ::Tensor<Type_, Dim_>::create(this.shape);
         var size = 1;
-        for i in 0 to Rank_ {
+        for i in 0 to Dim_ {
             size = size * this.shape[i];
         }
         // print("toHost: size");
@@ -69,11 +69,11 @@ implement Tensor<Type_ : template, Rank_: template> {
     }
 }
 
-implement ::Tensor<Type_ : template, Rank_: template> {
-    func toGpu()->Tensor<Type_, Rank_>{
-        var cuda_tensor = Tensor<Type_, Rank_>::create(this.shape);
+implement ::Tensor<Type_ : template, Dim_: template> {
+    func toGpu()->Tensor<Type_, Dim_>{
+        var cuda_tensor = Tensor<Type_, Dim_>::create(this.shape);
         var size = 1;
-        for i in 0 to Rank_ {
+        for i in 0 to Dim_ {
             size = size * this.shape[i];
         }
         // print("tocuda: size");

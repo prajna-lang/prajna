@@ -235,6 +235,10 @@ implement i32 {
 
     @instruction("CastInst", "Trunc", "char")
     func tochar()->char;
+
+    // @static one()->i32{
+    //     return 132;
+    // }
 }
 
 implement i64 {

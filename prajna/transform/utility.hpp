@@ -53,22 +53,22 @@ inline void eachValue(std::shared_ptr<ir::Module> ir_module,
     }
 }
 
-template <typename _Value>
+template <typename Value_>
 inline void each(std::shared_ptr<ir::Module> ir_module,
-                 std::function<void(std::shared_ptr<_Value>)> ir_callback) {
+                 std::function<void(std::shared_ptr<Value_>)> ir_callback) {
     eachValue(ir_module, [=](auto ir_e) {
-        if (auto ir_target = cast<_Value>(ir_e)) {
+        if (auto ir_target = cast<Value_>(ir_e)) {
             ir_callback(ir_target);
         }
     });
 }
 
-template <typename _Value>
-inline std::list<std::shared_ptr<_Value>> getValuesInFunction(
+template <typename Value_>
+inline std::list<std::shared_ptr<Value_>> getValuesInFunction(
     std::shared_ptr<ir::Function> ir_function) {
-    std::list<std::shared_ptr<_Value>> ir_values;
+    std::list<std::shared_ptr<Value_>> ir_values;
     utility::eachValue(ir_function, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
-        if (auto ir_target_value = cast<_Value>(ir_value)) {
+        if (auto ir_target_value = cast<Value_>(ir_value)) {
             ir_values.push_back(ir_target_value);
         }
     });
@@ -76,11 +76,11 @@ inline std::list<std::shared_ptr<_Value>> getValuesInFunction(
     return ir_values;
 }
 
-template <typename _Value>
-inline std::list<std::shared_ptr<_Value>> getValuesInModule(std::shared_ptr<ir::Module> ir_module) {
-    std::list<std::shared_ptr<_Value>> ir_values;
+template <typename Value_>
+inline std::list<std::shared_ptr<Value_>> getValuesInModule(std::shared_ptr<ir::Module> ir_module) {
+    std::list<std::shared_ptr<Value_>> ir_values;
     eachValue(ir_module, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
-        if (auto ir_target_value = cast<_Value>(ir_value)) {
+        if (auto ir_target_value = cast<Value_>(ir_value)) {
             ir_values.push_back(ir_target_value);
         }
     });

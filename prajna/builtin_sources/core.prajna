@@ -85,23 +85,23 @@ export str;
 export print;
 
 struct Array<Type_: template, Length_: template>{
-    raw_array: Type_[Length_];
+    data: Type_[Length_];
 }
 
 implement Array<Type_: template, Length_: template>{
-    @property("length", "getter")
-    func lengthGetter()->i64{
+
+    func length()->i64{
         return Length_;
     }
 
     @property("[", "getter")
     func index_getter(idx: i64)->Type_{
-        return this.raw_array[idx];
+        return this.data[idx];
     }
 
     @property("[", "setter")
     func index_setter(idx: i64, value: Type_){
-        this.raw_array[idx] = value;
+        this.data[idx] = value;
     }
 
     func cumprod()->Type_{
@@ -115,7 +115,7 @@ implement Array<Type_: template, Length_: template>{
     @static
     func one()->Array<Type_, Length_>{
         var re_one : Array<Type_, Length_>;
-        for i in 0 to re_one.length {
+        for i in 0 to re_one.length() {
             re_one[i] = Type_::one();
         }
         return re_one;
@@ -124,7 +124,7 @@ implement Array<Type_: template, Length_: template>{
     @binary("-")
     func sub(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
         var re : Array<Type_, Length_>;
-        for i in 0 to this.length {
+        for i in 0 to this.length() {
             re[i] = this[i] - operand[i];
         }
 
@@ -134,7 +134,7 @@ implement Array<Type_: template, Length_: template>{
     @binary("+")
     func sub(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
         var re : Array<Type_, Length_>;
-        for i in 0 to this.length {
+        for i in 0 to this.length() {
             re[i] = this[i] + operand[i];
         }
 
@@ -152,16 +152,12 @@ implement Layout<Rank_ : template>{
     func create(shape: Array<i64, Rank_>)->Layout<Rank_>{
         var self: Layout<Rank_>;
         self.shape = shape;
-
-        var stride: Array<i64, Rank_>;
         var i = Rank_ - 1;
-        stride[i] = 1;
+        self.stride[i] = 1;
         while (i > 0){
             i = i - 1;
-            stride[i] = shape[i + 1] * stride[i + 1];
+            self.stride[i] = self.shape[i + 1] * self.stride[i + 1];
         }
-        self.stride = stride;
-
         return self;
     }
 
@@ -188,13 +184,15 @@ implement Layout<Rank_ : template>{
         return offset;
     }
 
+    func length()->i64{
+        return this.shape[0] * this.stride[0];
+    }
+
 }
 
 struct Tensor<Type_ : template, Rank_ : template> {
     data : Type_*;
-    shape: Array<i64, Rank_>;
-    rank: i64;
-    stride: Array<i64, Rank_>;
+    layout: Layout<Rank_>;
 }
 
 
@@ -202,34 +200,14 @@ implement Tensor<Type_ : template, Rank_: template> {
     @static
     func create(shape :Array<i64, Rank_>)->Tensor<Type_, Rank_>{
         var self: Tensor<Type_, Rank_>;
-        self.shape = shape;
-        self.rank = Rank_;
+        self.layout = Layout<Rank_>::create(shape);
 
-        var stride: Array<i64, Rank_>;
-        var i = Rank_ - 1;
-        stride[i] = 1;
-        while (i > 0){
-            i = i - 1;
-            stride[i] = shape[i + 1] * stride[i + 1];
-        }
-        self.stride =  stride;
-        var bytes = shape[0] * stride[0] * sizeof(Type_);
-
+        var bytes = self.layout.length() * sizeof(Type_);
         self.data = cast<Type_ *>(bindings::bindings::malloc(bytes));
         bindings::registerReferenceCount(cast<i8*>(self.data));
         bindings::incReferenceCount(cast<i8*>(self.data));
 
         return self;
-    }
-
-    func index2offset(idx: Array<i64, Rank_>)->i64 {
-        var offset = 0;
-        var i =  Rank_ - 1;
-        while (i >= 0){
-            offset = offset + idx[i] * this.stride[i];
-            i = i - 1;
-        }
-        return offset;
     }
 
     func initialize(){
@@ -244,19 +222,19 @@ implement Tensor<Type_ : template, Rank_: template> {
     func destroy(){
         bindings::decReferenceCount(cast<i8*>(this.data));
         if (bindings::getReferenceCount(cast<i8*>(this.data)) == 0){
-            bindings::free(cast<i8*>(this.data));
+           bindings::free(cast<i8*>(this.data));
         }
     }
 
     @property("at", "getter")
     func at_getter(idx: Array<i64, Rank_>)->Type_{
-        var offset = this.index2offset(idx);
+        var offset = this.layout.arrayIndexToLinearIndex(idx);
         return this.data[offset];
     }
 
     @property("at", "setter")
     func at_setter(idx: Array<i64, Rank_>, value: Type_){
-        var offset = this.index2offset(idx);
+        var offset = this.layout.arrayIndexToLinearIndex(idx);
         this.data[offset] = value;
     }
 

@@ -21,6 +21,11 @@
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "prajna/assert.hpp"
 #include "prajna/ir/ir.hpp"
+#include "prajna/reference_count.hpp"
+
+namespace prajna {
+std::map<void *, std::atomic<int64_t>> ptr_count_dict;
+}
 
 namespace prajna::jit {
 
@@ -41,16 +46,6 @@ void c_assert(bool t) {
         longjmp(buf, 1);
     }
 }
-
-std::map<void *, std::atomic<int64_t>> ptr_count_dict;
-
-void registerReferenceCount(void *ptr) { ptr_count_dict[ptr].store(0); }
-
-int64_t getReferenceCount(void *ptr) { return ptr_count_dict[ptr].load(); }
-
-void incReferenceCount(void *ptr) { ++ptr_count_dict[ptr]; }
-
-void decReferenceCount(void *ptr) { --ptr_count_dict[ptr]; }
 
 llvm::ExitOnError exit_on_error;
 

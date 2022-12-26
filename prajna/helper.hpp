@@ -31,15 +31,15 @@ class function_guard {
     std::function<void()> _todo;
 };
 
-template <typename _DstType, typename _SrcType>
-auto cast(std::shared_ptr<_SrcType> ir_src) -> std::shared_ptr<_DstType> {
-    auto ir_dst = std::dynamic_pointer_cast<_DstType>(ir_src);
+template <typename DstType_, typename SrcType_>
+auto cast(std::shared_ptr<SrcType_> ir_src) -> std::shared_ptr<DstType_> {
+    auto ir_dst = std::dynamic_pointer_cast<DstType_>(ir_src);
     return ir_dst;
 }
 
-template <typename _DstType, typename _SrcType>
-bool is(std::shared_ptr<_SrcType> ir_src) {
-    return cast<_DstType, _SrcType>(ir_src) != nullptr;
+template <typename DstType_, typename SrcType_>
+bool is(std::shared_ptr<SrcType_> ir_src) {
+    return cast<DstType_, SrcType_>(ir_src) != nullptr;
 }
 
 template <typename _T>

@@ -872,8 +872,8 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::Blank) { return nullptr; }
 
-    template <typename _Statement>
-    Symbol operator()(_Statement ast_statement) {
+    template <typename Statement_>
+    Symbol operator()(Statement_ ast_statement) {
         PRAJNA_ASSERT(false, typeid(ast_statement).name());
         return nullptr;
     }

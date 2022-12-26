@@ -11,14 +11,14 @@ namespace prajna::parser::grammar {
 
 namespace {
 
-template <typename _Iterator>
-inline ast::SourcePosition getFirstIteratorPosition(_Iterator first_iter) {
+template <typename Iterator_>
+inline ast::SourcePosition getFirstIteratorPosition(Iterator_ first_iter) {
     auto pos = first_iter->begin().get_position();
     return ast::SourcePosition{pos.line, pos.column, pos.file};
 }
 
-template <typename _Iterator>
-inline ast::SourcePosition getLastIteratorPosition(_Iterator first_iter, _Iterator last_iter) {
+template <typename Iterator_>
+inline ast::SourcePosition getLastIteratorPosition(Iterator_ first_iter, Iterator_ last_iter) {
     auto iter = first_iter;
     auto iter_tmp = iter;
     // 存在iter > last_iter的情况, 匹配annotations的时候就存在, 因为他们会匹配"空"的,
@@ -34,7 +34,7 @@ inline ast::SourcePosition getLastIteratorPosition(_Iterator first_iter, _Iterat
 
 }  // namespace
 
-template <typename _Iterator>
+template <typename Iterator_>
 struct ErrorHandler {
     ErrorHandler(std::shared_ptr<Logger> logger) { this->logger = logger; }
 
@@ -43,7 +43,7 @@ struct ErrorHandler {
     /// @param input_last 指向输入的末尾, 且无意义
     /// @param err_pos
     /// @param what
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator error_iter,
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ error_iter,
                     boost::spirit::info what) const {
         auto last_pos1 = getLastIteratorPosition(first_iter, error_iter);
         auto last_pos2 = last_pos1;
@@ -62,56 +62,56 @@ struct ErrorHandler {
 
 // @note on_success存在多次重复调用的问题, 如break会在多个rule里触发(break_,
 // statement等),所以其位置最后会包含';'
-template <typename _Iterator>
+template <typename Iterator_>
 struct SuccessHandler {
     SuccessHandler(std::shared_ptr<Logger> logger) { this->logger = logger; }
 
-    template <typename _Ast>
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator last_iter,
-                    _Ast& attribute) const {
+    template <typename Ast_>
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
+                    Ast_& attribute) const {
         attribute.first_position = getFirstIteratorPosition(first_iter);
         attribute.last_position = getLastIteratorPosition(first_iter, last_iter);
     }
 
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator last_iter,
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     ast::Annotations& attribute) const {
         attribute.first_position = getFirstIteratorPosition(first_iter);
         attribute.last_position = getLastIteratorPosition(first_iter, last_iter);
     }
 
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator last_iter,
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     ast::Operand& ast_operand) const {
         boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x); },
                              ast_operand);
     }
 
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator last_iter,
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     ast::TemplateArgument& ast_template_argument) const {
         boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x); },
                              ast_template_argument);
     }
 
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator last_iter,
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     ast::Statement& ast_statement) const {
         boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x); },
                              ast_statement);
     }
 
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator last_iter,
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     ast::PostfixTypeOperator& ast_postfix_type_operator) const {
         boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x); },
                              ast_postfix_type_operator);
     }
 
     template <typename _T>
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator last_iter,
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     boost::optional<_T>& ast_optional) const {
         if (ast_optional) {
             (*this)(first_iter, input_last_iter, last_iter, *ast_optional);
         }
     }
 
-    void operator()(_Iterator first_iter, _Iterator input_last_iter, _Iterator last_iter,
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     ast::Statements& attribute) const {
         CodeLexerType tokens;
         auto skip = boost::spirit::qi::in_state("WS")[tokens.self];

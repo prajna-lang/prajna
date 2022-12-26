@@ -18,7 +18,7 @@ struct PrintFileName {
 
 class CompilerSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
-    auto compiler = std::make_shared<compiler::Compiler>();
+    auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
     compiler->compileFile(".", prajna_source_path);
@@ -28,7 +28,7 @@ TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
 
 class CompilerScriptTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerScriptTests, TestScriptFromDirectory) {
-    auto compiler = std::make_shared<compiler::Compiler>();
+    auto compiler = Compiler::create();
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
     std::string prajna_script_path = GetParam();
     std::ifstream ifs(prajna_script_path);
@@ -45,7 +45,7 @@ TEST_P(CompilerScriptTests, TestScriptFromDirectory) {
 
 class CompilerErrorSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerErrorSourceTests, TestSourceFromDirectory) {
-    auto compiler = std::make_shared<compiler::Compiler>();
+    auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
     compiler->compileFile(".", prajna_source_path);
@@ -54,7 +54,7 @@ TEST_P(CompilerErrorSourceTests, TestSourceFromDirectory) {
 
 class CompilerErrorScriptTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerErrorScriptTests, TestScriptFromDirectory) {
-    auto compiler = std::make_shared<compiler::Compiler>();
+    auto compiler = Compiler::create();
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
     std::string prajna_script_path = GetParam();
     std::ifstream ifs(prajna_script_path);

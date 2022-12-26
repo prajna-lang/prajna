@@ -750,8 +750,8 @@ class ExpressionLoweringVisitor {
         return nullptr;
     }
 
-    template <typename _Ast>
-    std::shared_ptr<ir::Value> operator()(_Ast ast_operand) {
+    template <typename Ast_>
+    std::shared_ptr<ir::Value> operator()(Ast_ ast_operand) {
         PRAJNA_ASSERT(false, typeid(ast_operand).name());
         return nullptr;
     }

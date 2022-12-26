@@ -47,8 +47,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-option(PRAJNA_BUILD_TESTS "Build Prajna unit tests" ON)
 option(PRAJNA_BUILD_TOOLS "Build Prajna tools" ON)
+option(PRAJNA_BUILD_EXAMPLES "Build Prajna examples" ON)
+option(PRAJNA_BUILD_TESTS "Build Prajna tests" ON)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_WITH_GPU "With CUDA" OFF)
 option(PRAAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
@@ -58,12 +59,16 @@ add_subdirectory(prajna)
 # add_subdirectory(paramita)
 
 
-if(PRAJNA_BUILD_TESTS)
+if (PRAJNA_BUILD_TESTS)
    add_subdirectory(tests)
 endif()
 
-if(PRAJNA_BUILD_TOOLS)
+if (PRAJNA_BUILD_TOOLS)
    add_subdirectory(tools)
+endif()
+
+if (PRAJNA_BUILD_EXAMPLES)
+   add_subdirectory(examples)
 endif()
 
 # install(TARGETS prajna

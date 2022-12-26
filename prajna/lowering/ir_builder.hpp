@@ -91,10 +91,10 @@ class IrBuilder {
         return this->create<ir::WriteProperty>(ir_value, ir_access_property);
     }
 
-    template <typename _Value, typename... _Args>
-    std::shared_ptr<_Value> create(_Args&&... __args) {
-        auto ir_value = _Value::create(std::forward<_Args>(__args)...);
-        static_assert(std::is_base_of<ir::Value, _Value>::value);
+    template <typename Value_, typename... Args_>
+    std::shared_ptr<Value_> create(Args_&&... __args) {
+        auto ir_value = Value_::create(std::forward<Args_>(__args)...);
+        static_assert(std::is_base_of<ir::Value, Value_>::value);
         PRAJNA_ASSERT(current_block);
         this->insert(ir_value);
         return ir_value;

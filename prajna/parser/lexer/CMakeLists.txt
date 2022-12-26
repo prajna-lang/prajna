@@ -6,6 +6,6 @@ target_link_libraries(prajna_lexer
     PUBLIC Boost::multiprecision
 )
 
-if(PRAJNA_SPIRIT_DEBUG)
+if (PRAJNA_SPIRIT_DEBUG)
     target_compile_definitions(prajna_lexer PRIVATE BOOST_SPIRIT_DEBUG)
 endif()

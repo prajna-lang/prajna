@@ -13,14 +13,18 @@
 #include "prajna/parser/parse.h"
 #include "prajna/transform/transform.h"
 
-namespace prajna::compiler {
+namespace prajna {
+
+inline namespace compiler {
 
 namespace fs = std::filesystem;
 
-Compiler::Compiler() {
-    _symbol_table = lowering::createPrimitiveTypes();
-    jit_engine = std::make_shared<jit::ExecutionEngine>();
-    jit_engine->bindBuiltinFunction();
+std::shared_ptr<Compiler> Compiler::create() {
+    std::shared_ptr<Compiler> self(new Compiler);
+    self->_symbol_table = lowering::createPrimitiveTypes();
+    self->jit_engine = std::make_shared<jit::ExecutionEngine>();
+    self->jit_engine->bindBuiltinFunction();
+    return self;
 }
 
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
@@ -94,6 +98,10 @@ void Compiler::runTestFunctions() {
     });
 }
 
+size_t Compiler::getSymbolValue(std::string symbol_name) {
+    return this->jit_engine->getValue(symbol_name);
+}
+
 void Compiler::compileFile(std::string prajna_source_dir, std::string prajna_source_file) {
     auto prajna_source_full_path =
         fs::current_path() / fs::path(prajna_source_dir) / fs::path(prajna_source_file);
@@ -105,4 +113,5 @@ void Compiler::compileFile(std::string prajna_source_dir, std::string prajna_sou
     this->compileCode(code, current_symbol_table, prajna_source_full_path, false);
 }
 
-}  // namespace prajna::compiler
+}  // namespace compiler
+}  // namespace prajna

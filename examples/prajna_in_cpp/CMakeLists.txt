@@ -1,0 +1,2 @@
+add_executable(prajna_in_cpp main.cpp)
+target_link_libraries(prajna_in_cpp prajna_compiler)

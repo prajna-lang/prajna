@@ -15,14 +15,17 @@ namespace ir {
 class Module;
 }
 
-namespace compiler {
+inline namespace compiler {
 
 std::shared_ptr<lowering::SymbolTable> createPrimitiveTypes();
 
 // @brief 负责将般若编译器的各个模块整合到一块, 以及和外界的交互
 class Compiler {
+   private:
+    Compiler() = default;
+
    public:
-    Compiler();
+    static std::shared_ptr<Compiler> create();
 
     void compileBuiltinSourceFiles(std::string builtin_sources_dir);
 
@@ -33,6 +36,8 @@ class Compiler {
     void bindBuiltinFunctions();
 
     void compileCommandLine(std::string command_line_code);
+
+    size_t getSymbolValue(std::string symbol_name);
 
     void runTestFunctions();
 

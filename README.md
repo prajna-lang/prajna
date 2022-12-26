@@ -68,15 +68,15 @@ func myKernel(tensor: gpu::Tensor<i64, 1>){
 @test
 func testKernel(){
     var size = 13;
-    var gridDim = [1,1,1];
-    var blockDim = [size, 1, 1];
+    var gridShape = [1,1,1];
+    var blockShape = [size, 1, 1];
 
     var shape = [size];
     // 创建一个gpu端的tensor
     var gpu_tensor = gpu::Tensor<i64, 1>::create(shape);
 
     // 核函数调用, 和CUDA一样的调用方式
-    myKernel<<<gridDim, blockDim>>>(gpu_tensor);
+    myKernel<<<gridShape, blockShape>>>(gpu_tensor);
 
     // 将gpu的tensor拷贝会主机
     var host_tensor = gpu_tensor.toHost();

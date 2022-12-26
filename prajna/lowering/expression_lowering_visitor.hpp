@@ -710,19 +710,19 @@ class ExpressionLoweringVisitor {
             if (ir_function_type == nullptr) {
                 logger->error("not callable", ast_kernel_function_call.kernel_function);
             }
-            auto ir_grid_dim = (*this)(ast_kernel_function_call.operation->grid_dim);
-            auto ir_block_dim = (*this)(ast_kernel_function_call.operation->block_dim);
+            auto ir_grid_shape = (*this)(ast_kernel_function_call.operation->grid_shape);
+            auto ir_block_shape = (*this)(ast_kernel_function_call.operation->block_shape);
             auto ir_arguments =
                 *cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
             // TODO arguments
-            auto ir_dim3_type = ir_builder->getDim3Type();
-            if (ir_grid_dim->type != ir_dim3_type) {
+            auto ir_shape3_type = ir_builder->getShape3Type();
+            if (ir_grid_shape->type != ir_shape3_type) {
                 logger->error("the grid dim type must be i64[3]",
-                              ast_kernel_function_call.operation->grid_dim);
+                              ast_kernel_function_call.operation->grid_shape);
             }
-            if (ir_block_dim->type != ir_dim3_type) {
+            if (ir_block_shape->type != ir_shape3_type) {
                 logger->error("the block dim type must be i64[3]",
-                              ast_kernel_function_call.operation->block_dim);
+                              ast_kernel_function_call.operation->block_shape);
             }
 
             if (ir_arguments.size() != ir_function_type->argument_types.size()) {
@@ -739,8 +739,8 @@ class ExpressionLoweringVisitor {
                 }
             }
 
-            return ir_builder->create<ir::KernelFunctionCall>(ir_function, ir_grid_dim,
-                                                              ir_block_dim, ir_arguments);
+            return ir_builder->create<ir::KernelFunctionCall>(ir_function, ir_grid_shape,
+                                                              ir_block_shape, ir_arguments);
 
         } else {
             return ir_function;

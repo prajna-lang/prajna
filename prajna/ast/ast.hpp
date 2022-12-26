@@ -341,8 +341,8 @@ struct ImplementStruct : SourceLocation {
 };
 
 struct KernelFunctionCallOperation {
-    Expression grid_dim;
-    Expression block_dim;
+    Expression grid_shape;
+    Expression block_shape;
     Expressions arguments;
 };
 
@@ -384,7 +384,8 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Export, identifier)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IntLiteralPostfix, int_literal, postfix)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FloatLiteralPostfix, float_literal, postfix)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_dim, block_dim, arguments)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, block_shape,
+                          arguments)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCall, kernel_function, operation)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Array, values)
 BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotations, statement)

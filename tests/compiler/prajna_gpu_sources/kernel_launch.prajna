@@ -8,8 +8,8 @@ func myKernel(tensor: gpu::Tensor<i64, 1>, value: i64){
 
 @test
 func testKernel(){
-    var gridDim = [1,1,1];
-    var blockDim = [1,1,1];
+    var gridShape = [1,1,1];
+    var blockShape = [1,1,1];
 
     var shape = [1];
     var host_tensor = Tensor<i64, 1>::create(shape);
@@ -20,7 +20,7 @@ func testKernel(){
     parameters[1] = cast<i8*>(&value);
     var parameters_ptr = &parameters[0];
 
-    var re = ::gpu::launchKernel(cast<i8*>(myKernel), gridDim, blockDim, parameters_ptr);
+    var re = ::gpu::launchKernel(cast<i8*>(myKernel), gridShape, blockShape, parameters_ptr);
     testing::Assert(re == 0);
 
     host_tensor = gpu_tensor.toHost();

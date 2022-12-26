@@ -66,24 +66,24 @@ class IrBuilder {
         PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
                       "system libs is bad");
         auto array_template = symbolGet<TemplateStruct>(symbol_array);
-        auto ir_dim3_type =
+        auto ir_shape3_type =
             array_template->getStructInstance(symbol_template_arguments, this->module);
-        return ir_dim3_type;
+        return ir_shape3_type;
     }
 
-    std::shared_ptr<ir::StructType> getDim3Type() {
+    std::shared_ptr<ir::StructType> getShape3Type() {
         return this->getArrayType(this->getIndexType(), 3);
     }
 
-    std::shared_ptr<ir::WriteProperty> setDim3(std::shared_ptr<ir::Value> ir_dim3, int64_t index,
+    std::shared_ptr<ir::WriteProperty> setDim3(std::shared_ptr<ir::Value> ir_shape3, int64_t index,
                                                std::shared_ptr<ir::Value> ir_value) {
-        PRAJNA_ASSERT(this->isArrayIndexType(ir_dim3->type));
-        auto ir_index_property = ir_dim3->type->properties["["];
+        PRAJNA_ASSERT(this->isArrayIndexType(ir_shape3->type));
+        auto ir_index_property = ir_shape3->type->properties["["];
         PRAJNA_VERIFY(ir_index_property, "Array index property is missing");
 
-        auto ir_dim3_variable_liked = this->variableLikedNormalize(ir_dim3);
+        auto ir_shape3_variable_liked = this->variableLikedNormalize(ir_shape3);
         auto ir_array_tmp_this_pointer =
-            this->create<ir::GetAddressOfVariableLiked>(ir_dim3_variable_liked);
+            this->create<ir::GetAddressOfVariableLiked>(ir_shape3_variable_liked);
         auto ir_index = this->getIndexConstant(index);
         auto ir_access_property =
             this->create<ir::AccessProperty>(ir_array_tmp_this_pointer, ir_index_property);

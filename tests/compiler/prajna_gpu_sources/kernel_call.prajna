@@ -11,13 +11,13 @@ func testKernel(){
     // gpu::setDevice(0); // error,  会释放核函数的资源, 待修复
 
     var size = 13;
-    var gridDim = [1,1,1];
-    var blockDim = [size, 1, 1];
+    var gridShape = [1,1,1];
+    var blockShape = [size, 1, 1];
 
     var shape = [size];
     var gpu_tensor = gpu::Tensor<i64, 1>::create(shape);
 
-    myKernel<<<gridDim, blockDim>>>(gpu_tensor);
+    myKernel<<<gridShape, blockShape>>>(gpu_tensor);
 
     var host_tensor = gpu_tensor.toHost();
     for i in 0 to size{

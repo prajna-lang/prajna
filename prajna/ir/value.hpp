@@ -1577,16 +1577,16 @@ class KernelFunctionCall : public Instruction {
 
    public:
     static std::shared_ptr<KernelFunctionCall> create(
-        std::shared_ptr<Value> ir_function_value, std::shared_ptr<Value> ir_grid_dim,
-        std::shared_ptr<Value> ir_block_dim, std::vector<std::shared_ptr<Value>> arguments) {
+        std::shared_ptr<Value> ir_function_value, std::shared_ptr<Value> ir_grid_shape,
+        std::shared_ptr<Value> ir_block_shape, std::vector<std::shared_ptr<Value>> arguments) {
         std::shared_ptr<KernelFunctionCall> self(new KernelFunctionCall);
         self->operandResize(3 + arguments.size());
         self->function(ir_function_value);
         auto ir_function_type = ir_function_value->getFunctionType();
         PRAJNA_ASSERT(ir_function_type);
         PRAJNA_ASSERT(ir_function_type->annotations.count("kernel"));
-        self->gridDim(ir_grid_dim);
-        self->blockDim(ir_block_dim);
+        self->gridShape(ir_grid_shape);
+        self->blockShape(ir_block_shape);
         for (size_t i = 0; i < arguments.size(); ++i) {
             PRAJNA_ASSERT(ir_function_type->argument_types[i] == arguments[i]->type);
             self->argument(i, arguments[i]);
@@ -1600,11 +1600,11 @@ class KernelFunctionCall : public Instruction {
     std::shared_ptr<Value> function() { return this->operand(0); }
     void function(std::shared_ptr<Value> ir_value) { this->operand(0, ir_value); }
 
-    std::shared_ptr<Value> gridDim() { return this->operand(1); }
-    void gridDim(std::shared_ptr<Value> ir_grid_dim) { this->operand(1, ir_grid_dim); }
+    std::shared_ptr<Value> gridShape() { return this->operand(1); }
+    void gridShape(std::shared_ptr<Value> ir_grid_shape) { this->operand(1, ir_grid_shape); }
 
-    std::shared_ptr<Value> blockDim() { return this->operand(2); }
-    void blockDim(std::shared_ptr<Value> ir_block_dim) { this->operand(2, ir_block_dim); }
+    std::shared_ptr<Value> blockShape() { return this->operand(2); }
+    void blockShape(std::shared_ptr<Value> ir_block_shape) { this->operand(2, ir_block_shape); }
 
     size_t argumentSize() { return this->operandSize() - 3; }
 

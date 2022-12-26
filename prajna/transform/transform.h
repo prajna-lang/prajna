@@ -93,8 +93,8 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             utility::getValuesInFunction<ir::KernelFunctionCall>(ir_function);
         for (auto ir_kernel_function_call : ir_kernel_function_calls) {
             auto ir_kernel_function = ir_kernel_function_call->function();
-            auto ir_grid_dim = ir_kernel_function_call->gridDim();
-            auto ir_block_dim = ir_kernel_function_call->blockDim();
+            auto ir_grid_shape = ir_kernel_function_call->gridShape();
+            auto ir_block_shape = ir_kernel_function_call->blockShape();
             // auto ir_arguments = ir_kernel_function_call->arguments();
             auto ir_block = ir_kernel_function_call->parent_block;
 
@@ -127,8 +127,8 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             std::vector<std::shared_ptr<ir::Value>> ir_arguments(4);
             ir_arguments[0] = ir_builder.create<ir::BitCast>(
                 ir_kernel_function, ir::PointerType::create(ir::IntType::create(8, true)));
-            ir_arguments[1] = ir_grid_dim;
-            ir_arguments[2] = ir_block_dim;
+            ir_arguments[1] = ir_grid_shape;
+            ir_arguments[2] = ir_block_shape;
             auto ir_array_index0 = ir_builder.create<ir::IndexArray>(
                 ir_kernel_arguments_address_array_i8ptr, ir_builder.getIndexConstant(0));
             auto ir_array_address = ir_builder.create<ir::BitCast>(

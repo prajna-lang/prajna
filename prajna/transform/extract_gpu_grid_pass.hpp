@@ -253,11 +253,11 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         std::string code =
             "var thread_idx = gpu::threadIndex();"
             "var block_idx = gpu::blockIndex();"
-            "var block_dim = gpu::blockDim();"
-            "var grid_dim = gpu::gridDim();"
-            "i = first + thread_idx[0] + block_idx[0] * block_dim[0];"
+            "var block_shape = gpu::blockShape();"
+            "var grid_shape = gpu::gridShape();"
+            "i = first + thread_idx[0] + block_idx[0] * block_shape[0];"
             "while (i < last){"
-            "   i = i + block_dim[0] * grid_dim[0];"
+            "   i = i + block_shape[0] * grid_shape[0];"
             "}";
 
         auto logger = Logger::create(code);
@@ -336,15 +336,15 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
         auto ir_multi_process_count = ir_builder->create<ir::Call>(
             ir_multi_processor_count_function, std::vector<std::shared_ptr<ir::Value>>{ir_zero});
 
-        auto ir_grid_dim = ir_builder->create<ir::LocalVariable>(ir_builder->getDim3Type());
-        ir_builder->setDim3(ir_grid_dim, 0, ir_multi_process_count);
-        ir_builder->setDim3(ir_grid_dim, 1, ir_builder->getIndexConstant(1));
-        ir_builder->setDim3(ir_grid_dim, 2, ir_builder->getIndexConstant(1));
+        auto ir_grid_shape = ir_builder->create<ir::LocalVariable>(ir_builder->getShape3Type());
+        ir_builder->setDim3(ir_grid_shape, 0, ir_multi_process_count);
+        ir_builder->setDim3(ir_grid_shape, 1, ir_builder->getIndexConstant(1));
+        ir_builder->setDim3(ir_grid_shape, 2, ir_builder->getIndexConstant(1));
 
-        auto ir_block_dim = ir_builder->create<ir::LocalVariable>(ir_builder->getDim3Type());
-        ir_builder->setDim3(ir_block_dim, 0, ir_max_thread_per_block);
-        ir_builder->setDim3(ir_block_dim, 1, ir_builder->getIndexConstant(1));
-        ir_builder->setDim3(ir_block_dim, 2, ir_builder->getIndexConstant(1));
+        auto ir_block_shape = ir_builder->create<ir::LocalVariable>(ir_builder->getShape3Type());
+        ir_builder->setDim3(ir_block_shape, 0, ir_max_thread_per_block);
+        ir_builder->setDim3(ir_block_shape, 1, ir_builder->getIndexConstant(1));
+        ir_builder->setDim3(ir_block_shape, 2, ir_builder->getIndexConstant(1));
 
         std::vector<std::shared_ptr<ir::Value>> ir_arguments;
         ir_arguments.push_back(ir_gpu_for->first());
@@ -365,8 +365,8 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
                 }
             });
 
-        ir_builder->create<ir::KernelFunctionCall>(ir_kernel_function, ir_grid_dim, ir_block_dim,
-                                                   ir_arguments);
+        ir_builder->create<ir::KernelFunctionCall>(ir_kernel_function, ir_grid_shape,
+                                                   ir_block_shape, ir_arguments);
         for (auto [ir_gpu_tensor, ir_host_tensor_variable] : gpu_host_tensor_dict) {
             PRAJNA_ASSERT(utility::isGpuTensorType(ir_gpu_tensor->type));
             auto ir_host_tensor = ir_builder->callMemberFunction(ir_gpu_tensor, "toHost", {});

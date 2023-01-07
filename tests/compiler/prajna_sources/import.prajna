@@ -1,0 +1,7 @@
+import tests::compiler::prajna_sources::hello_world;
+
+@test
+func testMain(){
+    // hello_world::testMain();
+    // "Hi".print();
+}

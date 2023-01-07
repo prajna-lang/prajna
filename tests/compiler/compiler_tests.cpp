@@ -20,8 +20,9 @@ class CompilerSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
     auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
+    compiler->addPackageDirectories(".");
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
-    compiler->compileFile(".", prajna_source_path);
+    compiler->compileFile(prajna_source_path);
     compiler->runTestFunctions();
     ASSERT_EQ(0, compiler->compile_error_count);
 }
@@ -47,14 +48,16 @@ class CompilerErrorSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerErrorSourceTests, TestSourceFromDirectory) {
     auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
+    compiler->addPackageDirectories(".");
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
-    compiler->compileFile(".", prajna_source_path);
+    compiler->compileFile(prajna_source_path);
     compiler->runTestFunctions();
 }
 
 class CompilerErrorScriptTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerErrorScriptTests, TestScriptFromDirectory) {
     auto compiler = Compiler::create();
+    compiler->addPackageDirectories(".");
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
     std::string prajna_script_path = GetParam();
     std::ifstream ifs(prajna_script_path);

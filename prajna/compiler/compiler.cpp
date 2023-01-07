@@ -16,24 +16,27 @@
 
 namespace prajna {
 
-namespace fs = std::filesystem;
-
 namespace {
 
 inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
-    std::shared_ptr<lowering::SymbolTable> root_symbol_table, std::string prajna_source_file) {
-    auto source_file_path_string = fs::path(prajna_source_file).lexically_normal().string();
+    std::shared_ptr<lowering::SymbolTable> root_symbol_table,
+    std::string prajna_source_package_path) {
+    auto source_file_path_string =
+        std::filesystem::path(prajna_source_package_path).lexically_normal().string();
     std::vector<std::string> result;
     boost::split(result, source_file_path_string, boost::is_any_of("/"));
-    result.back() = fs::path(result.back()).stem().string();
+    result.back() = std::filesystem::path(result.back()).stem().string();
     auto symbol_table_tree = root_symbol_table;
+    std::filesystem::path symbol_table_source_path;
     for (auto path_part : result) {
+        symbol_table_source_path /= std::filesystem::path(path_part);
         if (symbol_table_tree->has(path_part)) {
             symbol_table_tree =
                 lowering::symbolGet<lowering::SymbolTable>(symbol_table_tree->get(path_part));
         } else {
             auto new_symbol_table = lowering::SymbolTable::create(symbol_table_tree);
             symbol_table_tree->set(new_symbol_table, path_part);
+            new_symbol_table->source_path = symbol_table_source_path;
             new_symbol_table->name = path_part;
             symbol_table_tree = new_symbol_table;
         }
@@ -53,15 +56,17 @@ std::shared_ptr<Compiler> Compiler::create() {
 }
 
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
-    this->compileFile(builtin_sources_dir, "implement_primitive_types.prajna");
-    this->compileFile(builtin_sources_dir, "bindings.prajna");
-    this->compileFile(builtin_sources_dir, "core.prajna");
-    this->compileFile(builtin_sources_dir, "serialize.prajna");
-    this->compileFile(builtin_sources_dir, "testing.prajna");
+    this->addPackageDirectories(builtin_sources_dir);
+
+    this->compileFile("implement_primitive_types.prajna");
+    this->compileFile("bindings.prajna");
+    this->compileFile("core.prajna");
+    this->compileFile("serialize.prajna");
+    this->compileFile("testing.prajna");
 
 #ifdef PRAJNA_WITH_GPU
-    this->compileFile(builtin_sources_dir, "cuda.prajna");
-    this->compileFile(builtin_sources_dir, "gpu.prajna");
+    this->compileFile(cuda.prajna");
+    this->compileFile(gpu.prajna");
 #endif
 }
 
@@ -73,7 +78,7 @@ std::shared_ptr<ir::Module> Compiler::compileCode(
         auto ast = prajna::parser::parse(code, file_name, logger);
         PRAJNA_ASSERT(ast);
         auto ir_lowering_module =
-            prajna::lowering::lower(ast, symbol_table, logger, is_interpreter);
+            prajna::lowering::lower(ast, symbol_table, logger, shared_from_this(), is_interpreter);
         ir_lowering_module->name = file_name;
         ir_lowering_module->fullname = ir_lowering_module->name;
         for (auto [ir_target, ir_sub_module] : ir_lowering_module->modules) {
@@ -110,32 +115,63 @@ void Compiler::compileCommandLine(std::string command_line_code) {
 }
 
 void Compiler::runTestFunctions() {
-    this->_symbol_table->each([this](lowering::Symbol symbol) {
-        if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
-            if (auto ir_function = cast<ir::Function>(ir_value)) {
-                if (ir_function->function_type->annotations.count("test")) {
-                    auto function_pointer = this->jit_engine->getValue(ir_function->fullname);
-                    this->jit_engine->catchRuntimeError();
-                    reinterpret_cast<void (*)(void)>(function_pointer)();
+    std::set<std::shared_ptr<ir::Function>> function_tested_set;
+    this->_symbol_table->each(
+        [jit_engine = this->jit_engine, &function_tested_set](lowering::Symbol symbol) {
+            if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
+                if (auto ir_function = cast<ir::Function>(ir_value)) {
+                    if (function_tested_set.count(ir_function)) {
+                        return;
+                    }
+
+                    function_tested_set.insert(ir_function);
+                    if (ir_function->function_type->annotations.count("test")) {
+                        auto function_pointer = jit_engine->getValue(ir_function->fullname);
+                        jit_engine->catchRuntimeError();
+                        reinterpret_cast<void (*)(void)>(function_pointer)();
+                    }
                 }
             }
-        }
-    });
+        });
 }
 
 size_t Compiler::getSymbolValue(std::string symbol_name) {
     return this->jit_engine->getValue(symbol_name);
 }
 
-void Compiler::compileFile(std::string prajna_source_dir, std::string prajna_source_file) {
-    auto prajna_source_full_path =
-        fs::current_path() / fs::path(prajna_source_dir) / fs::path(prajna_source_file);
-    std::ifstream ifs(prajna_source_full_path);
-    PRAJNA_ASSERT(ifs.good());
-    std::string code((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+void Compiler::addPackageDirectories(std::string package_directory) {
+    PRAJNA_ASSERT(std::filesystem::is_directory(std::filesystem::path(package_directory)));
+    package_directories.push_back(std::filesystem::path(package_directory));
+}
 
-    auto current_symbol_table = createSymbolTableTree(_symbol_table, prajna_source_file);
-    this->compileCode(code, current_symbol_table, prajna_source_full_path, false);
+std::shared_ptr<lowering::SymbolTable> Compiler::compileFile(
+    std::filesystem::path prajna_source_package_path) {
+    std::filesystem::path prajna_source_path;
+    for (auto package_directory : package_directories) {
+        auto tmp_path =
+            std::filesystem::current_path() / package_directory / prajna_source_package_path;
+        if (std::filesystem::exists(tmp_path)) {
+            prajna_source_path = tmp_path;
+            break;
+        }
+
+        if (std::filesystem::exists(tmp_path.string() + ".prajna")) {
+            prajna_source_path = tmp_path.string() + ".prajna";
+            break;
+        }
+    }
+
+    // PRAJNA_ASSERT(!prajna_source_path.empty());
+
+    auto current_symbol_table = createSymbolTableTree(_symbol_table, prajna_source_package_path);
+
+    std::ifstream ifs(prajna_source_path.string());
+    if (ifs.good()) {
+        std::string code((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+        this->compileCode(code, current_symbol_table, prajna_source_path.string(), false);
+    }
+
+    return current_symbol_table;
 }
 
 }  // namespace prajna

@@ -263,7 +263,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         auto logger = Logger::create(code);
         auto symbol_table = ir_module->symbol_table;
         auto statement_lowering_visitor =
-            lowering::StatementLoweringVisitor::create(symbol_table, logger);
+            lowering::StatementLoweringVisitor::create(symbol_table, logger, nullptr, nullptr);
         auto ir_builder = statement_lowering_visitor->ir_builder;
         ir_builder->pushSymbolTable();
         ir_builder->pushBlock(ir_block);

@@ -42,7 +42,7 @@ struct ExpressionGrammer
     rule<ast::PostfixTypeOperator> type_postfix_operator;
     rule<ast::PostfixType> type;
     rule<ast::TemplateArgument> template_argument;
-    rule<ast::IdentifiersResolution> identifier_path;
+    rule<ast::IdentifierPath> identifier_path;
     rule<ast::TemplateArguments> template_arguments;
     rule<ast::IdentifierWithTemplateArguments> identifier_with_templates;
 

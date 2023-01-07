@@ -9,10 +9,12 @@ class InterpreterLoweringVisitor {
 
    public:
     static std::shared_ptr<InterpreterLoweringVisitor> create(
-        std::shared_ptr<lowering::SymbolTable> symbol_table, std::shared_ptr<Logger> logger) {
+        std::shared_ptr<lowering::SymbolTable> symbol_table, std::shared_ptr<Logger> logger,
+        std::shared_ptr<Compiler> compiler) {
         std::shared_ptr<InterpreterLoweringVisitor> self(new InterpreterLoweringVisitor);
         self->logger = logger;
-        self->_statement_lowering_visitor = StatementLoweringVisitor::create(symbol_table, logger);
+        self->_statement_lowering_visitor =
+            StatementLoweringVisitor::create(symbol_table, logger, nullptr, compiler);
         return self;
     }
 

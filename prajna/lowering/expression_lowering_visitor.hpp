@@ -18,11 +18,11 @@ namespace prajna::lowering {
 
 class UndefinedSymbolException : public std::exception {
    public:
-    UndefinedSymbolException(ast::IdentifiersResolution ast_identifiers_resolution) {
-        this->identifier_path = ast_identifiers_resolution;
+    UndefinedSymbolException(ast::IdentifierPath ast_identifier_path) {
+        this->identifier_path = ast_identifier_path;
     }
 
-    ast::IdentifiersResolution identifier_path;
+    ast::IdentifierPath identifier_path;
 };
 
 class ExpressionLoweringVisitor {
@@ -38,35 +38,35 @@ class ExpressionLoweringVisitor {
     };
 
    public:
-    bool isIdentifier(ast::IdentifiersResolution ast_identifiers_resolution) {
-        if (ast_identifiers_resolution.is_root) {
+    bool isIdentifier(ast::IdentifierPath ast_identifier_path) {
+        if (ast_identifier_path.is_root) {
             return false;
         }
 
-        if (ast_identifiers_resolution.identifiers.size() != 1) {
+        if (ast_identifier_path.identifiers.size() != 1) {
             return false;
         }
 
-        auto identifier_with_template_parameters = ast_identifiers_resolution.identifiers.front();
+        auto identifier_with_template_parameters = ast_identifier_path.identifiers.front();
         return !identifier_with_template_parameters.template_arguments;
     }
 
     bool isIdentifier(
         ast::IdentifierWithTemplateArguments ast_identifier_with_template_parameters) {
-        ast::IdentifiersResolution ast_identifiers_resolution;
-        ast_identifiers_resolution.identifiers = {ast_identifier_with_template_parameters};
-        return this->isIdentifier(ast_identifiers_resolution);
+        ast::IdentifierPath ast_identifier_path;
+        ast_identifier_path.identifiers = {ast_identifier_with_template_parameters};
+        return this->isIdentifier(ast_identifier_path);
     }
 
-    ast::Identifier getIdentifier(ast::IdentifiersResolution ast_identifiers_resolution) {
-        return ast_identifiers_resolution.identifiers.front().identifier;
+    ast::Identifier getIdentifier(ast::IdentifierPath ast_identifier_path) {
+        return ast_identifier_path.identifiers.front().identifier;
     }
 
     ast::Identifier getIdentifier(
         ast::IdentifierWithTemplateArguments ast_identifier_with_template_parameters) {
-        ast::IdentifiersResolution ast_identifiers_resolution;
-        ast_identifiers_resolution.identifiers = {ast_identifier_with_template_parameters};
-        return this->getIdentifier(ast_identifiers_resolution);
+        ast::IdentifierPath ast_identifier_path;
+        ast_identifier_path.identifiers = {ast_identifier_with_template_parameters};
+        return this->getIdentifier(ast_identifier_path);
     }
 
     std::shared_ptr<ir::Value> apply(ast::Expression ast_expression) {
@@ -103,12 +103,12 @@ class ExpressionLoweringVisitor {
             ir_builder->create<ir::IndexArray>(ir_c_string_variable, ir_constant_zero);
         auto ir_c_string_address =
             ir_builder->create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
-        ast::IdentifiersResolution ast_identifiers_resolution;
-        ast_identifiers_resolution.is_root = ast::Operator("::");
-        ast_identifiers_resolution.identifiers.resize(1);
-        ast_identifiers_resolution.identifiers.front().identifier = "str";
+        ast::IdentifierPath ast_identifier_path;
+        ast_identifier_path.is_root = ast::Operator("::");
+        ast_identifier_path.identifiers.resize(1);
+        ast_identifier_path.identifiers.front().identifier = "str";
         auto string_type = cast<ir::StructType>(
-            symbolGet<ir::Type>(this->applyIdentifiersResolution(ast_identifiers_resolution)));
+            symbolGet<ir::Type>(this->applyIdentifiersResolution(ast_identifier_path)));
         auto ir_string_from_char_pat = string_type->static_functions["from_char_ptr"];
 
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
@@ -509,20 +509,17 @@ class ExpressionLoweringVisitor {
         return ir_type;
     }  // namespace prajna::lowering
 
-    Symbol applyIdentifiersResolution(ast::IdentifiersResolution ast_identifiers_resolution) {
+    Symbol applyIdentifiersResolution(ast::IdentifierPath ast_identifier_path) {
         Symbol symbol;
-        if (ast_identifiers_resolution.is_root) {
+        if (ast_identifier_path.is_root) {
             symbol = ir_builder->symbol_table->rootSymbolTable();
         } else {
             symbol = ir_builder->symbol_table;
         }
-
-        // 不应该存在
         PRAJNA_ASSERT(symbol.which() != 0);
 
-        for (auto iter_ast_identifier = ast_identifiers_resolution.identifiers.begin();
-             iter_ast_identifier != ast_identifiers_resolution.identifiers.end();
-             ++iter_ast_identifier) {
+        for (auto iter_ast_identifier = ast_identifier_path.identifiers.begin();
+             iter_ast_identifier != ast_identifier_path.identifiers.end(); ++iter_ast_identifier) {
             symbol = boost::apply_visitor(
                 overloaded{
                     [=](auto x) -> Symbol {
@@ -614,8 +611,8 @@ class ExpressionLoweringVisitor {
         return symbol;
     }
 
-    std::shared_ptr<ir::Value> operator()(ast::IdentifiersResolution ast_identifiers_resolution) {
-        auto symbol = this->applyIdentifiersResolution(ast_identifiers_resolution);
+    std::shared_ptr<ir::Value> operator()(ast::IdentifierPath ast_identifier_path) {
+        auto symbol = this->applyIdentifiersResolution(ast_identifier_path);
         PRAJNA_ASSERT(symbol.which() != 0);
         return boost::apply_visitor(
             overloaded{
@@ -625,7 +622,7 @@ class ExpressionLoweringVisitor {
                 [=](std::shared_ptr<ir::Type> ir_type) -> std::shared_ptr<ir::Value> {
                     if (ir_type->constructor == nullptr) {
                         logger->error(fmt::format("{} has no constructor", ir_type->fullname),
-                                      ast_identifiers_resolution);
+                                      ast_identifier_path);
                     }
                     return ir_type->constructor;
                 },
@@ -637,7 +634,7 @@ class ExpressionLoweringVisitor {
                 },
                 [=](auto x) {
                     logger->error(fmt::format("use invalid symbol as a value"),
-                                  ast_identifiers_resolution);
+                                  ast_identifier_path);
                     return nullptr;
                 }},
             symbol);

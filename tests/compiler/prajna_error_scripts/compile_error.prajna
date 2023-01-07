@@ -65,3 +65,5 @@ tt.at(12.3);
 
 var aa = 3;
 aa = 3.1415;
+
+import core::t;

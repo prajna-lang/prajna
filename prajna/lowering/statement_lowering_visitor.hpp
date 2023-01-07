@@ -15,6 +15,10 @@
 #include "prajna/lowering/symbol_table.hpp"
 #include "prajna/lowering/template.hpp"
 
+namespace prajna {
+class Compiler;
+}  // namespace prajna
+
 namespace prajna::lowering {
 
 class StatementLoweringVisitor {
@@ -25,11 +29,12 @@ class StatementLoweringVisitor {
    public:
     static std::shared_ptr<StatementLoweringVisitor> create(
         std::shared_ptr<lowering::SymbolTable> symbol_table, std::shared_ptr<Logger> logger,
-        std::shared_ptr<ir::Module> ir_module = nullptr) {
+        std::shared_ptr<ir::Module> ir_module, std::shared_ptr<Compiler> compiler) {
         std::shared_ptr<StatementLoweringVisitor> self(new StatementLoweringVisitor);
         if (!ir_module) ir_module = ir::Module::create();
         self->ir_builder = std::make_shared<IrBuilder>(symbol_table, ir_module);
         self->logger = logger;
+        self->compiler = compiler;
         self->expression_lowering_visitor =
             ExpressionLoweringVisitor::create(self->ir_builder, logger);
         return self;
@@ -532,8 +537,8 @@ class StatementLoweringVisitor {
                 // @需要提前把ir_struct_type设置, 这样才能嵌套
                 template_struct->struct_type_instance_dict[symbol_list] = ir_struct_type;
 
-                auto statement_lowering_visitor =
-                    StatementLoweringVisitor::create(templates_symbol_table, logger, ir_module);
+                auto statement_lowering_visitor = StatementLoweringVisitor::create(
+                    templates_symbol_table, logger, ir_module, nullptr);
                 return statement_lowering_visitor->applyStructWithOutTemplates(ir_struct_type,
                                                                                ast_struct);
             };
@@ -797,8 +802,8 @@ class StatementLoweringVisitor {
                          boost::combine(template_parameter_identifier_list, symbol_list)) {
                         templates_symbol_table->set(symbol, identifier);
                     }
-                    auto statement_lowering_visitor =
-                        StatementLoweringVisitor::create(templates_symbol_table, logger, ir_module);
+                    auto statement_lowering_visitor = StatementLoweringVisitor::create(
+                        templates_symbol_table, logger, ir_module, nullptr);
                     auto ir_type = template_struct->struct_type_instance_dict[symbol_list];
                     statement_lowering_visitor->applyImplementStructWithOutTemplates(
                         ir_type, ast_implement_struct);
@@ -817,24 +822,7 @@ class StatementLoweringVisitor {
         return this->applyExpression(ast_expression);
     }
 
-    Symbol applyIdentifiersResolution(ast::IdentifiersResolution ast_identifiers_resolution) {
-        return expression_lowering_visitor->applyIdentifiersResolution(ast_identifiers_resolution);
-    }
-
-    Symbol operator()(ast::Import ast_import) {
-        auto symbol = this->applyIdentifiersResolution(ast_import.identifier_path);
-        PRAJNA_ASSERT(symbol.which() != 0);
-        PRAJNA_ASSERT(!ast_import.identifier_path.identifiers.empty());
-        // setWithName 不能改变symbol的名字
-        ir_builder->symbol_table->set(symbol,
-                                      ast_import.identifier_path.identifiers.back().identifier);
-
-        if (ast_import.as) {
-            ir_builder->symbol_table->set(symbol, *ast_import.as);
-        }
-
-        return symbol;
-    }
+    Symbol operator()(ast::Import ast_import);
 
     Symbol operator()(ast::Export ast_export) {
         auto symbol = ir_builder->symbol_table->get(ast_export.identifier);
@@ -865,6 +853,11 @@ class StatementLoweringVisitor {
             logger->warning(fmt::format("pragma error: {}", msg), ast_pragma);
             return nullptr;
         }
+        if (ast_pragma.name == "system") {
+            std::string command = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
+            std::system(command.c_str());
+            return nullptr;
+        }
 
         logger->error("the pragma is undefined", ast_pragma);
         return nullptr;
@@ -884,6 +877,7 @@ class StatementLoweringVisitor {
 
    public:
     std::shared_ptr<ExpressionLoweringVisitor> expression_lowering_visitor = nullptr;
+    std::shared_ptr<Compiler> compiler = nullptr;
     std::shared_ptr<IrBuilder> ir_builder = nullptr;
     std::shared_ptr<Logger> logger = nullptr;
 };

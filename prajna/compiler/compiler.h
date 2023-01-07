@@ -1,7 +1,9 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "prajna/compiler/print_callback.h"
 
@@ -19,10 +21,14 @@ namespace jit {
 class ExecutionEngine;
 }
 
+namespace jit {
+class ExecutionEngine;
+}
+
 std::shared_ptr<lowering::SymbolTable> createPrimitiveTypes();
 
 // @brief 负责将般若编译器的各个模块整合到一块, 以及和外界的交互
-class Compiler {
+class Compiler : public std::enable_shared_from_this<Compiler> {
    private:
     Compiler() = default;
 
@@ -43,19 +49,22 @@ class Compiler {
 
     void runTestFunctions();
 
+    void addPackageDirectories(std::string package_directory);
+
     /**
      * @brief 编译单个源文件
      * @param[in] prajna_source_dir
      * @param[in]
      */
-    void compileFile(std::string prajna_source_dir, std::string prajna_source_file);
+    std::shared_ptr<lowering::SymbolTable> compileFile(std::filesystem::path prajna_source_file);
 
    private:
     std::shared_ptr<lowering::SymbolTable> _symbol_table;
 
    public:
     std::shared_ptr<jit::ExecutionEngine> jit_engine;
-    size_t compile_error_count = 0;
+    std::vector<std::filesystem::path> package_directories;
+    std::size_t compile_error_count = 0;
 };
 
 }  // namespace prajna

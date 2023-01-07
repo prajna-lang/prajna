@@ -1,5 +1,6 @@
 add_library(prajna_lowering
     lower.cpp
+    statement_lowering_visitor.cpp
     symbol_table.cpp
 )
 

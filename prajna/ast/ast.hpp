@@ -111,7 +111,7 @@ struct StringLiteral : SourceLocation {
 };
 
 struct Type;
-struct IdentifiersResolution;
+struct IdentifierPath;
 
 using TemplateArgument = boost::variant<Blank, boost::recursive_wrapper<Type>, IntLiteral>;
 // using TemplateArguments = std::list<TemplateArgument>;
@@ -125,13 +125,13 @@ struct IdentifierWithTemplateArguments : SourceLocation {
     boost::optional<TemplateArguments> template_arguments;
 };
 
-struct IdentifiersResolution : SourceLocation {
+struct IdentifierPath : SourceLocation {
     boost::optional<Operator> is_root;
     std::vector<IdentifierWithTemplateArguments> identifiers;
 };
 
 struct Import : SourceLocation {
-    IdentifiersResolution identifier_path;
+    IdentifierPath identifier_path;
     boost::optional<Identifier> as;
 };
 
@@ -142,7 +142,7 @@ struct Export : SourceLocation {
 using PostfixTypeOperator = boost::variant<Operator, IntLiteral, Identifier>;
 
 struct Type : SourceLocation {
-    IdentifiersResolution base_type;
+    IdentifierPath base_type;
     std::vector<PostfixTypeOperator> postfix_type_operators;
 };
 
@@ -154,7 +154,7 @@ struct SizeOf : SourceLocation {
 
 typedef boost::variant<
     Blank, Null, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral, Identifier,
-    IdentifiersResolution, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
+    IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
     boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
     boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Cast>,
     boost::recursive_wrapper<Array>, SizeOf, boost::recursive_wrapper<KernelFunctionCall>>
@@ -333,7 +333,7 @@ struct ImplementStructForInterface : SourceLocation {
 };
 
 struct ImplementStruct : SourceLocation {
-    IdentifiersResolution struct_;
+    IdentifierPath struct_;
     TemplateParameters template_paramters;
     std::vector<Function> functions;
 };
@@ -375,7 +375,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Interface, name, function_declarations)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStructForInterface, interface, struct_, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStruct, struct_, template_paramters, functions)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifiersResolution, is_root, identifiers)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifier_path, as)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Export, identifier)

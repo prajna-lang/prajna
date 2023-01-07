@@ -88,7 +88,9 @@ std::shared_ptr<ir::Module> Compiler::compileCode(
         }
         auto ir_ssa_module = prajna::transform::transform(ir_lowering_module);
         auto ir_codegen_module = prajna::codegen::llvmCodegen(ir_ssa_module, ir::Target::host);
-        jit_engine->addIRModule(ir_codegen_module);
+        auto ir_llvm_optimize_module = prajna::codegen::llvmPass(ir_codegen_module);
+
+        jit_engine->addIRModule(ir_llvm_optimize_module);
 
         return ir_lowering_module;
     } catch (CompileError &) {

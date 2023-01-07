@@ -1,5 +1,6 @@
 #include "prajna/codegen/llvm_codegen.h"
 
+#include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/ConstantFolder.h"
@@ -21,9 +22,14 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/ValueHandle.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/Debug.h"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
+#include "third_party/llvm-project/llvm/include/llvm-c/Target.h"
+#include "third_party/llvm-project/llvm/include/llvm/Analysis/AliasAnalysis.h"
+#include "third_party/llvm-project/llvm/include/llvm/IR/AutoUpgrade.h"
+
 namespace prajna::codegen {
 
 static llvm::LLVMContext static_llvm_context;
@@ -83,7 +89,7 @@ class LlvmCodegen {
             return;
         }
         if (auto ir_function_type = cast<ir::FunctionType>(ir_type)) {
-            std::vector<llvm::Type*> llvm_argument_types(ir_function_type->argument_types.size());
+            std::vector<llvm::Type *> llvm_argument_types(ir_function_type->argument_types.size());
             std::transform(ir_function_type->argument_types.begin(),
                            ir_function_type->argument_types.end(), llvm_argument_types.begin(),
                            [](std::shared_ptr<ir::Type> ir_type) {
@@ -111,7 +117,7 @@ class LlvmCodegen {
             auto llvm_struct_type =
                 llvm::StructType::create(static_llvm_context, ir_struct_type->fullname);
             ir_struct_type->llvm_type = llvm_struct_type;
-            std::vector<llvm::Type*> llvm_types(ir_struct_type->fields.size());
+            std::vector<llvm::Type *> llvm_types(ir_struct_type->fields.size());
             std::transform(ir_struct_type->fields.begin(), ir_struct_type->fields.end(),
                            llvm_types.begin(), [=](std::shared_ptr<ir::Field> field) {
                                if (!field->type->llvm_type) {
@@ -171,9 +177,9 @@ class LlvmCodegen {
             PRAJNA_ASSERT(!ir_function->function_type->annotations["intrinsic"].empty());
             auto function_name = ir_function->function_type->annotations["intrinsic"].front();
             PRAJNA_ASSERT(ir_function->function_type->llvm_type);
-            llvm::FunctionType* llvm_fun_type =
-                static_cast<llvm::FunctionType*>(ir_function->function_type->llvm_type);
-            llvm::Function* llvm_fun =
+            llvm::FunctionType *llvm_fun_type =
+                static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
+            llvm::Function *llvm_fun =
                 llvm::Function::Create(llvm_fun_type, llvm::Function::ExternalLinkage,
                                        function_name, ir_function->parent_module->llvm_module);
             ir_function->llvm_value = llvm_fun;
@@ -183,9 +189,9 @@ class LlvmCodegen {
                                          : ir_function->fullname;
 
             PRAJNA_ASSERT(ir_function->function_type->llvm_type);
-            llvm::FunctionType* llvm_fun_type =
-                static_cast<llvm::FunctionType*>(ir_function->function_type->llvm_type);
-            llvm::Function* llvm_fun =
+            llvm::FunctionType *llvm_fun_type =
+                static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
+            llvm::Function *llvm_fun =
                 llvm::Function::Create(llvm_fun_type, llvm::Function::ExternalLinkage,
                                        function_fullname, ir_function->parent_module->llvm_module);
             ir_function->llvm_value = llvm_fun;
@@ -193,7 +199,7 @@ class LlvmCodegen {
     }
 
     void emitFunction(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
-        llvm::Function* llvm_fun = static_cast<llvm::Function*>(ir_function->llvm_value);
+        llvm::Function *llvm_fun = static_cast<llvm::Function *>(ir_function->llvm_value);
         PRAJNA_ASSERT(llvm_fun);
         PRAJNA_ASSERT(ir_function->arguments.size() == llvm_fun->arg_size());
         size_t i = 0;
@@ -217,7 +223,7 @@ class LlvmCodegen {
         PRAJNA_ASSERT(ir_block->parent_function->llvm_value);
         ir_block->llvm_value = llvm::BasicBlock::Create(
             static_llvm_context, "",
-            static_cast<llvm::Function*>(ir_block->parent_function->llvm_value), nullptr);
+            static_cast<llvm::Function *>(ir_block->parent_function->llvm_value), nullptr);
 
         for (auto ir_value : ir_block->values) {
             emitValue(ir_value, ir_target);
@@ -279,18 +285,18 @@ class LlvmCodegen {
             return;
         }
         if (auto ir_constant_array = cast<ir::ConstantArray>(ir_constant)) {
-            std::vector<llvm::Constant*> llvm_contants(
+            std::vector<llvm::Constant *> llvm_contants(
                 ir_constant_array->initialize_constants.size());
             std::transform(RANGE(ir_constant_array->initialize_constants), llvm_contants.begin(),
                            [=](auto ir_init) {
                                auto llvm_constant =
-                                   static_cast<llvm::Constant*>(ir_init->llvm_value);
+                                   static_cast<llvm::Constant *>(ir_init->llvm_value);
                                PRAJNA_ASSERT(llvm_constant);
                                return llvm_constant;
                            });
             PRAJNA_ASSERT(ir_constant_array->type->llvm_type);
             ir_constant_array->llvm_value = llvm::ConstantArray::get(
-                static_cast<llvm::ArrayType*>(ir_constant_array->type->llvm_type), llvm_contants);
+                static_cast<llvm::ArrayType *>(ir_constant_array->type->llvm_type), llvm_contants);
             return;
         }
 
@@ -298,7 +304,7 @@ class LlvmCodegen {
     }
 
     void emitCallInstructionAsIntrinsic(std::shared_ptr<ir::Call> ir_call, ir::Target ir_target) {
-        auto llvm_basic_block = static_cast<llvm::BasicBlock*>(ir_call->parent_block->llvm_value);
+        auto llvm_basic_block = static_cast<llvm::BasicBlock *>(ir_call->parent_block->llvm_value);
         PRAJNA_ASSERT(llvm_basic_block);
         auto ir_function = cast<ir::Function>(ir_call->function());
         auto annotations_instruction = ir_function->function_type->annotations["instruction"];
@@ -466,7 +472,7 @@ class LlvmCodegen {
         // PRAJNA_ASSERT(ir_instruction->llvm_value == nullptr);
 
         auto llvm_basic_block =
-            static_cast<llvm::BasicBlock*>(ir_instruction->parent_block->llvm_value);
+            static_cast<llvm::BasicBlock *>(ir_instruction->parent_block->llvm_value);
         PRAJNA_ASSERT(llvm_basic_block);
         if (auto ir_call = cast<ir::Call>(ir_instruction)) {
             auto ir_function_type = ir_call->function()->getFunctionType();
@@ -474,7 +480,7 @@ class LlvmCodegen {
             if (ir_function_type->annotations.count("instruction")) {
                 return this->emitCallInstructionAsIntrinsic(ir_call, ir_target);
             } else {
-                std::vector<llvm::Value*> llvm_arguments(ir_call->argumentSize());
+                std::vector<llvm::Value *> llvm_arguments(ir_call->argumentSize());
                 for (size_t i = 0; i < llvm_arguments.size(); ++i) {
                     llvm_arguments[i] = ir_call->argument(i)->llvm_value;
                     PRAJNA_ASSERT(llvm_arguments[i]);
@@ -482,7 +488,7 @@ class LlvmCodegen {
                 PRAJNA_ASSERT(ir_call->function()->getFunctionType()->llvm_type);
                 PRAJNA_ASSERT(ir_call->function()->llvm_value);
                 ir_call->llvm_value = llvm::CallInst::Create(
-                    static_cast<llvm::FunctionType*>(
+                    static_cast<llvm::FunctionType *>(
                         ir_call->function()->getFunctionType()->llvm_type),
                     ir_call->function()->llvm_value, llvm_arguments, "", llvm_basic_block);
                 return;
@@ -533,8 +539,8 @@ class LlvmCodegen {
             PRAJNA_ASSERT(ir_condition_branch->falseBlock()->llvm_value);
             PRAJNA_ASSERT(ir_condition_branch->condition()->llvm_value);
             ir_condition_branch->llvm_value = llvm::BranchInst::Create(
-                static_cast<llvm::BasicBlock*>(ir_condition_branch->trueBlock()->llvm_value),
-                static_cast<llvm::BasicBlock*>(ir_condition_branch->falseBlock()->llvm_value),
+                static_cast<llvm::BasicBlock *>(ir_condition_branch->trueBlock()->llvm_value),
+                static_cast<llvm::BasicBlock *>(ir_condition_branch->falseBlock()->llvm_value),
                 ir_condition_branch->condition()->llvm_value, llvm_basic_block);
             return;
         }
@@ -545,14 +551,14 @@ class LlvmCodegen {
             this->emitBlock(ir_jump_branch->nextBlock(), ir_target);
             PRAJNA_ASSERT(ir_jump_branch->nextBlock()->llvm_value);
             ir_jump_branch->llvm_value = llvm::BranchInst::Create(
-                static_cast<llvm::BasicBlock*>(ir_jump_branch->nextBlock()->llvm_value),
+                static_cast<llvm::BasicBlock *>(ir_jump_branch->nextBlock()->llvm_value),
                 llvm_basic_block);
             return;
         }
         if (auto ir_get_struct_element_pointer =
                 cast<ir::GetStructElementPointer>(ir_instruction)) {
             // @todo 后续需要进一步处理, 看一下偏移地址的类型是否可以一直是64位的, 还是需要调整
-            std::vector<llvm::Value*> llvm_idx_list(2);
+            std::vector<llvm::Value *> llvm_idx_list(2);
             llvm_idx_list[0] =
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
             // @warning 结构体的偏移下标必须使用32位整型
@@ -570,7 +576,7 @@ class LlvmCodegen {
             return;
         }
         if (auto ir_get_array_element_pointer = cast<ir::GetArrayElementPointer>(ir_instruction)) {
-            std::vector<llvm::Value*> llvm_idx_list(2);
+            std::vector<llvm::Value *> llvm_idx_list(2);
             llvm_idx_list[0] =
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
             llvm_idx_list[1] = ir_get_array_element_pointer->index()->llvm_value;
@@ -586,7 +592,7 @@ class LlvmCodegen {
         }
         if (auto ir_get_pointer_element_pointer =
                 cast<ir::GetPointerElementPointer>(ir_instruction)) {
-            std::vector<llvm::Value*> llvm_idx_list(1);
+            std::vector<llvm::Value *> llvm_idx_list(1);
             llvm_idx_list[0] = ir_get_pointer_element_pointer->index()->llvm_value;
             PRAJNA_ASSERT(ir_get_pointer_element_pointer->type->llvm_type);
             PRAJNA_ASSERT(ir_get_pointer_element_pointer->pointer()->llvm_value);
@@ -645,6 +651,67 @@ std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
 
         llvmCodegen(ir_sub_module, ir_target);
     }
+
+    return ir_module;
+}
+
+std::shared_ptr<ir::Module> llvmPass(std::shared_ptr<ir::Module> ir_module) {
+    LLVMInitializeNativeTarget();
+    LLVMInitializeNativeAsmPrinter();
+
+    auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
+    PRAJNA_ASSERT(JTMB);
+
+    JTMB->setCPU("");
+    JTMB->setRelocationModel(std::nullopt);
+    JTMB->setCodeModel(std::nullopt);
+    JTMB->setCodeGenOptLevel(llvm::CodeGenOpt::None);
+    JTMB->addFeatures(std::vector<std::string>());
+    auto TM = JTMB->createTargetMachine();
+    PRAJNA_ASSERT(TM && TM.get());
+
+    llvm::OptimizationLevel OptLevel;
+
+    llvm::PipelineTuningOptions PTO;
+    // PTO.LoopUnrolling = UnrollLoops;
+    // PTO.LoopInterleaving = UnrollLoops;
+    // PTO.LoopVectorization = LoopVectorize;
+    // PTO.SLPVectorization = SLPVectorize;
+    // PTO.MergeFunctions = MergeFunctions;
+
+    llvm::PassBuilder PB(TM->get(), PTO);
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
+
+    FAM.registerPass([&] { return PB.buildDefaultAAPipeline(); });
+
+    auto llvm_module = ir_module->llvm_module;
+    llvm::Triple TargetTriple(llvm_module->getTargetTriple());
+    std::unique_ptr<llvm::TargetLibraryInfoImpl> TLII(
+        new llvm::TargetLibraryInfoImpl(TargetTriple));
+    FAM.registerPass([&] { return llvm::TargetLibraryAnalysis(*TLII); });
+
+    PB.registerModuleAnalyses(MAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    llvm::ModulePassManager MPM;
+
+    // MPM = PB.buildO0DefaultPipeline(OptLevel, /* PreLinkLTO */ false);
+
+    MPM = PB.buildPerModuleDefaultPipeline(OptLevel, false);
+
+    // Upgrade all calls to old intrinsics first.
+    for (llvm::Module::iterator I = llvm_module->begin(), E = llvm_module->end(); I != E;)
+        llvm::UpgradeCallsToIntrinsic(&*I++);  // must be post-increment, as we remove
+
+    MPM.run(*llvm_module, MAM);
+
+    // llvm_module->dump();
 
     return ir_module;
 }

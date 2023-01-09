@@ -132,7 +132,7 @@ implement Array<Type_: template, Length_: template>{
     }
 
     @binary("+")
-    func sub(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
+    func add(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
         var re : Array<Type_, Length_>;
         for i in 0 to this.length() {
             re[i] = this[i] + operand[i];

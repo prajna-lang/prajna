@@ -48,7 +48,7 @@ void symbolSetFullname(std::string fullname, Symbol symbol) {
         boost::variant<std::string>(fullname), symbol);
 }
 
-void SymbolTable::setWithName(Symbol value, const std::string& name) {
+void SymbolTable::setWithAssigningName(Symbol value, const std::string& name) {
     symbolSetName(name, value);
     symbolSetFullname(this->fullname() + "::" + name, value);
     current_symbol_dict[name] = value;

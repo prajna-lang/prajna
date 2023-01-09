@@ -57,7 +57,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
 
     void set(Symbol value, const std::string& name) { current_symbol_dict[name] = value; }
 
-    void setWithName(Symbol value, const std::string& name);
+    void setWithAssigningName(Symbol value, const std::string& name);
 
     Symbol get(const std::string& name) {
         if (current_symbol_dict.count(name) > 0) return current_symbol_dict[name];

@@ -14,15 +14,17 @@ namespace prajna::lowering {
 /// 并将创建的Value等插入其中
 class IrBuilder {
    public:
-    IrBuilder(std::shared_ptr<SymbolTable> symbol_table, std::shared_ptr<ir::Module> ir_module) {
+    IrBuilder(std::shared_ptr<SymbolTable> symbol_table, std::shared_ptr<ir::Module> ir_module,
+              std::shared_ptr<Logger> logger) {
         current_block = nullptr;
         // current_block = ir::Block::create();
         current_function = nullptr;
         this->module = ir_module;
         this->symbol_table = symbol_table;
+        this->logger = logger;
     }
 
-    IrBuilder() : IrBuilder(nullptr, nullptr) {}
+    IrBuilder() : IrBuilder(nullptr, nullptr, nullptr) {}
 
     std::shared_ptr<ir::Type> getIndexType() { return ir::global_context.index_type; }
 
@@ -189,6 +191,14 @@ class IrBuilder {
         this->popBlock();
     }
 
+    void setSymbolWithAssigningName(Symbol symbol, ast::Identifier ast_identifier) {
+        if (symbol_table->currentTableHas(ast_identifier)) {
+            logger->error("the symbol is defined already", ast_identifier);
+        }
+
+        symbol_table->setWithAssigningName(symbol, ast_identifier);
+    }
+
    public:
     std::shared_ptr<SymbolTable> symbol_table = nullptr;
     std::shared_ptr<ir::Function> current_function = nullptr;
@@ -202,6 +212,7 @@ class IrBuilder {
     std::shared_ptr<ir::Block> current_block = nullptr;
     ir::Block::iterator inserter_iterator;
     std::function<void(std::shared_ptr<ir::Value>)> create_callback;
+    std::shared_ptr<Logger> logger = nullptr;
 };
 
 }  // namespace prajna::lowering

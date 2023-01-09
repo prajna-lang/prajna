@@ -32,7 +32,7 @@ class StatementLoweringVisitor {
         std::shared_ptr<ir::Module> ir_module, std::shared_ptr<Compiler> compiler) {
         std::shared_ptr<StatementLoweringVisitor> self(new StatementLoweringVisitor);
         if (!ir_module) ir_module = ir::Module::create();
-        self->ir_builder = std::make_shared<IrBuilder>(symbol_table, ir_module);
+        self->ir_builder = std::make_shared<IrBuilder>(symbol_table, ir_module, logger);
         self->logger = logger;
         self->compiler = compiler;
         self->expression_lowering_visitor =
@@ -102,7 +102,7 @@ class StatementLoweringVisitor {
         } else {
             ir_variable_liked = ir_builder->create<ir::LocalVariable>(ir_type);
         }
-        ir_builder->symbol_table->setWithName(ir_variable_liked, ast_variable_declaration.name);
+        ir_builder->setSymbolWithAssigningName(ir_variable_liked, ast_variable_declaration.name);
 
         if (ir_initial_value) {
             auto write_variable =
@@ -212,7 +212,7 @@ class StatementLoweringVisitor {
         ir_builder->module->functions.push_back(ir_function);
 
         // TODO interface里需要处理一下
-        ir_builder->symbol_table->setWithName(ir_function, ast_function_header.name);
+        ir_builder->setSymbolWithAssigningName(ir_function, ast_function_header.name);
         ir_function_type->name = ir_function->name;
         ir_function_type->fullname = ir_function->fullname;
         ir_function_type->annotations = this->applyAnnotations(ast_function_header.annotations);
@@ -240,15 +240,15 @@ class StatementLoweringVisitor {
             // Argument也不会插入的block里
             auto ir_this_pointer = ir_builder->create<ir::Argument>(ir_this_poiner_type);
             ir_function->arguments.push_back(ir_this_pointer);
-            ir_builder->symbol_table->setWithName(ir_this_pointer, "this-pointer");
+            ir_builder->symbol_table->setWithAssigningName(ir_this_pointer, "this-pointer");
             ++j;
         }
         for (size_t i = 0; i < ast_function.declaration.parameters.size(); ++i, ++j) {
             auto ir_argument_type = ir_function->function_type->argument_types[j];
             auto ir_argument = ir_builder->create<ir::Argument>(ir_argument_type);
             ir_function->arguments.push_back(ir_argument);
-            ir_builder->symbol_table->setWithName(ir_argument,
-                                                  ast_function.declaration.parameters[i].name);
+            ir_builder->setSymbolWithAssigningName(ir_argument,
+                                                   ast_function.declaration.parameters[i].name);
         }
 
         if (ast_function.body) {
@@ -256,7 +256,7 @@ class StatementLoweringVisitor {
                 auto ir_this_pointer =
                     symbolGet<ir::Value>(ir_builder->symbol_table->get("this-pointer"));
                 auto ir_this = ir_builder->create<ir::ThisWrapper>(ir_this_pointer);
-                ir_builder->symbol_table->setWithName(ir_this, "this");
+                ir_builder->symbol_table->setWithAssigningName(ir_this, "this");
             }
 
             (*this)(*ast_function.body);
@@ -374,13 +374,17 @@ class StatementLoweringVisitor {
         auto ir_loop_block = ir::Block::create();
         ir_loop_block->parent_function = ir_builder->current_function;
         auto ir_index = ir_builder->create<ir::LocalVariable>(ir_last->type);
-        ir_builder->symbol_table->setWithName(ir_index, ast_for.index);
+        // 迭代变量应该在下一层迭代空间
+        ir_builder->pushSymbolTable();
+        ir_builder->setSymbolWithAssigningName(ir_index, ast_for.index);
         auto ir_for = ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value,
                                                   ir_loop_block, ir_loop_before, ir_loop_after);
 
         ir_builder->pushBlock(ir_for->loopBlock());
         (*this)(ast_for.body);
         ir_builder->popBlock(ir_for->loopBlock());
+
+        ir_builder->popSymbolTable();
 
         for (auto ast_annotation : ast_for.annotations) {
             std::vector<std::string> values;
@@ -498,7 +502,7 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::Struct ast_struct) {
         if (ast_struct.template_parameters.empty()) {
             auto ir_struct_type = ir::StructType::create({});
-            ir_builder->symbol_table->setWithName(ir_struct_type, ast_struct.name);
+            ir_builder->setSymbolWithAssigningName(ir_struct_type, ast_struct.name);
             return this->applyStructWithOutTemplates(ir_struct_type, ast_struct);
         } else {
             auto template_parameter_identifier_list =
@@ -547,7 +551,7 @@ class StatementLoweringVisitor {
                 Template<ir::StructType>::create(template_struct_generator);
             // auto template_struct = TemplateStruct::create(template_struct_generator);
 
-            ir_builder->symbol_table->setWithName(template_struct, ast_struct.name);
+            ir_builder->setSymbolWithAssigningName(template_struct, ast_struct.name);
 
             return template_struct;
         }

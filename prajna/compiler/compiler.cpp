@@ -65,8 +65,8 @@ void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
     this->compileFile("testing.prajna");
 
 #ifdef PRAJNA_WITH_GPU
-    this->compileFile(cuda.prajna");
-    this->compileFile(gpu.prajna");
+    this->compileFile("cuda.prajna");
+    this->compileFile("gpu.prajna");
 #endif
 }
 

@@ -15,9 +15,10 @@ ExternalProject_Add(
   INSTALL_DIR ""
   )
 
-# set for find openssl
-set(OPENSSL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(OPENSSL_CRYPTO_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/libcrypto.a)
+# set for find openss
+set(OPENSSL_ROOT_DIR ${OPENSSL_SOURCE_DIR})
+set(OPENSSL_INCLUDE_DIR ${OPENSSL_SOURCE_DIR}/include)
+set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_SOURCE_DIR}/libcrypto.a)
 
 ExternalProject_Get_Property(libopenssl source_dir)
 
@@ -27,5 +28,3 @@ set_target_properties(OpenSSL::Crypto PROPERTIES
   IMPORTED_LOCATION ${source_dir}/libcrypto.a
   INTERFACE_INCLUDE_DIRECTORIES ${source_dir}/include
 )
-
-find_package(OpenSSL REQUIRED)

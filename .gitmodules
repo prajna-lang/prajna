@@ -45,4 +45,4 @@
 	url = https://github.com/jupyter-xeus/xwidgets.git
 [submodule "xeus_prajna/third_party/xproperty"]
 	path = xeus_prajna/third_party/xproperty
-	url = https://github.com/jupyter-xeus/xproperty.git
+	url = https://github.com/matazure/xproperty.git

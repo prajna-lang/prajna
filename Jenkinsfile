@@ -45,7 +45,7 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh'
+                                sh './scripts/clone_submodules.sh --depth=10'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_BUILD_JUPYTER_XEUS=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE}'
                             }

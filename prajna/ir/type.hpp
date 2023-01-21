@@ -248,6 +248,19 @@ class FunctionType : public Type {
         std::shared_ptr<FunctionType> self(new FunctionType);
         self->return_type = return_type;
         self->argument_types = ir_argument_types;
+
+        self->name = "(";
+        for (size_t i = 0; i < self->argument_types.size(); ++i) {
+            self->name += self->argument_types[i]->fullname;
+            if (i != self->argument_types.size() - 1) {
+                self->name += ",";
+            }
+        }
+        self->name += ")";
+        self->name += "->";
+        self->name += self->return_type->fullname;
+        self->fullname = self->name;
+
         global_context.created_types.push_back(self);
         return self;
     }

@@ -26,20 +26,28 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
         }
 
         symbol = boost::apply_visitor(
-            overloaded{[=](auto x) -> Symbol {
-                           PRAJNA_UNREACHABLE;
-                           return nullptr;
-                       },
-                       [=](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
-                           auto symbol = symbol_table->get(current_identifer);
-                           if (symbol.which() != 0) {
-                               return symbol;
-                           } else {
-                               return compiler->compileFile(
-                                   symbol_table->source_path /
-                                   std::filesystem::path(current_identifer));
-                           }
-                       }},
+            overloaded{
+                [=](auto x) -> Symbol {
+                    PRAJNA_UNREACHABLE;
+                    return nullptr;
+                },
+                [=](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
+                    auto symbol = symbol_table->get(current_identifer);
+                    if (symbol.which() != 0) {
+                        return symbol;
+                    } else {
+                        auto filename_path = std::filesystem::path(current_identifer + ".prajna");
+                        auto source_package_path = symbol_table == ir_builder->symbol_table
+                                                       ? filename_path
+                                                       : symbol_table->source_path / filename_path;
+                        auto source_symbol_table = compiler->compileFile(source_package_path);
+                        if (!source_symbol_table) {
+                            logger->error("not find valid source file", *iter_ast_identifier);
+                        }
+
+                        return source_symbol_table;
+                    }
+                }},
             symbol);
 
         PRAJNA_ASSERT(symbol.which() != 0);

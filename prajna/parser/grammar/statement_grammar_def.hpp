@@ -39,9 +39,9 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(statements, success_handler_function);
 
     statement.name("statement");
-    statement = block | if_ | struct_ | interface | implement_struct |
-                implement_struct_for_interface | function | while_ | for_ | single_statement |
-                semicolon_statement;
+    statement = block | if_ | struct_ | interface | implement_struct | template_instance |
+                template_ | implement_struct_for_interface | function | while_ | for_ |
+                single_statement | semicolon_statement;
     on_error<fail>(statement, error_handler_function);
     on_success(statement, success_handler_function);
 
@@ -143,8 +143,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(implement_struct_for_interface, success_handler_function);
 
     implement_struct.name("implement struct");
-    implement_struct = tok.implement > identifier_path > -template_parameters > tok.l_braces >
-                       *(function) > tok.r_braces;
+    implement_struct =
+        tok.implement > type > -template_parameters > tok.l_braces > *(function) > tok.r_braces;
     on_error<fail>(implement_struct, error_handler_function);
     on_success(implement_struct, success_handler_function);
 
@@ -182,6 +182,17 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     parameter = identifier > tok.colon > type;
     on_error<fail>(parameter, error_handler_function);
     on_success(parameter, success_handler_function);
+
+    template_.name("template");
+    template_ = tok.template_ > identifier > omit[tok.less] > (identifier % tok.comma) >
+                omit[tok.greater] > block;
+    on_error<fail>(template_, error_handler_function);
+    on_success(template_, success_handler_function);
+
+    template_instance.name("template instance");
+    template_instance = tok.instantiate > identifier_path;
+    on_error<fail>(template_instance, error_handler_function);
+    on_success(template_, success_handler_function);
 
     annotations.name("annotations");
     annotations = *annotation;

@@ -57,12 +57,7 @@ std::shared_ptr<Compiler> Compiler::create() {
 
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
     this->addPackageDirectories(builtin_sources_dir);
-
-    this->compileFile("implement_primitive_types.prajna");
-    this->compileFile("bindings.prajna");
-    this->compileFile("core.prajna");
-    this->compileFile("serialize.prajna");
-    this->compileFile("testing.prajna");
+    this->compileFile("bootstrap.prajna");
 
 #ifdef PRAJNA_WITH_GPU
     this->compileFile("cuda.prajna");
@@ -156,11 +151,11 @@ std::shared_ptr<lowering::SymbolTable> Compiler::compileFile(
             prajna_source_path = tmp_path;
             break;
         }
+    }
 
-        if (std::filesystem::exists(tmp_path.string() + ".prajna")) {
-            prajna_source_path = tmp_path.string() + ".prajna";
-            break;
-        }
+    if (prajna_source_path.empty()) {
+        compile_error_count += 1;
+        return nullptr;
     }
 
     // PRAJNA_ASSERT(!prajna_source_path.empty());

@@ -34,6 +34,8 @@ struct Cast;
 struct KernelFunctionCall;
 struct PrefixCall;
 struct Array;
+struct Template;
+struct TemplateInstance;
 /// @note  operator const char*() const 函数在boost::spirit的debug node的模式下是需要的,
 /// 但用处不大故直接删除了
 
@@ -253,7 +255,8 @@ typedef boost::variant<
     boost::recursive_wrapper<For>, Break, Continue, boost::recursive_wrapper<Function>,
     boost::recursive_wrapper<Return>, boost::recursive_wrapper<Struct>,
     boost::recursive_wrapper<Interface>, boost::recursive_wrapper<ImplementStructForInterface>,
-    boost::recursive_wrapper<ImplementStruct>, Pragma>
+    boost::recursive_wrapper<ImplementStruct>, boost::recursive_wrapper<Template>,
+    boost::recursive_wrapper<TemplateInstance>, Pragma>
     Statement;
 
 // @note需要声明为class, 因为之前才能在其他模块使用前置声明.
@@ -327,15 +330,26 @@ struct Interface : SourceLocation {
 };
 
 struct ImplementStructForInterface : SourceLocation {
-    Type struct_;
+    Type type;
     Type interface;
     std::vector<Function> functions;
 };
 
 struct ImplementStruct : SourceLocation {
-    IdentifierPath struct_;
+    Type type;
     TemplateParameters template_paramters;
     std::vector<Function> functions;
+};
+
+struct Template : SourceLocation {
+    Identifier name;
+    TemplateParameters template_parameters;
+    Statements statements;
+};
+
+struct TemplateInstance : SourceLocation {
+    IdentifierPath identifier_path;
+    // TemplateArguments template_arguments;
 };
 
 struct KernelFunctionCallOperation {
@@ -372,9 +386,11 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotations, name, parame
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Pragma, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Template, name, template_parameters, statements)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Interface, name, function_declarations)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStructForInterface, interface, struct_, functions)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStruct, struct_, template_paramters, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStructForInterface, interface, type, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementStruct, type, template_paramters, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifier_path, as)
@@ -386,4 +402,5 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, 
                           arguments)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCall, kernel_function, operation)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Array, values)
+
 BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotations, statement)

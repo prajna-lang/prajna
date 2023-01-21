@@ -406,6 +406,18 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> applyBinaryOperation(std::shared_ptr<ir::Value> ir_lhs,
                                                     ast::BinaryOperation ast_binary_operation) {
+        if (auto ir_lhs_pointer_type = cast<ir::PointerType>(ir_lhs->type)) {
+            auto ir_value_type = ir_lhs_pointer_type->value_type;
+            auto symbol_ptr_tp = ir_builder->getSymbolByPath(true, {"ptr", "ptrTp"});
+            // 加载后再执行,
+            // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
+            // 但其却有相同的名字, 这里存在问题, 回头修复.
+            if (symbol_ptr_tp.which() != 0 && !is<ir::FunctionType>(ir_value_type)) {
+                auto ptr_tp = symbolGet<Template<nullptr_t>>(symbol_ptr_tp);
+                ptr_tp->getInstance({ir_value_type}, ir_builder->module);
+            }
+        }
+
         if (ast_binary_operation.operator_ == ast::Operator(".")) {
             return this->applyBinaryOperationAccessField(ir_lhs, ast_binary_operation);
         }
@@ -560,12 +572,6 @@ class ExpressionLoweringVisitor {
                         if (!iter_ast_identifier->template_arguments) {
                             return symbol;
                         } else {
-                            auto template_struct = symbolGet<TemplateStruct>(symbol);
-                            if (template_struct == nullptr) {
-                                logger->error(
-                                    "it's not a template struct but with template arguments",
-                                    *iter_ast_identifier);
-                            }
                             std::list<Symbol> symbol_template_arguments;
                             for (auto ast_template_argument :
                                  *iter_ast_identifier->template_arguments) {
@@ -591,21 +597,35 @@ class ExpressionLoweringVisitor {
                                     ast_template_argument);
                                 symbol_template_arguments.push_back(symbol_template_argument);
                             }
-                            if (template_struct->template_parameter_identifier_list.size() !=
-                                symbol_template_arguments.size()) {
-                                logger->error("the template arguments size are not matched",
-                                              *iter_ast_identifier->template_arguments);
+
+                            if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
+                                if (template_struct->template_parameter_identifier_list.size() !=
+                                    symbol_template_arguments.size()) {
+                                    logger->error("the template arguments size are not matched",
+                                                  *iter_ast_identifier->template_arguments);
+                                }
+
+                                auto ir_template_type = template_struct->getStructInstance(
+                                    symbol_template_arguments, ir_builder->module);
+                                // 错误应该在之前特化的时候就被拦截, 不会到达这里, 故断言
+                                PRAJNA_ASSERT(ir_template_type);
+                                return ir_template_type;
                             }
-                            auto ir_template_type = template_struct->getStructInstance(
-                                symbol_template_arguments, ir_builder->module);
-                            // 错误应该在之前特化的时候就被拦截, 不会到达这里, 故断言
-                            PRAJNA_ASSERT(ir_template_type);
-                            return ir_template_type;
+
+                            if (auto tempate_ = symbolGet<Template<nullptr_t>>(symbol)) {
+                                tempate_->getInstance(symbol_template_arguments,
+                                                      ir_builder->module);
+                                // 错误应该在之前特化的时候就被拦截, 不会到达这里, 故断言
+                                return nullptr;
+                            }
+
+                            logger->error(
+                                "it's not a template [struct] but with template arguments",
+                                *iter_ast_identifier);
+                            return nullptr;
                         }
                     }},
                 symbol);
-
-            PRAJNA_ASSERT(symbol.which() != 0);
         }
 
         return symbol;
@@ -613,13 +633,14 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> operator()(ast::IdentifierPath ast_identifier_path) {
         auto symbol = this->applyIdentifiersResolution(ast_identifier_path);
-        PRAJNA_ASSERT(symbol.which() != 0);
         return boost::apply_visitor(
             overloaded{
                 [](std::shared_ptr<ir::Value> ir_value) -> std::shared_ptr<ir::Value> {
                     return ir_value;
                 },
                 [=](std::shared_ptr<ir::Type> ir_type) -> std::shared_ptr<ir::Value> {
+                    /// TODO 需要重构, var t = Tensor<i64, 3>;也会被认为正确, 存在误导,
+                    /// 后面看怎么处理
                     if (ir_type->constructor == nullptr) {
                         logger->error(fmt::format("{} has no constructor", ir_type->fullname),
                                       ast_identifier_path);
@@ -651,7 +672,8 @@ class ExpressionLoweringVisitor {
     //         auto ir_index_array = ir_builder->create<ir::IndexArray>(ir_array, ir_idx);
     //         auto ir_value = this->applyOperand(ast_array.values[i]);
     //         if (ir_value->type != ir_value_type) {
-    //             logger->error("the array element type are not the same", ast_array.values[i]);
+    //             logger->error("the array element type are not the same",
+    //             ast_array.values[i]);
     //         }
     //         ir_builder->create<ir::WriteVariableLiked>(ir_value, ir_index_array);
     //     }
@@ -724,9 +746,9 @@ class ExpressionLoweringVisitor {
 
             if (ir_arguments.size() != ir_function_type->argument_types.size()) {
                 logger->error(
-                    fmt::format(
-                        "the arguments size is not matched, require {} argument, but give {}",
-                        ir_function_type->argument_types.size(), ir_arguments.size()),
+                    fmt::format("the arguments size is not matched, require {} "
+                                "argument, but give {}",
+                                ir_function_type->argument_types.size(), ir_arguments.size()),
                     ast_kernel_function_call.operation->arguments);
             }
             for (size_t i = 0; i < ir_arguments.size(); ++i) {

@@ -10,8 +10,9 @@ namespace std {
 
 template <>
 struct hash<std::list<prajna::lowering::Symbol>> {
-    std::size_t operator()(std::list<prajna::lowering::Symbol> symbol_list) const noexcept {
-        return symbol_list.size();
+    std::size_t operator()(
+        std::list<prajna::lowering::Symbol> symbol_template_parameter_list) const noexcept {
+        return symbol_template_parameter_list.size();
     }
 };
 
@@ -20,7 +21,7 @@ struct hash<std::list<prajna::lowering::Symbol>> {
 namespace prajna::lowering {
 
 template <typename _T>
-class Template {
+class Template : public Named {
    protected:
     Template() = default;
 
@@ -30,25 +31,24 @@ class Template {
 
     static std::shared_ptr<Template<_T>> create(Generator generator) {
         std::shared_ptr<Template<_T>> self(new Template<_T>);
-        self->_struct_generator = generator;
+        self->_generator = generator;
         return self;
     };
 
-    virtual std::shared_ptr<_T> getInstance(std::list<Symbol> template_arguments,
+    virtual std::shared_ptr<_T> getInstance(std::list<Symbol> symbol_template_arguments,
                                             std::shared_ptr<ir::Module> ir_module) {
-        auto struct_type_instance = _instance_dict[template_arguments];
-        if (struct_type_instance) {
-            return struct_type_instance;
-        } else {
-            struct_type_instance = _struct_generator(template_arguments, ir_module);
-            _instance_dict[template_arguments] = struct_type_instance;
-            return struct_type_instance;
+        if (!_instance_dict.count(symbol_template_arguments)) {
+            _instance_dict[symbol_template_arguments];  // 插入默认值, 阻断多次实力化
+            _instance_dict[symbol_template_arguments] =
+                _generator(symbol_template_arguments, ir_module);
         }
+        return _instance_dict[symbol_template_arguments];
     }
 
    protected:
-    Generator _struct_generator;
-    // list自己有operator==, 符合要求的
+    Generator _generator;
+
+    // list自己有operator==
     std::unordered_map<std::list<Symbol>, std::shared_ptr<_T>> _instance_dict;
 };
 

@@ -68,6 +68,9 @@ struct StatementGrammer
     rule<boost::optional<ast::Block>> function_implement;
     rule<ast::FunctionHeader> function_header;
     rule<ast::Function> function;
+
+    rule<ast::Template> template_;
+    rule<ast::TemplateInstance> template_instance;
 };
 
 }  // namespace prajna::parser::grammar

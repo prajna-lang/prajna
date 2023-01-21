@@ -1,0 +1,10 @@
+
+
+@test
+func testMain(){
+    var p: i64*;
+    p.toi64();
+    (p == p).tostr();
+    // testing::Assert(p == p);
+    // p.toi64().tostr().print();
+}

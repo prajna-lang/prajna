@@ -831,7 +831,7 @@ class StatementLoweringVisitor {
         auto template_generator = [symbol_table = ir_builder->symbol_table, logger = this->logger,
                                    ast_template, template_parameter_identifier_list](
                                       std::list<Symbol> symbol_template_arguments,
-                                      std::shared_ptr<ir::Module> ir_module) -> nullptr_t {
+                                      std::shared_ptr<ir::Module> ir_module) -> std::nullptr_t {
             auto templates_symbol_table = SymbolTable::create(symbol_table);
             PRAJNA_ASSERT(template_parameter_identifier_list.size() ==
                           symbol_template_arguments.size());
@@ -850,7 +850,7 @@ class StatementLoweringVisitor {
             return nullptr;
         };
 
-        auto template_ = Template<nullptr_t>::create(template_generator);
+        auto template_ = Template<std::nullptr_t>::create(template_generator);
         ir_builder->setSymbolWithAssigningName(template_, ast_template.name);
         return template_;
     }

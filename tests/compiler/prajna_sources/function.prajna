@@ -15,12 +15,17 @@ func printHi(){
     "Hi\n".print();
 }
 
+func printHello(){
+    "Hello\n".print();
+}
+
 @test // @test表示函数的注解, 会被当做测试函数而执行
 func testFunction(){
     testing::Assert(add(3, 7) == 10);
     printHi();
     // fun_address表示存储printHi函数的变量, 其类型是函数"指针"类型,
     var fun_address = printHi;
+    fun_address = printHello;
     fun_address();
 
     testing::Assert(callRecursively(4) == 0);

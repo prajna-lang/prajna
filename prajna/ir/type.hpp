@@ -239,15 +239,15 @@ class FunctionType : public Type {
     static std::shared_ptr<FunctionType> create(
         std::shared_ptr<Type> return_type, std::vector<std::shared_ptr<Type>> ir_argument_types) {
         // @note 不同函数的, 函数类型不应该是用一个指针, 下面的代码更适合判断动态分发的时候使用
-        // for (auto ir_type : global_context.created_types) {
-        //     if (auto ir_fun_type = cast<FunctionType>(ir_type)) {
-        //         if (ir_fun_type->return_type == return_type &&
-        //             ir_fun_type->argument_types.size() == ir_argument_types.size() &&
-        //             std::equal(RANGE(ir_argument_types), ir_fun_type->argument_types.begin())) {
-        //             return ir_fun_type;
-        //         }
-        //     }
-        // }
+        for (auto ir_type : global_context.created_types) {
+            if (auto ir_fun_type = cast<FunctionType>(ir_type)) {
+                if (ir_fun_type->return_type == return_type &&
+                    ir_fun_type->argument_types.size() == ir_argument_types.size() &&
+                    std::equal(RANGE(ir_argument_types), ir_fun_type->argument_types.begin())) {
+                    return ir_fun_type;
+                }
+            }
+        }
 
         std::shared_ptr<FunctionType> self(new FunctionType);
         self->return_type = return_type;

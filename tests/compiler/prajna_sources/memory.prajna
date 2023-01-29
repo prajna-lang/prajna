@@ -1,0 +1,6 @@
+
+
+@test
+func testMain(){
+    var t = ref_ptr<i64>::new(1);
+}

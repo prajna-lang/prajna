@@ -460,9 +460,12 @@ class Function : public Value {
     }
 
     bool isIntrinsicOrInstructoin() {
-        return (this->function_type->annotations.count("intrinsic")) ||
-               (this->function_type->annotations.count("instruction"));
+        return (this->annotations.count("intrinsic")) || (this->annotations.count("instruction"));
     }
+
+    bool isIntrinsic() { return this->annotations.count("intrinsic"); }
+
+    bool isInstruction() { return this->annotations.count("instruction"); }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Function> ir_new(new Function(*this));
@@ -498,40 +501,6 @@ class Function : public Value {
     std::list<std::shared_ptr<Block>> blocks;
     std::shared_ptr<Module> parent_module;
 };
-
-inline std::shared_ptr<Function> getPropertySetter(std::shared_ptr<Type> ir_type,
-                                                   std::string property_name) {
-    for (auto [name, ir_function] : ir_type->member_functions) {
-        if (ir_function == nullptr) continue;
-
-        auto annotation_property = ir_function->function_type->annotations["property"];
-        if (not annotation_property.empty()) {
-            PRAJNA_ASSERT(annotation_property.size() == 2);
-            if (annotation_property[0] == property_name && annotation_property[1] == "setter") {
-                return ir_function;
-            }
-        }
-    }
-
-    return nullptr;
-}
-
-inline std::shared_ptr<Function> getPropertyGetter(std::shared_ptr<Type> ir_type,
-                                                   std::string property_name) {
-    for (auto [name, ir_function] : ir_type->member_functions) {
-        if (ir_function == nullptr) continue;
-
-        auto annotation_property = ir_function->function_type->annotations["property"];
-        if (not annotation_property.empty()) {
-            PRAJNA_ASSERT(annotation_property.size() == 2);
-            if (annotation_property[0] == property_name && annotation_property[1] == "getter") {
-                return ir_function;
-            }
-        }
-    }
-
-    return nullptr;
-}
 
 /// @brief 在lowering时需要用到的辅助IR, 并不应该在lowering后出现
 class MemberFunctionWithThisPointer : public Value {
@@ -1582,7 +1551,7 @@ class KernelFunctionCall : public Instruction {
         self->function(ir_function_value);
         auto ir_function_type = ir_function_value->getFunctionType();
         PRAJNA_ASSERT(ir_function_type);
-        PRAJNA_ASSERT(ir_function_type->annotations.count("kernel"));
+        // TODO 后期需要坐下处理, 需要是kernel函数合法, 禁止在host函数里对device函数进行赋值等操作.
         self->gridShape(ir_grid_shape);
         self->blockShape(ir_block_shape);
         for (size_t i = 0; i < arguments.size(); ++i) {

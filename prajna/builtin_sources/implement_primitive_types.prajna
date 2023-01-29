@@ -103,8 +103,9 @@ implement i8 {
     @instruction("CastInst", "SIToFP", "f32")
     func tof32()->f32;
 
-    @instruction("CastInst", "Trunc", "char")
-    func tochar()->char;
+    // func tochar()->char{
+    //     return &this
+    // }
 }
 
 implement i16 {
@@ -310,12 +311,12 @@ implement i64 {
 
     @static
     func zero()->i64{
-        return 0;
+        return 0i64;
     }
 
     @static
     func one()->i64{
-        return 1;
+        return 1i64;
     }
 }
 

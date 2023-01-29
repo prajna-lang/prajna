@@ -151,7 +151,7 @@ class LlvmCodegen {
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
             this->emitFunctionDeclaration(ir_function, ir_target);
-            if (ir_function->function_type->annotations.count("kernel")) {
+            if (ir_function->annotations.count("kernel")) {
                 auto md_node = llvm::MDNode::get(
                     static_llvm_context, {llvm::ValueAsMetadata::get(ir_function->llvm_value),
                                           llvm::MDString::get(static_llvm_context, "kernel"),
@@ -164,18 +164,19 @@ class LlvmCodegen {
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            if (not(ir_function->isIntrinsicOrInstructoin() or ir_function->is_declaration)) {
+            if (not(ir_function->isInstruction() or ir_function->isIntrinsic() or
+                    ir_function->is_declaration)) {
                 this->emitFunction(ir_function, ir_target);
             }
         }
     }
 
     void emitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
-        if (ir_function->function_type->annotations.count("instruction")) {
+        if (ir_function->annotations.count("instruction")) {
             return;
-        } else if (ir_function->function_type->annotations.count("intrinsic")) {
-            PRAJNA_ASSERT(!ir_function->function_type->annotations["intrinsic"].empty());
-            auto function_name = ir_function->function_type->annotations["intrinsic"].front();
+        } else if (ir_function->annotations.count("intrinsic")) {
+            PRAJNA_ASSERT(!ir_function->annotations["intrinsic"].empty());
+            auto function_name = ir_function->annotations["intrinsic"].front();
             PRAJNA_ASSERT(ir_function->function_type->llvm_type);
             llvm::FunctionType *llvm_fun_type =
                 static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
@@ -303,156 +304,6 @@ class LlvmCodegen {
         PRAJNA_TODO;
     }
 
-    void emitCallInstructionAsIntrinsic(std::shared_ptr<ir::Call> ir_call, ir::Target ir_target) {
-        auto llvm_basic_block = static_cast<llvm::BasicBlock *>(ir_call->parent_block->llvm_value);
-        PRAJNA_ASSERT(llvm_basic_block);
-        auto ir_function = cast<ir::Function>(ir_call->function());
-        auto annotations_instruction = ir_function->function_type->annotations["instruction"];
-        PRAJNA_ASSERT(annotations_instruction.size() > 0);
-        auto category = annotations_instruction[0];
-
-        if (category == "ICmp" || category == "FCmp") {
-            PRAJNA_ASSERT(annotations_instruction.size() == 2);
-            PRAJNA_ASSERT(ir_call->argumentSize() == 2);
-            auto ir_lhs_type = cast<ir::PointerType>(ir_call->argument(0)->type);
-            PRAJNA_ASSERT(ir_lhs_type->value_type->llvm_type);
-            PRAJNA_ASSERT(ir_call->argument(0)->llvm_value);
-            auto llvm_lhs_value =
-                new llvm::LoadInst(ir_lhs_type->value_type->llvm_type,
-                                   ir_call->argument(0)->llvm_value, "", llvm_basic_block);
-            auto llvm_rhs_value = ir_call->argument(1)->llvm_value;
-            PRAJNA_ASSERT(llvm_rhs_value);
-
-            std::map<std::string, llvm::CmpInst::OtherOps> cmp_inst_other_ops = {
-                {"ICmp", llvm::CmpInst::OtherOps::ICmp}, {"FCmp", llvm::CmpInst::OtherOps::FCmp}};
-
-            std::map<std::string, llvm::ICmpInst::Predicate> icmp_inst_predicate_dict = {
-                {"FCMP_FALSE", llvm::CmpInst::Predicate::FCMP_FALSE},
-                {"FCMP_OEQ", llvm::CmpInst::Predicate::FCMP_OEQ},
-                {"FCMP_OGT", llvm::CmpInst::Predicate::FCMP_OGT},
-                {"FCMP_OGE", llvm::CmpInst::Predicate::FCMP_OGE},
-                {"FCMP_OLT", llvm::CmpInst::Predicate::FCMP_OLT},
-                {"FCMP_OLE", llvm::CmpInst::Predicate::FCMP_OLE},
-                {"FCMP_ONE", llvm::CmpInst::Predicate::FCMP_ONE},
-                {"FCMP_ORD", llvm::CmpInst::Predicate::FCMP_ORD},
-                {"FCMP_UNO", llvm::CmpInst::Predicate::FCMP_UNO},
-                {"FCMP_UEQ", llvm::CmpInst::Predicate::FCMP_UEQ},
-                {"FCMP_UGT", llvm::CmpInst::Predicate::FCMP_UGT},
-                {"FCMP_UGE", llvm::CmpInst::Predicate::FCMP_UGE},
-                {"FCMP_ULT", llvm::CmpInst::Predicate::FCMP_ULT},
-                {"FCMP_ULE", llvm::CmpInst::Predicate::FCMP_ULE},
-                {"FCMP_UNE", llvm::CmpInst::Predicate::FCMP_UNE},
-                {"FCMP_TRUE", llvm::CmpInst::Predicate::FCMP_TRUE},
-                // integer
-                {"ICMP_EQ", llvm::CmpInst::Predicate::ICMP_EQ},
-                {"ICMP_NE", llvm::CmpInst::Predicate::ICMP_NE},
-                {"ICMP_UGT", llvm::CmpInst::Predicate::ICMP_UGT},
-                {"ICMP_UGE", llvm::CmpInst::Predicate::ICMP_UGE},
-                {"ICMP_ULT", llvm::CmpInst::Predicate::ICMP_ULT},
-                {"ICMP_ULE", llvm::CmpInst::Predicate::ICMP_ULE},
-                {"ICMP_SGT", llvm::CmpInst::Predicate::ICMP_SGT},
-                {"ICMP_SGE", llvm::CmpInst::Predicate::ICMP_SGE},
-                {"ICMP_SLT", llvm::CmpInst::Predicate::ICMP_SLT},
-                {"ICMP_SLE", llvm::CmpInst::Predicate::ICMP_SLE},
-            };
-
-            auto annotation_predicate = annotations_instruction[1];
-            PRAJNA_ASSERT(cmp_inst_other_ops.count(category));
-            PRAJNA_ASSERT(icmp_inst_predicate_dict.count(annotation_predicate));
-            ir_call->llvm_value = llvm::CmpInst::Create(
-                cmp_inst_other_ops[category], icmp_inst_predicate_dict[annotation_predicate],
-                llvm_lhs_value, llvm_rhs_value, "", llvm_basic_block);
-            return;
-        }
-        if (category == "BinaryOperator") {
-            PRAJNA_ASSERT(annotations_instruction.size() == 2);
-
-            PRAJNA_ASSERT(ir_call->argumentSize() == 2);
-            auto ir_lhs_type = cast<ir::PointerType>(ir_call->argument(0)->type);
-            PRAJNA_ASSERT(ir_lhs_type->value_type->llvm_type);
-            PRAJNA_ASSERT(ir_call->argument(0)->llvm_value);
-            auto llvm_lhs_value =
-                new llvm::LoadInst(ir_lhs_type->value_type->llvm_type,
-                                   ir_call->argument(0)->llvm_value, "", llvm_basic_block);
-            auto llvm_rhs_value = ir_call->argument(1)->llvm_value;
-            PRAJNA_ASSERT(llvm_rhs_value);
-
-            std::map<std::string, llvm::BinaryOperator::BinaryOps> binary_operator_dict = {
-                {"Add", llvm::BinaryOperator::BinaryOps::Add},
-                {"Sub", llvm::BinaryOperator::BinaryOps::Sub},
-                {"Mul", llvm::BinaryOperator::BinaryOps::Mul},
-                {"SDiv", llvm::BinaryOperator::BinaryOps::SDiv},
-                {"UDiv", llvm::BinaryOperator::BinaryOps::UDiv},
-                {"SRem", llvm::BinaryOperator::BinaryOps::SRem},
-                {"URem", llvm::BinaryOperator::BinaryOps::URem},
-                {"And", llvm::BinaryOperator::BinaryOps::And},
-                {"Or", llvm::BinaryOperator::BinaryOps::Or},
-                {"Shl", llvm::BinaryOperator::BinaryOps::Shl},
-                {"LShr", llvm::BinaryOperator::BinaryOps::LShr},
-                {"AShr", llvm::BinaryOperator::BinaryOps::AShr},
-                {"Xor", llvm::BinaryOperator::BinaryOps::Xor},
-                {"Xor", llvm::BinaryOperator::BinaryOps::Xor},
-                {"Xor", llvm::BinaryOperator::BinaryOps::Xor},
-                {"FAdd", llvm::BinaryOperator::BinaryOps::FAdd},
-                {"FSub", llvm::BinaryOperator::BinaryOps::FSub},
-                {"FMul", llvm::BinaryOperator::BinaryOps::FMul},
-                {"FDiv", llvm::BinaryOperator::BinaryOps::FDiv},
-                {"FRem", llvm::BinaryOperator::BinaryOps::FRem},
-            };
-
-            auto annotation_operator = annotations_instruction[1];
-            PRAJNA_ASSERT(binary_operator_dict.count(annotation_operator));
-            ir_call->llvm_value =
-                llvm::BinaryOperator::Create(binary_operator_dict[annotation_operator],
-                                             llvm_lhs_value, llvm_rhs_value, "", llvm_basic_block);
-            return;
-        }
-        if (category == "CastInst") {
-            auto ir_lhs_type = cast<ir::PointerType>(ir_call->argument(0)->type);
-            PRAJNA_ASSERT(ir_lhs_type->value_type->llvm_type);
-            PRAJNA_ASSERT(ir_call->argument(0)->llvm_value);
-            auto llvm_lhs_value =
-                new llvm::LoadInst(ir_lhs_type->value_type->llvm_type,
-                                   ir_call->argument(0)->llvm_value, "", llvm_basic_block);
-
-            std::map<std::string, llvm::CastInst::CastOps> cast_operator_dict = {
-                {"Trunc", llvm::CastInst::Trunc},
-                {"ZExt", llvm::CastInst::ZExt},
-                {"SExt", llvm::CastInst::SExt},
-                {"FPToUI", llvm::CastInst::FPToUI},
-                {"FPToSI", llvm::CastInst::FPToSI},
-                {"UIToFP", llvm::CastInst::UIToFP},
-                {"SIToFP", llvm::CastInst::SIToFP},
-                {"FPTrunc", llvm::CastInst::FPTrunc},
-                {"FPExt", llvm::CastInst::FPExt},
-                {"PtrToInt", llvm::CastInst::PtrToInt},
-                {"IntToPtr", llvm::CastInst::IntToPtr},
-                {"BitCast", llvm::CastInst::BitCast},
-                {"AddrSpaceCast", llvm::CastInst::AddrSpaceCast},
-            };
-
-            auto annotation_type = annotations_instruction[2];
-            auto iter_type = std::find_if(RANGE(ir::global_context.created_types),
-                                          [=](std::shared_ptr<ir::Type> ir_type) {
-                                              return ir_type->name == annotation_type;
-                                          });
-            PRAJNA_ASSERT(iter_type != ir::global_context.created_types.end());
-            auto ir_cast_type = *iter_type;
-
-            PRAJNA_ASSERT(annotations_instruction.size() == 3);
-            auto annotation_operator = annotations_instruction[1];
-            PRAJNA_ASSERT(cast_operator_dict.count(annotation_operator));
-            PRAJNA_ASSERT(ir_call->argumentSize() == 1);
-            ir_call->llvm_value =
-                llvm::CastInst::Create(cast_operator_dict[annotation_operator], llvm_lhs_value,
-                                       ir_cast_type->llvm_type, "", llvm_basic_block);
-            return;
-        }
-
-        PRAJNA_UNREACHABLE;
-        return;
-    };
-
     void emitGlobalAlloca(sp<ir::GlobalAlloca> ir_global_alloca) {
         auto ir_value_type = cast<ir::PointerType>(ir_global_alloca->type)->value_type;
         PRAJNA_ASSERT(ir_value_type && ir_value_type->llvm_type);
@@ -469,32 +320,26 @@ class LlvmCodegen {
     }
 
     void emitInstruction(std::shared_ptr<ir::Instruction> ir_instruction, ir::Target ir_target) {
-        // PRAJNA_ASSERT(ir_instruction->llvm_value == nullptr);
-
         auto llvm_basic_block =
             static_cast<llvm::BasicBlock *>(ir_instruction->parent_block->llvm_value);
         PRAJNA_ASSERT(llvm_basic_block);
+
         if (auto ir_call = cast<ir::Call>(ir_instruction)) {
             auto ir_function_type = ir_call->function()->getFunctionType();
-            PRAJNA_ASSERT(ir_function_type);
-            if (ir_function_type->annotations.count("instruction")) {
-                return this->emitCallInstructionAsIntrinsic(ir_call, ir_target);
-            } else {
-                std::vector<llvm::Value *> llvm_arguments(ir_call->argumentSize());
-                for (size_t i = 0; i < llvm_arguments.size(); ++i) {
-                    llvm_arguments[i] = ir_call->argument(i)->llvm_value;
-                    PRAJNA_ASSERT(llvm_arguments[i]);
-                }
-                PRAJNA_ASSERT(ir_call->function()->getFunctionType()->llvm_type);
-                PRAJNA_ASSERT(ir_call->function()->llvm_value);
-                ir_call->llvm_value = llvm::CallInst::Create(
-                    static_cast<llvm::FunctionType *>(
-                        ir_call->function()->getFunctionType()->llvm_type),
-                    ir_call->function()->llvm_value, llvm_arguments, "", llvm_basic_block);
-                return;
+            std::vector<llvm::Value *> llvm_arguments(ir_call->argumentSize());
+            for (size_t i = 0; i < llvm_arguments.size(); ++i) {
+                llvm_arguments[i] = ir_call->argument(i)->llvm_value;
+                PRAJNA_ASSERT(llvm_arguments[i]);
             }
+            PRAJNA_ASSERT(ir_call->function()->getFunctionType()->llvm_type);
+            PRAJNA_ASSERT(ir_call->function()->llvm_value);
+            ir_call->llvm_value = llvm::CallInst::Create(
+                static_cast<llvm::FunctionType *>(
+                    ir_call->function()->getFunctionType()->llvm_type),
+                ir_call->function()->llvm_value, llvm_arguments, "", llvm_basic_block);
             return;
         }
+
         if (auto ir_return = cast<ir::Return>(ir_instruction)) {
             auto llvm_return = llvm::ReturnInst::Create(
                 static_llvm_context, ir_return->value()->llvm_value, llvm_basic_block);
@@ -509,9 +354,11 @@ class LlvmCodegen {
                                                          ir_alloca->name, llvm_basic_block);
             return;
         }
+
         if (auto ir_global_alloca = cast<ir::GlobalAlloca>(ir_instruction)) {
             PRAJNA_UNREACHABLE;
         }
+
         if (auto ir_load_pointer = cast<ir::LoadPointer>(ir_instruction)) {
             PRAJNA_ASSERT(ir_load_pointer->type->llvm_type);
             PRAJNA_ASSERT(ir_load_pointer->pointer()->llvm_value);
@@ -521,6 +368,7 @@ class LlvmCodegen {
             ir_load_pointer->llvm_value = llvm_load_ptr;
             return;
         }
+
         if (auto ir_store_pointer = cast<ir::StorePointer>(ir_instruction)) {
             PRAJNA_ASSERT(ir_store_pointer->value()->llvm_value);
             PRAJNA_ASSERT(ir_store_pointer->pointer()->llvm_value);
@@ -531,6 +379,7 @@ class LlvmCodegen {
             ir_store_pointer->llvm_value = llvm_store_ptr;
             return;
         }
+
         if (auto ir_condition_branch = cast<ir::ConditionBranch>(ir_instruction)) {
             // 需要处理, 因为true/falseBlock在ir_condition_branch的后面
             this->emitBlock(ir_condition_branch->trueBlock(), ir_target);
@@ -555,6 +404,7 @@ class LlvmCodegen {
                 llvm_basic_block);
             return;
         }
+
         if (auto ir_get_struct_element_pointer =
                 cast<ir::GetStructElementPointer>(ir_instruction)) {
             // @todo 后续需要进一步处理, 看一下偏移地址的类型是否可以一直是64位的, 还是需要调整
@@ -575,6 +425,7 @@ class LlvmCodegen {
                 llvm_basic_block);
             return;
         }
+
         if (auto ir_get_array_element_pointer = cast<ir::GetArrayElementPointer>(ir_instruction)) {
             std::vector<llvm::Value *> llvm_idx_list(2);
             llvm_idx_list[0] =
@@ -590,6 +441,7 @@ class LlvmCodegen {
                                                 llvm_idx_list, "", llvm_basic_block);
             return;
         }
+
         if (auto ir_get_pointer_element_pointer =
                 cast<ir::GetPointerElementPointer>(ir_instruction)) {
             std::vector<llvm::Value *> llvm_idx_list(1);
@@ -606,12 +458,150 @@ class LlvmCodegen {
                                                 llvm_pointer, llvm_idx_list, "", llvm_basic_block);
             return;
         }
+
         if (auto ir_bit_cast = cast<ir::BitCast>(ir_instruction)) {
             PRAJNA_ASSERT(ir_bit_cast->value()->llvm_value);
             PRAJNA_ASSERT(ir_bit_cast->type->llvm_type);
             ir_bit_cast->llvm_value =
                 new llvm::BitCastInst(ir_bit_cast->value()->llvm_value,
                                       ir_bit_cast->type->llvm_type, "", llvm_basic_block);
+            return;
+        }
+
+        if (auto ir_cast_instruction = cast<ir::CastInstruction>(ir_instruction)) {
+            std::map<ir::CastInstruction::Operation, llvm::CastInst::CastOps> cast_operator_dict = {
+                {ir::CastInstruction::Operation::Trunc, llvm::CastInst::Trunc},
+                {ir::CastInstruction::Operation::ZExt, llvm::CastInst::ZExt},
+                {ir::CastInstruction::Operation::SExt, llvm::CastInst::SExt},
+                {ir::CastInstruction::Operation::FPToUI, llvm::CastInst::FPToUI},
+                {ir::CastInstruction::Operation::FPToSI, llvm::CastInst::FPToSI},
+                {ir::CastInstruction::Operation::UIToFP, llvm::CastInst::UIToFP},
+                {ir::CastInstruction::Operation::SIToFP, llvm::CastInst::SIToFP},
+                {ir::CastInstruction::Operation::FPTrunc, llvm::CastInst::FPTrunc},
+                {ir::CastInstruction::Operation::FPExt, llvm::CastInst::FPExt},
+                {ir::CastInstruction::Operation::PtrToInt, llvm::CastInst::PtrToInt},
+                {ir::CastInstruction::Operation::IntToPtr, llvm::CastInst::IntToPtr},
+                {ir::CastInstruction::Operation::BitCast, llvm::CastInst::BitCast},
+                {ir::CastInstruction::Operation::AddrSpaceCast, llvm::CastInst::AddrSpaceCast},
+            };
+            PRAJNA_ASSERT(cast_operator_dict.count(ir_cast_instruction->operation));
+            auto cast_op = cast_operator_dict[ir_cast_instruction->operation];
+            ir_cast_instruction->llvm_value =
+                llvm::CastInst::Create(cast_op, ir_cast_instruction->operand(0)->llvm_value,
+                                       ir_cast_instruction->type->llvm_type, "", llvm_basic_block);
+            return;
+        }
+
+        if (auto ir_compare_instruction = cast<ir::CompareInstruction>(ir_instruction)) {
+            std::map<std::string, llvm::CmpInst::OtherOps> cmp_inst_other_ops = {
+                {"ICmp", llvm::CmpInst::OtherOps::ICmp}, {"FCmp", llvm::CmpInst::OtherOps::FCmp}};
+
+            std::map<ir::CompareInstruction::Operation, llvm::CmpInst::OtherOps>
+                llvm_compare_other_ops_dict = {
+                    {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_OEQ, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_OGT, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_OGE, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_OLT, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_OLE, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_ONE, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_ORD, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_UNO, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_UEQ, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_UGT, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_UGE, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_ULT, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_ULE, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_UNE, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::FCMP_TRUE, llvm::CmpInst::OtherOps::FCmp},
+                    {ir::CompareInstruction::Operation::ICMP_EQ, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_NE, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_UGT, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_UGE, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_ULT, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_ULE, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_SGT, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_SGE, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_SLT, llvm::CmpInst::OtherOps::ICmp},
+                    {ir::CompareInstruction::Operation::ICMP_SLE, llvm::CmpInst::OtherOps::ICmp},
+                };
+
+            // clang-format off
+            std::map<ir::CompareInstruction::Operation, llvm::ICmpInst::Predicate>
+                llvm_compare_predicator_dict = {
+                    {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::Predicate::FCMP_FALSE},
+                    {ir::CompareInstruction::Operation::FCMP_OEQ, llvm::CmpInst::Predicate::FCMP_OEQ},
+                    {ir::CompareInstruction::Operation::FCMP_OGT, llvm::CmpInst::Predicate::FCMP_OGT},
+                    {ir::CompareInstruction::Operation::FCMP_OGE, llvm::CmpInst::Predicate::FCMP_OGE},
+                    {ir::CompareInstruction::Operation::FCMP_OLT, llvm::CmpInst::Predicate::FCMP_OLT},
+                    {ir::CompareInstruction::Operation::FCMP_OLE, llvm::CmpInst::Predicate::FCMP_OLE},
+                    {ir::CompareInstruction::Operation::FCMP_ONE, llvm::CmpInst::Predicate::FCMP_ONE},
+                    {ir::CompareInstruction::Operation::FCMP_ORD, llvm::CmpInst::Predicate::FCMP_ORD},
+                    {ir::CompareInstruction::Operation::FCMP_UNO, llvm::CmpInst::Predicate::FCMP_UNO},
+                    {ir::CompareInstruction::Operation::FCMP_UEQ, llvm::CmpInst::Predicate::FCMP_UEQ},
+                    {ir::CompareInstruction::Operation::FCMP_UGT, llvm::CmpInst::Predicate::FCMP_UGT},
+                    {ir::CompareInstruction::Operation::FCMP_UGE, llvm::CmpInst::Predicate::FCMP_UGE},
+                    {ir::CompareInstruction::Operation::FCMP_ULT, llvm::CmpInst::Predicate::FCMP_ULT},
+                    {ir::CompareInstruction::Operation::FCMP_ULE, llvm::CmpInst::Predicate::FCMP_ULE},
+                    {ir::CompareInstruction::Operation::FCMP_UNE, llvm::CmpInst::Predicate::FCMP_UNE},
+                    {ir::CompareInstruction::Operation::FCMP_TRUE, llvm::CmpInst::Predicate::FCMP_TRUE},
+                    {ir::CompareInstruction::Operation::ICMP_EQ, llvm::CmpInst::Predicate::ICMP_EQ},
+                    {ir::CompareInstruction::Operation::ICMP_NE, llvm::CmpInst::Predicate::ICMP_NE},
+                    {ir::CompareInstruction::Operation::ICMP_UGT, llvm::CmpInst::Predicate::ICMP_UGT},
+                    {ir::CompareInstruction::Operation::ICMP_UGE, llvm::CmpInst::Predicate::ICMP_UGE},
+                    {ir::CompareInstruction::Operation::ICMP_ULT, llvm::CmpInst::Predicate::ICMP_ULT},
+                    {ir::CompareInstruction::Operation::ICMP_ULE, llvm::CmpInst::Predicate::ICMP_ULE},
+                    {ir::CompareInstruction::Operation::ICMP_SGT, llvm::CmpInst::Predicate::ICMP_SGT},
+                    {ir::CompareInstruction::Operation::ICMP_SGE, llvm::CmpInst::Predicate::ICMP_SGE},
+                    {ir::CompareInstruction::Operation::ICMP_SLT, llvm::CmpInst::Predicate::ICMP_SLT},
+                    {ir::CompareInstruction::Operation::ICMP_SLE, llvm::CmpInst::Predicate::ICMP_SLE},
+                };
+            // clang-format on
+            PRAJNA_ASSERT(llvm_compare_other_ops_dict.count(ir_compare_instruction->operation));
+            PRAJNA_ASSERT(llvm_compare_predicator_dict.count(ir_compare_instruction->operation));
+            auto llvm_compare_other_ops =
+                llvm_compare_other_ops_dict[ir_compare_instruction->operation];
+            auto llvm_compare_predicator =
+                llvm_compare_predicator_dict[ir_compare_instruction->operation];
+            ir_compare_instruction->llvm_value = llvm::CmpInst::Create(
+                llvm_compare_other_ops, llvm_compare_predicator,
+                ir_compare_instruction->operand(0)->llvm_value,
+                ir_compare_instruction->operand(1)->llvm_value, "", llvm_basic_block);
+            return;
+        }
+
+        if (auto ir_binary_operator = cast<ir::BinaryOperator>(ir_instruction)) {
+            std::map<ir::BinaryOperator::Operation, llvm::BinaryOperator::BinaryOps>
+                binary_operator_dict = {
+                    {ir::BinaryOperator::Operation::Add, llvm::BinaryOperator::BinaryOps::Add},
+                    {ir::BinaryOperator::Operation::Sub, llvm::BinaryOperator::BinaryOps::Sub},
+                    {ir::BinaryOperator::Operation::Mul, llvm::BinaryOperator::BinaryOps::Mul},
+                    {ir::BinaryOperator::Operation::SDiv, llvm::BinaryOperator::BinaryOps::SDiv},
+                    {ir::BinaryOperator::Operation::UDiv, llvm::BinaryOperator::BinaryOps::UDiv},
+                    {ir::BinaryOperator::Operation::SRem, llvm::BinaryOperator::BinaryOps::SRem},
+                    {ir::BinaryOperator::Operation::URem, llvm::BinaryOperator::BinaryOps::URem},
+                    {ir::BinaryOperator::Operation::And, llvm::BinaryOperator::BinaryOps::And},
+                    {ir::BinaryOperator::Operation::Or, llvm::BinaryOperator::BinaryOps::Or},
+                    {ir::BinaryOperator::Operation::Shl, llvm::BinaryOperator::BinaryOps::Shl},
+                    {ir::BinaryOperator::Operation::LShr, llvm::BinaryOperator::BinaryOps::LShr},
+                    {ir::BinaryOperator::Operation::AShr, llvm::BinaryOperator::BinaryOps::AShr},
+                    {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
+                    {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
+                    {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
+                    {ir::BinaryOperator::Operation::FAdd, llvm::BinaryOperator::BinaryOps::FAdd},
+                    {ir::BinaryOperator::Operation::FSub, llvm::BinaryOperator::BinaryOps::FSub},
+                    {ir::BinaryOperator::Operation::FMul, llvm::BinaryOperator::BinaryOps::FMul},
+                    {ir::BinaryOperator::Operation::FDiv, llvm::BinaryOperator::BinaryOps::FDiv},
+                    {ir::BinaryOperator::Operation::FRem, llvm::BinaryOperator::BinaryOps::FRem},
+                };
+
+            PRAJNA_ASSERT(binary_operator_dict.count(ir_binary_operator->operation));
+            auto llvm_binary_operator_operation =
+                binary_operator_dict[ir_binary_operator->operation];
+            ir_binary_operator->llvm_value = llvm::BinaryOperator::Create(
+                llvm_binary_operator_operation, ir_binary_operator->operand(0)->llvm_value,
+                ir_binary_operator->operand(1)->llvm_value, "", llvm_basic_block);
+
             return;
         }
 
@@ -644,7 +634,7 @@ std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
         // 如果没有核函数, 则不生成. 因为不会被使用, gpu会把所用的的ir都拷贝过去
         if (std::none_of(RANGE(ir_sub_module->functions),
                          [](std::shared_ptr<ir::Function> ir_function) {
-                             return ir_function->function_type->annotations.count("kernel");
+                             return ir_function->annotations.count("kernel");
                          })) {
             continue;
         }

@@ -34,7 +34,7 @@ class InterpreterLoweringVisitor {
     std::unique_ptr<function_guard> wrapCommandLineWithFunction() {
         auto ir_fun_type = ir::FunctionType::create(ir::VoidType::create(), {});
         auto ir_function = ir::Function::create(ir_fun_type);
-        ir_function->function_type->annotations.insert({"\\command", {}});
+        ir_function->annotations.insert({"\\command", {}});
         ir_function->name = "\\command" + std::to_string(_command_id++);
         ir_function->fullname = ir_function->name;
         ir_function->parent_module = _statement_lowering_visitor->ir_builder->module;
@@ -53,7 +53,8 @@ class InterpreterLoweringVisitor {
                 overloaded{[=](auto x) {},
                            [=](std::shared_ptr<ir::Value> ir_result_value) {
                                if (not ir_result_value->type) return;
-                               if (not ir_result_value->type->member_functions["tostr"]) return;
+                               if (!ir_builder->getMemberFunction(ir_result_value->type, "tostr"))
+                                   return;
                                auto ir_result_string =
                                    ir_builder->callMemberFunction(ir_result_value, "tostr", {});
                                ir_builder->callMemberFunction(ir_result_string, "print", {});
@@ -78,12 +79,11 @@ class InterpreterLoweringVisitor {
 
     void operator()(const ast::Function x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::Struct x) { (*_statement_lowering_visitor)(x); }
-    void operator()(const ast::ImplementStruct x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::Interface x) { (*_statement_lowering_visitor)(x); }
-    void operator()(const ast::ImplementStructForInterface x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::Template x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::TemplateInstance x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::Import x) { (*_statement_lowering_visitor)(x); }
+    void operator()(const ast::Implement x) { (*_statement_lowering_visitor)(x); }
 
     template <typename T>
     void operator()(const T& t) {

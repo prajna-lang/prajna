@@ -60,8 +60,7 @@ struct StatementGrammer
     rule<ast::Struct> struct_;
 
     rule<ast::Interface> interface;
-    rule<ast::ImplementStructForInterface> implement_struct_for_interface;
-    rule<ast::ImplementStruct> implement_struct;
+    rule<ast::Implement> implement_;
 
     rule<ast::Parameter> parameter;
     rule<ast::Parameters> parameters;

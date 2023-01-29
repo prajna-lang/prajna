@@ -71,10 +71,10 @@ implement Tensor<Type_ : template, Dim_: template> {
 
 implement ::Tensor<Type_ : template, Dim_: template> {
     func toGpu()->Tensor<Type_, Dim_>{
-        var cuda_tensor = Tensor<Type_, Dim_>::create(this.shape);
+        var cuda_tensor = Tensor<Type_, Dim_>::create(this.layout.shape);
         var size = 1;
         for i in 0 to Dim_ {
-            size = size * this.shape[i];
+            size = size * this.layout.shape[i];
         }
         // print("tocuda: size");
         // size.tostr().print();

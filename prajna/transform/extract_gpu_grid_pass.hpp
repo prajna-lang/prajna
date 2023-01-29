@@ -37,8 +37,8 @@ namespace prajna::transform {
 //         ir_kernel_function->fullname =
 //             concatFullname(ir_host_function->fullname, ir_kernel_function->name);
 //         ir_kernel_function->parent_module = ir_nvptx_module;
-//         ir_kernel_function->function_type->annotations["target"].push_back("nvptx");
-//         ir_kernel_function->function_type->annotations.insert({"kernel", {}});
+//         ir_kernel_function->annotations["target"].push_back("nvptx");
+//         ir_kernel_function->annotations.insert({"kernel", {}});
 
 //         auto ir_grid_block = ir_gpu_for->loopBlock();
 //         ir_grid_block->parent_block = nullptr;
@@ -192,8 +192,8 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     ir_kernel_function_type->fullname = ir_kernel_function->fullname;
     ir_kernel_function_type->name = ir_kernel_function->fullname;
     ir_kernel_function->parent_module = ir_nvptx_module;
-    ir_kernel_function->function_type->annotations["target"].push_back("nvptx");
-    ir_kernel_function->function_type->annotations.insert({"kernel", {}});
+    ir_kernel_function->annotations["target"].push_back("nvptx");
+    ir_kernel_function->annotations.insert({"kernel", {}});
     ir_nvptx_module->functions.push_back(ir_kernel_function);
 
     auto ir_block = ir::Block::create();

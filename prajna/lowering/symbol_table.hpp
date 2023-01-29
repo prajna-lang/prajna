@@ -23,7 +23,6 @@ inline bool operator==(std::shared_ptr<prajna::ir::ConstantInt> lhs,
 namespace prajna::lowering {
 
 class SymbolTable;
-
 class TemplateStruct;
 
 template <typename _T>
@@ -32,7 +31,8 @@ class Template;
 using Symbol =
     boost::variant<std::nullptr_t, std::shared_ptr<ir::Value>, std::shared_ptr<ir::Type>,
                    std::shared_ptr<TemplateStruct>, std::shared_ptr<Template<std::nullptr_t>>,
-                   std::shared_ptr<SymbolTable>, std::shared_ptr<ir::ConstantInt>>;
+                   std::shared_ptr<ir::Interface>, std::shared_ptr<SymbolTable>,
+                   std::shared_ptr<ir::ConstantInt>>;
 
 template <typename _T>
 inline bool symbolIs(Symbol symbol) {

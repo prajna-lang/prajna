@@ -13,6 +13,7 @@
 #include "prajna/transform/transform_pass.hpp"
 #include "prajna/transform/utility.hpp"
 #include "prajna/transform/verify.hpp"
+#include "prajna/transform/wrap_instruction_function_pass.hpp"
 
 namespace prajna::ir {
 class Module;
@@ -153,7 +154,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
         for (auto ir_instruction : ir_instructions) {
             for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
                 if (auto ir_function = cast<ir::Function>(ir_instruction->operand(i))) {
-                    if (ir_function->function_type->annotations.count("kernel")) {
+                    if (ir_function->annotations.count("kernel")) {
                         auto global_variable_fullname =
                             getKernelFunctionAddressName(ir_function->function_type->fullname);
 
@@ -245,7 +246,7 @@ inline std::shared_ptr<ir::Module> cloneExternalNvptxValue(std::shared_ptr<ir::M
     std::list<std::shared_ptr<ir::Function>> ir_kernel_functions_list;
     std::copy_if(RANGE(ir_nvptx_module->functions), std::back_inserter(ir_kernel_functions_list),
                  [](std::shared_ptr<ir::Function> ir_function) {
-                     return ir_function->function_type->annotations.count("kernel");
+                     return ir_function->annotations.count("kernel");
                  });
 
     PRAJNA_ASSERT(ir_kernel_functions_list.size() <= 1,
@@ -270,7 +271,7 @@ inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
 
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
     for (auto ir_function : ir_nvptx_module->functions) {
-        if (ir_function->function_type->annotations.count("kernel")) {
+        if (ir_function->annotations.count("kernel")) {
             auto global_variable_fullname =
                 getKernelFunctionAddressName(ir_function->function_type->fullname);
             auto iter_global_variable = std::find_if(
@@ -308,7 +309,7 @@ inline std::shared_ptr<ir::Module> removeValuesAfterReturn(std::shared_ptr<ir::M
 inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
     utility::each<ir::Call>(ir_module, [=](std::shared_ptr<ir::Call> ir_call) {
         if (auto ir_callee = cast<ir::Function>(ir_call->function())) {
-            if (ir_callee->parent_module != ir_module) {
+            if (ir_callee->parent_module != ir_module && !ir_callee->isInstruction()) {
                 // 不会重复添加, 因为会置换所有的操作数
                 auto ir_function = ir::Function::create(ir_callee->function_type);
                 ir_function->fullname = ir_callee->fullname;
@@ -345,7 +346,8 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
         // fisrt =
         auto ir_layout_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
-            ir_builder->getSymbolByPath(true, {"core", "Layout"}));
+            ir_builder->getSymbolByPath(true, {"tensor", "Layout"}));
+        PRAJNA_ASSERT(ir_layout_template_struct);
         auto ir_array_first = ir_for->first();
         auto ir_array_last = ir_for->last();
         auto ir_array_type = ir_array_last->type;
@@ -391,6 +393,8 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     ir_module = convertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertPropertyToFunctionCall(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
+    ir_module = wrapInstructionFunction(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = insertInitializeAndCopyAndDestroyCallback(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));

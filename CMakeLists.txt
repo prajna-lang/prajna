@@ -43,7 +43,6 @@ target_link_libraries(clang_include_dir
     INTERFACE llvm_include_dir
 )
 
-
 add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/cxxopts EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/fmt EXCLUDE_FROM_ALL)

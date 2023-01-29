@@ -172,7 +172,7 @@ inline bool isReferedTo(std::shared_ptr<ir::LocalVariable> ir_refered_variable,
 }
 
 inline std::list<ir::Target> getTargets(std::shared_ptr<ir::Function> ir_function) {
-    auto target_string_vector = ir_function->function_type->annotations["target"];
+    auto target_string_vector = ir_function->annotations["target"];
     std::list<std::string> target_string_list(target_string_vector.begin(),
                                               target_string_vector.end());
 

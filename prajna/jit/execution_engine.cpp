@@ -94,7 +94,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
         // 这个步骤会消耗显卡内存, 后期优化尽量释放,
         if (std::none_of(RANGE(ir_sub_module->functions),
                          [](std::shared_ptr<ir::Function> ir_function) {
-                             return ir_function->function_type->annotations.count("kernel");
+                             return ir_function->annotations.count("kernel");
                          })) {
             continue;
         }
@@ -177,7 +177,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
         PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
 
         for (auto ir_function : ir_sub_module->functions) {
-            if (ir_function->function_type->annotations.count("kernel")) {
+            if (ir_function->annotations.count("kernel")) {
                 auto kernel_fun_address_name = getKernelFunctionAddressName(ir_function->fullname);
                 auto test_kernel_fun =
                     reinterpret_cast<CUfunction *>(this->getValue(kernel_fun_address_name));

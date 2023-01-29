@@ -1,0 +1,49 @@
+struct allocator<Type_: template>{}
+
+implement allocator<Type_: template>{
+    @static
+    func allocate(size: i64)->Type_ *{
+        return cast<Type_ *>(malloc(size * sizeof(Type_)));
+    }
+
+    @static
+    func deallocate(ptr: Type_*){
+        free(cast<undef *>(ptr));
+    }
+}
+
+
+struct ref_ptr<Type_: template>{
+    raw_ptr: Type_*;
+}
+
+implement ref_ptr<Type_: template> {
+
+    @static
+    func new(size: i64)->ref_ptr<Type_>{
+        var self: ref_ptr<Type_>;
+        self.raw_ptr = allocator<Type_>::allocate(size);
+        return self;
+    }
+
+    func initialize(){
+        this.raw_ptr = nullptr<Type_>::create();
+        bindings::registerReferenceCount(cast<undef*>(this.raw_ptr));
+    }
+
+    func copy(){
+        bindings::incReferenceCount(cast<undef*>(this.raw_ptr));
+    }
+
+    func destroy(){
+        bindings::decReferenceCount(cast<undef*>(this.raw_ptr));
+        if (bindings::getReferenceCount(cast<undef*>(this.raw_ptr)) == 0){
+            if (this.raw_ptr != nullptr<Type_>::create()){
+                bindings::free(cast<undef*>(this.raw_ptr));
+                //TODO 应该存在问题, 后期在进行详细修复
+                this.raw_ptr = nullptr<Type_>::create();
+            }
+        }
+    }
+
+}

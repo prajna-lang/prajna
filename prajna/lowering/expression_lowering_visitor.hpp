@@ -108,7 +108,7 @@ class ExpressionLoweringVisitor {
         ast_identifier_path.identifiers.resize(1);
         ast_identifier_path.identifiers.front().identifier = "str";
         auto string_type = cast<ir::StructType>(
-            symbolGet<ir::Type>(this->applyIdentifiersResolution(ast_identifier_path)));
+            symbolGet<ir::Type>(this->applyIdentifierPath(ast_identifier_path)));
         auto ir_string_from_char_pat = string_type->static_functions["from_char_ptr"];
 
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
@@ -236,7 +236,7 @@ class ExpressionLoweringVisitor {
         return ir_lhs;
     }
 
-    std::shared_ptr<ir::Value> applyBinaryOperationAccessField(
+    std::shared_ptr<ir::Value> applyBinaryOperationAccessMember(
         std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
         if (ast_binary_operation.operand.type() != typeid(ast::Identifier)) {
             PRAJNA_UNREACHABLE;
@@ -246,7 +246,7 @@ class ExpressionLoweringVisitor {
         auto ir_type = ir_lhs->type;
         auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_lhs);
         std::string member_name = boost::get<ast::Identifier>(ast_binary_operation.operand);
-        if (auto member_function = ir_type->member_functions[member_name]) {
+        if (auto member_function = ir_builder->getMemberFunction(ir_type, member_name)) {
             auto ir_this_pointer =
                 ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             return ir::MemberFunctionWithThisPointer::create(ir_this_pointer, member_function);
@@ -419,7 +419,7 @@ class ExpressionLoweringVisitor {
         }
 
         if (ast_binary_operation.operator_ == ast::Operator(".")) {
-            return this->applyBinaryOperationAccessField(ir_lhs, ast_binary_operation);
+            return this->applyBinaryOperationAccessMember(ir_lhs, ast_binary_operation);
         }
         if (ast_binary_operation.operator_ == ast::Operator("(")) {
             return this->applyBinaryOperationCall(ir_lhs, ast_binary_operation);
@@ -489,7 +489,7 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
-        auto symbol_type = this->applyIdentifiersResolution(ast_postfix_type.base_type);
+        auto symbol_type = this->applyIdentifierPath(ast_postfix_type.base_type);
 
         if (!symbolIs<ir::Type>(symbol_type)) {
             logger->error("the symbol is not a type", ast_postfix_type);
@@ -521,7 +521,7 @@ class ExpressionLoweringVisitor {
         return ir_type;
     }  // namespace prajna::lowering
 
-    Symbol applyIdentifiersResolution(ast::IdentifierPath ast_identifier_path) {
+    Symbol applyIdentifierPath(ast::IdentifierPath ast_identifier_path) {
         Symbol symbol;
         if (ast_identifier_path.is_root) {
             symbol = ir_builder->symbol_table->rootSymbolTable();
@@ -576,24 +576,23 @@ class ExpressionLoweringVisitor {
                             for (auto ast_template_argument :
                                  *iter_ast_identifier->template_arguments) {
                                 auto symbol_template_argument = boost::apply_visitor(
-                                    overloaded{[=](ast::Blank) -> Symbol {
-                                                   PRAJNA_UNREACHABLE;
-                                                   return nullptr;
-                                               },
-                                               [=](ast::Type ast_type) -> Symbol {
-                                                   if (ast_type.postfix_type_operators.size() ==
-                                                       0) {
-                                                       return this->applyIdentifiersResolution(
-                                                           ast_type.base_type);
-                                                   } else {
-                                                       return this->applyType(ast_type);
-                                                   }
-                                               },
-                                               [=](ast::IntLiteral ast_int_literal) -> Symbol {
-                                                   return ir::ConstantInt::create(
-                                                       ir::global_context.index_type,
-                                                       ast_int_literal.value);
-                                               }},
+                                    overloaded{
+                                        [=](ast::Blank) -> Symbol {
+                                            PRAJNA_UNREACHABLE;
+                                            return nullptr;
+                                        },
+                                        [=](ast::Type ast_type) -> Symbol {
+                                            if (ast_type.postfix_type_operators.size() == 0) {
+                                                return this->applyIdentifierPath(
+                                                    ast_type.base_type);
+                                            } else {
+                                                return this->applyType(ast_type);
+                                            }
+                                        },
+                                        [=](ast::IntLiteral ast_int_literal) -> Symbol {
+                                            return ir::ConstantInt::create(
+                                                ir_builder->getIndexType(), ast_int_literal.value);
+                                        }},
                                     ast_template_argument);
                                 symbol_template_arguments.push_back(symbol_template_argument);
                             }
@@ -632,7 +631,7 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::IdentifierPath ast_identifier_path) {
-        auto symbol = this->applyIdentifiersResolution(ast_identifier_path);
+        auto symbol = this->applyIdentifierPath(ast_identifier_path);
         return boost::apply_visitor(
             overloaded{
                 [](std::shared_ptr<ir::Value> ir_value) -> std::shared_ptr<ir::Value> {
@@ -796,9 +795,10 @@ class ExpressionLoweringVisitor {
         ir_arguemnts[0] = ir_this_pointer;
         ir_arguemnts[1] = this->applyOperand(ast_binary_operation.operand);
         if (ir_arguemnts[1]->type != ir_function->function_type->argument_types[1]) {
-            logger->error(
-                fmt::format("the type {} is not matched", ir_arguemnts[1]->type->fullname),
-                ast_binary_operation.operand);
+            logger->error(fmt::format("the types {}, {} are not matched",
+                                      ir_function->function_type->argument_types[1]->fullname,
+                                      ir_arguemnts[1]->type->fullname),
+                          ast_binary_operation.operand);
         }
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
     }

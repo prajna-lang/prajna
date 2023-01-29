@@ -26,7 +26,7 @@ class IrBuilder {
 
     IrBuilder() : IrBuilder(nullptr, nullptr, nullptr) {}
 
-    std::shared_ptr<ir::Type> getIndexType() { return ir::global_context.index_type; }
+    std::shared_ptr<ir::Type> getIndexType() { return ir::IntType::create(ir::ADDRESS_BITS, true); }
 
     std::shared_ptr<ir::ConstantInt> getIndexConstant(int64_t value) {
         auto ir_value = this->create<ir::ConstantInt>(getIndexType(), value);
@@ -120,13 +120,29 @@ class IrBuilder {
         }
     }
 
+    std::shared_ptr<ir::Function> getMemberFunction(std::shared_ptr<ir::Type> ir_type,
+                                                    std::string member_name) {
+        if (member_name == "tochar") {
+            int a = 0;
+        }
+        for (auto [interface_name, ir_interface] : ir_type->interfaces) {
+            for (auto [function_name, ir_function] : ir_interface->functions) {
+                if (function_name == member_name) {
+                    return ir_function;
+                }
+            }
+        }
+
+        return nullptr;
+    }
+
     std::shared_ptr<ir::Call> callMemberFunction(
         std::shared_ptr<ir::Value> ir_object, std::string member_function,
         std::vector<std::shared_ptr<ir::Value>> ir_arguments) {
         auto ir_variable_liked = this->variableLikedNormalize(ir_object);
         auto ir_this_pointer = this->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         ir_arguments.insert(ir_arguments.begin(), ir_this_pointer);
-        auto ir_member_function = ir_object->type->member_functions[member_function];
+        auto ir_member_function = this->getMemberFunction(ir_object->type, member_function);
         PRAJNA_ASSERT(ir_member_function);
         return this->create<ir::Call>(ir_member_function, ir_arguments);
     }

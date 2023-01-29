@@ -2,9 +2,10 @@
 
 @test
 func testMain(){
-    var p: i64*;
+    var p = nullptr<i64>::create();
     p.toi64();
-    (p == p).tostr();
-    // testing::Assert(p == p);
+
+    testing::Assert(p == nullptr<i64>::create());
+    testing::Assert(p.toi64() == 0i64);
     // p.toi64().tostr().print();
 }

@@ -23,8 +23,8 @@ TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
     compiler->addPackageDirectories(".");
     compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
     compiler->compileFile(prajna_source_path);
-    compiler->runTestFunctions();
     ASSERT_EQ(0, compiler->compile_error_count);
+    compiler->runTestFunctions();
 }
 
 class CompilerScriptTests : public testing::TestWithParam<std::string> {};

@@ -53,7 +53,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
         PRAJNA_ASSERT(symbol.which() != 0);
     }
 
-    symbol = expression_lowering_visitor->applyIdentifiersResolution(ast_import.identifier_path);
+    symbol = expression_lowering_visitor->applyIdentifierPath(ast_import.identifier_path);
 
     ir_builder->symbol_table->set(symbol, ast_import.identifier_path.identifiers.back().identifier);
 

@@ -20,8 +20,11 @@ class Type;
 
 namespace prajna::ir {
 
+const size_t ADDRESS_BITS = 64;
+
 class Function;
 struct Field;
+struct Interface;
 
 struct Property {
     std::shared_ptr<ir::Function> setter_function;
@@ -45,11 +48,12 @@ class Type : public Named {
     std::shared_ptr<Function> initialize_function = nullptr;
     std::shared_ptr<Function> copy_function = nullptr;
     std::shared_ptr<Function> destroy_function = nullptr;
-    std::map<std::string, std::shared_ptr<Function>> member_functions;
+
     std::map<std::string, std::shared_ptr<Function>> static_functions;
     std::map<std::string, std::shared_ptr<Function>> unary_functions;
     std::map<std::string, std::shared_ptr<Function>> binary_functions;
     std::map<std::string, std::shared_ptr<Property>> properties;
+    std::map<std::string, std::shared_ptr<Interface>> interfaces;
     std::vector<std::shared_ptr<Field>> fields;
 
     std::any template_arguments;
@@ -266,8 +270,6 @@ class FunctionType : public Type {
     }
 
    public:
-    std::map<std::string, std::vector<std::string>> annotations;
-
     std::shared_ptr<Type> return_type = nullptr;
     std::vector<std::shared_ptr<Type>> argument_types;
 
@@ -292,7 +294,7 @@ class PointerType : public Type {
 
         std::shared_ptr<PointerType> self(new PointerType);
         self->value_type = value_type;
-        self->bytes = global_context.target_bits / 8;
+        self->bytes = ADDRESS_BITS / 8;
         self->name = value_type->name + "*";
         self->fullname = self->name;
         global_context.created_types.push_back(self);
@@ -375,6 +377,24 @@ class StructType : public Type {
             this->bytes += field->type->bytes;
         }
     }
+};
+
+class Interface : public Named {
+   public:
+    Interface() = default;
+
+   public:
+    static std::shared_ptr<Interface> create() {
+        std::shared_ptr<Interface> self(new Interface);
+
+        self->name = "PleaseDefineInterfaceName";
+        self->fullname = "PleaseDefineInterafceFullname";
+
+        return self;
+    };
+
+   public:
+    std::map<std::string, std::shared_ptr<Function>> functions;
 };
 
 }  // namespace prajna::ir

@@ -48,6 +48,7 @@ inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
 }  // namespace
 
 std::shared_ptr<Compiler> Compiler::create() {
+    ir::global_context = ir::GlobalContext(64);
     std::shared_ptr<Compiler> self(new Compiler);
     self->_symbol_table = lowering::createPrimitiveTypes();
     self->jit_engine = std::make_shared<jit::ExecutionEngine>();
@@ -103,7 +104,7 @@ void Compiler::compileCommandLine(std::string command_line_code) {
     jit_engine->catchRuntimeError();
     // @note 会有一次输入多个句子的情况
     for (auto ir_function : ir_module->functions) {
-        if (ir_function->function_type->annotations.count("\\command")) {
+        if (ir_function->annotations.count("\\command")) {
             auto fun_fullname = ir_function->fullname;
             auto fun_ptr = reinterpret_cast<void (*)(void)>(jit_engine->getValue(fun_fullname));
             fun_ptr();
@@ -122,7 +123,7 @@ void Compiler::runTestFunctions() {
                     }
 
                     function_tested_set.insert(ir_function);
-                    if (ir_function->function_type->annotations.count("test")) {
+                    if (ir_function->annotations.count("test")) {
                         auto function_pointer = jit_engine->getValue(ir_function->fullname);
                         jit_engine->catchRuntimeError();
                         reinterpret_cast<void (*)(void)>(function_pointer)();

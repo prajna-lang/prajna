@@ -11,12 +11,6 @@ implement Node<T: template>{
     }
 }
 
-// 特化模板, 值得注意的Prajna不会支持部分特化模板
-implement Node<f32>{
-    func getCurrentValue()->f32{
-        return this.value;
-    }
-}
 
 template ArrayTp <T, Rank>{
     implement T[Rank]{
@@ -35,7 +29,7 @@ template ptrTp <Type>{
     }
 }
 
-instantiate ptrTp<i64>;
+// instantiate ptrTp<i64>;
 
 @test
 func test(){
@@ -52,6 +46,5 @@ func test(){
     print(tt.toi64().tostr());
 
     testing::Assert(root.nextValue() == 2.0);
-    testing::Assert(root.getCurrentValue() == 1.0);
 }
 

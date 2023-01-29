@@ -213,9 +213,7 @@ class StatementLoweringVisitor {
 
         // TODO interface里需要处理一下
         ir_builder->setSymbolWithAssigningName(ir_function, ast_function_header.name);
-        // ir_function_type->name = ir_function->name;
-        // ir_function_type->fullname = ir_function->fullname;
-        ir_function_type->annotations = this->applyAnnotations(ast_function_header.annotations);
+        ir_function->annotations = this->applyAnnotations(ast_function_header.annotations);
 
         return ir_function;
     }
@@ -562,13 +560,13 @@ class StatementLoweringVisitor {
     void processUnaryFunction(std::shared_ptr<ir::Type> ir_type,
                               std::shared_ptr<ir::Function> ir_function,
                               ast::Function ast_function) {
-        if (not ir_function->function_type->annotations.count("unary")) return;
+        if (not ir_function->annotations.count("unary")) return;
 
         if (ir_function->function_type->argument_types.size() != 1) {
             logger->error("the parameters size of a unary function must be 1",
                           ast_function.declaration.parameters);
         }
-        auto unary_annotation = ir_function->function_type->annotations["unary"];
+        auto unary_annotation = ir_function->annotations["unary"];
         auto iter_unary_annotation = std::find_if(
             RANGE(ast_function.declaration.annotations),
             [](ast::Annotation ast_annotation) { return ast_annotation.name == "unary"; });
@@ -587,13 +585,13 @@ class StatementLoweringVisitor {
     void processBinaryFunction(std::shared_ptr<ir::Type> ir_type,
                                std::shared_ptr<ir::Function> ir_function,
                                ast::Function ast_function) {
-        if (not ir_function->function_type->annotations.count("binary")) return;
+        if (not ir_function->annotations.count("binary")) return;
 
         if (ir_function->function_type->argument_types.size() != 2) {
             logger->error("the parameters size of a binary function must be 2",
                           ast_function.declaration.parameters);
         }
-        auto binary_annotation = ir_function->function_type->annotations["binary"];
+        auto binary_annotation = ir_function->annotations["binary"];
         auto iter_binary_annotation = std::find_if(
             RANGE(ast_function.declaration.annotations),
             [](ast::Annotation ast_annotation) { return ast_annotation.name == "binary"; });
@@ -618,7 +616,7 @@ class StatementLoweringVisitor {
         std::set<std::string> copy_destroy_callback_names = {"initialize", "copy", "destroy"};
         if (not copy_destroy_callback_names.count(ir_function->name)) return;
 
-        if (ir_function->function_type->annotations.count("static") != 0) {
+        if (ir_function->annotations.count("static") != 0) {
             auto iter_static_annotation = std::find_if(
                 RANGE(ast_function.declaration.annotations),
                 [](ast::Annotation ast_annotation) { return ast_annotation.name == "static"; });
@@ -675,12 +673,12 @@ class StatementLoweringVisitor {
     void processPropertyFunction(std::shared_ptr<ir::Type> ir_type,
                                  std::shared_ptr<ir::Function> ir_function,
                                  ast::Function ast_function) {
-        if (not ir_function->function_type->annotations.count("property")) return;
+        if (not ir_function->annotations.count("property")) return;
 
         auto iter_property_annotation = std::find_if(
             RANGE(ast_function.declaration.annotations),
             [](ast::Annotation ast_annotation) { return ast_annotation.name == "properties"; });
-        auto property_annotation = ir_function->function_type->annotations["property"];
+        auto property_annotation = ir_function->annotations["property"];
         if (property_annotation.size() != 2) {
             logger->error("the property annoation should only have two values",
                           iter_property_annotation->values[0]);
@@ -725,25 +723,47 @@ class StatementLoweringVisitor {
         }
     }
 
-    void applyImplementStructWithOutTemplates(std::shared_ptr<ir::Type> ir_type,
-                                              ast::ImplementStruct ast_implement_struct) {
+    void applyImplementWithOutTemplates(std::shared_ptr<ir::Type> ir_type,
+                                        ast::Implement ast_implement) {
         ir_builder->pushSymbolTable();
-        for (auto ast_function : ast_implement_struct.functions) {
+
+        auto ir_interface = ir::Interface::create();
+        std::shared_ptr<ir::Interface> ir_interface_prototype = nullptr;
+        if (ast_implement.interface) {
+            ir_interface_prototype = symbolGet<ir::Interface>(
+                expression_lowering_visitor->applyIdentifierPath(*ast_implement.interface));
+            if (!ir_interface_prototype) {
+                logger->error("not invalid interface", *ast_implement.interface);
+            }
+            ir_interface->name = ir_interface_prototype->name;
+            ir_interface->fullname = concatFullname(ir_type->fullname, ir_interface->name);
+            if (ir_type->interfaces.count(ir_interface->name)) {
+                logger->error("interface has implemented", *ast_implement.interface);
+            }
+            ir_type->interfaces[ir_interface->name] = ir_interface;
+        } else {
+            if (ir_type->interfaces.count("Self")) {
+                ir_interface = ir_type->interfaces["Self"];
+            } else {
+                ir_interface->name = "Self";
+                ir_interface->fullname = concatFullname(ir_type->fullname, ir_interface->name);
+                if (ir_type->interfaces.count(ir_interface->name)) {
+                    logger->error("type has self implemented", ast_implement.type);
+                }
+                ir_type->interfaces[ir_interface->name] = ir_interface;
+            }
+        }
+
+        for (auto ast_function : ast_implement.functions) {
             std::shared_ptr<ir::Function> ir_function = nullptr;
             if (std::none_of(RANGE(ast_function.declaration.annotations),
                              [](auto x) { return x.name == "static"; })) {
                 auto ir_this_pointer_type = ir::PointerType::create(ir_type);
                 auto symbol_function = (*this)(ast_function, ir_this_pointer_type);
                 ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
-                ir_function->function_type->annotations.insert({"member", {}});
-                // TODO需要修复
-                // PRAJNA_ASSERT(ir_type->member_functions.count(ir_function->name) == 0);
-                ir_type->member_functions[ir_function->name] = ir_function;
-                ir_function->fullname = concatFullname(ir_type->fullname, ir_function->name);
+                ir_interface->functions[ir_function->name] = ir_function;
+                ir_function->fullname = concatFullname(ir_interface->fullname, ir_function->name);
             } else {
-                if (ast_function.declaration.name == "initialize") {
-                    int a = 1 + 3;
-                }
                 ir_builder->pushSymbolTable();
                 ir_builder->symbol_table->name =
                     ir_type->name;  // 插入类的名字, 以便函数名字是正确的
@@ -762,42 +782,42 @@ class StatementLoweringVisitor {
         for (auto [property_name, ir_property] : ir_type->properties) {
             if (not ir_property->getter_function) {
                 logger->error(fmt::format("the property { } getter must be defined", property_name),
-                              ast_implement_struct.type);
+                              ast_implement.type);
             }
         }
 
         ir_builder->popSymbolTable();
     }
 
-    Symbol operator()(ast::ImplementStruct ast_implement_struct) {
-        if (ast_implement_struct.template_paramters.empty()) {
-            auto ir_type = expression_lowering_visitor->applyType(ast_implement_struct.type);
-            this->applyImplementStructWithOutTemplates(ir_type, ast_implement_struct);
+    Symbol operator()(ast::Implement ast_implement) {
+        if (ast_implement.template_paramters.empty()) {
+            auto ir_type = expression_lowering_visitor->applyType(ast_implement.type);
+            this->applyImplementWithOutTemplates(ir_type, ast_implement);
 
         } else {
             auto template_parameter_identifier_list =
-                getTemplateParametersIdentifiers(ast_implement_struct.template_paramters);
+                getTemplateParametersIdentifiers(ast_implement.template_paramters);
 
-            if (ast_implement_struct.type.postfix_type_operators.size()) {
-                logger->error("unexpect implement", ast_implement_struct.type);
+            if (ast_implement.type.postfix_type_operators.size()) {
+                logger->error("unexpect implement", ast_implement.type);
             }
 
-            auto ir_symbol = expression_lowering_visitor->applyIdentifiersResolution(
-                ast_implement_struct.type.base_type);
+            auto ir_symbol =
+                expression_lowering_visitor->applyIdentifierPath(ast_implement.type.base_type);
             auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
             if (template_struct == nullptr) {
                 logger->error("it's not a template struct but with template parameters",
-                              ast_implement_struct.template_paramters);
+                              ast_implement.template_paramters);
             }
             if (template_struct->template_parameter_identifier_list.size() !=
                 template_parameter_identifier_list.size()) {
                 logger->error("the template parameters are not matched",
-                              ast_implement_struct.template_paramters);
+                              ast_implement.template_paramters);
             }
 
             auto symbol_table = ir_builder->symbol_table;
             auto template_implement_struct_generator =
-                [symbol_table, logger = this->logger, ast_implement_struct, template_struct,
+                [symbol_table, logger = this->logger, ast_implement, template_struct,
                  template_parameter_identifier_list](std::list<Symbol> symbol_template_arguments,
                                                      std::shared_ptr<ir::Module> ir_module) {
                     // 包裹一层名字空间, 避免被污染
@@ -812,8 +832,8 @@ class StatementLoweringVisitor {
                         templates_symbol_table, logger, ir_module, nullptr);
                     auto ir_type =
                         template_struct->struct_type_instance_dict[symbol_template_arguments];
-                    statement_lowering_visitor->applyImplementStructWithOutTemplates(
-                        ir_type, ast_implement_struct);
+                    statement_lowering_visitor->applyImplementWithOutTemplates(ir_type,
+                                                                               ast_implement);
                     // 仅仅用于标记是否实例化, 没有实际用途
                     return std::shared_ptr<ImplementTag>(new ImplementTag);
                 };
@@ -844,8 +864,8 @@ class StatementLoweringVisitor {
 
             (*statement_lowering_visitor)(ast_template.statements);
             // auto ir_type = template_struct->struct_type_instance_dict[symbol_template_arguments];
-            // statement_lowering_visitor->applyImplementStructWithOutTemplates(ir_type,
-            //                                                                  ast_implement_struct);
+            // statement_lowering_visitor->applyImplementWithOutTemplates(ir_type,
+            //                                                                  ast_implement);
 
             return nullptr;
         };
@@ -856,8 +876,7 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::TemplateInstance ast_template_instance) {
-        expression_lowering_visitor->applyIdentifiersResolution(
-            ast_template_instance.identifier_path);
+        expression_lowering_visitor->applyIdentifierPath(ast_template_instance.identifier_path);
 
         return nullptr;
     }
@@ -905,6 +924,23 @@ class StatementLoweringVisitor {
 
         logger->error("the pragma is undefined", ast_pragma);
         return nullptr;
+    }
+
+    Symbol operator()(ast::Interface ast_interface) {
+        auto ir_interface = ir::Interface::create();
+
+        for (auto ast_function_declaration : ast_interface.functions) {
+            ir_builder->pushSymbolTable();
+            ir_builder->symbol_table->name = ast_interface.name;
+            auto symbol_function = (*this)(ast_function_declaration);
+            auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
+            ir_builder->popSymbolTable();
+            ir_interface->functions[ir_function->name] = ir_function;
+        }
+
+        ir_builder->setSymbolWithAssigningName(ir_interface, ast_interface.name);
+
+        return ir_interface;
     }
 
     Symbol operator()(ast::Blank) { return nullptr; }

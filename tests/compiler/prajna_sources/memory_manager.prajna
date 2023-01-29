@@ -1,6 +1,6 @@
 
 struct TestA {
-    data: i8*;
+    data: undef*;
     name: str;
 }
 
@@ -20,7 +20,7 @@ implement TestA {
 
     func initialize(){
         this.name = "undef";
-        this.data = nullptr<i8>::create();
+        this.data = nullptr<undef>::create();
         bindings::registerReferenceCount(this.data);
         "TestA initialize\n".print();
     }

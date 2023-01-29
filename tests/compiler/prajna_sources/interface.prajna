@@ -1,0 +1,22 @@
+interface IPrint{
+    func print();
+};
+
+// struct A{
+//     int a;
+// };
+
+// struct
+
+
+implement IPrint for i64{
+    func print(){
+        this.tostr().print();
+    }
+};
+
+@test
+func testMain(){
+    var a = 123;
+    a.print();
+}

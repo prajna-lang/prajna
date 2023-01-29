@@ -3,15 +3,15 @@ func print_c(str : char*);
 
 func assert(flag : bool);
 
-func malloc(bytes: i64)->i8*;
-func free(pointer: i8*);
+func malloc(bytes: i64)->undef*;
+func free(pointer: undef*);
 
-func registerReferenceCount(pointer: i8*);
-func getReferenceCount(pointer: i8*)->i64;
-func incReferenceCount(pointer: i8*);
-func decReferenceCount(pointer: i8*);
-
+func registerReferenceCount(pointer: undef*);
+func getReferenceCount(pointer: undef*)->i64;
+func incReferenceCount(pointer: undef*);
+func decReferenceCount(pointer: undef*);
 
 export print_c;
 export assert;
 export malloc;
+export free;

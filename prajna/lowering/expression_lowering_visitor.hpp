@@ -412,8 +412,9 @@ class ExpressionLoweringVisitor {
             // 加载后再执行,
             // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
             // 但其却有相同的名字, 这里存在问题, 回头修复.
-            if (symbol_ptr_tp.which() != 0 && !is<ir::FunctionType>(ir_value_type)) {
+            if (symbol_ptr_tp.which() != 0) {
                 auto ptr_tp = symbolGet<Template<std::nullptr_t>>(symbol_ptr_tp);
+                PRAJNA_ASSERT(ptr_tp);
                 ptr_tp->getInstance({ir_value_type}, ir_builder->module);
             }
         }

@@ -54,6 +54,7 @@ class IrBuilder {
             tmp_symbol_table = symbolGet<SymbolTable>(tmp_symbol_table->get(names[i]));
         }
 
+        PRAJNA_ASSERT(tmp_symbol_table);
         return tmp_symbol_table->get(names.back());
     }
 

@@ -510,7 +510,7 @@ class ExpressionLoweringVisitor {
                                RANGE(ast_function_type.argument_types), ir_argument_types.begin(),
                                [=](ast::Type ast_type) { return this->applyType(ast_type); });
 
-                           return ir::FunctionType::create(ir_return_type, ir_argument_types);
+                           return ir::FunctionType::create(ir_argument_types, ir_return_type);
                        }},
             ast_postfix_type.base_type);
 

@@ -237,7 +237,7 @@ class FunctionType : public Type {
    public:
     /// @note 考虑函数指针的情况, 同一个函数类型指向不同函数地址是存在且必须的(分发的实现)
     static std::shared_ptr<FunctionType> create(
-        std::shared_ptr<Type> return_type, std::vector<std::shared_ptr<Type>> ir_argument_types) {
+        std::vector<std::shared_ptr<Type>> ir_argument_types, std::shared_ptr<Type> return_type) {
         // @note 不同函数的, 函数类型不应该是用一个指针, 下面的代码更适合判断动态分发的时候使用
         for (auto ir_type : global_context.created_types) {
             if (auto ir_fun_type = cast<FunctionType>(ir_type)) {

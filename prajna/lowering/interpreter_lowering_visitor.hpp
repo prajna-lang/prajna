@@ -32,7 +32,7 @@ class InterpreterLoweringVisitor {
     }
 
     std::unique_ptr<function_guard> wrapCommandLineWithFunction() {
-        auto ir_fun_type = ir::FunctionType::create(ir::VoidType::create(), {});
+        auto ir_fun_type = ir::FunctionType::create({}, ir::VoidType::create());
         auto ir_function = ir::Function::create(ir_fun_type);
         ir_function->annotations.insert({"\\command", {}});
         ir_function->name = "\\command" + std::to_string(_command_id++);

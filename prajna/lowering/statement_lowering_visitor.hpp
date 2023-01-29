@@ -205,7 +205,7 @@ class StatementLoweringVisitor {
             ir_argument_types.insert(ir_argument_types.begin(), ir_this_pointer_type);
         }
 
-        auto ir_function_type = ir::FunctionType::create(return_type, ir_argument_types);
+        auto ir_function_type = ir::FunctionType::create(ir_argument_types, return_type);
         auto ir_function = ir::Function::create(ir_function_type);
         ir_function_type->function = ir_function;
         ir_function->parent_module = ir_builder->module;
@@ -431,7 +431,7 @@ class StatementLoweringVisitor {
         std::transform(RANGE(ir_fields), ir_constructor_arg_types.begin(),
                        [](auto ir_field) { return ir_field->type; });
         auto ir_constructor_type =
-            ir::FunctionType::create(ir_struct_type, ir_constructor_arg_types);
+            ir::FunctionType::create(ir_constructor_arg_types, ir_struct_type);
         auto ir_constructor = ir::Function::create(ir_constructor_type);
         ir_constructor_type->function = ir_constructor;
         ir_struct_type->constructor = ir_constructor;

@@ -184,7 +184,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
                    });
 
     auto ir_kernel_function_type =
-        ir::FunctionType::create(ir::VoidType::create(), ir_argument_types);
+        ir::FunctionType::create(ir_argument_types, ir::VoidType::create());
     auto ir_kernel_function = ir::Function::create(ir_kernel_function_type);
     ir_kernel_function->fullname =
         concatFullname(ir_gpu_for->getParentFunction()->fullname, "gpu_for_" + std::to_string(idx));

@@ -30,4 +30,6 @@ func testFunction(){
 
     testing::Assert(callRecursively(4) == 0);
     testing::Assert(callRecursively(5) == 0);
+
+    var function_type : func{()->void}*;
 }

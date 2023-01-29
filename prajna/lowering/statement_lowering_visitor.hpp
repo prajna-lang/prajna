@@ -802,8 +802,11 @@ class StatementLoweringVisitor {
                 logger->error("unexpect implement", ast_implement.type);
             }
 
-            auto ir_symbol =
-                expression_lowering_visitor->applyIdentifierPath(ast_implement.type.base_type);
+            // TODO
+            PRAJNA_ASSERT(ast_implement.type.base_type.which() == 1);
+            auto ast_identifier_path =
+                boost::get<ast::IdentifierPath>(ast_implement.type.base_type);
+            auto ir_symbol = expression_lowering_visitor->applyIdentifierPath(ast_identifier_path);
             auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
             if (template_struct == nullptr) {
                 logger->error("it's not a template struct but with template parameters",

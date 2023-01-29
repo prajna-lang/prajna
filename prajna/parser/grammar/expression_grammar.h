@@ -40,6 +40,8 @@ struct ExpressionGrammer
     rule<ast::StringLiteral> string_literal;
     rule<ast::PostfixTypeOperator> type_array_postfix_operator;
     rule<ast::PostfixTypeOperator> type_postfix_operator;
+    rule<ast::BasicType> basic_type;
+    rule<ast::FunctionType> function_type;
     rule<ast::PostfixType> type;
     rule<ast::TemplateArgument> template_argument;
     rule<ast::IdentifierPath> identifier_path;

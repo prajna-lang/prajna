@@ -170,9 +170,20 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_success(template_argument, success_handler_function);
 
     type.name("type");
-    type = identifier_path >> *type_postfix_operator;
+    type = basic_type >> *type_postfix_operator;
     on_error<fail>(type, error_handler_function);
     on_success(type, success_handler_function);
+
+    basic_type.name("basic type");
+    basic_type = identifier_path | function_type;
+    on_error<fail>(basic_type, error_handler_function);
+    on_success(basic_type, success_handler_function);
+
+    function_type.name("function type");
+    function_type = tok.func >> omit[tok.l_braces] > omit[tok.l_bracket] > -(type % tok.comma) >
+                    tok.r_bracket > tok.arrow > type > omit[tok.r_braces];
+    on_error<fail>(function_type, error_handler_function);
+    on_success(function_type, success_handler_function);
 
     type_postfix_operator.name("type postfix operator");
     type_postfix_operator =

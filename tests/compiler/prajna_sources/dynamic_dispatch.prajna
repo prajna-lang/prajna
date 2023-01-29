@@ -1,9 +1,3 @@
-
-// struct dynamic<Type_ : template>{
-//     ptr: undef*;
-//     vtable: array
-// }
-
 func sayHi(){
     "Hi\n".print();
 }
@@ -15,12 +9,10 @@ func sayHello(){
 
 @test
 func testMain(){
-    var f0 = sayHi;
-    var f1 = sayHello;
-    // var b = a;
-    var t = cast<undef *>(sayHi);
-    // var b = *f1;
-    // f1 = f0;
+    var vtable: func{()->void}*[2];
+    vtable[0] = sayHi;
+    vtable[1] = sayHello;
 
-    f1();
+    vtable[0]();
+    vtable[1]();
 }

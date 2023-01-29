@@ -66,17 +66,10 @@ template <typename Iterator_>
 struct SuccessHandler {
     SuccessHandler(std::shared_ptr<Logger> logger) { this->logger = logger; }
 
-    template <typename Ast_>
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
-                    Ast_& attribute) const {
-        attribute.first_position = getFirstIteratorPosition(first_iter);
-        attribute.last_position = getLastIteratorPosition(first_iter, last_iter);
-    }
-
-    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
-                    ast::Annotations& attribute) const {
-        attribute.first_position = getFirstIteratorPosition(first_iter);
-        attribute.last_position = getLastIteratorPosition(first_iter, last_iter);
+                    ast::SourceLocation& ast_source_location) const {
+        ast_source_location.first_position = getFirstIteratorPosition(first_iter);
+        ast_source_location.last_position = getLastIteratorPosition(first_iter, last_iter);
     }
 
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
@@ -96,6 +89,20 @@ struct SuccessHandler {
         boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x); },
                              ast_statement);
     }
+
+    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
+                    ast::BasicType& ast_basic_type) const {
+        boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x); },
+                             ast_basic_type);
+    }
+
+    // template <typename _T>
+    // void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
+    //                 _T& ast_t) const {
+    //     boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x);
+    //     },
+    //                          ast_t);
+    // }
 
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     ast::PostfixTypeOperator& ast_postfix_type_operator) const {

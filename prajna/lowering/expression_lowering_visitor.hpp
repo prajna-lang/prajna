@@ -489,12 +489,30 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
-        auto symbol_type = this->applyIdentifierPath(ast_postfix_type.base_type);
+        auto ir_type = boost::apply_visitor(
+            overloaded{[](auto x) -> std::shared_ptr<ir::Type> {
+                           PRAJNA_UNREACHABLE;
+                           return nullptr;
+                       },
+                       [=](ast::IdentifierPath ast_identifier_path) -> std::shared_ptr<ir::Type> {
+                           auto symbol_type = this->applyIdentifierPath(ast_identifier_path);
 
-        if (!symbolIs<ir::Type>(symbol_type)) {
-            logger->error("the symbol is not a type", ast_postfix_type);
-        }
-        auto ir_type = symbolGet<ir::Type>(symbol_type);
+                           if (!symbolIs<ir::Type>(symbol_type)) {
+                               logger->error("the symbol is not a type", ast_postfix_type);
+                           }
+                           return symbolGet<ir::Type>(symbol_type);
+                       },
+                       [=](ast::FunctionType ast_function_type) -> std::shared_ptr<ir::Type> {
+                           auto ir_return_type = this->applyType(ast_function_type.return_type);
+                           std::vector<std::shared_ptr<ir::Type>> ir_argument_types(
+                               ast_function_type.argument_types.size());
+                           std::transform(
+                               RANGE(ast_function_type.argument_types), ir_argument_types.begin(),
+                               [=](ast::Type ast_type) { return this->applyType(ast_type); });
+
+                           return ir::FunctionType::create(ir_return_type, ir_argument_types);
+                       }},
+            ast_postfix_type.base_type);
 
         // @note 有数组类型后需要再处理一下
         for (auto postfix_operator : ast_postfix_type.postfix_type_operators) {
@@ -583,8 +601,14 @@ class ExpressionLoweringVisitor {
                                         },
                                         [=](ast::Type ast_type) -> Symbol {
                                             if (ast_type.postfix_type_operators.size() == 0) {
+                                                // 存在问题, 需要进一步修复
+                                                PRAJNA_ASSERT(ast_type.base_type.type() ==
+                                                              typeid(ast::IdentifierPath));
+                                                auto ast_identifier_path =
+                                                    boost::get<ast::IdentifierPath>(
+                                                        ast_type.base_type);
                                                 return this->applyIdentifierPath(
-                                                    ast_type.base_type);
+                                                    ast_identifier_path);
                                             } else {
                                                 return this->applyType(ast_type);
                                             }

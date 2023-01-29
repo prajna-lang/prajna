@@ -143,8 +143,13 @@ struct Export : SourceLocation {
 
 using PostfixTypeOperator = boost::variant<Operator, IntLiteral, Identifier>;
 
+struct FunctionType;
+
+// struct BaseType
+typedef boost::variant<Blank, IdentifierPath, boost::recursive_wrapper<FunctionType>> BasicType;
+
 struct Type : SourceLocation {
-    IdentifierPath base_type;
+    BasicType base_type;
     std::vector<PostfixTypeOperator> postfix_type_operators;
 };
 
@@ -390,6 +395,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Interface, name, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Implement, interface, type, template_paramters, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, argument_types, return_type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifier_path, as)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Export, identifier)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)

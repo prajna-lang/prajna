@@ -81,8 +81,8 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     kernel_function_call.name("kernel function call");
     kernel_function_call =
         access_call_index_expr >>
-        -(tok.left_angle_brackets > expr > tok.comma > expr > tok.right_angle_brackets >
-          omit[tok.l_bracket] > arguments > tok.r_bracket);
+        -(tok.left_angle_brackets3 > expr > tok.comma > expr > tok.right_angle_brackets3 >
+          omit[tok.left_bracket] > arguments > tok.right_bracket);
     on_error<fail>(kernel_function_call, error_handler_function);
     on_success(kernel_function_call, success_handler_function);
 
@@ -97,12 +97,12 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_success(member_access, success_handler_function);
 
     call.name("call");
-    call = tok.l_bracket > arguments > tok.r_bracket;
+    call = tok.left_bracket > arguments > tok.right_bracket;
     on_error<fail>(call, error_handler_function);
     on_success(call, success_handler_function);
 
     index.name("index");
-    index = tok.l_s_bracket > arguments > tok.r_s_bracket;
+    index = tok.left_square_bracket > arguments > tok.right_square_bracket;
     on_error<fail>(index, error_handler_function);
     on_success(index, success_handler_function);
 
@@ -113,23 +113,23 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
 
     primary_expr.name("primary experssion");
     primary_expr = literal | tok.this_ | identifier_path | cast | sizeof_ | array |
-                   omit[tok.l_bracket] > expr > omit[tok.r_bracket];
+                   omit[tok.left_bracket] > expr > omit[tok.right_bracket];
     on_error<fail>(primary_expr, error_handler_function);
     on_success(primary_expr, success_handler_function);
 
     array.name("array");
-    array = omit[tok.l_s_bracket] > (expr % tok.comma) > tok.r_s_bracket;
+    array = omit[tok.left_square_bracket] > (expr % tok.comma) > tok.right_square_bracket;
     on_error<fail>(array, error_handler_function);
     on_success(array, success_handler_function);
 
     cast.name("cast");
-    cast = tok.cast >> omit[tok.less] >> type >> omit[tok.greater] >> omit[tok.l_bracket] > expr >
-           omit[tok.r_bracket];
+    cast = tok.cast >> omit[tok.less] >> type >> omit[tok.greater] >> omit[tok.left_bracket] >
+           expr > omit[tok.right_bracket];
     on_error<fail>(cast, error_handler_function);
     on_success(cast, success_handler_function);
 
     sizeof_.name("sizeof");
-    sizeof_ = tok.sizeof_ > omit[tok.l_bracket] > type > tok.r_bracket;
+    sizeof_ = tok.sizeof_ > omit[tok.left_bracket] > type > tok.right_bracket;
     on_error<fail>(sizeof_, error_handler_function);
     on_success(sizeof_, success_handler_function);
 
@@ -180,15 +180,15 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_success(basic_type, success_handler_function);
 
     function_type.name("function type");
-    function_type = tok.func >> omit[tok.l_braces] > omit[tok.l_bracket] > -(type % tok.comma) >
-                    tok.r_bracket > tok.arrow > type > omit[tok.r_braces];
+    function_type = tok.func >> omit[tok.left_braces] > omit[tok.left_bracket] >
+                    -(type % tok.comma) > tok.right_bracket > tok.arrow > type > omit[tok.r_braces];
     on_error<fail>(function_type, error_handler_function);
     on_success(function_type, success_handler_function);
 
     type_postfix_operator.name("type postfix operator");
     type_postfix_operator =
-        as<ast::PostfixTypeOperator>()[(omit[tok.l_s_bracket] > type_array_postfix_operator >
-                                        tok.r_s_bracket)] |
+        as<ast::PostfixTypeOperator>()[(omit[tok.left_square_bracket] >
+                                        type_array_postfix_operator > tok.right_square_bracket)] |
         tok.times;
     on_error<fail>(type_postfix_operator, error_handler_function);
     on_success(type_postfix_operator, success_handler_function);

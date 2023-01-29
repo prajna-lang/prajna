@@ -50,7 +50,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(semicolon_statement, success_handler_function);
 
     block.name("block");
-    block = (tok.l_braces > *statement > tok.r_braces);
+    block = (tok.left_braces > *statement > tok.r_braces);
     on_error<fail>(block, error_handler_function);
     on_success(block, success_handler_function);
 
@@ -62,7 +62,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     pragma.name("pragma");
     pragma = tok.number_sign > identifier >
-             -(omit[tok.l_bracket] > -(expr.string_literal % tok.comma) > tok.r_bracket);
+             -(omit[tok.left_bracket] > -(expr.string_literal % tok.comma) > tok.right_bracket);
     on_error<fail>(pragma, error_handler_function);
     on_success(pragma, success_handler_function);
 
@@ -120,7 +120,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(for_, success_handler_function);
 
     struct_.name("struct");
-    struct_ = annotations >> tok.struct_ > identifier > -template_parameters > tok.l_braces >
+    struct_ = annotations >> tok.struct_ > identifier > -template_parameters > tok.left_braces >
               as<std::vector<prajna::ast::Field>>()[*field] > tok.r_braces;
     on_error<fail>(struct_, error_handler_function);
     on_success(struct_, success_handler_function);
@@ -131,13 +131,13 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(field, success_handler_function);
 
     interface.name("interface");
-    interface = tok.interface > identifier > tok.l_braces > *(function) > tok.r_braces;
+    interface = tok.interface > identifier > tok.left_braces > *(function) > tok.r_braces;
     on_error<fail>(interface, error_handler_function);
     on_success(interface, success_handler_function);
 
     implement_.name("implement");
     implement_ = tok.implement > -(expr.identifier_path >> tok.for_) > type > -template_parameters >
-                 tok.l_braces > *(function) > tok.r_braces;
+                 tok.left_braces > *(function) > tok.r_braces;
     on_error<fail>(implement_, error_handler_function);
     on_success(implement_, success_handler_function);
 
@@ -167,7 +167,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(function_implement, success_handler_function);
 
     parameters.name("parameters");
-    parameters = omit[tok.l_bracket] > -(parameter % tok.comma) > tok.r_bracket;
+    parameters = omit[tok.left_bracket] > -(parameter % tok.comma) > tok.right_bracket;
     on_error<fail>(parameters, error_handler_function);
     on_success(parameters, success_handler_function);
 
@@ -194,7 +194,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     annotation.name("annotation");
     annotation = tok.at > identifier >
-                 -(omit[tok.l_bracket] > -(expr.string_literal % tok.comma) > tok.r_bracket);
+                 -(omit[tok.left_bracket] > -(expr.string_literal % tok.comma) > tok.right_bracket);
     on_error<fail>(annotation, error_handler_function);
     on_success(annotation, success_handler_function);
 

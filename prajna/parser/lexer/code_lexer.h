@@ -19,8 +19,8 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<ast::Operator> period;    // .
     lex::token_def<ast::Operator> backslash; /* \ */
 
-    lex::token_def<lex::omit> left_angle_brackets;   // <<<
-    lex::token_def<lex::omit> right_angle_brackets;  // >>>
+    lex::token_def<lex::omit> left_angle_brackets3;   // <<<
+    lex::token_def<lex::omit> right_angle_brackets3;  // >>>
 
     lex::token_def<ast::Operator> or_, and_, xor_, not_;  // logical
 
@@ -33,14 +33,14 @@ struct CodeLexer : lex::lexer<Lexer> {
 
     lex::token_def<ast::SourceLocation> assign;
 
-    lex::token_def<ast::Operator> l_bracket;    // left bracket
-    lex::token_def<lex::omit> r_bracket;        // right bracket
-    lex::token_def<ast::Operator> l_s_bracket;  // left square bracket
-    lex::token_def<lex::omit> r_s_bracket;      // right square bracket
-    lex::token_def<lex::omit> l_braces;         // left braces;
-    lex::token_def<lex::omit> r_braces;         // right braces;
-    lex::token_def<lex::omit> l_a_bracket;      // left angle bracket <;
-    lex::token_def<lex::omit> r_a_bracket;      // right angle bracket >;
+    lex::token_def<ast::Operator> left_bracket;         // left bracket
+    lex::token_def<lex::omit> right_bracket;            // right bracket
+    lex::token_def<ast::Operator> left_square_bracket;  // left square bracket
+    lex::token_def<lex::omit> right_square_bracket;     // right square bracket
+    lex::token_def<lex::omit> left_braces;              // left braces;
+    lex::token_def<lex::omit> r_braces;                 // right braces;
+    lex::token_def<lex::omit> l_a_bracket;              // left angle bracket <;
+    lex::token_def<lex::omit> r_a_bracket;              // right angle bracket >;
 
     lex::token_def<lex::omit> comma;      //,
     lex::token_def<lex::omit> colon;      //:

@@ -28,9 +28,9 @@ CodeLexer<Lexer>::CodeLexer() {
     period = '.';
     this->self += arrow | scope | period;
 
-    left_angle_brackets = "<<<";
-    right_angle_brackets = ">>>";
-    this->self += left_angle_brackets | right_angle_brackets;
+    left_angle_brackets3 = "<<<";
+    right_angle_brackets3 = ">>>";
+    this->self += left_angle_brackets3 | right_angle_brackets3;
 
     and_ = "&|and";
     or_ = "\\||or";
@@ -49,16 +49,16 @@ CodeLexer<Lexer>::CodeLexer() {
     this->self += assign;
 
     // signs
-    l_bracket = '(';
-    r_bracket = ')';
-    l_s_bracket = '[';
-    r_s_bracket = ']';
-    l_braces = '{';
+    left_bracket = '(';
+    right_bracket = ')';
+    left_square_bracket = '[';
+    right_square_bracket = ']';
+    left_braces = '{';
     r_braces = '}';
     l_a_bracket = '<';
     r_a_bracket = '>';
-    this->self += l_bracket | r_bracket | l_s_bracket | r_s_bracket | l_braces | r_braces |
-                  l_a_bracket | r_a_bracket;
+    this->self += left_bracket | right_bracket | left_square_bracket | right_square_bracket |
+                  left_braces | r_braces | l_a_bracket | r_a_bracket;
 
     comma = ',';
     colon = ':';

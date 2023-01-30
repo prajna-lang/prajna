@@ -601,18 +601,19 @@ class ExpressionLoweringVisitor {
                                             return nullptr;
                                         },
                                         [=](ast::Type ast_type) -> Symbol {
-                                            if (ast_type.postfix_type_operators.size() == 0) {
-                                                // 存在问题, 需要进一步修复
-                                                PRAJNA_ASSERT(ast_type.base_type.type() ==
-                                                              typeid(ast::IdentifierPath));
+                                            // 并不是所有模板参数都是ir::Type, 还有Rank_这类数字的,
+                                            // 后面可能还需要重构
+                                            if (ast_type.postfix_type_operators.size() == 0 &&
+                                                ast_type.base_type.type() ==
+                                                    typeid(ast::IdentifierPath)) {
                                                 auto ast_identifier_path =
                                                     boost::get<ast::IdentifierPath>(
                                                         ast_type.base_type);
                                                 return this->applyIdentifierPath(
                                                     ast_identifier_path);
-                                            } else {
-                                                return this->applyType(ast_type);
                                             }
+
+                                            return this->applyType(ast_type);
                                         },
                                         [=](ast::IntLiteral ast_int_literal) -> Symbol {
                                             return ir::ConstantInt::create(

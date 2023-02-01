@@ -27,7 +27,8 @@ inline bool verifyTree(std::shared_ptr<ir::Module> ir_module) {
                 auto ir_operand = ir_instruction->operand(i);
 
                 if (!(is<ir::Function>(ir_operand) or is<ir::GlobalVariable>(ir_operand) or
-                      is<ir::GlobalAlloca>(ir_operand))) {
+                      is<ir::GlobalAlloca>(ir_operand) or is<ir::Argument>(ir_operand))) {
+                    // 如果是While For等Block则直接放回, 其无法溯源到跟函数
                     if (ir_operand->getRootBlock()->instruction_with_index_list.size() > 0) {
                         continue;
                     }

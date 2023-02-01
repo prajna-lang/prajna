@@ -455,6 +455,11 @@ class Function : public Value {
         self->function_type = function_type;
         // @warning 事实上llvm::Function是一个指针类型
         self->type = PointerType::create(function_type);
+        std::transform(RANGE(function_type->argument_types), std::back_inserter(self->arguments),
+                       [](std::shared_ptr<Type> ir_argument_type) {
+                           return Argument::create(ir_argument_type);
+                       });
+
         self->tag = "Function";
         return self;
     }

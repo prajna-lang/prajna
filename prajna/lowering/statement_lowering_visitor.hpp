@@ -236,15 +236,12 @@ class StatementLoweringVisitor {
         size_t j = 0;
         if (ir_this_poiner_type) {
             // Argument也不会插入的block里
-            auto ir_this_pointer = ir_builder->create<ir::Argument>(ir_this_poiner_type);
-            ir_function->arguments.push_back(ir_this_pointer);
-            ir_builder->symbol_table->setWithAssigningName(ir_this_pointer, "this-pointer");
+            ir_builder->symbol_table->setWithAssigningName(ir_function->arguments[0],
+                                                           "this-pointer");
             ++j;
         }
         for (size_t i = 0; i < ast_function.declaration.parameters.size(); ++i, ++j) {
-            auto ir_argument_type = ir_function->function_type->argument_types[j];
-            auto ir_argument = ir_builder->create<ir::Argument>(ir_argument_type);
-            ir_function->arguments.push_back(ir_argument);
+            auto ir_argument = ir_function->arguments[j];
             ir_builder->setSymbolWithAssigningName(ir_argument,
                                                    ast_function.declaration.parameters[i].name);
         }
@@ -438,7 +435,6 @@ class StatementLoweringVisitor {
         ir_constructor->name = concatFullname(ir_struct_type->name, "constructor");
         ir_constructor->fullname = ir_constructor->name;
         ir_constructor->parent_module = ir_builder->module;
-        ir_constructor->arguments.resize(ir_constructor_type->argument_types.size());
 
         auto ir_block = ir::Block::create();
         ir_block->parent_function = ir_builder->current_function;
@@ -446,10 +442,6 @@ class StatementLoweringVisitor {
         ir_constructor->blocks.push_back(ir_block);
         ir_builder->pushBlock(ir_block);
 
-        for (size_t i = 0; i < ir_constructor->arguments.size(); ++i) {
-            ir_constructor->arguments[i] =
-                ir_builder->create<ir::Argument>(ir_constructor_type->argument_types[i]);
-        }
         ir_builder->module->functions.push_back(ir_constructor);
 
         auto ir_variable = ir_builder->create<ir::LocalVariable>(ir_struct_type);

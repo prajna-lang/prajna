@@ -206,16 +206,14 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
 
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> variables_dict;
     auto iter_captured_variable = ir_captured_variables_list.begin();
-    ir_kernel_function->arguments.resize(ir_argument_types.size());
-    auto ir_first = ir_builder->create<ir::Argument>(ir_argument_types[0]);
+    auto ir_first = ir_kernel_function->arguments[0];
     variables_dict[ir_gpu_for->first()] = ir_first;
     ir_kernel_function->arguments[0] = ir_first;
-    auto ir_last = ir_builder->create<ir::Argument>(ir_argument_types[1]);
+    auto ir_last = ir_kernel_function->arguments[1];
     variables_dict[ir_gpu_for->last()] = ir_last;
     ir_kernel_function->arguments[1] = ir_last;
     for (size_t i = 2; i < ir_argument_types.size(); ++i, ++iter_captured_variable) {
-        auto ir_argument = ir_builder->create<ir::Argument>(ir_argument_types[i]);
-        ir_kernel_function->arguments[i] = ir_argument;
+        auto ir_argument = ir_kernel_function->arguments[i];
         // 需要搞成临时变量, 这样才会原来的变量对应, 以便访问成员函数等
         variables_dict[*iter_captured_variable] = ir_builder->variableLikedNormalize(ir_argument);
     }

@@ -314,9 +314,6 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
                 auto ir_function = ir::Function::create(ir_callee->function_type);
                 ir_function->fullname = ir_callee->fullname;
                 ir_function->name = ir_callee->name;
-                for (auto ir_argument_type : ir_function->function_type->argument_types) {
-                    ir_function->arguments.push_back(ir::Argument::create(ir_argument_type));
-                }
                 ir_function->parent_module = ir_module;
                 ir_module->functions.push_front(ir_function);
 

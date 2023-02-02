@@ -20,3 +20,38 @@ func testMain(){
     var a = 123;
     a.print();
 }
+
+interface Say{
+    func say();
+}
+
+struct SayHi{}
+
+implement Say for SayHi{
+    func say() {
+        "Hi\n".print();
+    }
+}
+
+struct SayHello{}
+
+implement Say for SayHello{
+    func say(){
+        "Hello\n".print();
+    }
+}
+
+@test
+func testDynamicDispatch(){
+    var say_hi = allocator<SayHi>::allocate(1);
+    (*say_hi).say();
+
+    var say = dynamic_cast<Say>(say_hi);
+    say.say();
+
+    var say_hello = allocator<SayHello>::allocate(1);
+    (*say_hello).say();
+
+    say = dynamic_cast<Say>(say_hello);
+    say.say();
+}

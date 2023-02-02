@@ -37,9 +37,9 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
     auto ir_access_properties = utility::getValuesInModule<ir::AccessProperty>(ir_module);
     for (auto ir_access_property : ir_access_properties) {
         auto ir_block = ir_access_property->parent_block;
-        lowering::IrBuilder ir_builder;
-        ir_builder.current_block = ir_block;
-        ir_builder.inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
+        auto ir_builder = lowering::IrBuilder::create();
+        ir_builder->current_block = ir_block;
+        ir_builder->inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
 
         auto instructions_with_index_set_copy = ir_access_property->instruction_with_index_list;
 
@@ -54,14 +54,14 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
                 auto ir_arguments = ir_access_property->arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
                 ir_arguments.push_back(ir_write_property->value());
-                auto ir_setter_call = ir_builder.create<ir::Call>(
+                auto ir_setter_call = ir_builder->create<ir::Call>(
                     ir_access_property->property->setter_function, ir_arguments);
                 utility::removeFromParent(ir_write_property);
                 ir_write_property->finalize();
             } else {
                 auto ir_arguments = ir_access_property->arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
-                auto ir_getter_call = ir_builder.create<ir::Call>(
+                auto ir_getter_call = ir_builder->create<ir::Call>(
                     ir_access_property->property->getter_function, ir_arguments);
                 ir_inst->operand(op_idx, ir_getter_call);
             }
@@ -70,7 +70,7 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
         if (instructions_with_index_set_copy.empty()) {
             auto ir_arguments = ir_access_property->arguments();
             ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
-            auto ir_getter_call = ir_builder.create<ir::Call>(
+            auto ir_getter_call = ir_builder->create<ir::Call>(
                 ir_access_property->property->getter_function, ir_arguments);
         }
 
@@ -99,24 +99,24 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             // auto ir_arguments = ir_kernel_function_call->arguments();
             auto ir_block = ir_kernel_function_call->parent_block;
 
-            lowering::IrBuilder ir_builder;
-            ir_builder.current_block = ir_block;
-            ir_builder.inserter_iterator =
+            auto ir_builder = lowering::IrBuilder::create();
+            ir_builder->current_block = ir_block;
+            ir_builder->inserter_iterator =
                 std::find(RANGE(ir_block->values), ir_kernel_function_call);
 
             // 构建::cuda::launchKernel的逻辑
-            auto ir_kernel_arguments_address_array_i8ptr = ir_builder.create<ir::LocalVariable>(
+            auto ir_kernel_arguments_address_array_i8ptr = ir_builder->create<ir::LocalVariable>(
                 ir::ArrayType::create(ir::PointerType::create(ir::IntType::create(8, true)),
                                       ir_kernel_function_call->argumentSize()));
             for (size_t i = 0; i < ir_kernel_function_call->argumentSize(); ++i) {
                 auto ir_argument = ir_kernel_function_call->argument(i);
-                auto ir_kernel_argument_address_i8ptr = ir_builder.create<ir::BitCast>(
-                    ir_builder.create<ir::GetAddressOfVariableLiked>(
-                        ir_builder.variableLikedNormalize(ir_argument)),
+                auto ir_kernel_argument_address_i8ptr = ir_builder->create<ir::BitCast>(
+                    ir_builder->create<ir::GetAddressOfVariableLiked>(
+                        ir_builder->variableLikedNormalize(ir_argument)),
                     ir::PointerType::create(ir::IntType::create(8, true)));
-                auto ir_array_index = ir_builder.create<ir::IndexArray>(
-                    ir_kernel_arguments_address_array_i8ptr, ir_builder.getIndexConstant(i));
-                auto ir_array_index_write = ir_builder.create<ir::WriteVariableLiked>(
+                auto ir_array_index = ir_builder->create<ir::IndexArray>(
+                    ir_kernel_arguments_address_array_i8ptr, ir_builder->getIndexConstant(i));
+                auto ir_array_index_write = ir_builder->create<ir::WriteVariableLiked>(
                     ir_kernel_argument_address_i8ptr, ir_array_index);
             }
 
@@ -126,17 +126,17 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
                     ->get("launchKernel"));
             PRAJNA_ASSERT(ir_launch_function);
             std::vector<std::shared_ptr<ir::Value>> ir_arguments(4);
-            ir_arguments[0] = ir_builder.create<ir::BitCast>(
+            ir_arguments[0] = ir_builder->create<ir::BitCast>(
                 ir_kernel_function, ir::PointerType::create(ir::IntType::create(8, true)));
             ir_arguments[1] = ir_grid_shape;
             ir_arguments[2] = ir_block_shape;
-            auto ir_array_index0 = ir_builder.create<ir::IndexArray>(
-                ir_kernel_arguments_address_array_i8ptr, ir_builder.getIndexConstant(0));
-            auto ir_array_address = ir_builder.create<ir::BitCast>(
-                ir_builder.create<ir::GetAddressOfVariableLiked>(ir_array_index0),
+            auto ir_array_index0 = ir_builder->create<ir::IndexArray>(
+                ir_kernel_arguments_address_array_i8ptr, ir_builder->getIndexConstant(0));
+            auto ir_array_address = ir_builder->create<ir::BitCast>(
+                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_array_index0),
                 ir::PointerType::create(ir::PointerType::create(ir::IntType::create(8, true))));
             ir_arguments[3] = ir_array_address;
-            ir_builder.create<ir::Call>(ir_launch_function, ir_arguments);
+            ir_builder->create<ir::Call>(ir_launch_function, ir_arguments);
 
             utility::removeFromParent(ir_kernel_function_call);
             ir_kernel_function_call->finalize();
@@ -334,7 +334,7 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
     std::shared_ptr<ir::Module> ir_module) {
     auto ir_fors = utility::getValuesInModule<ir::For>(ir_module);
     for (auto ir_for : ir_fors) {
-        auto ir_builder = std::make_shared<lowering::IrBuilder>();
+        auto ir_builder = lowering::IrBuilder::create();
         ir_builder->symbol_table = ir_module->symbol_table;
         // 不是数组索引的for, 不做处理
         if (not ir_builder->isArrayIndexType(ir_for->index()->type)) continue;

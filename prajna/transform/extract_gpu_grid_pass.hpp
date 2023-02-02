@@ -200,7 +200,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     ir_block->parent_function = ir_kernel_function;
     ir_kernel_function->blocks.push_back(ir_block);
 
-    auto ir_builder = std::make_shared<lowering::IrBuilder>();
+    auto ir_builder = lowering::IrBuilder::create();
     ir_builder->current_block = ir_block;
     ir_builder->inserter_iterator = ir_block->values.end();
 
@@ -282,7 +282,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         auto ir_kernel_while_loop_block =
             cast<ir::Block>(ir_kernel_while->loopBlock()->values.front());
         PRAJNA_ASSERT(ir_kernel_while_loop_block);
-        auto ir_while_builder = std::make_shared<lowering::IrBuilder>();
+        auto ir_while_builder = lowering::IrBuilder::create();
         ir_while_builder->current_block = ir_kernel_while_loop_block;
         ir_while_builder->inserter_iterator = ir_kernel_while_loop_block->values.begin();
         for (auto ir_value : ir_gpu_for->loopBlock()->values) {
@@ -312,7 +312,7 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
 
         auto ir_gpu_parent_block = ir_gpu_for->parent_block;
         auto iter_gpu_for = std::find(RANGE(ir_gpu_parent_block->values), ir_gpu_for);
-        auto ir_builder = std::make_shared<lowering::IrBuilder>();
+        auto ir_builder = lowering::IrBuilder::create();
         ir_builder->current_block = ir_gpu_parent_block;
         ir_builder->inserter_iterator = iter_gpu_for;
         ir_builder->symbol_table = ir_module->symbol_table;

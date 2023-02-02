@@ -834,6 +834,35 @@ class ExpressionLoweringVisitor {
         return ir_builder->getIndexConstant(ir_type->bytes);
     }
 
+    std::shared_ptr<ir::Value> operator()(ast::DynamicCast ast_dynamic_cast) {
+        auto ir_interface_prototype = symbolGet<ir::InterfacePrototype>(
+            this->applyIdentifierPath(ast_dynamic_cast.identifier_path));
+        if (!ir_interface_prototype) {
+            logger->error("not a valid interface", ast_dynamic_cast.identifier_path);
+        }
+
+        auto ir_pointer = (*this)(ast_dynamic_cast.pointer);
+        if (!is<ir::PointerType>(ir_pointer->type)) {
+            logger->error("not a pointer", ast_dynamic_cast.pointer);
+        }
+        auto ir_pointer_type = cast<ir::PointerType>(ir_pointer->type);
+        if (!ir_pointer_type) {
+            logger->error("dynamic_cast operand type must be a poniter type",
+                          ast_dynamic_cast.pointer);
+        }
+        auto iter_interface =
+            std::find_if(RANGE(ir_pointer_type->value_type->interfaces),
+                         [=](auto x) { return x.second->prototype == ir_interface_prototype; });
+        auto ir_interface = iter_interface->second;
+        if (!ir_interface) {
+            logger->error(fmt::format("the interface {} is not implemented",
+                                      ir_interface_prototype->fullname),
+                          ast_dynamic_cast.pointer);
+        }
+        std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_pointer};
+        return ir_builder->create<ir::Call>(ir_interface->dynamic_type_creator, ir_arguments);
+    }
+
    private:
     std::shared_ptr<IrBuilder> ir_builder;
     std::shared_ptr<Logger> logger;

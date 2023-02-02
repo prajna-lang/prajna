@@ -36,6 +36,7 @@ struct PrefixCall;
 struct Array;
 struct Template;
 struct TemplateInstance;
+struct DynamicCast;
 /// @note  operator const char*() const 函数在boost::spirit的debug node的模式下是需要的,
 /// 但用处不大故直接删除了
 
@@ -169,7 +170,8 @@ typedef boost::variant<
     IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
     boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
     boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Cast>,
-    boost::recursive_wrapper<Array>, SizeOf, boost::recursive_wrapper<KernelFunctionCall>>
+    boost::recursive_wrapper<Array>, SizeOf, boost::recursive_wrapper<KernelFunctionCall>,
+    boost::recursive_wrapper<DynamicCast>>
     Operand;
 
 struct Unary : SourceLocation {
@@ -223,7 +225,7 @@ struct While;
 struct For;
 struct Return;
 struct Struct;
-struct Interface;
+struct InterfacePrototype;
 struct Implement;
 struct Class;
 struct FunctionHeader;
@@ -263,7 +265,7 @@ typedef boost::variant<
     Expression, boost::recursive_wrapper<If>, boost::recursive_wrapper<While>,
     boost::recursive_wrapper<For>, Break, Continue, boost::recursive_wrapper<Function>,
     boost::recursive_wrapper<Return>, boost::recursive_wrapper<Struct>,
-    boost::recursive_wrapper<Interface>, boost::recursive_wrapper<Implement>,
+    boost::recursive_wrapper<InterfacePrototype>, boost::recursive_wrapper<Implement>,
     boost::recursive_wrapper<Template>, boost::recursive_wrapper<TemplateInstance>, Pragma>
     Statement;
 
@@ -331,7 +333,7 @@ struct Struct : SourceLocation {
     std::vector<Field> fields;
 };
 
-struct Interface : SourceLocation {
+struct InterfacePrototype : SourceLocation {
     Identifier name;
     // 函数声明也采用Function, 但其没有实现
     std::vector<Function> functions;
@@ -366,6 +368,11 @@ struct KernelFunctionCall : SourceLocation {
     boost::optional<KernelFunctionCallOperation> operation;
 };
 
+struct DynamicCast : SourceLocation {
+    IdentifierPath identifier_path;
+    Expression pointer;
+};
+
 }  // namespace prajna::ast
 
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Block, statements)
@@ -391,7 +398,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Template, name, template_parameters, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Interface, name, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, name, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Implement, interface, type, template_paramters, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
@@ -405,5 +412,6 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, 
                           arguments)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCall, kernel_function, operation)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Array, values)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::DynamicCast, identifier_path, pointer)
 
 BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotations, statement)

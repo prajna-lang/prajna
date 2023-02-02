@@ -92,23 +92,23 @@ class LlvmCodegen {
             std::vector<llvm::Type *> llvm_argument_types(ir_function_type->argument_types.size());
             std::transform(ir_function_type->argument_types.begin(),
                            ir_function_type->argument_types.end(), llvm_argument_types.begin(),
-                           [](std::shared_ptr<ir::Type> ir_type) {
-                               PRAJNA_ASSERT(ir_type->llvm_type);
+                           [=](std::shared_ptr<ir::Type> ir_type) {
+                               this->emitType(ir_type);
                                return ir_type->llvm_type;
                            });
-            PRAJNA_ASSERT(ir_function_type->return_type->llvm_type);
+            this->emitType(ir_function_type->return_type);
             ir_function_type->llvm_type = llvm::FunctionType::get(
                 ir_function_type->return_type->llvm_type, llvm_argument_types, false);
             return;
         }
         if (auto ir_pointer_type = cast<ir::PointerType>(ir_type)) {
-            PRAJNA_ASSERT(ir_pointer_type->value_type->llvm_type);
+            this->emitType(ir_pointer_type->value_type);
             ir_pointer_type->llvm_type =
                 llvm::PointerType::get(ir_pointer_type->value_type->llvm_type, 0);
             return;
         }
         if (auto ir_array_type = cast<ir::ArrayType>(ir_type)) {
-            PRAJNA_ASSERT(ir_array_type->value_type->llvm_type);
+            this->emitType(ir_array_type->value_type);
             ir_array_type->llvm_type =
                 llvm::ArrayType::get(ir_array_type->value_type->llvm_type, ir_array_type->size);
             return;
@@ -120,10 +120,7 @@ class LlvmCodegen {
             std::vector<llvm::Type *> llvm_types(ir_struct_type->fields.size());
             std::transform(ir_struct_type->fields.begin(), ir_struct_type->fields.end(),
                            llvm_types.begin(), [=](std::shared_ptr<ir::Field> field) {
-                               if (!field->type->llvm_type) {
-                                   this->emitType(field->type);
-                               }
-                               PRAJNA_ASSERT(field->type->llvm_type);
+                               this->emitType(field->type);
                                return field->type->llvm_type;
                            });
             llvm_struct_type->setBody(llvm_types, true);

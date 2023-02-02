@@ -13,18 +13,25 @@ namespace prajna::lowering {
 /// @brief 负责IR在构建过程中一些琐事的工作, 和记录IR的当前Function, Block等,
 /// 并将创建的Value等插入其中
 class IrBuilder {
+   protected:
+    IrBuilder() = default;
+
    public:
-    IrBuilder(std::shared_ptr<SymbolTable> symbol_table, std::shared_ptr<ir::Module> ir_module,
-              std::shared_ptr<Logger> logger) {
-        current_block = nullptr;
-        // current_block = ir::Block::create();
-        current_function = nullptr;
-        this->module = ir_module;
-        this->symbol_table = symbol_table;
-        this->logger = logger;
+    static std::shared_ptr<IrBuilder> create(std::shared_ptr<SymbolTable> symbol_table,
+                                             std::shared_ptr<ir::Module> ir_module,
+                                             std::shared_ptr<Logger> logger) {
+        std::shared_ptr<IrBuilder> self(new IrBuilder);
+        self->current_block = nullptr;
+        self->current_function = nullptr;
+        self->module = ir_module;
+        self->symbol_table = symbol_table;
+        self->logger = logger;
+        return self;
     }
 
-    IrBuilder() : IrBuilder(nullptr, nullptr, nullptr) {}
+    static std::shared_ptr<IrBuilder> create() { return create(nullptr, nullptr, nullptr); }
+
+    // IrBuilder() : IrBuilder(nullptr, nullptr, nullptr) {}
 
     std::shared_ptr<ir::Type> getIndexType() { return ir::IntType::create(ir::ADDRESS_BITS, true); }
 
@@ -54,7 +61,6 @@ class IrBuilder {
             tmp_symbol_table = symbolGet<SymbolTable>(tmp_symbol_table->get(names[i]));
         }
 
-        PRAJNA_ASSERT(tmp_symbol_table);
         return tmp_symbol_table->get(names.back());
     }
 
@@ -127,8 +133,8 @@ class IrBuilder {
             int a = 0;
         }
         for (auto [interface_name, ir_interface] : ir_type->interfaces) {
-            for (auto [function_name, ir_function] : ir_interface->functions) {
-                if (function_name == member_name) {
+            for (auto ir_function : ir_interface->functions) {
+                if (ir_function->name == member_name) {
                     return ir_function;
                 }
             }
@@ -158,6 +164,15 @@ class IrBuilder {
         auto ir_member_function = ir_object->type->binary_functions[binary_operator];
         PRAJNA_ASSERT(ir_member_function);
         return this->create<ir::Call>(ir_member_function, ir_arguments);
+    }
+
+    std::shared_ptr<ir::AccessField> accessField(std::shared_ptr<ir::Value> ir_object,
+                                                 std::string field_name) {
+        auto ir_variable_liked = this->variableLikedNormalize(ir_object);
+        auto iter_field = std::find_if(RANGE(ir_object->type->fields),
+                                       [=](auto ir_field) { return ir_field->name == field_name; });
+        PRAJNA_ASSERT(iter_field != ir_object->type->fields.end());
+        return this->create<ir::AccessField>(ir_variable_liked, *iter_field);
     }
 
     void pushSymbolTable() {
@@ -214,6 +229,25 @@ class IrBuilder {
         }
 
         symbol_table->setWithAssigningName(symbol, ast_identifier);
+    }
+
+    std::shared_ptr<ir::Function> createFunction(
+        std::string name, std::shared_ptr<ir::FunctionType> ir_function_type) {
+        auto ir_function = ir::Function::create(ir_function_type);
+        this->current_function = ir_function;
+        this->symbol_table->setWithAssigningName(ir_function, name);
+        ir_function->parent_module = this->module;
+        this->module->functions.push_back(ir_function);
+        return ir_function;
+    }
+
+    std::shared_ptr<ir::Block> createBlock() {
+        auto ir_block = ir::Block::create();
+        this->current_function->blocks.push_back(ir_block);
+        ir_block->parent_function = this->current_function;
+        this->current_block = ir_block;
+        this->inserter_iterator = ir_block->values.end();
+        return ir_block;
     }
 
    public:

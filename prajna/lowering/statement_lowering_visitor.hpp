@@ -32,7 +32,7 @@ class StatementLoweringVisitor {
         std::shared_ptr<ir::Module> ir_module, std::shared_ptr<Compiler> compiler) {
         std::shared_ptr<StatementLoweringVisitor> self(new StatementLoweringVisitor);
         if (!ir_module) ir_module = ir::Module::create();
-        self->ir_builder = std::make_shared<IrBuilder>(symbol_table, ir_module, logger);
+        self->ir_builder = IrBuilder::create(symbol_table, ir_module, logger);
         self->logger = logger;
         self->compiler = compiler;
         self->expression_lowering_visitor =
@@ -464,7 +464,7 @@ class StatementLoweringVisitor {
         std::vector<std::shared_ptr<ir::Field>> ir_fields(ast_struct.fields.size());
         for (size_t i = 0; i < ast_struct.fields.size(); ++i) {
             ir_fields[i] = ir::Field::create(ast_struct.fields[i].name,
-                                             this->applyType(ast_struct.fields[i].type), i);
+                                             this->applyType(ast_struct.fields[i].type));
         }
 
         ir_struct_type->fields = ir_fields;
@@ -718,21 +718,24 @@ class StatementLoweringVisitor {
     void applyImplementWithOutTemplates(std::shared_ptr<ir::Type> ir_type,
                                         ast::Implement ast_implement) {
         ir_builder->pushSymbolTable();
+        ir_builder->symbol_table->name = ir_type->name;
 
-        auto ir_interface = ir::Interface::create();
-        std::shared_ptr<ir::Interface> ir_interface_prototype = nullptr;
+        ir_builder->pushSymbolTable();
+        auto ir_interface = ir::InterfaceImplement::create();
         if (ast_implement.interface) {
-            ir_interface_prototype = symbolGet<ir::Interface>(
+            auto ir_interface_prototype = symbolGet<ir::InterfacePrototype>(
                 expression_lowering_visitor->applyIdentifierPath(*ast_implement.interface));
             if (!ir_interface_prototype) {
                 logger->error("not invalid interface", *ast_implement.interface);
             }
             ir_interface->name = ir_interface_prototype->name;
+            ir_interface->prototype = ir_interface_prototype;
             ir_interface->fullname = concatFullname(ir_type->fullname, ir_interface->name);
             if (ir_type->interfaces.count(ir_interface->name)) {
                 logger->error("interface has implemented", *ast_implement.interface);
             }
             ir_type->interfaces[ir_interface->name] = ir_interface;
+
         } else {
             if (ir_type->interfaces.count("Self")) {
                 ir_interface = ir_type->interfaces["Self"];
@@ -746,6 +749,8 @@ class StatementLoweringVisitor {
             }
         }
 
+        ir_builder->symbol_table->name = ir_interface->name;
+
         for (auto ast_function : ast_implement.functions) {
             std::shared_ptr<ir::Function> ir_function = nullptr;
             if (std::none_of(RANGE(ast_function.declaration.annotations),
@@ -753,8 +758,40 @@ class StatementLoweringVisitor {
                 auto ir_this_pointer_type = ir::PointerType::create(ir_type);
                 auto symbol_function = (*this)(ast_function, ir_this_pointer_type);
                 ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
-                ir_interface->functions[ir_function->name] = ir_function;
+                ir_interface->functions.push_back(ir_function);
                 ir_function->fullname = concatFullname(ir_interface->fullname, ir_function->name);
+
+                if (ir_interface->name != "Self") {
+                    // 包装一个undef this pointer的函数
+                    std::vector<std::shared_ptr<ir::Type>>
+                        ir_undef_this_pointer_function_argument_types =
+                            ir_function->function_type->argument_types;
+                    ir_undef_this_pointer_function_argument_types[0] =
+                        ir::PointerType::create(ir::UndefType::create());
+
+                    auto ir_undef_this_pointer_function_type =
+                        ir::FunctionType::create(ir_undef_this_pointer_function_argument_types,
+                                                 ir_function->function_type->return_type);
+                    auto ir_undef_this_pointer_function = ir_builder->createFunction(
+                        ir_function->name + "/undef", ir_undef_this_pointer_function_type);
+
+                    ir_interface->undef_this_pointer_functions.insert(
+                        {ir_function, ir_undef_this_pointer_function});
+
+                    ir_undef_this_pointer_function->blocks.push_back(ir::Block::create());
+                    ir_undef_this_pointer_function->blocks.back()->parent_function =
+                        ir_undef_this_pointer_function;
+                    ir_builder->pushBlock(ir_undef_this_pointer_function->blocks.back());
+                    // 将undef *的this pointer转为本身的指针类型
+                    auto ir_this_pointer = ir_builder->create<ir::BitCast>(
+                        ir_undef_this_pointer_function->arguments[0],
+                        ir_function->arguments[0]->type);
+                    auto ir_arguments = ir_undef_this_pointer_function->arguments;
+                    ir_arguments[0] = ir_this_pointer;
+                    ir_builder->create<ir::Return>(
+                        ir_builder->create<ir::Call>(ir_function, ir_arguments));
+                    ir_builder->popBlock(ir_undef_this_pointer_function->blocks.back());
+                }
             } else {
                 ir_builder->pushSymbolTable();
                 ir_builder->symbol_table->name =
@@ -771,13 +808,48 @@ class StatementLoweringVisitor {
             this->processPropertyFunction(ir_type, ir_function, ast_function);
         }
 
+        // 创建接口动态类型生成函数
+        if (ir_interface->name != "Self") {
+            ir_interface->dynamic_type_creator = ir_builder->createFunction(
+                "dynamic_type_creator",
+                ir::FunctionType::create({ir::PointerType::create(ir_type)},
+                                         ir_interface->prototype->dynamic_type));
+
+            ir_interface->dynamic_type_creator->blocks.push_back(ir::Block::create());
+            ir_interface->dynamic_type_creator->blocks.back()->parent_function =
+                ir_interface->dynamic_type_creator;
+            ir_builder->pushBlock(ir_interface->dynamic_type_creator->blocks.back());
+
+            auto ir_self =
+                ir_builder->create<ir::LocalVariable>(ir_interface->prototype->dynamic_type);
+
+            ir_builder->create<ir::WriteVariableLiked>(
+                ir_builder->create<ir::BitCast>(ir_interface->dynamic_type_creator->arguments[0],
+                                                ir::PointerType::create(ir::UndefType::create())),
+                ir_builder->accessField(ir_self, "object_pointer"));
+            // auto object_pointer = ir_builder->create<ir::AccessField>(ir_self, )
+            for (auto ir_function : ir_interface->functions) {
+                // auto ir_field =
+                auto iter_field = std::find_if(
+                    RANGE(ir_interface->prototype->dynamic_type->fields),
+                    [=](auto ir_field) { return ir_field->name == ir_function->name + "/fp"; });
+                auto ir_function_pointer =
+                    ir_builder->create<ir::AccessField>(ir_self, *iter_field);
+                ir_builder->create<ir::WriteVariableLiked>(
+                    ir_interface->undef_this_pointer_functions[ir_function], ir_function_pointer);
+            }
+            ir_builder->create<ir::Return>(ir_self);
+
+            ir_builder->popBlock(ir_interface->dynamic_type_creator->blocks.back());
+        }
+
         for (auto [property_name, ir_property] : ir_type->properties) {
             if (not ir_property->getter_function) {
                 logger->error(fmt::format("the property { } getter must be defined", property_name),
                               ast_implement.type);
             }
         }
-
+        ir_builder->popSymbolTable();
         ir_builder->popSymbolTable();
     }
 
@@ -858,9 +930,6 @@ class StatementLoweringVisitor {
                 templates_symbol_table, logger, ir_module, nullptr);
 
             (*statement_lowering_visitor)(ast_template.statements);
-            // auto ir_type = template_struct->struct_type_instance_dict[symbol_template_arguments];
-            // statement_lowering_visitor->applyImplementWithOutTemplates(ir_type,
-            //                                                                  ast_implement);
 
             return nullptr;
         };
@@ -921,21 +990,83 @@ class StatementLoweringVisitor {
         return nullptr;
     }
 
-    Symbol operator()(ast::Interface ast_interface) {
-        auto ir_interface = ir::Interface::create();
+    Symbol operator()(ast::InterfacePrototype ast_interface_prototype) {
+        auto ir_interface_prototype = ir::InterfacePrototype::create();
+        ir_builder->setSymbolWithAssigningName(ir_interface_prototype,
+                                               ast_interface_prototype.name);
 
-        for (auto ast_function_declaration : ast_interface.functions) {
+        for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ir_builder->pushSymbolTable();
-            ir_builder->symbol_table->name = ast_interface.name;
+            ir_builder->symbol_table->name = ast_interface_prototype.name;
             auto symbol_function = (*this)(ast_function_declaration);
             auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
             ir_builder->popSymbolTable();
-            ir_interface->functions[ir_function->name] = ir_function;
+            ir_interface_prototype->functions.push_back(ir_function);
         }
 
-        ir_builder->setSymbolWithAssigningName(ir_interface, ast_interface.name);
+        ir_interface_prototype->dynamic_type = createInterfaceDynamicType(ir_interface_prototype);
 
-        return ir_interface;
+        return ir_interface_prototype;
+    }
+
+    std::shared_ptr<ir::Type> createInterfaceDynamicType(
+        std::shared_ptr<ir::InterfacePrototype> ir_interface_prototype) {
+        auto field_object_pointer =
+            ir::Field::create("object_pointer", ir::PointerType::create(ir::UndefType::create()));
+        // auto ir_vtable_filed = ir::Field::create("vtable", ir::PointerType)
+        auto ir_interface_struct = ir::StructType::create({field_object_pointer});
+        ir_interface_struct->name = ir_interface_prototype->name;
+        ir_interface_struct->fullname = ir_interface_prototype->fullname;
+
+        auto ir_interface = ir::InterfaceImplement::create();
+        for (auto ir_function : ir_interface_prototype->functions) {
+            // 不规则命名, 外部并不会使用到
+
+            auto ir_callee_argument_types = ir_function->function_type->argument_types;
+            ir_callee_argument_types.insert(ir_callee_argument_types.begin(),
+                                            field_object_pointer->type);
+            auto ir_callee_type = ir::FunctionType::create(ir_callee_argument_types,
+                                                           ir_function->function_type->return_type);
+            auto field_function_pointer = ir::Field::create(
+                ir_function->name + "/fp", ir::PointerType::create(ir_callee_type));
+            ir_interface_struct->fields.push_back(field_function_pointer);
+            ir_interface_struct->update();
+
+            auto ir_wrapped_function_argument_types = ir_function->function_type->argument_types;
+            // 必然有一个this pointer参数
+            // PRAJNA_ASSERT(ir_wrapped_function_argument_types.size() >= 1);
+            // 第一个参数应该是this pointer的类型, 修改一下
+            auto ir_this_pointer_type = ir::PointerType::create(ir_interface_struct);
+            ir_wrapped_function_argument_types.insert(ir_wrapped_function_argument_types.begin(),
+                                                      ir_this_pointer_type);
+            auto ir_wrapped_function_type = ir::FunctionType::create(
+                ir_wrapped_function_argument_types, ir_function->function_type->return_type);
+            auto ir_wrapped_function = ir_builder->createFunction(ir_function->name + "/wrapped",
+                                                                  ir_wrapped_function_type);
+            ir_wrapped_function->name = ir_function->name;
+            ir_wrapped_function->fullname = ir_function->fullname;
+
+            // 这里还是使用类型IrBuilder
+            ir_wrapped_function->blocks.push_back(ir::Block::create());
+            ir_wrapped_function->blocks.back()->parent_function = ir_wrapped_function;
+            ir_builder->current_block = ir_wrapped_function->blocks.back();
+            ir_builder->inserter_iterator = ir_builder->current_block->values.end();
+
+            auto ir_this_pointer = ir_wrapped_function->arguments[0];
+            // 这里叫函数指针, 函数的类型就是函数指针
+            auto ir_function_pointer = ir_builder->create<ir::AccessField>(
+                ir_builder->create<ir::DeferencePointer>(ir_this_pointer), field_function_pointer);
+            // 直接将外层函数的参数转发进去, 除了第一个参数需要调整一下
+            auto ir_arguments = ir_wrapped_function->arguments;
+            ir_arguments[0] = ir_builder->create<ir::AccessField>(
+                ir_builder->create<ir::DeferencePointer>(ir_this_pointer), field_object_pointer);
+            auto ir_function_call = ir_builder->create<ir::Call>(ir_function_pointer, ir_arguments);
+            ir_builder->create<ir::Return>(ir_function_call);
+
+            ir_interface->functions.push_back(ir_wrapped_function);
+        }
+        ir_interface_struct->interfaces["Self"] = ir_interface;
+        return ir_interface_struct;
     }
 
     Symbol operator()(ast::Blank) { return nullptr; }

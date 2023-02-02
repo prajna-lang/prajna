@@ -25,7 +25,7 @@ namespace {
 const std::string INSERTED_FLAG = "INSERTED_FLAG";
 
 std::shared_ptr<lowering::IrBuilder> makeIRbuilder() {
-    auto ir_builder = std::make_shared<lowering::IrBuilder>();
+    auto ir_builder = lowering::IrBuilder::create();
     ir_builder->create_callback = [](std::shared_ptr<ir::Value> ir_value) {
         ir_value->annotations[INSERTED_FLAG].push_back("none");
     };
@@ -178,7 +178,7 @@ inline std::shared_ptr<ir::Module> insertLocalVariableInitializeCallback(
 inline void insertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_block) {
     auto iter_return =
         std::find_if(RANGE(ir_block->values), [](auto x) { return is<ir::Return>(x); });
-    std::shared_ptr<lowering::IrBuilder> ir_builder(new lowering::IrBuilder);
+    auto ir_builder = lowering::IrBuilder::create();
     ir_builder->current_block = ir_block;
     ir_builder->inserter_iterator = iter_return;
 

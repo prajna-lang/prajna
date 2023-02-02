@@ -38,14 +38,14 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 PRAJNA_ASSERT(cast_operation_dict.count(annotation_operation));
                 auto cast_operation = cast_operation_dict[annotation_operation];
 
-                lowering::IrBuilder ir_builder;
-                ir_builder.current_block = ir_function->blocks.front();
-                ir_builder.inserter_iterator = ir_builder.current_block->values.end();
+                auto ir_builder = lowering::IrBuilder::create();
+                ir_builder->current_block = ir_function->blocks.front();
+                ir_builder->inserter_iterator = ir_builder->current_block->values.end();
 
-                auto ir_value = ir_builder.create<ir::LoadPointer>(ir_function->arguments[0]);
-                auto ir_cast_instruction = ir_builder.create<ir::CastInstruction>(
+                auto ir_value = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
+                auto ir_cast_instruction = ir_builder->create<ir::CastInstruction>(
                     cast_operation, ir_value, ir_function->function_type->return_type);
-                ir_builder.create<ir::Return>(ir_cast_instruction);
+                ir_builder->create<ir::Return>(ir_cast_instruction);
                 // 可以移除instruction的注解, 已经添加相应指令了
                 ir_function->annotations.erase("instruction");
                 ir_function->is_declaration = false;
@@ -90,15 +90,15 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 PRAJNA_ASSERT(compare_operation_dict.count(annotation_operation));
                 auto compare_operation = compare_operation_dict[annotation_operation];
 
-                lowering::IrBuilder ir_builder;
-                ir_builder.current_block = ir_function->blocks.front();
-                ir_builder.inserter_iterator = ir_builder.current_block->values.end();
+                auto ir_builder = lowering::IrBuilder::create();
+                ir_builder->current_block = ir_function->blocks.front();
+                ir_builder->inserter_iterator = ir_builder->current_block->values.end();
 
-                auto ir_operand0 = ir_builder.create<ir::LoadPointer>(ir_function->arguments[0]);
+                auto ir_operand0 = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
                 auto ir_operand1 = ir_function->arguments[1];
-                auto ir_compare_instruction = ir_builder.create<ir::CompareInstruction>(
+                auto ir_compare_instruction = ir_builder->create<ir::CompareInstruction>(
                     compare_operation, ir_operand0, ir_operand1);
-                ir_builder.create<ir::Return>(ir_compare_instruction);
+                ir_builder->create<ir::Return>(ir_compare_instruction);
                 // 可以移除instruction的注解, 已经添加相应指令了
                 ir_function->annotations.erase("instruction");
                 ir_function->is_declaration = false;
@@ -132,15 +132,15 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 };
                 PRAJNA_ASSERT(binary_operation_dict.count(annotation_operation));
                 auto binary_operation = binary_operation_dict[annotation_operation];
-                lowering::IrBuilder ir_builder;
-                ir_builder.current_block = ir_function->blocks.front();
-                ir_builder.inserter_iterator = ir_builder.current_block->values.end();
+                auto ir_builder = lowering::IrBuilder::create();
+                ir_builder->current_block = ir_function->blocks.front();
+                ir_builder->inserter_iterator = ir_builder->current_block->values.end();
 
-                auto ir_operand0 = ir_builder.create<ir::LoadPointer>(ir_function->arguments[0]);
+                auto ir_operand0 = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
                 auto ir_operand1 = ir_function->arguments[1];
-                auto ir_binary_operator_instruction = ir_builder.create<ir::BinaryOperator>(
+                auto ir_binary_operator_instruction = ir_builder->create<ir::BinaryOperator>(
                     binary_operation, ir_operand0, ir_operand1);
-                ir_builder.create<ir::Return>(ir_binary_operator_instruction);
+                ir_builder->create<ir::Return>(ir_binary_operator_instruction);
                 // 可以移除instruction的注解, 已经添加相应指令了
                 ir_function->annotations.erase("instruction");
                 ir_function->is_declaration = false;

@@ -113,7 +113,7 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
 
     primary_expr.name("primary experssion");
     primary_expr = literal | tok.this_ | identifier_path | cast | sizeof_ | array |
-                   omit[tok.left_bracket] > expr > omit[tok.right_bracket];
+                   omit[tok.left_bracket] > expr > omit[tok.right_bracket] | dynamic_cast_;
     on_error<fail>(primary_expr, error_handler_function);
     on_success(primary_expr, success_handler_function);
 
@@ -197,6 +197,12 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     type_array_postfix_operator = identifier | int_literal;
     on_error<fail>(type_array_postfix_operator, error_handler_function);
     on_success(type_array_postfix_operator, success_handler_function);
+
+    dynamic_cast_.name("dynamic cast");
+    dynamic_cast_ = tok.dynamic_cast_ > omit[tok.less] > identifier_path > omit[tok.greater] >
+                    omit[tok.left_bracket] > expr > tok.right_bracket;
+    on_error<fail>(dynamic_cast_, error_handler_function);
+    on_success(dynamic_cast_, success_handler_function);
 
     identifier.name("identifier");
     identifier = tok.identifier;

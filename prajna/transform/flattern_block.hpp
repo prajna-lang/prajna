@@ -116,7 +116,7 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
                 continue;
             }
 
-            auto ir_builder = std::make_shared<lowering::IrBuilder>();
+            auto ir_builder = lowering::IrBuilder::create();
             ir_builder->current_block = ir_block;
             ir_builder->inserter_iterator = iter;
 

@@ -47,3 +47,5 @@ implement ref_ptr<Type_: template> {
     }
 
 }
+
+export allocator;

@@ -72,6 +72,7 @@ struct ExpressionGrammer
     rule<ast::SizeOf> sizeof_;
     rule<ast::KernelFunctionCall> kernel_function_call;
     rule<ast::Operand> kernel_function_operand;
+    rule<ast::DynamicCast> dynamic_cast_;
 };
 
 }  // namespace prajna::parser::grammar

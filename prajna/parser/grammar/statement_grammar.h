@@ -59,7 +59,7 @@ struct StatementGrammer
     rule<ast::TemplateParameters> template_parameters;
     rule<ast::Struct> struct_;
 
-    rule<ast::Interface> interface;
+    rule<ast::InterfacePrototype> interface;
     rule<ast::Implement> implement_;
 
     rule<ast::Parameter> parameter;

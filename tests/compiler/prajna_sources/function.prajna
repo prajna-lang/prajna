@@ -19,6 +19,10 @@ func printHello(){
     "Hello\n".print();
 }
 
+func call(fun: func{()->void}*) {
+    fun();
+}
+
 @test // @test表示函数的注解, 会被当做测试函数而执行
 func testFunction(){
     testing::Assert(add(3, 7) == 10);
@@ -31,5 +35,8 @@ func testFunction(){
     testing::Assert(callRecursively(4) == 0);
     testing::Assert(callRecursively(5) == 0);
 
-    var function_type : func{()->void}*;
+
+    call(printHi);
+    call(printHello);
+
 }

@@ -24,7 +24,8 @@ const size_t ADDRESS_BITS = 64;
 
 class Function;
 struct Field;
-struct Interface;
+struct InterfacePrototype;
+struct InterfaceImplement;
 
 struct Property {
     std::shared_ptr<ir::Function> setter_function;
@@ -53,7 +54,8 @@ class Type : public Named {
     std::map<std::string, std::shared_ptr<Function>> unary_functions;
     std::map<std::string, std::shared_ptr<Function>> binary_functions;
     std::map<std::string, std::shared_ptr<Property>> properties;
-    std::map<std::string, std::shared_ptr<Interface>> interfaces;
+    std::map<std::string, std::shared_ptr<InterfaceImplement>> interfaces;
+    // fields必须有顺序关系, 故没有使用map
     std::vector<std::shared_ptr<Field>> fields;
 
     std::any template_arguments;
@@ -339,12 +341,11 @@ class Field {
     Field() = default;
 
    public:
-    static std::shared_ptr<Field> create(std::string name, std::shared_ptr<Type> type,
-                                         size_t index) {
+    static std::shared_ptr<Field> create(std::string name, std::shared_ptr<Type> type) {
         std::shared_ptr<Field> self(new Field);
         self->name = name;
         self->type = type;
-        self->index = index;
+        self->index = -1;
         return self;
     }
 
@@ -373,28 +374,52 @@ class StructType : public Type {
 
     void update() {
         this->bytes = 0;
-        for (auto field : fields) {
-            this->bytes += field->type->bytes;
+        for (size_t i = 0; i < this->fields.size(); ++i) {
+            this->fields[i]->index = i;
+            this->bytes += this->fields[i]->type->bytes;
         }
     }
 };
 
-class Interface : public Named {
+class InterfacePrototype : public Named {
    public:
-    Interface() = default;
+    InterfacePrototype() = default;
 
    public:
-    static std::shared_ptr<Interface> create() {
-        std::shared_ptr<Interface> self(new Interface);
+    static std::shared_ptr<InterfacePrototype> create() {
+        std::shared_ptr<InterfacePrototype> self(new InterfacePrototype);
 
-        self->name = "PleaseDefineInterfaceName";
-        self->fullname = "PleaseDefineInterafceFullname";
+        self->name = "PleaseDefineInterfacePrototypeName";
+        self->fullname = "PleaseDefineInterafcePrototypeFullname";
 
         return self;
     };
 
    public:
-    std::map<std::string, std::shared_ptr<Function>> functions;
+    std::list<std::shared_ptr<Function>> functions;
+    std::shared_ptr<Type> dynamic_type;
+};
+
+class InterfaceImplement : public Named {
+   public:
+    InterfaceImplement() = default;
+
+   public:
+    static std::shared_ptr<InterfaceImplement> create() {
+        std::shared_ptr<InterfaceImplement> self(new InterfaceImplement);
+
+        self->name = "PleaseDefineInterfaceImplementName";
+        self->fullname = "PleaseDefineInterfaceImplementFullname";
+
+        return self;
+    };
+
+   public:
+    std::list<std::shared_ptr<Function>> functions;
+    // 将第一个参数包装为undef指针, 以便用于动态分发
+    std::map<std::shared_ptr<Function>, std::shared_ptr<Function>> undef_this_pointer_functions;
+    std::shared_ptr<Function> dynamic_type_creator = nullptr;
+    std::shared_ptr<InterfacePrototype> prototype = nullptr;
 };
 
 }  // namespace prajna::ir

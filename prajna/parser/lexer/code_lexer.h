@@ -57,6 +57,8 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<lex::omit> instantiate;
     lex::token_def<lex::omit> special;
 
+    lex::token_def<lex::omit> dynamic_cast_;
+
     lex::token_def<lex::omit> import, as, export_;
 
     lex::token_def<lex::omit> if_, else_, while_, for_, in, to;

@@ -2,13 +2,6 @@ interface IPrint{
     func print();
 };
 
-// struct A{
-//     int a;
-// };
-
-// struct
-
-
 implement IPrint for i64{
     func print(){
         this.tostr().print();
@@ -25,7 +18,8 @@ interface Say{
     func say();
 }
 
-struct SayHi{}
+struct SayHi{
+}
 
 implement Say for SayHi{
     func say() {
@@ -46,7 +40,7 @@ func testDynamicDispatch(){
     var say_hi = allocator<SayHi>::allocate(1);
     (*say_hi).say();
 
-    var say = dynamic_cast<Say>(say_hi);
+    var say: Say = dynamic_cast<Say>(say_hi);
     say.say();
 
     var say_hello = allocator<SayHello>::allocate(1);
@@ -54,4 +48,10 @@ func testDynamicDispatch(){
 
     say = dynamic_cast<Say>(say_hello);
     say.say();
+
+    var say_hello2 = dynamic_cast<SayHello>(say);
+    testing::Assert(say_hello2.toi64() != 0);
+
+    var say_hi2 = dynamic_cast<SayHi>(say);
+    testing::Assert(say_hi2.toi64() == 0);
 }

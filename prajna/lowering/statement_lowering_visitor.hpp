@@ -1025,6 +1025,18 @@ class StatementLoweringVisitor {
                                             field_object_pointer->type);
             auto ir_callee_type = ir::FunctionType::create(ir_callee_argument_types,
                                                            ir_function->function_type->return_type);
+            // TODO 需要重构, 挪到合适的地方
+            auto ir_value_type = ir_callee_type;
+            auto symbol_ptr_tp = ir_builder->getSymbolByPath(true, {"ptr", "ptrTp"});
+            // 加载后再执行,
+            // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
+            // 但其却有相同的名字, 这里存在问题, 回头修复.
+            if (symbol_ptr_tp.which() != 0) {
+                auto ptr_tp = symbolGet<Template<std::nullptr_t>>(symbol_ptr_tp);
+                PRAJNA_ASSERT(ptr_tp);
+                ptr_tp->getInstance({ir_value_type}, ir_builder->module);
+            }
+
             auto field_function_pointer = ir::Field::create(
                 ir_function->name + "/fp", ir::PointerType::create(ir_callee_type));
             ir_interface_struct->fields.push_back(field_function_pointer);

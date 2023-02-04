@@ -446,8 +446,7 @@ class StatementLoweringVisitor {
 
         auto ir_variable = ir_builder->create<ir::LocalVariable>(ir_struct_type);
         for (size_t i = 0; i < ir_fields.size(); ++i) {
-            auto ir_field = ir_fields[i];
-            auto ir_access_field = ir_builder->create<ir::AccessField>(ir_variable, ir_field);
+            auto ir_access_field = ir_builder->create<ir::AccessField>(ir_variable, ir_fields[i]);
             ir_builder->create<ir::WriteVariableLiked>(ir_constructor->arguments[i],
                                                        ir_access_field);
         }
@@ -827,7 +826,6 @@ class StatementLoweringVisitor {
                 ir_builder->create<ir::BitCast>(ir_interface->dynamic_type_creator->arguments[0],
                                                 ir::PointerType::create(ir::UndefType::create())),
                 ir_builder->accessField(ir_self, "object_pointer"));
-            // auto object_pointer = ir_builder->create<ir::AccessField>(ir_self, )
             for (auto ir_function : ir_interface->functions) {
                 // auto ir_field =
                 auto iter_field = std::find_if(

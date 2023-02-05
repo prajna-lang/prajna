@@ -83,19 +83,26 @@ class Logger {
                             first_position.column, log_level, message);
         }
 
-        if (last_position.column - 1 > _code_lines[last_position.line - 1].size()) {
-            std::string spaces(
-                last_position.column - 1 - _code_lines[last_position.line - 1].size(), ' ');
-            _code_lines[last_position.line - 1].append(spaces);
+        std::vector<std::string> code_lines;
+        for (size_t i = first_position.line; i <= last_position.line; ++i) {
+            code_lines.push_back(_code_lines[i - 1]);
         }
-        _code_lines[last_position.line - 1].insert(last_position.column - 1, std::string(RESET));
+
+        if (last_position.column - 1 >
+            code_lines[last_position.line - first_position.line].size()) {
+            std::string spaces(last_position.column - 1 -
+                                   code_lines[last_position.line - first_position.line].size(),
+                               ' ');
+            code_lines[last_position.line - first_position.line].append(spaces);
+        }
+        code_lines[last_position.line - first_position.line].insert(last_position.column - 1,
+                                                                    std::string(RESET));
         // 不存在越界的情况
         PRAJNA_ASSERT(first_position.column - 1 >= 0);
-        _code_lines[first_position.line - 1].insert(first_position.column - 1, locator_ascii_color);
+        code_lines[0].insert(first_position.column - 1, locator_ascii_color);
         std::string code_region;
-        for (size_t i = first_position.line; i <= last_position.line; ++i) {
-            PRAJNA_ASSERT(i - 1 >= 0 and i - 1 < _code_lines.size());
-            code_region.append(_code_lines[i - 1]);
+        for (auto code_line : code_lines) {
+            code_region.append(code_line);
             code_region.append("\n");
         }
 
@@ -131,6 +138,12 @@ class Logger {
 
     void warning(std::string message, ast::Operand ast_operand) {
         boost::apply_visitor([=](auto x) { this->warning(message, x); }, ast_operand);
+    }
+
+    void note(ast::SourceLocation source_location) {
+        auto warning_prompt = fmt::format("{}", fmt::styled("note", fmt::fg(fmt::color::gray)));
+        this->log("", source_location.first_position, source_location.last_position, warning_prompt,
+                  std::string(""), false);
     }
 
    private:

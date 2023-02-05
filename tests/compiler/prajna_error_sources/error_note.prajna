@@ -1,0 +1,3 @@
+func test(){
+    var a:i64 = 3i32;
+}

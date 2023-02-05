@@ -1,3 +1,14 @@
+struct nullptr<T: template>{}
+
+implement nullptr<T: template>{
+    @static
+    func create()->T *{
+        var pointer: T*;
+        // @warning 注意不同位数平台可能产生问题,
+        *cast<i64 *>(&pointer) = 0;
+        return pointer;
+    }
+}
 
 template ptrTp<Type>{
     implement Type* {
@@ -14,18 +25,9 @@ template ptrTp<Type>{
             return this.toi64() != rhs.toi64();
         }
 
-    }
-}
-
-struct nullptr<T: template>{}
-
-implement nullptr<T: template>{
-    @static
-    func create()->T *{
-        var pointer: T*;
-        // @warning 注意不同位数平台可能产生问题,
-        *cast<i64 *>(&pointer) = 0;
-        return pointer;
+        func isNull()->bool{
+            return this == nullptr<Type>::create();
+        }
     }
 }
 

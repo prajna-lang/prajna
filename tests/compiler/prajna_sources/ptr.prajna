@@ -7,5 +7,6 @@ func testMain(){
 
     testing::Assert(p == nullptr<i64>::create());
     testing::Assert(p.toi64() == 0i64);
+    testing::Assert(p.isNull());
     // p.toi64().tostr().print();
 }

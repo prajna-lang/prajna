@@ -207,13 +207,25 @@ class StatementLoweringVisitor {
         }
 
         auto ir_function_type = ir::FunctionType::create(ir_argument_types, return_type);
-        auto ir_function = ir::Function::create(ir_function_type);
-        ir_function_type->function = ir_function;
-        ir_function->parent_module = ir_builder->module;
-        ir_builder->module->functions.push_back(ir_function);
 
-        // TODO interface里需要处理一下
-        ir_builder->setSymbolWithAssigningName(ir_function, ast_function_header.name);
+        // 如果已经声明过该函数
+        if (ir_builder->symbol_table->currentTableHas(ast_function_header.name)) {
+            auto ir_function_declaration = cast<ir::Function>(
+                symbolGet<ir::Value>(ir_builder->symbol_table->get(ast_function_header.name)));
+            if (ir_function_declaration->is_declaration) {
+                if (ir_function_type != ir_function_declaration->function_type) {
+                    logger->error("the declarated function type is not matched",
+                                  ast_function_header.name);
+                }
+
+                ir_function_declaration->annotations =
+                    this->applyAnnotations(ast_function_header.annotations);
+
+                return ir_function_declaration;
+            }
+        }
+
+        auto ir_function = ir_builder->createFunction(ast_function_header.name, ir_function_type);
         ir_function->annotations = this->applyAnnotations(ast_function_header.annotations);
 
         return ir_function;

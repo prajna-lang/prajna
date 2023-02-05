@@ -40,3 +40,8 @@ func testFunction(){
     call(printHello);
 
 }
+
+
+func declTest()->void;
+
+func declTest()->void{}

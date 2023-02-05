@@ -218,6 +218,8 @@ class StatementLoweringVisitor {
                                   ast_function_header.name);
                 }
 
+                ir_function_declaration->blocks.clear();
+
                 ir_function_declaration->annotations =
                     this->applyAnnotations(ast_function_header.annotations);
 
@@ -281,7 +283,7 @@ class StatementLoweringVisitor {
                                       ast_function.declaration);
                     }
                 }
-
+                ir_function->is_declaration = false;
             } else {
                 ir_function->is_declaration = true;
             }
@@ -783,16 +785,22 @@ class StatementLoweringVisitor {
 
             ir_builder->symbol_table->name = ir_interface->name;
 
+            auto ir_this_pointer_type = ir::PointerType::create(ir_type);
+
+            // 声明成员函数
+            for (auto ast_function : ast_implement.functions) {
+                auto ir_function =
+                    this->applyFunctionHeader(ast_function.declaration, ir_this_pointer_type);
+                ir_interface->functions.push_back(ir_function);
+                ir_function->is_declaration = true;
+            }
+
             for (auto ast_function : ast_implement.functions) {
                 std::shared_ptr<ir::Function> ir_function = nullptr;
                 if (std::none_of(RANGE(ast_function.declaration.annotations),
                                  [](auto x) { return x.name == "static"; })) {
-                    auto ir_this_pointer_type = ir::PointerType::create(ir_type);
                     auto symbol_function = (*this)(ast_function, ir_this_pointer_type);
                     ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
-                    ir_interface->functions.push_back(ir_function);
-                    ir_function->fullname =
-                        concatFullname(ir_interface->fullname, ir_function->name);
 
                     if (ir_interface->name != "Self") {
                         // 包装一个undef this pointer的函数

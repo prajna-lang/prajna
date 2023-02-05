@@ -1,0 +1,24 @@
+struct A;
+
+struct B;
+
+struct A{
+    v: i64;
+    b: B*;
+}
+
+struct B{
+    v: f32;
+    a: A;
+}
+
+struct C;
+
+
+
+@test
+func testMain(){
+    var b: B;
+    b.v = 3.141;
+    b.a.v = 14;
+}

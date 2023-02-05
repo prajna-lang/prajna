@@ -379,6 +379,8 @@ class StructType : public Type {
             this->bytes += this->fields[i]->type->bytes;
         }
     }
+
+    bool is_declaration = false;
 };
 
 class InterfacePrototype : public Named {

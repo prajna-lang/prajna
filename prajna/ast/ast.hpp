@@ -330,7 +330,7 @@ struct Struct : SourceLocation {
     Annotations annotations;
     Identifier name;
     TemplateParameters template_parameters;
-    std::vector<Field> fields;
+    boost::optional<std::vector<Field>> fields;
 };
 
 struct InterfacePrototype : SourceLocation {

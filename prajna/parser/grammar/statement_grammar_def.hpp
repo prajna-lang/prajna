@@ -120,10 +120,14 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(for_, success_handler_function);
 
     struct_.name("struct");
-    struct_ = annotations >> tok.struct_ > identifier > -template_parameters > tok.left_braces >
-              as<std::vector<prajna::ast::Field>>()[*field] > tok.r_braces;
+    struct_ = annotations >> tok.struct_ > identifier > -template_parameters > -fields;
     on_error<fail>(struct_, error_handler_function);
     on_success(struct_, success_handler_function);
+
+    fields.name("fields");
+    fields = tok.left_braces > *field > tok.r_braces;
+    on_error<fail>(fields, error_handler_function);
+    on_success(fields, success_handler_function);
 
     field.name("field");
     field = as<ast::Field>()[identifier > tok.colon > type > tok.semicolon];

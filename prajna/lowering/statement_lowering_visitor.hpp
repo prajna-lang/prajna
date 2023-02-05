@@ -479,16 +479,21 @@ class StatementLoweringVisitor {
 
     std::shared_ptr<ir::StructType> applyStructWithOutTemplates(
         std::shared_ptr<ir::StructType> ir_struct_type, ast::Struct ast_struct) {
-        std::vector<std::shared_ptr<ir::Field>> ir_fields(ast_struct.fields.size());
-        for (size_t i = 0; i < ast_struct.fields.size(); ++i) {
-            ir_fields[i] = ir::Field::create(ast_struct.fields[i].name,
-                                             this->applyType(ast_struct.fields[i].type));
+        if (!ast_struct.fields) {
+            ir_struct_type->is_declaration = true;
+            return ir_struct_type;
+        }
+
+        auto ast_struct_fields = *ast_struct.fields;
+        std::vector<std::shared_ptr<ir::Field>> ir_fields(ast_struct_fields.size());
+        for (size_t i = 0; i < ast_struct_fields.size(); ++i) {
+            ir_fields[i] = ir::Field::create(ast_struct_fields[i].name,
+                                             this->applyType(ast_struct_fields[i].type));
         }
 
         ir_struct_type->fields = ir_fields;
         ir_struct_type->update();
         this->createStructConstructor(ir_struct_type);
-
         return ir_struct_type;
     }
 
@@ -509,6 +514,14 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::Struct ast_struct) {
         if (ast_struct.template_parameters.empty()) {
+            if (ir_builder->symbol_table->currentTableHas(ast_struct.name)) {
+                auto ir_struct_type = cast<ir::StructType>(
+                    symbolGet<ir::Type>(ir_builder->symbol_table->get(ast_struct.name)));
+                if (ir_struct_type) {
+                    return this->applyStructWithOutTemplates(ir_struct_type, ast_struct);
+                }
+            }
+
             auto ir_struct_type = ir::StructType::create({});
             ir_builder->setSymbolWithAssigningName(ir_struct_type, ast_struct.name);
             return this->applyStructWithOutTemplates(ir_struct_type, ast_struct);

@@ -117,7 +117,7 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             }
 
             auto ir_builder = lowering::IrBuilder::create();
-            ir_builder->current_block = ir_block;
+            ir_builder->pushBlock(ir_block);
             ir_builder->inserter_iterator = iter;
 
             // 创建用于记录迭代的变量,
@@ -141,11 +141,11 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
 
             ir_builder->pushBlock(ir_for->loopBlock());
             // 给ir_for->index()赋值
-            ir_builder->inserter_iterator = ir_builder->current_block->values.begin();
+            ir_builder->inserter_iterator = ir_builder->currentBlock()->values.begin();
             ir_builder->create<ir::WriteVariableLiked>(ir_index_count, ir_for->index());
             // 需要在后面执行, 插入到最前面去
             ir_for->loopBlock()->pushFront(ir_label_loop);
-            ir_builder->popBlock(ir_for->loopBlock());
+            ir_builder->popBlock();
 
             auto ir_jump_branch = ir::JumpBranch::create(ir_label_condition_entry);
             ir_for->loopBlock()->pushBack(ir_jump_branch);

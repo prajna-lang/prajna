@@ -162,8 +162,7 @@ inline std::shared_ptr<ir::Module> insertLocalVariableInitializeCallback(
 
         for (auto ir_local_variable : ir_local_variables) {
             auto ir_builder = makeIRbuilder();
-            ir_builder->current_block = ir_local_variable->parent_block;
-            PRAJNA_ASSERT(ir_builder->current_block);
+            ir_builder->pushBlock(ir_local_variable->parent_block);
             auto iter =
                 std::find(RANGE(ir_local_variable->parent_block->values), ir_local_variable);
             ir_builder->inserter_iterator = iter;
@@ -179,7 +178,7 @@ inline void insertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_blo
     auto iter_return =
         std::find_if(RANGE(ir_block->values), [](auto x) { return is<ir::Return>(x); });
     auto ir_builder = lowering::IrBuilder::create();
-    ir_builder->current_block = ir_block;
+    ir_builder->pushBlock(ir_block);
     ir_builder->inserter_iterator = iter_return;
 
     std::list<std::shared_ptr<ir::LocalVariable>> ir_local_variable_list;
@@ -244,8 +243,7 @@ inline std::shared_ptr<ir::Module> insertVariableCopyCallback(
             });
         for (auto ir_write_variable_liked : ir_write_variable_likes) {
             auto ir_builder = makeIRbuilder();
-            ir_builder->current_block = ir_write_variable_liked->parent_block;
-            PRAJNA_ASSERT(ir_builder->current_block);
+            ir_builder->pushBlock(ir_write_variable_liked->parent_block);
             auto iter = std::find(RANGE(ir_write_variable_liked->parent_block->values),
                                   ir_write_variable_liked);
             ir_builder->inserter_iterator = iter;
@@ -266,8 +264,7 @@ inline std::shared_ptr<ir::Module> insertCopyAndDestroyCallbackForCallandReturn(
             if (not isDestroyCallbackAble(ir_call->type)) continue;
 
             auto ir_builder = makeIRbuilder();
-            ir_builder->current_block = ir_call->parent_block;
-            PRAJNA_ASSERT(ir_builder->current_block);
+            ir_builder->pushBlock(ir_call->parent_block);
 
             // 插入copy函数时, 需要normlizeVariableLiked, 这样会产生一个WriteVaribleLiked引用它
             // PRAJNA_ASSERT(ir_call->instruction_with_index_list.size() <= 1);
@@ -289,8 +286,7 @@ inline std::shared_ptr<ir::Module> insertCopyAndDestroyCallbackForCallandReturn(
             if (not isCopyCallbackAble(ir_return->type)) continue;
 
             auto ir_builder = makeIRbuilder();
-            ir_builder->current_block = ir_return->parent_block;
-            PRAJNA_ASSERT(ir_builder->current_block);
+            ir_builder->pushBlock(ir_return->parent_block);
             auto iter = std::find(RANGE(ir_return->parent_block->values), ir_return);
             ir_builder->inserter_iterator = iter;
             copyVariableLikedCallback(ir_return->value(), ir_builder);

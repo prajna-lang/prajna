@@ -21,7 +21,6 @@ class IrBuilder {
                                              std::shared_ptr<ir::Module> ir_module,
                                              std::shared_ptr<Logger> logger) {
         std::shared_ptr<IrBuilder> self(new IrBuilder);
-        self->current_block = nullptr;
         self->current_function = nullptr;
         self->module = ir_module;
         self->symbol_table = symbol_table;
@@ -104,13 +103,12 @@ class IrBuilder {
     std::shared_ptr<Value_> create(Args_&&... __args) {
         auto ir_value = Value_::create(std::forward<Args_>(__args)...);
         static_assert(std::is_base_of<ir::Value, Value_>::value);
-        PRAJNA_ASSERT(current_block);
         this->insert(ir_value);
         return ir_value;
     }
 
     void insert(std::shared_ptr<ir::Value> ir_value) {
-        current_block->insert(this->inserter_iterator, ir_value);
+        currentBlock()->insert(this->inserter_iterator, ir_value);
         if (this->create_callback) {
             this->create_callback(ir_value);
         }
@@ -182,40 +180,31 @@ class IrBuilder {
 
     void popSymbolTable() { symbol_table = symbol_table->parent_symbol_table; }
 
-    void pushBlock() {
-        auto ir_new_block = ir::Block::create();
-        if (current_block) {
-            current_block->values.push_back(ir_new_block);
-            ir_new_block->parent_block = current_block;
+    void popBlock() {
+        PRAJNA_ASSERT(!block_stack.empty());
+        block_stack.pop();
+        if (!block_stack.empty()) {
+            inserter_iterator = currentBlock()->values.end();
         }
-
-        current_block = ir_new_block;
-        inserter_iterator = current_block->values.end();
     }
 
-    void popBlock() {
-        if (current_block) {
-            current_block = current_block->parent_block;
-            inserter_iterator = current_block->values.end();
-        };
+    void createAndPushBlock() {
+        auto ir_block = ir::Block::create();
+        if (!block_stack.empty()) {
+            block_stack.top()->pushBack(ir_block);
+        }
+        block_stack.push(ir_block);
+        inserter_iterator = ir_block->values.end();
     }
 
     void pushBlock(std::shared_ptr<ir::Block> ir_block) {
-        ir_block->parent_block = current_block;
-        current_block = ir_block;
-        inserter_iterator = current_block->values.end();
+        block_stack.push(ir_block);
+        inserter_iterator = ir_block->values.end();
     }
 
-    void popBlock(std::shared_ptr<ir::Block> ir_block) {
-        PRAJNA_ASSERT(ir_block == current_block);
-        current_block = current_block->parent_block;
-        inserter_iterator = current_block->values.end();
-        ir_block->parent_block = nullptr;
-    }
-
-    void pushSymbolTableAndBlock() {
-        this->pushSymbolTable();
-        this->pushBlock();
+    std::shared_ptr<ir::Block> currentBlock() {
+        PRAJNA_ASSERT(!block_stack.empty());
+        return block_stack.top();
     }
 
     void popSymbolTableAndBlock() {
@@ -245,7 +234,7 @@ class IrBuilder {
         auto ir_block = ir::Block::create();
         this->current_function->blocks.push_back(ir_block);
         ir_block->parent_function = this->current_function;
-        this->current_block = ir_block;
+        this->pushBlock(ir_block);
         this->inserter_iterator = ir_block->values.end();
         return ir_block;
     }
@@ -260,10 +249,11 @@ class IrBuilder {
     std::stack<std::shared_ptr<ir::Label>> loop_after_label_stack;
     std::stack<std::shared_ptr<ir::Label>> loop_before_label_stack;
 
-    std::shared_ptr<ir::Block> current_block = nullptr;
     ir::Block::iterator inserter_iterator;
     std::function<void(std::shared_ptr<ir::Value>)> create_callback;
     std::shared_ptr<Logger> logger = nullptr;
+
+    std::stack<std::shared_ptr<ir::Block>> block_stack;
 };
 
 }  // namespace prajna::lowering

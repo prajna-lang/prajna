@@ -55,10 +55,11 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::Block block) {
-        ir_builder->pushSymbolTableAndBlock();
+        ir_builder->pushSymbolTable();
+        ir_builder->createAndPushBlock();
 
         (*this)(block.statements);
-        auto ir_block = ir_builder->current_block;
+        auto ir_block = ir_builder->currentBlock();
         ir_builder->popSymbolTableAndBlock();
 
         return ir_block;
@@ -274,7 +275,7 @@ class StatementLoweringVisitor {
             }
 
             ir_builder->return_type = nullptr;
-            ir_builder->popBlock(ir_block);
+            ir_builder->popBlock();
             ir_builder->popSymbolTable();
 
             return ir_function;
@@ -312,13 +313,13 @@ class StatementLoweringVisitor {
 
         ir_builder->pushBlock(ir_if->trueBlock());
         (*this)(ast_if.then);
-        ir_builder->popBlock(ir_if->trueBlock());
+        ir_builder->popBlock();
 
         ir_builder->pushBlock(ir_if->falseBlock());
         if (ast_if.else_) {
             (*this)(*ast_if.else_);
         }
-        ir_builder->popBlock(ir_if->falseBlock());
+        ir_builder->popBlock();
 
         return ir_if;
     }
@@ -335,7 +336,7 @@ class StatementLoweringVisitor {
         // 把ir_loop_before插入到条件块的开头
         ir_builder->insert(ir_loop_before);
         auto ir_condition = applyExpression(ast_while.condition);
-        ir_builder->popBlock(ir_condition_block);
+        ir_builder->popBlock();
 
         auto ir_loop_block = ir::Block::create();
         ir_loop_block->parent_function = ir_builder->current_function;
@@ -344,7 +345,7 @@ class StatementLoweringVisitor {
 
         ir_builder->pushBlock(ir_while->loopBlock());
         (*this)(ast_while.body);
-        ir_builder->popBlock(ir_while->loopBlock());
+        ir_builder->popBlock();
 
         ir_builder->loop_before_label_stack.pop();
         ir_builder->insert(ir_builder->loop_after_label_stack.top());
@@ -383,7 +384,7 @@ class StatementLoweringVisitor {
 
         ir_builder->pushBlock(ir_for->loopBlock());
         (*this)(ast_for.body);
-        ir_builder->popBlock(ir_for->loopBlock());
+        ir_builder->popBlock();
 
         ir_builder->popSymbolTable();
 
@@ -457,7 +458,7 @@ class StatementLoweringVisitor {
                                                        ir_access_field);
         }
         ir_builder->create<ir::Return>(ir_variable);
-        ir_builder->popBlock(ir_block);
+        ir_builder->popBlock();
     }
 
     std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
@@ -797,7 +798,7 @@ class StatementLoweringVisitor {
                         ir_arguments[0] = ir_this_pointer;
                         ir_builder->create<ir::Return>(
                             ir_builder->create<ir::Call>(ir_function, ir_arguments));
-                        ir_builder->popBlock(ir_undef_this_pointer_function->blocks.back());
+                        ir_builder->popBlock();
                     }
                 } else {
                     ir_builder->pushSymbolTable();
@@ -848,7 +849,7 @@ class StatementLoweringVisitor {
                 }
                 ir_builder->create<ir::Return>(ir_self);
 
-                ir_builder->popBlock(ir_interface->dynamic_type_creator->blocks.back());
+                ir_builder->popBlock();
             }
 
             for (auto [property_name, ir_property] : ir_type->properties) {
@@ -1083,8 +1084,8 @@ class StatementLoweringVisitor {
             // 这里还是使用类型IrBuilder
             ir_wrapped_function->blocks.push_back(ir::Block::create());
             ir_wrapped_function->blocks.back()->parent_function = ir_wrapped_function;
-            ir_builder->current_block = ir_wrapped_function->blocks.back();
-            ir_builder->inserter_iterator = ir_builder->current_block->values.end();
+            ir_builder->pushBlock(ir_wrapped_function->blocks.back());
+            ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
 
             auto ir_this_pointer = ir_wrapped_function->arguments[0];
             // 这里叫函数指针, 函数的类型就是函数指针

@@ -62,7 +62,7 @@ class InterpreterLoweringVisitor {
                 _symbol_result);
 
             ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
-            ir_builder->popBlock(ir_block);
+            ir_builder->popBlock();
         });
     }
 

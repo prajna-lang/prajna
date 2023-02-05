@@ -38,7 +38,7 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
     for (auto ir_access_property : ir_access_properties) {
         auto ir_block = ir_access_property->parent_block;
         auto ir_builder = lowering::IrBuilder::create();
-        ir_builder->current_block = ir_block;
+        ir_builder->pushBlock(ir_block);
         ir_builder->inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
 
         auto instructions_with_index_set_copy = ir_access_property->instruction_with_index_list;
@@ -100,7 +100,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             auto ir_block = ir_kernel_function_call->parent_block;
 
             auto ir_builder = lowering::IrBuilder::create();
-            ir_builder->current_block = ir_block;
+            ir_builder->pushBlock(ir_block);
             ir_builder->inserter_iterator =
                 std::find(RANGE(ir_block->values), ir_kernel_function_call);
 
@@ -339,7 +339,7 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         // 不是数组索引的for, 不做处理
         if (not ir_builder->isArrayIndexType(ir_for->index()->type)) continue;
 
-        ir_builder->current_block = ir_for->parent_block;
+        ir_builder->pushBlock(ir_for->parent_block);
         ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
         // fisrt =
         auto ir_layout_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
@@ -373,7 +373,7 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         auto ir_linear_index = ir_builder->create<ir::LocalVariable>(ir_builder->getIndexType());
         ir_for->index(ir_linear_index);
 
-        ir_builder->current_block = ir_for->loopBlock();
+        ir_builder->pushBlock(ir_for->loopBlock());
         ir_builder->inserter_iterator = ir_for->loopBlock()->values.begin();
         ir_builder->create<ir::WriteVariableLiked>(
             ir_builder->callBinaryOperator(

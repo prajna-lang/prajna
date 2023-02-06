@@ -89,9 +89,9 @@ class LlvmCodegen {
             return;
         }
         if (auto ir_function_type = cast<ir::FunctionType>(ir_type)) {
-            std::vector<llvm::Type *> llvm_argument_types(ir_function_type->argument_types.size());
-            std::transform(ir_function_type->argument_types.begin(),
-                           ir_function_type->argument_types.end(), llvm_argument_types.begin(),
+            std::vector<llvm::Type *> llvm_argument_types(ir_function_type->parameter_types.size());
+            std::transform(ir_function_type->parameter_types.begin(),
+                           ir_function_type->parameter_types.end(), llvm_argument_types.begin(),
                            [=](std::shared_ptr<ir::Type> ir_type) {
                                this->emitType(ir_type);
                                return ir_type->llvm_type;
@@ -199,11 +199,11 @@ class LlvmCodegen {
     void emitFunction(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
         llvm::Function *llvm_fun = static_cast<llvm::Function *>(ir_function->llvm_value);
         PRAJNA_ASSERT(llvm_fun);
-        PRAJNA_ASSERT(ir_function->arguments.size() == llvm_fun->arg_size());
+        PRAJNA_ASSERT(ir_function->parameters.size() == llvm_fun->arg_size());
         size_t i = 0;
         for (auto llvm_arg = llvm_fun->arg_begin(); llvm_arg != llvm_fun->arg_end();
              ++llvm_arg, ++i) {
-            ir_function->arguments[i]->llvm_value = llvm_arg;
+            ir_function->parameters[i]->llvm_value = llvm_arg;
         }
 
         for (auto block : ir_function->blocks) {
@@ -229,7 +229,7 @@ class LlvmCodegen {
     }
 
     void emitValue(std::shared_ptr<ir::Value> ir_value, ir::Target ir_target) {
-        if (is<ir::Argument>(ir_value) || is<ir::Function>(ir_value)) {
+        if (is<ir::Parameter>(ir_value) || is<ir::Function>(ir_value)) {
             return;
         }
 

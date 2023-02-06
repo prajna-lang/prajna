@@ -17,10 +17,10 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
             PRAJNA_ASSERT(annotations_instruction.size() > 0);
             auto annotation_operation = annotations_instruction[1];
 
-            auto ir_lhs_type = cast<ir::PointerType>(ir_function->arguments[0]->type);
+            auto ir_lhs_type = cast<ir::PointerType>(ir_function->parameters[0]->type);
             auto category = annotations_instruction[0];
             if (category == "CastInst") {
-                PRAJNA_ASSERT(ir_function->arguments.size() == 1);
+                PRAJNA_ASSERT(ir_function->parameters.size() == 1);
                 PRAJNA_ASSERT(annotations_instruction.size() == 3);
 
                 std::map<std::string, ir::CastInstruction::Operation> cast_operation_dict = {
@@ -41,7 +41,7 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 PRAJNA_ASSERT(cast_operation_dict.count(annotation_operation));
                 auto cast_operation = cast_operation_dict[annotation_operation];
 
-                auto ir_value = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
+                auto ir_value = ir_builder->create<ir::LoadPointer>(ir_function->parameters[0]);
                 auto ir_cast_instruction = ir_builder->create<ir::CastInstruction>(
                     cast_operation, ir_value, ir_function->function_type->return_type);
                 ir_builder->create<ir::Return>(ir_cast_instruction);
@@ -54,8 +54,8 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
 
             if (category == "ICmp" || category == "FCmp") {
                 PRAJNA_ASSERT(annotations_instruction.size() == 2);
-                PRAJNA_ASSERT(ir_function->arguments.size() == 2);
-                auto ir_lhs_type = cast<ir::PointerType>(ir_function->arguments[0]->type);
+                PRAJNA_ASSERT(ir_function->parameters.size() == 2);
+                auto ir_lhs_type = cast<ir::PointerType>(ir_function->parameters[0]->type);
 
                 std::map<std::string, ir::CompareInstruction::Operation> compare_operation_dict = {
                     {"FCMP_FALSE", ir::CompareInstruction::Operation::FCMP_FALSE},
@@ -89,8 +89,8 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 PRAJNA_ASSERT(compare_operation_dict.count(annotation_operation));
                 auto compare_operation = compare_operation_dict[annotation_operation];
 
-                auto ir_operand0 = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
-                auto ir_operand1 = ir_function->arguments[1];
+                auto ir_operand0 = ir_builder->create<ir::LoadPointer>(ir_function->parameters[0]);
+                auto ir_operand1 = ir_function->parameters[1];
                 auto ir_compare_instruction = ir_builder->create<ir::CompareInstruction>(
                     compare_operation, ir_operand0, ir_operand1);
                 ir_builder->create<ir::Return>(ir_compare_instruction);
@@ -103,7 +103,7 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
 
             if (category == "BinaryOperator") {
                 PRAJNA_ASSERT(annotations_instruction.size() == 2);
-                PRAJNA_ASSERT(ir_function->arguments.size() == 2);
+                PRAJNA_ASSERT(ir_function->parameters.size() == 2);
 
                 std::map<std::string, ir::BinaryOperator::Operation> binary_operation_dict = {
                     {"Add", ir::BinaryOperator::Operation::Add},
@@ -128,8 +128,8 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 PRAJNA_ASSERT(binary_operation_dict.count(annotation_operation));
                 auto binary_operation = binary_operation_dict[annotation_operation];
 
-                auto ir_operand0 = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
-                auto ir_operand1 = ir_function->arguments[1];
+                auto ir_operand0 = ir_builder->create<ir::LoadPointer>(ir_function->parameters[0]);
+                auto ir_operand1 = ir_function->parameters[1];
                 auto ir_binary_operator_instruction = ir_builder->create<ir::BinaryOperator>(
                     binary_operation, ir_operand0, ir_operand1);
                 ir_builder->create<ir::Return>(ir_binary_operator_instruction);

@@ -239,13 +239,13 @@ class FunctionType : public Type {
    public:
     /// @note 考虑函数指针的情况, 同一个函数类型指向不同函数地址是存在且必须的(分发的实现)
     static std::shared_ptr<FunctionType> create(
-        std::vector<std::shared_ptr<Type>> ir_argument_types, std::shared_ptr<Type> return_type) {
+        std::vector<std::shared_ptr<Type>> ir_parameter_types, std::shared_ptr<Type> return_type) {
         // @note 不同函数的, 函数类型不应该是用一个指针, 下面的代码更适合判断动态分发的时候使用
         for (auto ir_type : global_context.created_types) {
             if (auto ir_fun_type = cast<FunctionType>(ir_type)) {
                 if (ir_fun_type->return_type == return_type &&
-                    ir_fun_type->argument_types.size() == ir_argument_types.size() &&
-                    std::equal(RANGE(ir_argument_types), ir_fun_type->argument_types.begin())) {
+                    ir_fun_type->parameter_types.size() == ir_parameter_types.size() &&
+                    std::equal(RANGE(ir_parameter_types), ir_fun_type->parameter_types.begin())) {
                     return ir_fun_type;
                 }
             }
@@ -253,12 +253,12 @@ class FunctionType : public Type {
 
         std::shared_ptr<FunctionType> self(new FunctionType);
         self->return_type = return_type;
-        self->argument_types = ir_argument_types;
+        self->parameter_types = ir_parameter_types;
 
         self->name = "(";
-        for (size_t i = 0; i < self->argument_types.size(); ++i) {
-            self->name += self->argument_types[i]->fullname;
-            if (i != self->argument_types.size() - 1) {
+        for (size_t i = 0; i < self->parameter_types.size(); ++i) {
+            self->name += self->parameter_types[i]->fullname;
+            if (i != self->parameter_types.size() - 1) {
                 self->name += ",";
             }
         }
@@ -273,7 +273,7 @@ class FunctionType : public Type {
 
    public:
     std::shared_ptr<Type> return_type = nullptr;
-    std::vector<std::shared_ptr<Type>> argument_types;
+    std::vector<std::shared_ptr<Type>> parameter_types;
 
     std::shared_ptr<Function> function = nullptr;
 };

@@ -96,7 +96,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             auto ir_kernel_function = ir_kernel_function_call->function();
             auto ir_grid_shape = ir_kernel_function_call->gridShape();
             auto ir_block_shape = ir_kernel_function_call->blockShape();
-            // auto ir_arguments = ir_kernel_function_call->arguments();
+            // auto ir_arguments = ir_kernel_function_call->parameters();
             auto ir_block = ir_kernel_function_call->parent_block;
 
             auto ir_builder = lowering::IrBuilder::create();

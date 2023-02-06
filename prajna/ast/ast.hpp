@@ -154,7 +154,7 @@ struct Type : SourceLocation {
 };
 
 struct FunctionType : SourceLocation {
-    std::list<Type> argument_types;
+    std::list<Type> paramter_types;
     Type return_type;
 };
 
@@ -401,7 +401,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, name, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Implement, interface, type, template_paramters, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, argument_types, return_type)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifier_path, as)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Export, identifier)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)

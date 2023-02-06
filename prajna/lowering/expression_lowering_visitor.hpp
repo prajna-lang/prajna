@@ -281,7 +281,7 @@ class ExpressionLoweringVisitor {
         if (auto ir_index_property = ir_object->type->properties["["]) {
             if (ir_arguments.size() == 1) {
                 if (ir_index->type !=
-                    ir_index_property->getter_function->function_type->argument_types.back()) {
+                    ir_index_property->getter_function->function_type->parameter_types.back()) {
                     PRAJNA_TODO;
                 }
                 auto ir_this_pointer =
@@ -292,8 +292,8 @@ class ExpressionLoweringVisitor {
                 return ir_access_property;
             } else {
                 // "[" propert在生成的时候就会被限制
-                if (not ir_builder->isArrayIndexType(
-                        ir_index_property->getter_function->function_type->argument_types.back())) {
+                if (not ir_builder->isArrayIndexType(ir_index_property->getter_function
+                                                         ->function_type->parameter_types.back())) {
                     logger->error("too many index arguments", ast_binary_operation.operand);
                 }
 
@@ -322,19 +322,20 @@ class ExpressionLoweringVisitor {
         auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operaton.operand);
         if (auto ir_member_function = cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
             auto ir_function_type = ir_member_function->function_prototype->function_type;
-            if (ir_arguments.size() + 1 != ir_function_type->argument_types.size()) {
+            if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
                 logger->error(
                     fmt::format(
                         "the arguments size is not matched, require {} argument, but give {}",
-                        ir_function_type->argument_types.size() - 1, ir_arguments.size()),
+                        ir_function_type->parameter_types.size() - 1, ir_arguments.size()),
                     ast_expressions);
             }
-            for (auto [ir_argument, ir_argument_type, ast_expression] : boost::combine(
-                     ir_arguments,
-                     boost::make_iterator_range(std::next(ir_function_type->argument_types.begin()),
-                                                ir_function_type->argument_types.end()),
-                     ast_expressions)) {
-                if (ir_argument->type != ir_argument_type) {
+            for (auto [ir_argument, ir_parameter_type, ast_expression] :
+                 boost::combine(ir_arguments,
+                                boost::make_iterator_range(
+                                    std::next(ir_function_type->parameter_types.begin()),
+                                    ir_function_type->parameter_types.end()),
+                                ast_expressions)) {
+                if (ir_argument->type != ir_parameter_type) {
                     logger->error("the argument type is not matched", ast_expression);
                 }
             }
@@ -346,16 +347,16 @@ class ExpressionLoweringVisitor {
 
         if (ir_lhs->isFunction()) {
             auto ir_function_type = ir_lhs->getFunctionType();
-            if (ir_arguments.size() != ir_function_type->argument_types.size()) {
+            if (ir_arguments.size() != ir_function_type->parameter_types.size()) {
                 logger->error(
                     fmt::format(
                         "the arguments size is not matched, require {} argument, but give {}",
-                        ir_function_type->argument_types.size(), ir_arguments.size()),
+                        ir_function_type->parameter_types.size(), ir_arguments.size()),
                     ast_expressions);
             }
-            for (auto [ir_argument, ir_argument_type, ast_experssion] :
-                 boost::combine(ir_arguments, ir_function_type->argument_types, ast_expressions)) {
-                if (ir_argument->type != ir_argument_type) {
+            for (auto [ir_argument, ir_parameter_type, ast_experssion] :
+                 boost::combine(ir_arguments, ir_function_type->parameter_types, ast_expressions)) {
+                if (ir_argument->type != ir_parameter_type) {
                     logger->error("the argument type is not matched", ast_expressions);
                 }
             }
@@ -366,22 +367,22 @@ class ExpressionLoweringVisitor {
             // getter函数必须存在
             auto ir_getter_function_type =
                 ir_access_property->property->getter_function->function_type;
-            if (ir_arguments.size() != ir_getter_function_type->argument_types.size() - 1) {
+            if (ir_arguments.size() != ir_getter_function_type->parameter_types.size() - 1) {
                 logger->error(
                     fmt::format("the property arguments size is not matched, require {} argument, "
                                 "but give {}",
-                                ir_getter_function_type->argument_types.size() - 1,
+                                ir_getter_function_type->parameter_types.size() - 1,
                                 ir_arguments.size()),
                     ast_expressions);
             }
 
-            for (auto [ir_argument, ir_argument_type, ast_expression] :
+            for (auto [ir_argument, ir_parameter_type, ast_expression] :
                  boost::combine(ir_arguments,
                                 boost::make_iterator_range(
-                                    std::next(ir_getter_function_type->argument_types.begin()),
-                                    ir_getter_function_type->argument_types.end()),
+                                    std::next(ir_getter_function_type->parameter_types.begin()),
+                                    ir_getter_function_type->parameter_types.end()),
                                 ast_expressions)) {
-                if (ir_argument->type != ir_argument_type) {
+                if (ir_argument->type != ir_parameter_type) {
                     logger->error("the argument type is not matched", ast_expression);
                 }
             }
@@ -493,13 +494,13 @@ class ExpressionLoweringVisitor {
                        },
                        [=](ast::FunctionType ast_function_type) -> std::shared_ptr<ir::Type> {
                            auto ir_return_type = this->applyType(ast_function_type.return_type);
-                           std::vector<std::shared_ptr<ir::Type>> ir_argument_types(
-                               ast_function_type.argument_types.size());
+                           std::vector<std::shared_ptr<ir::Type>> ir_parameter_types(
+                               ast_function_type.paramter_types.size());
                            std::transform(
-                               RANGE(ast_function_type.argument_types), ir_argument_types.begin(),
+                               RANGE(ast_function_type.paramter_types), ir_parameter_types.begin(),
                                [=](ast::Type ast_type) { return this->applyType(ast_type); });
 
-                           return ir::FunctionType::create(ir_argument_types, ir_return_type);
+                           return ir::FunctionType::create(ir_parameter_types, ir_return_type);
                        }},
             ast_postfix_type.base_type);
 
@@ -772,20 +773,21 @@ class ExpressionLoweringVisitor {
                               ast_kernel_function_call.operation->block_shape);
             }
 
-            if (ir_arguments.size() != ir_function_type->argument_types.size()) {
+            if (ir_arguments.size() != ir_function_type->parameter_types.size()) {
                 logger->error(
                     fmt::format("the arguments size is not matched, require {} "
                                 "argument, but give {}",
-                                ir_function_type->argument_types.size(), ir_arguments.size()),
+                                ir_function_type->parameter_types.size(), ir_arguments.size()),
                     ast_kernel_function_call.operation->arguments);
             }
-            // for (size_t i = 0; i < ir_arguments.size(); ++i) {
-            //     if (ir_arguments[i]->type != ir_function_type->argument_types[i]) {
-            //         logger->error("the argument type is not matched",
-            //                       ast_kernel_function_call.operation->arguments[i]);
-            //     }
-            // }
 
+            for (auto [ir_argument, ir_parameter_type, ast_argument] :
+                 boost::combine(ir_arguments, ir_function_type->parameter_types,
+                                ast_kernel_function_call.operation->arguments)) {
+                if (ir_argument->type != ir_parameter_type) {
+                    logger->error("the argument type is not matched", ast_argument);
+                }
+            }
             return ir_builder->create<ir::KernelFunctionCall>(ir_function, ir_grid_shape,
                                                               ir_block_shape, ir_arguments);
 
@@ -823,9 +825,9 @@ class ExpressionLoweringVisitor {
         std::vector<std::shared_ptr<ir::Value>> ir_arguemnts(2);
         ir_arguemnts[0] = ir_this_pointer;
         ir_arguemnts[1] = this->applyOperand(ast_binary_operation.operand);
-        if (ir_arguemnts[1]->type != ir_function->function_type->argument_types[1]) {
+        if (ir_arguemnts[1]->type != ir_function->function_type->parameter_types[1]) {
             logger->error(fmt::format("the types {}, {} are not matched",
-                                      ir_function->function_type->argument_types[1]->fullname,
+                                      ir_function->function_type->parameter_types[1]->fullname,
                                       ir_arguemnts[1]->type->fullname),
                           ast_binary_operation.operand);
         }

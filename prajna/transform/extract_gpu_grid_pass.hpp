@@ -42,10 +42,10 @@ namespace prajna::transform {
 
 //         auto ir_grid_block = ir_gpu_for->loopBlock();
 //         ir_grid_block->parent_block = nullptr;
-//         ir_kernel_function->arguments.resize(ir_kernel_function_type->argument_types.size());
-//         for (size_t i = 0; i < ir_kernel_function_type->argument_types.size(); ++i) {
-//             ir_kernel_function->arguments[i] = ir::Argument::create(ir_argument_types[i]);
-//             ir_kernel_function->arguments[i]->parent_block = ir_grid_block;
+//         ir_kernel_function->parameters.resize(ir_kernel_function_type->parameter_types.size());
+//         for (size_t i = 0; i < ir_kernel_function_type->parameter_types.size(); ++i) {
+//             ir_kernel_function->parameters[i] = ir::Parameter::create(ir_argument_types[i]);
+//             ir_kernel_function->parameters[i]->parent_block = ir_grid_block;
 //         }
 
 //         //
@@ -78,7 +78,7 @@ namespace prajna::transform {
 
 //         // // 将捕获的变量替换为核函数的参数
 //         // for (auto [ir_variable, ir_argument] :
-//         //      boost::combine(ir_variables, ir_kernel_function->arguments)) { //
+//         //      boost::combine(ir_variables, ir_kernel_function->parameters)) { //
 //         //      combine会使用最短的size
 //         //     auto instruction_with_index_list =
 //         //     ir_variable->instruction_with_index_list; for (auto
@@ -206,14 +206,14 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
 
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> variables_dict;
     auto iter_captured_variable = ir_captured_variables_list.begin();
-    auto ir_first = ir_kernel_function->arguments[0];
+    auto ir_first = ir_kernel_function->parameters[0];
     variables_dict[ir_gpu_for->first()] = ir_first;
-    ir_kernel_function->arguments[0] = ir_first;
-    auto ir_last = ir_kernel_function->arguments[1];
+    ir_kernel_function->parameters[0] = ir_first;
+    auto ir_last = ir_kernel_function->parameters[1];
     variables_dict[ir_gpu_for->last()] = ir_last;
-    ir_kernel_function->arguments[1] = ir_last;
+    ir_kernel_function->parameters[1] = ir_last;
     for (size_t i = 2; i < ir_argument_types.size(); ++i, ++iter_captured_variable) {
-        auto ir_argument = ir_kernel_function->arguments[i];
+        auto ir_argument = ir_kernel_function->parameters[i];
         // 需要搞成临时变量, 这样才会原来的变量对应, 以便访问成员函数等
         variables_dict[*iter_captured_variable] = ir_builder->variableLikedNormalize(ir_argument);
     }

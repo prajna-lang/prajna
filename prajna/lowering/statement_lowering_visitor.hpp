@@ -130,7 +130,7 @@ class StatementLoweringVisitor {
             if (not ir_property->property->setter_function) {
                 logger->error("the property has not a setter function", ast_assignment.left);
             }
-            if (ir_property->property->setter_function->function_type->argument_types.back() !=
+            if (ir_property->property->setter_function->function_type->parameter_types.back() !=
                 ir_rhs->type) {
                 logger->error("the type is not matched", ast_assignment);
             }
@@ -246,10 +246,10 @@ class StatementLoweringVisitor {
 
                 ir_builder->createTopBlockForFunction(ir_function);
 
-                auto iter_argument = ir_function->arguments.begin();
+                auto iter_argument = ir_function->parameters.begin();
                 if (ir_this_poiner_type) {
                     // Argument也不会插入的block里
-                    ir_builder->symbol_table->setWithAssigningName(ir_function->arguments[0],
+                    ir_builder->symbol_table->setWithAssigningName(ir_function->parameters[0],
                                                                    "this-pointer");
                     ++iter_argument;
                 }
@@ -464,7 +464,7 @@ class StatementLoweringVisitor {
         auto ir_variable = ir_builder->create<ir::LocalVariable>(ir_struct_type);
         for (size_t i = 0; i < ir_fields.size(); ++i) {
             auto ir_access_field = ir_builder->create<ir::AccessField>(ir_variable, ir_fields[i]);
-            ir_builder->create<ir::WriteVariableLiked>(ir_constructor->arguments[i],
+            ir_builder->create<ir::WriteVariableLiked>(ir_constructor->parameters[i],
                                                        ir_access_field);
         }
         ir_builder->create<ir::Return>(ir_variable);
@@ -583,7 +583,7 @@ class StatementLoweringVisitor {
                               ast::Function ast_function) {
         if (not ir_function->annotations.count("unary")) return;
 
-        if (ir_function->function_type->argument_types.size() != 1) {
+        if (ir_function->function_type->parameter_types.size() != 1) {
             logger->error("the parameters size of a unary function must be 1",
                           ast_function.declaration.parameters);
         }
@@ -608,7 +608,7 @@ class StatementLoweringVisitor {
                                ast::Function ast_function) {
         if (not ir_function->annotations.count("binary")) return;
 
-        if (ir_function->function_type->argument_types.size() != 2) {
+        if (ir_function->function_type->parameter_types.size() != 2) {
             logger->error("the parameters size of a binary function must be 2",
                           ast_function.declaration.parameters);
         }
@@ -651,7 +651,7 @@ class StatementLoweringVisitor {
                 *ast_function.declaration.return_type);
         }
         // this pointer argument
-        if (ir_function->function_type->argument_types.size() != 1) {
+        if (ir_function->function_type->parameter_types.size() != 1) {
             logger->error(
                 fmt::format("the {} function should has no parameters", ir_function->name),
                 ast_function.declaration.parameters);
@@ -671,20 +671,20 @@ class StatementLoweringVisitor {
     bool isPropertyGetterSetterFunctionTypeMatched(
         std::shared_ptr<ir::FunctionType> ir_getter_function_type,
         std::shared_ptr<ir::FunctionType> ir_setter_function_type) {
-        if (ir_getter_function_type->argument_types.size() + 1 !=
-            ir_setter_function_type->argument_types.size()) {
+        if (ir_getter_function_type->parameter_types.size() + 1 !=
+            ir_setter_function_type->parameter_types.size()) {
             return false;
         }
 
-        for (size_t i = 0; i < ir_getter_function_type->argument_types.size(); ++i) {
-            if (ir_getter_function_type->argument_types[i] !=
-                ir_setter_function_type->argument_types[i]) {
+        for (size_t i = 0; i < ir_getter_function_type->parameter_types.size(); ++i) {
+            if (ir_getter_function_type->parameter_types[i] !=
+                ir_setter_function_type->parameter_types[i]) {
                 return false;
             }
         }
 
         if (ir_getter_function_type->return_type !=
-            ir_setter_function_type->argument_types.back()) {
+            ir_setter_function_type->parameter_types.back()) {
             return false;
         }
 
@@ -802,7 +802,7 @@ class StatementLoweringVisitor {
                         // 包装一个undef this pointer的函数
                         std::vector<std::shared_ptr<ir::Type>>
                             ir_undef_this_pointer_function_argument_types =
-                                ir_function->function_type->argument_types;
+                                ir_function->function_type->parameter_types;
                         ir_undef_this_pointer_function_argument_types[0] =
                             ir::PointerType::create(ir::UndefType::create());
 
@@ -821,9 +821,9 @@ class StatementLoweringVisitor {
                         ir_builder->pushBlock(ir_undef_this_pointer_function->blocks.back());
                         // 将undef *的this pointer转为本身的指针类型
                         auto ir_this_pointer = ir_builder->create<ir::BitCast>(
-                            ir_undef_this_pointer_function->arguments[0],
-                            ir_function->arguments[0]->type);
-                        auto ir_arguments = ir_undef_this_pointer_function->arguments;
+                            ir_undef_this_pointer_function->parameters[0],
+                            ir_function->parameters[0]->type);
+                        auto ir_arguments = ir_undef_this_pointer_function->parameters;
                         ir_arguments[0] = ir_this_pointer;
                         ir_builder->create<ir::Return>(
                             ir_builder->create<ir::Call>(ir_function, ir_arguments));
@@ -862,7 +862,7 @@ class StatementLoweringVisitor {
 
                 ir_builder->create<ir::WriteVariableLiked>(
                     ir_builder->create<ir::BitCast>(
-                        ir_interface->dynamic_type_creator->arguments[0],
+                        ir_interface->dynamic_type_creator->parameters[0],
                         ir::PointerType::create(ir::UndefType::create())),
                     ir_builder->accessField(ir_self, "object_pointer"));
                 for (auto ir_function : ir_interface->functions) {
@@ -1074,7 +1074,7 @@ class StatementLoweringVisitor {
         for (auto ir_function : ir_interface_prototype->functions) {
             // 不规则命名, 外部并不会使用到
 
-            auto ir_callee_argument_types = ir_function->function_type->argument_types;
+            auto ir_callee_argument_types = ir_function->function_type->parameter_types;
             ir_callee_argument_types.insert(ir_callee_argument_types.begin(),
                                             field_object_pointer->type);
             auto ir_callee_type = ir::FunctionType::create(ir_callee_argument_types,
@@ -1096,7 +1096,7 @@ class StatementLoweringVisitor {
             ir_interface_struct->fields.push_back(field_function_pointer);
             ir_interface_struct->update();
 
-            auto ir_wrapped_function_argument_types = ir_function->function_type->argument_types;
+            auto ir_wrapped_function_argument_types = ir_function->function_type->parameter_types;
             // 必然有一个this pointer参数
             // PRAJNA_ASSERT(ir_wrapped_function_argument_types.size() >= 1);
             // 第一个参数应该是this pointer的类型, 修改一下
@@ -1116,12 +1116,12 @@ class StatementLoweringVisitor {
             ir_builder->pushBlock(ir_wrapped_function->blocks.back());
             ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
 
-            auto ir_this_pointer = ir_wrapped_function->arguments[0];
+            auto ir_this_pointer = ir_wrapped_function->parameters[0];
             // 这里叫函数指针, 函数的类型就是函数指针
             auto ir_function_pointer = ir_builder->create<ir::AccessField>(
                 ir_builder->create<ir::DeferencePointer>(ir_this_pointer), field_function_pointer);
             // 直接将外层函数的参数转发进去, 除了第一个参数需要调整一下
-            auto ir_arguments = ir_wrapped_function->arguments;
+            auto ir_arguments = ir_wrapped_function->parameters;
             ir_arguments[0] = ir_builder->create<ir::AccessField>(
                 ir_builder->create<ir::DeferencePointer>(ir_this_pointer), field_object_pointer);
             auto ir_function_call = ir_builder->create<ir::Call>(ir_function_pointer, ir_arguments);

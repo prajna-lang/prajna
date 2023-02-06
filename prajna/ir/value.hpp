@@ -184,20 +184,20 @@ class VoidValue : public Value {
     }
 };
 
-class Argument : public Value {
+class Parameter : public Value {
    protected:
-    Argument() = default;
+    Parameter() = default;
 
    public:
-    static std::shared_ptr<Argument> create(std::shared_ptr<Type> ir_type) {
-        std::shared_ptr<Argument> self(new Argument);
+    static std::shared_ptr<Parameter> create(std::shared_ptr<Type> ir_type) {
+        std::shared_ptr<Parameter> self(new Parameter);
         self->type = ir_type;
-        self->tag = "Argument";
+        self->tag = "Parameter";
         return self;
     }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<Argument> ir_new(new Argument(*this));
+        std::shared_ptr<Parameter> ir_new(new Parameter(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
@@ -455,9 +455,9 @@ class Function : public Value {
         self->function_type = function_type;
         // @warning 事实上llvm::Function是一个指针类型
         self->type = PointerType::create(function_type);
-        std::transform(RANGE(function_type->argument_types), std::back_inserter(self->arguments),
+        std::transform(RANGE(function_type->parameter_types), std::back_inserter(self->parameters),
                        [](std::shared_ptr<Type> ir_argument_type) {
-                           return Argument::create(ir_argument_type);
+                           return Parameter::create(ir_argument_type);
                        });
 
         self->tag = "Function";
@@ -477,11 +477,11 @@ class Function : public Value {
         function_cloner->value_dict[shared_from_this()] = ir_new;
 
         ir_new->parent_module = function_cloner->module;
-        ir_new->arguments.clear();
-        for (size_t i = 0; i < arguments.size(); ++i) {
-            auto ir_new_argument = arguments[i]->clone(function_cloner);
-            function_cloner->value_dict[arguments[i]] = ir_new_argument;
-            ir_new->arguments.push_back(ir_new_argument);
+        ir_new->parameters.clear();
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            auto ir_new_argument = parameters[i]->clone(function_cloner);
+            function_cloner->value_dict[parameters[i]] = ir_new_argument;
+            ir_new->parameters.push_back(ir_new_argument);
         }
 
         // 需要再开头, 因为函数有可能存在递归
@@ -502,7 +502,7 @@ class Function : public Value {
    public:
     bool is_declaration = false;
     std::shared_ptr<FunctionType> function_type;
-    std::vector<std::shared_ptr<Value>> arguments;
+    std::vector<std::shared_ptr<Value>> parameters;
     std::list<std::shared_ptr<Block>> blocks;
     std::shared_ptr<Module> parent_module;
 };
@@ -1149,9 +1149,9 @@ class Call : public Instruction {
         self->function(ir_value);
         auto ir_function_type = ir_value->getFunctionType();
         PRAJNA_ASSERT(ir_function_type);
-        PRAJNA_ASSERT(ir_function_type->argument_types.size() == arguments.size());
+        PRAJNA_ASSERT(ir_function_type->parameter_types.size() == arguments.size());
         for (size_t i = 0; i < arguments.size(); ++i) {
-            PRAJNA_ASSERT(ir_function_type->argument_types[i] == arguments[i]->type);
+            PRAJNA_ASSERT(ir_function_type->parameter_types[i] == arguments[i]->type);
             self->argument(i, arguments[i]);
         }
 
@@ -1568,7 +1568,7 @@ class KernelFunctionCall : public Instruction {
         self->gridShape(ir_grid_shape);
         self->blockShape(ir_block_shape);
         for (size_t i = 0; i < arguments.size(); ++i) {
-            PRAJNA_ASSERT(ir_function_type->argument_types[i] == arguments[i]->type);
+            PRAJNA_ASSERT(ir_function_type->parameter_types[i] == arguments[i]->type);
             self->argument(i, arguments[i]);
         }
 

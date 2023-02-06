@@ -785,10 +785,17 @@ class StatementLoweringVisitor {
 
             // 声明成员函数
             for (auto ast_function : ast_implement.functions) {
-                auto ir_function =
-                    this->applyFunctionHeader(ast_function.declaration, ir_this_pointer_type);
-                ir_interface->functions.push_back(ir_function);
-                ir_function->is_declaration = true;
+                if (std::none_of(RANGE(ast_function.declaration.annotations),
+                                 [](auto x) { return x.name == "static"; })) {
+                    auto ir_function =
+                        this->applyFunctionHeader(ast_function.declaration, ir_this_pointer_type);
+                    ir_interface->functions.push_back(ir_function);
+                    ir_function->is_declaration = true;
+                } else {
+                    auto ir_function = this->applyFunctionHeader(ast_function.declaration, nullptr);
+                    ir_function->is_declaration = true;
+                    ir_type->static_functions[ir_function->name] = ir_function;
+                }
             }
 
             for (auto ast_function : ast_implement.functions) {
@@ -830,13 +837,8 @@ class StatementLoweringVisitor {
                         ir_builder->popBlock();
                     }
                 } else {
-                    ir_builder->pushSymbolTable();
-                    ir_builder->symbol_table->name =
-                        ir_type->name;  // 插入类的名字, 以便函数名字是正确的
                     auto symbol_function = (*this)(ast_function);
                     ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
-                    ir_builder->popSymbolTable();
-                    ir_type->static_functions[ir_function->name] = ir_function;
                 }
 
                 this->processUnaryFunction(ir_type, ir_function, ast_function);

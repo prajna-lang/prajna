@@ -219,7 +219,6 @@ class StatementLoweringVisitor {
                 }
 
                 ir_function_declaration->blocks.clear();
-
                 ir_function_declaration->annotations =
                     this->applyAnnotations(ast_function_header.annotations);
 
@@ -238,31 +237,28 @@ class StatementLoweringVisitor {
         try {
             auto ir_function = applyFunctionHeader(ast_function.declaration, ir_this_poiner_type);
 
-            ir_builder->current_function = ir_function;
             // 进入参数域,
-            ir_builder->pushSymbolTable();
-            ir_builder->return_type = ir_function->function_type->return_type;
 
             // @note 将function的第一个block作为最上层的block
-            auto ir_block = ir::Block::create();
-            ir_block->parent_function = ir_function;
-            ir_builder->pushBlock(ir_block);
-            ir_function->blocks.push_back(ir_block);
-
-            auto iter_argument = ir_function->arguments.begin();
-            if (ir_this_poiner_type) {
-                // Argument也不会插入的block里
-                ir_builder->symbol_table->setWithAssigningName(ir_function->arguments[0],
-                                                               "this-pointer");
-                ++iter_argument;
-            }
-            for (auto iter_parameter = ast_function.declaration.parameters.begin();
-                 iter_parameter != ast_function.declaration.parameters.end();
-                 ++iter_argument, ++iter_parameter) {
-                ir_builder->setSymbolWithAssigningName(*iter_argument, iter_parameter->name);
-            }
-
             if (ast_function.body) {
+                ir_builder->pushSymbolTable();
+                ir_builder->return_type = ir_function->function_type->return_type;
+
+                ir_builder->createTopBlockForFunction(ir_function);
+
+                auto iter_argument = ir_function->arguments.begin();
+                if (ir_this_poiner_type) {
+                    // Argument也不会插入的block里
+                    ir_builder->symbol_table->setWithAssigningName(ir_function->arguments[0],
+                                                                   "this-pointer");
+                    ++iter_argument;
+                }
+                for (auto iter_parameter = ast_function.declaration.parameters.begin();
+                     iter_parameter != ast_function.declaration.parameters.end();
+                     ++iter_argument, ++iter_parameter) {
+                    ir_builder->setSymbolWithAssigningName(*iter_argument, iter_parameter->name);
+                }
+
                 if (ir_this_poiner_type) {
                     auto ir_this_pointer =
                         symbolGet<ir::Value>(ir_builder->symbol_table->get("this-pointer"));
@@ -284,13 +280,13 @@ class StatementLoweringVisitor {
                     }
                 }
                 ir_function->is_declaration = false;
+
+                ir_builder->return_type = nullptr;
+                ir_builder->popBlock();
+                ir_builder->popSymbolTable();
             } else {
                 ir_function->is_declaration = true;
             }
-
-            ir_builder->return_type = nullptr;
-            ir_builder->popBlock();
-            ir_builder->popSymbolTable();
 
             return ir_function;
         } catch (CompileError compile_error) {

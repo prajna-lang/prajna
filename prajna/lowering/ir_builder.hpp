@@ -257,7 +257,9 @@ class IrBuilder {
         return ir_function;
     }
 
-    std::shared_ptr<ir::Block> createBlock() {
+    std::shared_ptr<ir::Block> createTopBlockForFunction(
+        std::shared_ptr<ir::Function> ir_function) {
+        this->current_function = ir_function;
         auto ir_block = ir::Block::create();
         this->current_function->blocks.push_back(ir_block);
         ir_block->parent_function = this->current_function;

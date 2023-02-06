@@ -10,6 +10,9 @@ namespace prajna::transform {
 inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         if (ir_function->isInstruction()) {
+            auto ir_builder = lowering::IrBuilder::create();
+            ir_builder->createTopBlockForFunction(ir_function);
+
             auto annotations_instruction = ir_function->annotations["instruction"];
             PRAJNA_ASSERT(annotations_instruction.size() > 0);
             auto annotation_operation = annotations_instruction[1];
@@ -37,10 +40,6 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 };
                 PRAJNA_ASSERT(cast_operation_dict.count(annotation_operation));
                 auto cast_operation = cast_operation_dict[annotation_operation];
-
-                auto ir_builder = lowering::IrBuilder::create();
-                ir_builder->pushBlock(ir_function->blocks.front());
-                ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
 
                 auto ir_value = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
                 auto ir_cast_instruction = ir_builder->create<ir::CastInstruction>(
@@ -90,10 +89,6 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 PRAJNA_ASSERT(compare_operation_dict.count(annotation_operation));
                 auto compare_operation = compare_operation_dict[annotation_operation];
 
-                auto ir_builder = lowering::IrBuilder::create();
-                ir_builder->pushBlock(ir_function->blocks.front());
-                ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
-
                 auto ir_operand0 = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
                 auto ir_operand1 = ir_function->arguments[1];
                 auto ir_compare_instruction = ir_builder->create<ir::CompareInstruction>(
@@ -132,9 +127,6 @@ inline std::shared_ptr<ir::Module> wrapInstructionFunction(std::shared_ptr<ir::M
                 };
                 PRAJNA_ASSERT(binary_operation_dict.count(annotation_operation));
                 auto binary_operation = binary_operation_dict[annotation_operation];
-                auto ir_builder = lowering::IrBuilder::create();
-                ir_builder->pushBlock(ir_function->blocks.front());
-                ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
 
                 auto ir_operand0 = ir_builder->create<ir::LoadPointer>(ir_function->arguments[0]);
                 auto ir_operand1 = ir_function->arguments[1];

@@ -55,7 +55,7 @@ struct StatementGrammer
     rule<ast::For> for_;
 
     rule<ast::Field> field;
-    rule<std::vector<ast::Field>> fields;
+    rule<std::list<ast::Field>> fields;
     rule<ast::TemplateParameter> template_parameter;
     rule<ast::TemplateParameters> template_parameters;
     rule<ast::Struct> struct_;

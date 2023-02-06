@@ -120,7 +120,7 @@ struct SuccessHandler {
 
     template <typename _T>
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
-                    std::vector<_T>& ast_vec) const {
+                    std::list<_T>& ast_vec) const {
         for (auto& ast_e : ast_vec) {
             (*this)(first_iter, input_last_iter, last_iter, ast_e);
         }

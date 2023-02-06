@@ -144,7 +144,7 @@ class StatementLoweringVisitor {
     }
 
     std::vector<std::shared_ptr<ir::Type>> applyParameters(
-        std::vector<ast::Parameter> ast_parameters) {
+        std::list<ast::Parameter> ast_parameters) {
         std::vector<std::shared_ptr<ir::Type>> types(ast_parameters.size());
         std::transform(RANGE(ast_parameters), types.begin(), [=](ast::Parameter ast_parameter) {
             return this->applyType(ast_parameter.type);
@@ -249,17 +249,17 @@ class StatementLoweringVisitor {
             ir_builder->pushBlock(ir_block);
             ir_function->blocks.push_back(ir_block);
 
-            size_t j = 0;
+            auto iter_argument = ir_function->arguments.begin();
             if (ir_this_poiner_type) {
                 // Argument也不会插入的block里
                 ir_builder->symbol_table->setWithAssigningName(ir_function->arguments[0],
                                                                "this-pointer");
-                ++j;
+                ++iter_argument;
             }
-            for (size_t i = 0; i < ast_function.declaration.parameters.size(); ++i, ++j) {
-                auto ir_argument = ir_function->arguments[j];
-                ir_builder->setSymbolWithAssigningName(ir_argument,
-                                                       ast_function.declaration.parameters[i].name);
+            for (auto iter_parameter = ast_function.declaration.parameters.begin();
+                 iter_parameter != ast_function.declaration.parameters.end();
+                 ++iter_argument, ++iter_parameter) {
+                ir_builder->setSymbolWithAssigningName(*iter_argument, iter_parameter->name);
             }
 
             if (ast_function.body) {
@@ -487,11 +487,11 @@ class StatementLoweringVisitor {
         }
 
         auto ast_struct_fields = *ast_struct.fields;
-        std::vector<std::shared_ptr<ir::Field>> ir_fields(ast_struct_fields.size());
-        for (size_t i = 0; i < ast_struct_fields.size(); ++i) {
-            ir_fields[i] = ir::Field::create(ast_struct_fields[i].name,
-                                             this->applyType(ast_struct_fields[i].type));
-        }
+        std::vector<std::shared_ptr<ir::Field>> ir_fields;
+        std::transform(
+            RANGE(ast_struct_fields), std::back_inserter(ir_fields), [=](ast::Field ast_field) {
+                return ir::Field::create(ast_field.name, this->applyType(ast_field.type));
+            });
 
         ir_struct_type->fields = ir_fields;
         ir_struct_type->update();
@@ -602,7 +602,7 @@ class StatementLoweringVisitor {
         auto operator_token = unary_annotation[0];
         std::set<std::string> unary_operators_set = {"+", "-", "*", "&", "!"};
         if (not unary_operators_set.count(operator_token)) {
-            logger->error("not valid unary operator", iter_unary_annotation->values[0]);
+            logger->error("not valid unary operator", iter_unary_annotation->values.front());
         }
         ir_type->unary_functions[operator_token] = ir_function;
     }
@@ -629,7 +629,7 @@ class StatementLoweringVisitor {
             "==", "!=", "<",  "<=", ">", ">=", "+", "-", "*",
             "/",  "%",  "<<", ">>", "&", "|",  "^", "!"};
         if (not binary_operators_set.count(operator_token)) {
-            logger->error("not valid binary operator", iter_binary_annotation->values[0]);
+            logger->error("not valid binary operator", iter_binary_annotation->values.front());
         }
         ir_type->binary_functions[operator_token] = ir_function;
     }
@@ -706,13 +706,13 @@ class StatementLoweringVisitor {
         auto property_annotation = ir_function->annotations["property"];
         if (property_annotation.size() != 2) {
             logger->error("the property annoation should only have two values",
-                          iter_property_annotation->values[0]);
+                          iter_property_annotation->values.front());
         }
 
         auto property_name = property_annotation[0];
         auto property_tag = property_annotation[1];
         if (property_tag != "setter" && property_tag != "getter") {
-            logger->error("should be setter or getter", iter_property_annotation->values[0]);
+            logger->error("should be setter or getter", iter_property_annotation->values.front());
         }
 
         auto ir_setter_function_type = ir_function->function_type;

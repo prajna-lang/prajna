@@ -2,7 +2,6 @@
 
 #include <list>
 #include <optional>
-#include <vector>
 
 #include "boost/fusion/include/adapt_struct.hpp"
 #include "boost/fusion/include/io.hpp"
@@ -130,7 +129,7 @@ struct IdentifierWithTemplateArguments : SourceLocation {
 
 struct IdentifierPath : SourceLocation {
     boost::optional<Operator> is_root;
-    std::vector<IdentifierWithTemplateArguments> identifiers;
+    std::list<IdentifierWithTemplateArguments> identifiers;
 };
 
 struct Import : SourceLocation {
@@ -151,11 +150,11 @@ typedef boost::variant<Blank, IdentifierPath, boost::recursive_wrapper<FunctionT
 
 struct Type : SourceLocation {
     BasicType base_type;
-    std::vector<PostfixTypeOperator> postfix_type_operators;
+    std::list<PostfixTypeOperator> postfix_type_operators;
 };
 
 struct FunctionType : SourceLocation {
-    std::vector<Type> argument_types;
+    std::list<Type> argument_types;
     Type return_type;
 };
 
@@ -181,7 +180,7 @@ struct Unary : SourceLocation {
 
 struct PostfixUnary : SourceLocation {
     Operand operand;
-    std::vector<Operator> operators;
+    std::list<Operator> operators;
 };
 
 struct BinaryOperation : SourceLocation {
@@ -191,7 +190,7 @@ struct BinaryOperation : SourceLocation {
 
 struct Expression : SourceLocation {
     Operand first;
-    std::vector<BinaryOperation> rest;
+    std::list<BinaryOperation> rest;
 };
 
 struct Cast : SourceLocation {
@@ -199,10 +198,10 @@ struct Cast : SourceLocation {
     Expression value;
 };
 
-struct Expressions : SourceLocation, std::vector<Expression> {};
+struct Expressions : SourceLocation, std::list<Expression> {};
 
 struct Array : SourceLocation {
-    std::vector<Expression> values;
+    std::list<Expression> values;
 };
 
 struct VariableDeclaration : SourceLocation {
@@ -244,12 +243,12 @@ struct using_statement : SourceLocation {
 
 struct Pragma : SourceLocation {
     Identifier name;
-    std::vector<StringLiteral> values;
+    std::list<StringLiteral> values;
 };
 
 struct Annotation : SourceLocation {
     Identifier name;
-    std::vector<StringLiteral> values;
+    std::list<StringLiteral> values;
 };
 
 struct Annotations : SourceLocation, std::list<Annotation> {};
@@ -304,7 +303,7 @@ struct Parameter : SourceLocation {
     Type type;
 };
 
-struct Parameters : SourceLocation, std::vector<Parameter> {};
+struct Parameters : SourceLocation, std::list<Parameter> {};
 
 struct FunctionHeader : SourceLocation {
     Annotations annotations;
@@ -330,20 +329,20 @@ struct Struct : SourceLocation {
     Annotations annotations;
     Identifier name;
     TemplateParameters template_parameters;
-    boost::optional<std::vector<Field>> fields;
+    boost::optional<std::list<Field>> fields;
 };
 
 struct InterfacePrototype : SourceLocation {
     Identifier name;
     // 函数声明也采用Function, 但其没有实现
-    std::vector<Function> functions;
+    std::list<Function> functions;
 };
 
 struct Implement : SourceLocation {
     boost::optional<IdentifierPath> interface;
     Type type;
     TemplateParameters template_paramters;
-    std::vector<Function> functions;
+    std::list<Function> functions;
 };
 
 struct Template : SourceLocation {

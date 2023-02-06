@@ -141,6 +141,42 @@ class IrBuilder {
         return nullptr;
     }
 
+    std::shared_ptr<ir::AccessField> accessField(std::shared_ptr<ir::Value> ir_object,
+                                                 std::string field_name) {
+        auto ir_variable_liked = this->variableLikedNormalize(ir_object);
+        auto iter_field = std::find_if(RANGE(ir_object->type->fields),
+                                       [=](auto ir_field) { return ir_field->name == field_name; });
+        PRAJNA_ASSERT(iter_field != ir_object->type->fields.end());
+        return this->create<ir::AccessField>(ir_variable_liked, *iter_field);
+    }
+
+    std::shared_ptr<ir::Value> accessMember(std::shared_ptr<ir::Value> ir_object,
+                                            std::string member_name) {
+        auto ir_type = ir_object->type;
+
+        auto ir_variable_liked = this->variableLikedNormalize(ir_object);
+        if (auto member_function = this->getMemberFunction(ir_type, member_name)) {
+            auto ir_this_pointer = this->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+            return ir::MemberFunctionWithThisPointer::create(ir_this_pointer, member_function);
+        }
+
+        auto iter_field = std::find_if(
+            RANGE(ir_type->fields),
+            [=](std::shared_ptr<ir::Field> ir_field) { return ir_field->name == member_name; });
+        if (iter_field != ir_type->fields.end()) {
+            auto ir_field_access = this->create<ir::AccessField>(ir_variable_liked, *iter_field);
+            return ir_field_access;
+        }
+
+        // 索引property
+        if (auto ir_property = ir_type->properties[member_name]) {
+            auto ir_this_pointer = this->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+            return this->create<ir::AccessProperty>(ir_this_pointer, ir_property);
+        }
+
+        return nullptr;
+    }
+
     std::shared_ptr<ir::Call> callMemberFunction(
         std::shared_ptr<ir::Value> ir_object, std::string member_function,
         std::vector<std::shared_ptr<ir::Value>> ir_arguments) {
@@ -162,15 +198,6 @@ class IrBuilder {
         auto ir_member_function = ir_object->type->binary_functions[binary_operator];
         PRAJNA_ASSERT(ir_member_function);
         return this->create<ir::Call>(ir_member_function, ir_arguments);
-    }
-
-    std::shared_ptr<ir::AccessField> accessField(std::shared_ptr<ir::Value> ir_object,
-                                                 std::string field_name) {
-        auto ir_variable_liked = this->variableLikedNormalize(ir_object);
-        auto iter_field = std::find_if(RANGE(ir_object->type->fields),
-                                       [=](auto ir_field) { return ir_field->name == field_name; });
-        PRAJNA_ASSERT(iter_field != ir_object->type->fields.end());
-        return this->create<ir::AccessField>(ir_variable_liked, *iter_field);
     }
 
     void pushSymbolTable() {

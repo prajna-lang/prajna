@@ -243,33 +243,13 @@ class ExpressionLoweringVisitor {
             logger->error("access operand must be a identifier", ast_binary_operation);
         }
 
-        auto ir_type = ir_lhs->type;
-        auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_lhs);
         std::string member_name = boost::get<ast::Identifier>(ast_binary_operation.operand);
-        if (auto member_function = ir_builder->getMemberFunction(ir_type, member_name)) {
-            auto ir_this_pointer =
-                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-            return ir::MemberFunctionWithThisPointer::create(ir_this_pointer, member_function);
+        auto ir_member = ir_builder->accessMember(ir_lhs, member_name);
+        if (!ir_member) {
+            logger->error(fmt::format("{} is not a member", member_name),
+                          ast_binary_operation.operand);
         }
-
-        auto iter_field = std::find_if(
-            RANGE(ir_type->fields),
-            [=](std::shared_ptr<ir::Field> ir_field) { return ir_field->name == member_name; });
-        if (iter_field != ir_type->fields.end()) {
-            auto ir_field_access =
-                ir_builder->create<ir::AccessField>(ir_variable_liked, *iter_field);
-            return ir_field_access;
-        }
-
-        // 索引property
-        if (auto ir_property = ir_type->properties[member_name]) {
-            auto ir_this_pointer =
-                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-            return ir_builder->create<ir::AccessProperty>(ir_this_pointer, ir_property);
-        }
-
-        logger->error(fmt::format("{} is not a member", member_name), ast_binary_operation.operand);
-        return nullptr;
+        return ir_member;
     }
 
     std::shared_ptr<ir::Value> applyBinaryOperationIndexArray(
@@ -349,11 +329,16 @@ class ExpressionLoweringVisitor {
                         ir_function_type->argument_types.size() - 1, ir_arguments.size()),
                     ast_expressions);
             }
-            for (size_t i = 0; i < ir_arguments.size(); ++i) {
-                if (ir_arguments[i]->type != ir_function_type->argument_types[i + 1]) {
-                    logger->error("the argument type is not matched", ast_expressions[i]);
+            for (auto [ir_argument, ir_argument_type, ast_expression] : boost::combine(
+                     ir_arguments,
+                     boost::make_iterator_range(std::next(ir_function_type->argument_types.begin()),
+                                                ir_function_type->argument_types.end()),
+                     ast_expressions)) {
+                if (ir_argument->type != ir_argument_type) {
+                    logger->error("the argument type is not matched", ast_expression);
                 }
             }
+
             ir_arguments.insert(ir_arguments.begin(), ir_member_function->this_pointer);
             return ir_builder->create<ir::Call>(ir_member_function->function_prototype,
                                                 ir_arguments);
@@ -368,9 +353,10 @@ class ExpressionLoweringVisitor {
                         ir_function_type->argument_types.size(), ir_arguments.size()),
                     ast_expressions);
             }
-            for (size_t i = 0; i < ir_arguments.size(); ++i) {
-                if (ir_arguments[i]->type != ir_function_type->argument_types[i]) {
-                    logger->error("the argument type is not matched", ast_expressions[i]);
+            for (auto [ir_argument, ir_argument_type, ast_experssion] :
+                 boost::combine(ir_arguments, ir_function_type->argument_types, ast_expressions)) {
+                if (ir_argument->type != ir_argument_type) {
+                    logger->error("the argument type is not matched", ast_expressions);
                 }
             }
             return ir_builder->create<ir::Call>(ir_lhs, ir_arguments);
@@ -388,11 +374,18 @@ class ExpressionLoweringVisitor {
                                 ir_arguments.size()),
                     ast_expressions);
             }
-            for (size_t i = 0; i < ir_arguments.size(); ++i) {
-                if (ir_arguments[i]->type != ir_getter_function_type->argument_types[i + 1]) {
-                    logger->error("the argument type is not matched", ast_expressions[i]);
+
+            for (auto [ir_argument, ir_argument_type, ast_expression] :
+                 boost::combine(ir_arguments,
+                                boost::make_iterator_range(
+                                    std::next(ir_getter_function_type->argument_types.begin()),
+                                    ir_getter_function_type->argument_types.end()),
+                                ast_expressions)) {
+                if (ir_argument->type != ir_argument_type) {
+                    logger->error("the argument type is not matched", ast_expression);
                 }
             }
+
             // 移除, 在末尾插入, 应为参数应该在属性访问的前面
             ir_access_property->parent_block->values.remove(ir_access_property);
             ir_builder->currentBlock()->values.push_back(ir_access_property);
@@ -714,7 +707,7 @@ class ExpressionLoweringVisitor {
     //     return ir_array;
     // }
 
-    std::shared_ptr<ir::Value> applyArray(std::vector<ast::Expression> ast_array_values) {
+    std::shared_ptr<ir::Value> applyArray(std::list<ast::Expression> ast_array_values) {
         // 获取数组类型
         PRAJNA_ASSERT(ast_array_values.size() > 0);
         auto ir_first_value = this->applyOperand(ast_array_values.front());
@@ -733,10 +726,11 @@ class ExpressionLoweringVisitor {
         auto ir_array_tmp = ir_builder->create<ir::LocalVariable>(ir_array_type);
         auto ir_index_property = ir_array_type->properties["["];
         PRAJNA_VERIFY(ir_index_property, "Array index property is missing");
-        for (size_t i = 0; i < ast_array_values.size(); ++i) {
-            auto ir_value = this->applyOperand(ast_array_values[i]);
+        size_t i = 0;
+        for (auto ast_array_value : ast_array_values) {
+            auto ir_value = this->applyOperand(ast_array_value);
             if (ir_value->type != ir_value_type) {
-                logger->error("the array element type are not the same", ast_array_values[i]);
+                logger->error("the array element type are not the same", ast_array_value);
             }
             auto ir_index = ir_builder->getIndexConstant(i);
             auto ir_array_tmp_this_pointer =
@@ -745,6 +739,7 @@ class ExpressionLoweringVisitor {
                 ir_array_tmp_this_pointer, ir_index_property);
             ir_access_property->arguments({ir_index});
             ir_builder->create<ir::WriteProperty>(ir_value, ir_access_property);
+            ++i;
         }
 
         return ir_array_tmp;
@@ -784,12 +779,12 @@ class ExpressionLoweringVisitor {
                                 ir_function_type->argument_types.size(), ir_arguments.size()),
                     ast_kernel_function_call.operation->arguments);
             }
-            for (size_t i = 0; i < ir_arguments.size(); ++i) {
-                if (ir_arguments[i]->type != ir_function_type->argument_types[i]) {
-                    logger->error("the argument type is not matched",
-                                  ast_kernel_function_call.operation->arguments[i]);
-                }
-            }
+            // for (size_t i = 0; i < ir_arguments.size(); ++i) {
+            //     if (ir_arguments[i]->type != ir_function_type->argument_types[i]) {
+            //         logger->error("the argument type is not matched",
+            //                       ast_kernel_function_call.operation->arguments[i]);
+            //     }
+            // }
 
             return ir_builder->create<ir::KernelFunctionCall>(ir_function, ir_grid_shape,
                                                               ir_block_shape, ir_arguments);

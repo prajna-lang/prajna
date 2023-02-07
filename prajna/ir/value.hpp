@@ -1660,4 +1660,8 @@ inline std::shared_ptr<Value> Block::clone(std::shared_ptr<FunctionCloner> funct
     return ir_new;
 }
 
+inline std::string getKernelFunctionAddressName(std::shared_ptr<Function> ir_kernel_function) {
+    return concatFullname(ir_kernel_function->fullname, "kernel_function_address");
+}
+
 }  // namespace prajna::ir

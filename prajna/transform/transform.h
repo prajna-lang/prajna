@@ -155,8 +155,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
             for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
                 if (auto ir_function = cast<ir::Function>(ir_instruction->operand(i))) {
                     if (ir_function->annotations.count("kernel")) {
-                        auto global_variable_fullname =
-                            getKernelFunctionAddressName(ir_function->function_type->fullname);
+                        auto global_variable_fullname = getKernelFunctionAddressName(ir_function);
 
                         sp<ir::GlobalVariable> ir_global_variable = nullptr;
                         auto iter_global_variable = std::find_if(
@@ -272,8 +271,7 @@ inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
     for (auto ir_function : ir_nvptx_module->functions) {
         if (ir_function->annotations.count("kernel")) {
-            auto global_variable_fullname =
-                getKernelFunctionAddressName(ir_function->function_type->fullname);
+            auto global_variable_fullname = getKernelFunctionAddressName(ir_function);
             auto iter_global_variable = std::find_if(
                 RANGE(ir_module->global_variables),
                 [=](sp<ir::GlobalVariable> x) { return x->fullname == global_variable_fullname; });

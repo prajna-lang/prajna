@@ -178,7 +178,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
 
         for (auto ir_function : ir_sub_module->functions) {
             if (ir_function->annotations.count("kernel")) {
-                auto kernel_fun_address_name = getKernelFunctionAddressName(ir_function->fullname);
+                auto kernel_fun_address_name = getKernelFunctionAddressName(ir_function);
                 auto test_kernel_fun =
                     reinterpret_cast<CUfunction *>(this->getValue(kernel_fun_address_name));
                 std::string function_name = mangleNvvmName(ir_function->fullname);

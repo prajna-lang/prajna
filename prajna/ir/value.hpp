@@ -123,7 +123,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         this->parent_block = nullptr;
     }
 
-    virtual void finalize() { this->detach(); }
+    virtual void finalize();
 
     virtual std::shared_ptr<Function> getParentFunction();
 
@@ -1632,6 +1632,14 @@ inline std::shared_ptr<Block> Value::getRootBlock() {
         root = root->parent_block;
     }
     return root;
+}
+
+inline void Value::finalize() {
+    auto instruction_with_index_list_copy = this->instruction_with_index_list;
+    for (auto [ir_instruction, idx] : instruction_with_index_list_copy) {
+        ir_instruction->operand(idx, nullptr);
+    }
+    this->detach();
 }
 
 inline std::shared_ptr<Value> Block::clone(std::shared_ptr<FunctionCloner> function_cloner) {

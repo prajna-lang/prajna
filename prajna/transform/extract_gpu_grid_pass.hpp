@@ -292,10 +292,6 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
 
     ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
 
-    // @note 临时处理, 应该搞到外面才合理
-    // FlatternBlockPass flattern_block_pass;
-    // flattern_block_pass.runOnFunction(ir_kernel_function);
-
     return std::make_tuple(ir_kernel_function, ir_captured_variables_list);
 }
 

@@ -140,7 +140,7 @@ inline bool isGeneralCapturedType(std::shared_ptr<ir::Type> ir_type) {
 }
 
 inline bool isTensorType(std::shared_ptr<ir::Type> ir_type) {
-    std::string tensor_fullname_prefix = "::core::Tensor<";
+    std::string tensor_fullname_prefix = "::tensor::Tensor<";
     if (ir_type->fullname.size() > tensor_fullname_prefix.size()) {
         if (std::equal(RANGE(tensor_fullname_prefix), ir_type->fullname.begin())) {
             if (ir_type->fullname.back() == '>') {
@@ -183,7 +183,7 @@ inline std::list<ir::Target> getTargets(std::shared_ptr<ir::Function> ir_functio
 }
 
 inline bool isHostTensorType(std::shared_ptr<ir::Type> ir_type) {
-    std::string host_tensor_type__fullname_prefix = "::core::Tensor";
+    std::string host_tensor_type__fullname_prefix = "::tensor::Tensor";
     if (ir_type->fullname.size() > host_tensor_type__fullname_prefix.size() &&
         ir_type->fullname.substr(0, host_tensor_type__fullname_prefix.size()) ==
             host_tensor_type__fullname_prefix) {
@@ -207,7 +207,7 @@ inline bool isGpuTensorType(std::shared_ptr<ir::Type> ir_type) {
 inline std::shared_ptr<ir::Type> getGpuTensorTypeOfHostTensorType(
     std::shared_ptr<ir::Type> ir_type) {
     PRAJNA_ASSERT(isHostTensorType(ir_type));
-    auto ir_gpu_tensor_type_fullname = "::gpu" + ir_type->fullname.substr(6);  //"::core"
+    auto ir_gpu_tensor_type_fullname = "::gpu" + ir_type->fullname.substr(8);  //"::tensor"
     for (auto ir_type : ir::global_context.created_types) {
         if (ir_type->fullname == ir_gpu_tensor_type_fullname) return ir_type;
     }

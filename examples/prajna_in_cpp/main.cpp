@@ -23,6 +23,8 @@ int main() {
         compiler->getSymbolValue("::examples::prajna_in_cpp::add::matrixAddF32"));
 
     auto ts_re = MatrixF32::create(shape);
+
+    // ts等的引用计数依然正常工作, 其可以在c++和Prajna交互时正常工作
     matrix_add_f32(&ts, &ts, &ts_re);
 
     for (int64_t i = 0; i < shape[0]; ++i) {

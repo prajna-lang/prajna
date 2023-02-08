@@ -334,19 +334,17 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
     for (auto ir_for : ir_fors) {
         auto ir_builder = lowering::IrBuilder::create();
         ir_builder->symbol_table = ir_module->symbol_table;
-        // 不是数组索引的for, 不做处理
+        // 只需要对数组循环进行处理
         if (not ir_builder->isArrayIndexType(ir_for->index()->type)) continue;
 
         ir_builder->pushBlock(ir_for->parent_block);
         ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
-        // fisrt =
         auto ir_layout_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
             ir_builder->getSymbolByPath(true, {"tensor", "Layout"}));
         PRAJNA_ASSERT(ir_layout_template_struct);
         auto ir_array_first = ir_for->first();
         auto ir_array_last = ir_for->last();
         auto ir_array_type = ir_array_last->type;
-        // @todo 需要修复, 先设置为2
         auto ir_array_template_arguments =
             std::any_cast<std::list<lowering::Symbol>>(ir_array_type->template_arguments);
         auto ir_rank = lowering::symbolGet<ir::ConstantInt>(ir_array_template_arguments.back());
@@ -371,13 +369,17 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         auto ir_linear_index = ir_builder->create<ir::LocalVariable>(ir_builder->getIndexType());
         ir_for->index(ir_linear_index);
 
+        auto ir_array_first_variable = ir_builder->variableLikedNormalize(ir_array_first);
+        auto ir_layout_variable = ir_builder->variableLikedNormalize(ir_layout);
         ir_builder->pushBlock(ir_for->loopBlock());
         ir_builder->inserter_iterator = ir_for->loopBlock()->values.begin();
+        utility::removeFromParent(ir_array_index);
+        ir_builder->insert(ir_array_index);
         ir_builder->create<ir::WriteVariableLiked>(
             ir_builder->callBinaryOperator(
-                ir_builder->callMemberFunction(ir_layout, "linearIndexToArrayIndex",
+                ir_builder->callMemberFunction(ir_layout_variable, "linearIndexToArrayIndex",
                                                {ir_linear_index}),
-                "+", ir_array_first),
+                "+", ir_array_first_variable),
             ir_array_index);
     }
 

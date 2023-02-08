@@ -12,153 +12,6 @@
 
 namespace prajna::transform {
 
-// class ExtractGpuForPass : public FunctionPass {
-//    public:
-//     std::shared_ptr<ir::Function> createKernelFunction(
-//         std::shared_ptr<ir::For> ir_gpu_for,
-//         std::vector<std::shared_ptr<ir::LocalVariable>> ir_variables,
-//         std::string ir_kernel_function_name) {
-//         std::vector<std::shared_ptr<ir::Type>> ir_argument_types(ir_variables.size());
-//         std::transform(RANGE(ir_variables), ir_argument_types.begin(),
-//                        [](std::shared_ptr<ir::Value> ir_value) { return ir_value->type; });
-
-//         auto ir_host_function = ir_gpu_for->getParentFunction();
-//         auto ir_host_module = ir_host_function->parent_module;
-
-//         auto ir_kernel_function_type =
-//             ir::FunctionType::create(ir::VoidType::create(), ir_argument_types);
-//         auto ir_kernel_function = ir::Function::create(ir_kernel_function_type);
-
-//         auto ir_nvptx_module = ir_host_module->modules[ir::Target::nvptx];
-
-//         ir_nvptx_module->functions.push_back(ir_kernel_function);
-//         //
-//         ir_kernel_function->name = ir_kernel_function_name;
-//         ir_kernel_function->fullname =
-//             concatFullname(ir_host_function->fullname, ir_kernel_function->name);
-//         ir_kernel_function->parent_module = ir_nvptx_module;
-//         ir_kernel_function->annotations["target"].push_back("nvptx");
-//         ir_kernel_function->annotations.insert({"kernel", {}});
-
-//         auto ir_grid_block = ir_gpu_for->loopBlock();
-//         ir_grid_block->parent_block = nullptr;
-//         ir_kernel_function->parameters.resize(ir_kernel_function_type->parameter_types.size());
-//         for (size_t i = 0; i < ir_kernel_function_type->parameter_types.size(); ++i) {
-//             ir_kernel_function->parameters[i] = ir::Parameter::create(ir_argument_types[i]);
-//             ir_kernel_function->parameters[i]->parent_block = ir_grid_block;
-//         }
-
-//         //
-//         auto ir_top_block = ir::Block::create();
-//         ir_top_block->parent_function = ir_kernel_function;
-//         ir_kernel_function->blocks.push_back(ir_top_block);
-//         auto iter = ir_top_block->values.end();
-
-//         {
-//             std::string code = "var threadIdx_x = threadIdxX();";
-//             auto logger = Logger::create(code);
-//             auto symbol_table = ir_gpu_for->getParentFunction()->parent_module->symbol_table;
-//             auto statement_lowering_visitor =
-//                 lowering::StatementLoweringVisitor::create(symbol_table, logger);
-//             auto ir_builder = statement_lowering_visitor->ir_builder;
-//             ir_builder->pushSymbolTable();
-//             ir_builder->pushBlock(ir_top_block);
-//             // ir_builder->symbol_table->set(ir_tid_x_fun, "getThreadIdxX");
-
-//             auto ast = prajna::parser::parse(code, "//None", logger);
-
-//             statement_lowering_visitor->apply(ast);
-
-//             ir_builder->create<ir::Return>(ir::VoidValue::create());
-//             ir_builder->popSymbolTable();
-//             ir_builder->popBlock();
-//         }
-
-//         return ir_kernel_function;
-
-//         // // 将捕获的变量替换为核函数的参数
-//         // for (auto [ir_variable, ir_argument] :
-//         //      boost::combine(ir_variables, ir_kernel_function->parameters)) { //
-//         //      combine会使用最短的size
-//         //     auto instruction_with_index_list =
-//         //     ir_variable->instruction_with_index_list; for (auto
-//         //     [ir_instruction, idx] : instruction_with_index_list) {
-//         //         //  只处理相关的操作, ir_grid外的不处理
-//         //         if (ir_instruction->parent_block == ir_grid_block) {
-//         //             ir_instruction->operand(idx, ir_argument);
-//         //         }
-//         //     }
-//         // }
-//     }
-
-//     void conveterForToGpu(std::shared_ptr<ir::For> ir_gpu_for, size_t idx) {
-//         auto ir_captured_variable_vector =
-//             utility::captureExternalVariablesInBlock(ir_gpu_for->loopBlock());
-//         // 将index移除, 其会转换为核函数的内部参数
-//         ir_captured_variable_vector.remove(ir_gpu_for->index());
-//         utility::removeFromParent(ir_gpu_for->index());
-//         // 都是可捕获类型
-//         if (std::any_of(RANGE(ir_captured_variable_vector), [](auto ir_variable) {
-//                 return !utility::isCapturedType(ir_variable->type);
-//             })) {
-//             PRAJNA_TODO;
-//         }
-//         utility::eachValue(ir_gpu_for->loopBlock(), [=](auto ir_value) {
-//             // 不能被修改
-//             if (auto ir_write_variable_liked = cast<ir::WriteVariableLiked>(ir_value)) {
-//                 if (std::any_of(RANGE(ir_captured_variable_vector), [=](auto
-//                 ir_captured_variable) {
-//                         return utility::isReferedTo(ir_captured_variable,
-//                                                     ir_write_variable_liked->variable());
-//                     })) {
-//                     PRAJNA_TODO;
-//                 }
-//             }
-//             // 不能获取地址, 因为是通过值拷贝捕获的
-//             if (auto ir_get_address_of = cast<ir::GetAddressOfVariableLiked>(ir_value)) {
-//                 if (std::any_of(RANGE(ir_captured_variable_vector), [=](auto
-//                 ir_captured_variable) {
-//                         return ir_captured_variable == ir_get_address_of->variable();
-//                     })) {
-//                     PRAJNA_TODO;
-//                 }
-//             }
-//         });
-
-//         // 参数需要有顺序
-//         std::vector<std::shared_ptr<ir::LocalVariable>> ir_captured_variable_vec;
-//         auto ir_kernel_function = this->createKernelFunction(ir_gpu_for,
-//         ir_captured_variable_vec,
-//                                                              "grid_kernel_" +
-//                                                              std::to_string(idx));
-//         // 核函数并不会在这里生成, 起会在JIT的时候生成PTX,
-//         // 所以我们在这里用全局变量来表示它, 回头生产了再赋予全局变量,
-//         // 如果这里立即生成, 则代码的模块性会大受影响=\-
-//         auto ir_global_variable =
-//             ir::GlobalVariable::create(ir::PointerType::create(ir::IntType::create(64, 32)));
-//         ir_global_variable->parent_module = ir_gpu_for->getParentFunction()->parent_module;
-//         ir_global_variable->fullname = ir_kernel_function->fullname + "_pointer";
-//         // 调用核函数
-//         // lauchKernelFunction(ir_global_variable, gridX, )
-//         // cuda::cu
-
-//         utility::removeFromParent(ir_gpu_for);
-//     }
-
-//     bool runOnFunction(std::shared_ptr<ir::Function> ir_kernel_function) override {
-//         bool changed = true;
-
-//         auto ir_grids = utility::getValuesInFunction<ir::For>(ir_kernel_function);
-
-//         size_t i = 0;
-//         for (auto ir_gpu_for : ir_grids) {
-//             this->conveterForToGpu(ir_gpu_for, i++);
-//         }
-
-//         return changed;
-//     }
-// };
-
 inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_t idx) {
     auto ir_module = ir_gpu_for->getParentFunction()->parent_module;
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
@@ -186,8 +39,8 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     auto ir_kernel_function_type =
         ir::FunctionType::create(ir_argument_types, ir::VoidType::create());
     auto ir_kernel_function = ir::Function::create(ir_kernel_function_type);
-    ir_kernel_function->fullname =
-        concatFullname(ir_gpu_for->getParentFunction()->fullname, "gpu_for_" + std::to_string(idx));
+    ir_kernel_function->fullname = concatFullname(ir_gpu_for->getParentFunction()->fullname,
+                                                  "auto_created_gpu_for_" + std::to_string(idx));
     ir_kernel_function->name = ir_kernel_function->fullname;
     ir_kernel_function_type->fullname = ir_kernel_function->fullname;
     ir_kernel_function_type->name = ir_kernel_function->fullname;
@@ -284,6 +137,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         PRAJNA_ASSERT(ir_kernel_while_loop_block);
         auto ir_while_builder = lowering::IrBuilder::create();
         ir_while_builder->pushBlock(ir_kernel_while_loop_block);
+        // 末尾应该有个Label, 故在开始插入
         ir_while_builder->inserter_iterator = ir_kernel_while_loop_block->values.begin();
         for (auto ir_value : ir_gpu_for->loopBlock()->values) {
             ir_while_builder->insert(ir_value);

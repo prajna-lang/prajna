@@ -111,8 +111,8 @@ inline std::list<std::shared_ptr<ir::Variable>> captureExternalVariablesInBlock(
         if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
             for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
                 auto ir_operand = ir_instruction->operand(i);
-                if (auto ir_local_variable = cast<ir::Variable>(ir_operand)) {
-                    if (ir_local_variable->parent_block != ir_block) {
+                if (ir_operand->parent_block != ir_block) {
+                    if (auto ir_local_variable = cast<ir::Variable>(ir_operand)) {
                         ir_variables.push_back(ir_local_variable);
                     }
                 }

@@ -59,11 +59,6 @@ std::shared_ptr<Compiler> Compiler::create() {
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
     this->addPackageDirectories(builtin_sources_dir);
     this->compileFile("bootstrap.prajna");
-
-#ifdef PRAJNA_WITH_GPU
-    this->compileFile("cuda.prajna");
-    this->compileFile("gpu.prajna");
-#endif
 }
 
 std::shared_ptr<ir::Module> Compiler::compileCode(

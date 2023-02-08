@@ -107,3 +107,4 @@ implement Tensor<Type_ : template, Dim_: template> {
 }
 
 export Tensor;
+export Layout;

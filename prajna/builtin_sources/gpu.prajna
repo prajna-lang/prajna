@@ -35,32 +35,65 @@ func launchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
 
 struct Tensor<Type_ : template, Dim_ : template> {
     data : Type_*;
-    shape: Array<i64, Dim_>;
+    // shape: Array<i64, Dim_>;
+    layout: Layout<Dim_>;
 }
 
 
 implement Tensor<Type_ : template, Dim_: template> {
     @static
     func create(shape :Array<i64, Dim_>)->Tensor<Type_, Dim_>{
+        // var self: Tensor<Type_, Dim_>;
+        // self.shape = shape;
+        // var size = 1;
+        // for i in 0 to Dim_ {
+        //     size = size * shape[i];
+        // }
+        // var bytes = size * sizeof(Type_);
+        // // bytes.tostr().print();
+        // var re = cuda::cuMemAlloc(cast<i8**>(&self.data), bytes);
+        // // "cuMemAlloc".print();
+        // // re.tostr().print();
+        // return self;
+
         var self: Tensor<Type_, Dim_>;
-        self.shape = shape;
-        var size = 1;
-        for i in 0 to Dim_ {
-            size = size * shape[i];
-        }
-        var bytes = size * sizeof(Type_);
-        // bytes.tostr().print();
-        var re = cuda::cuMemAlloc(cast<i8**>(&self.data), bytes);
-        // "cuMemAlloc".print();
-        // re.tostr().print();
+        self.layout = Layout<Dim_>::create(shape);
+
+        var bytes = self.layout.length() * sizeof(Type_);
+        cuda::cuMemAlloc(cast<i8**>(&self.data), bytes);
+        bindings::registerReferenceCount(cast<undef*>(self.data));
+        bindings::incReferenceCount(cast<undef*>(self.data));
+
         return self;
     }
 
+    @property("at", "getter")
+    func at_getter(idx: Array<i64, Dim_>)->Type_{
+        var offset = this.layout.arrayIndexToLinearIndex(idx);
+        return this.data[offset];
+    }
+
+    @property("at", "setter")
+    func at_setter(idx: Array<i64, Dim_>, value: Type_){
+        var offset = this.layout.arrayIndexToLinearIndex(idx);
+        this.data[offset] = value;
+    }
+
+    @property("[", "getter")
+    func index_getter(idx: Array<i64, Dim_>)->Type_{
+        return this.at(idx);
+    }
+
+    @property("[", "setter")
+    func index_setter(idx: Array<i64, Dim_>, value: Type_){
+        this.at(idx) = value;
+    }
+
     func toHost()->::Tensor<Type_, Dim_>{
-        var host_tensor = ::Tensor<Type_, Dim_>::create(this.shape);
+        var host_tensor = ::Tensor<Type_, Dim_>::create(this.layout.shape);
         var size = 1;
         for i in 0 to Dim_ {
-            size = size * this.shape[i];
+            size = size * this.layout.shape[i];
         }
         // print("toHost: size");
         // size.tostr().print();

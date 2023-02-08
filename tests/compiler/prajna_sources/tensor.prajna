@@ -17,4 +17,8 @@ func testTensor(){
     var ts1 = Tensor<f32, 2>::create(shape);
     ts1.at([1,2]) = 3.1415;
     testing::Assert(ts1[1,2] == 3.1415);
+
+    var ts0 = Tensor<i64, 1>::create([2]);
+    ts0[0] = 1;
+
 }

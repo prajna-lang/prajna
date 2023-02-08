@@ -279,24 +279,9 @@ class ExpressionLoweringVisitor {
             return ir_builder->create<ir::IndexPointer>(ir_variable_liked, ir_index);
         }
         if (auto ir_index_property = ir_object->type->properties["["]) {
-            if (ir_arguments.size() == 1) {
-                if (ir_index->type !=
-                    ir_index_property->getter_function->function_type->parameter_types.back()) {
-                    PRAJNA_TODO;
-                }
-                auto ir_this_pointer =
-                    ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-                auto ir_access_property =
-                    ir_builder->create<ir::AccessProperty>(ir_this_pointer, ir_index_property);
-                ir_access_property->arguments({ir_index});
-                return ir_access_property;
-            } else {
-                // "[" propert在生成的时候就会被限制
-                if (not ir_builder->isArrayIndexType(ir_index_property->getter_function
-                                                         ->function_type->parameter_types.back())) {
-                    logger->error("too many index arguments", ast_binary_operation.operand);
-                }
-
+            // "[" propert在生成的时候就会被限制
+            if (ir_builder->isArrayIndexType(
+                    ir_index_property->getter_function->function_type->parameter_types.back())) {
                 PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
                 auto ast_arguments = boost::get<ast::Expressions>(ast_binary_operation.operand);
                 auto ir_array_argument = this->applyArray(ast_arguments);
@@ -306,6 +291,18 @@ class ExpressionLoweringVisitor {
                 auto ir_access_property =
                     ir_builder->create<ir::AccessProperty>(ir_this_pointer, ir_index_property);
                 ir_access_property->arguments({ir_array_argument});
+                return ir_access_property;
+            } else {
+                if (ir_index->type !=
+                    ir_index_property->getter_function->function_type->parameter_types.back()) {
+                    // 需要进一步完善
+                    PRAJNA_TODO;
+                }
+                auto ir_this_pointer =
+                    ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+                auto ir_access_property =
+                    ir_builder->create<ir::AccessProperty>(ir_this_pointer, ir_index_property);
+                ir_access_property->arguments({ir_index});
                 return ir_access_property;
             }
         }

@@ -93,6 +93,8 @@ implement Tensor<Type_ : template, Dim_: template> {
         this.data[offset] = value;
     }
 
+    // index property存在语法糖,
+    // ts[0,1] 等价于 ts.index_getter([0,1]); 其会将参数弄成数组
     @property("[", "getter")
     func index_getter(idx: Array<i64, Dim_>)->Type_{
         return this.at(idx);

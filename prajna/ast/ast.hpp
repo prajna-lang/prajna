@@ -225,7 +225,8 @@ struct For;
 struct Return;
 struct Struct;
 struct InterfacePrototype;
-struct Implement;
+struct ImplementType;
+struct ImplementInterface;
 struct Class;
 struct FunctionHeader;
 struct Function;
@@ -264,9 +265,9 @@ typedef boost::variant<
     Expression, boost::recursive_wrapper<If>, boost::recursive_wrapper<While>,
     boost::recursive_wrapper<For>, Break, Continue, boost::recursive_wrapper<Function>,
     boost::recursive_wrapper<Return>, boost::recursive_wrapper<Struct>,
-    boost::recursive_wrapper<InterfacePrototype>, boost::recursive_wrapper<Implement>,
-    boost::recursive_wrapper<Template>, boost::recursive_wrapper<TemplateStatement>,
-    boost::recursive_wrapper<TemplateInstance>, Pragma>
+    boost::recursive_wrapper<InterfacePrototype>, boost::recursive_wrapper<ImplementType>,
+    boost::recursive_wrapper<ImplementInterface>, boost::recursive_wrapper<Template>,
+    boost::recursive_wrapper<TemplateStatement>, boost::recursive_wrapper<TemplateInstance>, Pragma>
     Statement;
 
 // @note需要声明为class, 因为之前才能在其他模块使用前置声明.
@@ -337,10 +338,14 @@ struct InterfacePrototype : SourceLocation {
     std::list<Function> functions;
 };
 
-struct Implement : SourceLocation {
-    boost::optional<IdentifierPath> interface;
+struct ImplementType : SourceLocation {
     Type type;
-    TemplateParameters template_parameters;
+    std::list<Function> functions;
+};
+
+struct ImplementInterface : SourceLocation {
+    IdentifierPath interface;
+    Type type;
     std::list<Function> functions;
 };
 
@@ -402,7 +407,8 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Template, name, template_parameters, stat
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateStatement, template_parameters, statement)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, name, functions)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Implement, interface, type, template_parameters, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterface, interface, type, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)

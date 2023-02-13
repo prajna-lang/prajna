@@ -60,7 +60,7 @@ class TemplateStruct : public Named {
 
    public:
     typedef Template<ir::StructType> Impl;
-    typedef Template<ImplementTag> Implement;
+    typedef Template<ImplementTag> ImplementType;
 
     static std::shared_ptr<TemplateStruct> create(Impl::Generator struct_generator) {
         std::shared_ptr<TemplateStruct> self(new TemplateStruct);
@@ -85,15 +85,15 @@ class TemplateStruct : public Named {
         return struct_type_instance_dict[template_arguments];
     }
 
-    void pushBackImplements(std::shared_ptr<Implement> implement) {
+    void pushBackImplements(std::shared_ptr<ImplementType> implement) {
         this->template_implements.push_back(implement);
     }
 
     bool is_processing = false;
     std::shared_ptr<Impl> template_struct_impl = nullptr;
-    std::vector<std::shared_ptr<Implement>> template_implements;
+    std::vector<std::shared_ptr<ImplementType>> template_implements;
     std::unordered_map<std::list<Symbol>, bool> implement_is_processing;
-    std::unordered_map<std::list<Symbol>, std::unordered_map<std::shared_ptr<Implement>, bool>>
+    std::unordered_map<std::list<Symbol>, std::unordered_map<std::shared_ptr<ImplementType>, bool>>
         template_implements_processed;
     std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::StructType>>
         struct_type_instance_dict;

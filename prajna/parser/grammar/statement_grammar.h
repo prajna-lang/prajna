@@ -60,8 +60,10 @@ struct StatementGrammer
     rule<ast::TemplateParameters> template_parameters;
     rule<ast::Struct> struct_;
 
+    rule<std::list<ast::Function>> functions;
     rule<ast::InterfacePrototype> interface;
-    rule<ast::Implement> implement_;
+    rule<ast::ImplementType> implement_type;
+    rule<ast::ImplementInterface> implement_interface;
 
     rule<ast::Parameter> parameter;
     rule<ast::Parameters> parameters;

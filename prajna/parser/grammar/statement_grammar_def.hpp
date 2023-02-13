@@ -34,9 +34,9 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(statements, success_handler_function);
 
     statement.name("statement");
-    statement = block | if_ | struct_ | interface | implement_ | template_instance | template_ |
-                template_statement | function | while_ | for_ | single_statement |
-                semicolon_statement;
+    statement = block | if_ | struct_ | interface | implement_interface | implement_type |
+                template_instance | template_ | template_statement | function | while_ | for_ |
+                single_statement | semicolon_statement;
     on_error<fail>(statement, error_handler_function);
     on_success(statement, success_handler_function);
 
@@ -131,15 +131,24 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(field, success_handler_function);
 
     interface.name("interface");
-    interface = tok.interface > identifier > tok.left_braces > *(function) > tok.r_braces;
+    interface = tok.interface > identifier > functions;
     on_error<fail>(interface, error_handler_function);
     on_success(interface, success_handler_function);
 
-    implement_.name("implement");
-    implement_ = tok.implement > -(expr.identifier_path >> tok.for_) > type > -template_parameters >
-                 tok.left_braces > *(function) > tok.r_braces;
-    on_error<fail>(implement_, error_handler_function);
-    on_success(implement_, success_handler_function);
+    implement_interface.name("implement interface");
+    implement_interface = tok.implement >> expr.identifier_path >> tok.for_ > type > functions;
+    on_error<fail>(implement_interface, error_handler_function);
+    on_success(implement_interface, success_handler_function);
+
+    implement_type.name("implement type");
+    implement_type = tok.implement > type > functions;
+    on_error<fail>(implement_type, error_handler_function);
+    on_success(implement_type, success_handler_function);
+
+    functions.name("functions");
+    functions = tok.left_braces > +function > tok.r_braces;
+    on_error<fail>(functions, error_handler_function);
+    on_success(functions, success_handler_function);
 
     template_parameters.name("template parameters");
     template_parameters = omit[tok.less] > template_parameter % tok.comma > omit[tok.greater];
@@ -189,7 +198,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     template_statement.name("template");
     template_statement = tok.template_ > omit[tok.less] > (identifier % tok.comma) >
-                         omit[tok.greater] > (struct_ | implement_);
+                         omit[tok.greater] > (struct_ | implement_interface | implement_type);
     on_error<fail>(template_statement, error_handler_function);
     on_success(template_statement, success_handler_function);
 

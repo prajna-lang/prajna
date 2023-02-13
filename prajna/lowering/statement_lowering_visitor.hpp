@@ -175,11 +175,12 @@ class StatementLoweringVisitor {
             auto re = this->allBranchIsTerminated(ir_if->trueBlock(), ir_type) &&
                       this->allBranchIsTerminated(ir_if->falseBlock(), ir_type);
             if (re) {
-                // //插入一个Return避免错误
-                // auto ir
+                // //插入一个Return协助判断
+                ir_builder->pushBlock(ir_if->parent_block);
                 auto ir_variable = ir_builder->create<ir::LocalVariable>(ir_type);
                 auto ir_return = ir_builder->create<ir::Return>(ir_variable);
-                ir_if->parent_block->pushBack(ir_return);
+                ir_builder->popBlock();
+
                 return true;
             } else {
                 return false;
@@ -279,11 +280,11 @@ class StatementLoweringVisitor {
                                       ast_function.declaration);
                     }
                 }
-                ir_function->is_declaration = false;
 
                 ir_builder->return_type = nullptr;
                 ir_builder->popBlock();
                 ir_builder->popSymbolTable();
+                ir_function->is_declaration = false;
             } else {
                 ir_function->is_declaration = true;
             }

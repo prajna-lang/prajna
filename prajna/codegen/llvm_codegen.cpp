@@ -622,7 +622,9 @@ std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
 #endif
 
 #ifdef PRAJNA_ENABLE_LLVM_VERIFY
-    llvm::verifyModule(*ir_module->llvm_module, &llvm::dbgs());
+    auto verify_result = llvm::verifyModule(*ir_module->llvm_module, &llvm::errs());
+    // 总是返回false, 应该是llvm本身的问题
+    // PRAJNA_ASSERT(verify_result);
 #endif
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {

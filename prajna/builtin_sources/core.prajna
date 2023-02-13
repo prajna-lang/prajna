@@ -35,7 +35,6 @@ implement str{
 
     func print(){
         print_c(this.data);
-        return;
     }
 
     func append(v: char){

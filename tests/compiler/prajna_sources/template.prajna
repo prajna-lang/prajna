@@ -52,15 +52,15 @@ func test(){
     next_node.value = 2.0;
     root.next = &next_node;
 
-    // var t: i64[3];
-    // t.length2();
-    // // testing::Assert(t.length2() == 3);
+    var t: i64[3];
+    t.length2();
+    testing::Assert(t.length2() == 3);
 
-    // // var tt: i64*;
-    // // print(tt.toi64().tostr());
-    // root.nextValue();
+    var tt: i64*;
+    print(tt.toi64().tostr());
+    root.nextValue();
 
-    // var tmp: MyArray<i64, 2>;
-    // // testing::Assert(root.nextValue() == 2.0);
+    var tmp: MyArray<i64, 2>;
+    testing::Assert(root.nextValue() == 2.0);
 }
 

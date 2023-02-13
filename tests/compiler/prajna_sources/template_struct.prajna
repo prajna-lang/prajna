@@ -1,0 +1,22 @@
+
+// struct MyStruct{
+//     value: i64;
+// }
+
+// struct MyStruct<i64, 3>{
+//     value: f32;
+// }
+
+template <Type, Rank>
+struct MyStruct<Type, Rank>{
+    value: Type[Rank];
+}
+
+@test
+func testMain(){
+    // var a = 3;
+    // "Hi.".print();
+    var a: MyStruct<i64, 3>;
+
+    // var b : MyStruct<i64, 3>;
+}

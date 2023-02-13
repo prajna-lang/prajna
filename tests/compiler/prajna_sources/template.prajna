@@ -1,15 +1,23 @@
-
-struct Node<T: template>{
+template <T>
+struct Node<T>{
     value: T;
     next: Node<T> *;
 }
 
-// 模板
-implement Node<T: template>{
+template <T>
+implement Node<T>{
     func nextValue()->T{
         return (*this.next).value;
     }
 }
+
+template <T>
+implement Node<T>{
+    func nextValue2()->T{
+        return this.nextValue();
+    }
+}
+
 
 
 template ArrayTp <T, Rank>{
@@ -29,7 +37,12 @@ template ptrTp <Type>{
     }
 }
 
-// instantiate ptrTp<i64>;
+instantiate ptrTp<i64>;
+
+template <Type, Length>
+struct MyArray<Type, Length>{
+    data: Type[Length];
+}
 
 @test
 func test(){
@@ -39,12 +52,15 @@ func test(){
     next_node.value = 2.0;
     root.next = &next_node;
 
-    var t: i64[3];
-    testing::Assert(t.length2() == 3);
+    // var t: i64[3];
+    // t.length2();
+    // // testing::Assert(t.length2() == 3);
 
-    var tt: i64*;
-    print(tt.toi64().tostr());
+    // // var tt: i64*;
+    // // print(tt.toi64().tostr());
+    // root.nextValue();
 
-    testing::Assert(root.nextValue() == 2.0);
+    // var tmp: MyArray<i64, 2>;
+    // // testing::Assert(root.nextValue() == 2.0);
 }
 

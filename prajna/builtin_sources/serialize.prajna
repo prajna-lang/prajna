@@ -96,7 +96,8 @@ func tostr()->str{
 
 }
 
-implement Serialize for Array<Type_: template, Dim_: template>{
+template <Type_, Dim_>
+implement Serialize for Array<Type_, Dim_>{
     func tostr()->str{
         var re = "[";
         for i in 0 to Dim_ {

@@ -475,26 +475,6 @@ class StatementLoweringVisitor {
         return expression_lowering_visitor->applyType(ast_postfix_type);
     }
 
-    std::shared_ptr<ir::StructType> applyStructWithOutTemplates(
-        std::shared_ptr<ir::StructType> ir_struct_type, ast::Struct ast_struct) {
-        if (!ast_struct.fields) {
-            ir_struct_type->is_declaration = true;
-            return ir_struct_type;
-        }
-
-        auto ast_struct_fields = *ast_struct.fields;
-        std::vector<std::shared_ptr<ir::Field>> ir_fields;
-        std::transform(
-            RANGE(ast_struct_fields), std::back_inserter(ir_fields), [=](ast::Field ast_field) {
-                return ir::Field::create(ast_field.name, this->applyType(ast_field.type));
-            });
-
-        ir_struct_type->fields = ir_fields;
-        ir_struct_type->update();
-        this->createStructConstructor(ir_struct_type);
-        return ir_struct_type;
-    }
-
     std::list<std::string> getTemplateParametersIdentifiers(
         std::list<ast::TemplateParameter> template_parameters) {
         std::set<ast::Identifier> template_parameter_identifier_set;
@@ -510,72 +490,29 @@ class StatementLoweringVisitor {
         return template_parameter_identifier_list;
     }
 
+    // std::string getTemplateIdentifierFullname(ast::TemplateIdentifier template_identifier) {}
+
     Symbol operator()(ast::Struct ast_struct) {
-        if (ast_struct.template_parameters.empty()) {
-            if (ir_builder->symbol_table->currentTableHas(ast_struct.name)) {
-                auto ir_struct_type = cast<ir::StructType>(
-                    symbolGet<ir::Type>(ir_builder->symbol_table->get(ast_struct.name)));
-                if (ir_struct_type) {
-                    return this->applyStructWithOutTemplates(ir_struct_type, ast_struct);
-                }
-            }
+        auto ir_struct_type = ir::StructType::create();
+        ir_builder->instantiating_type = ir_struct_type;
 
-            auto ir_struct_type = ir::StructType::create({});
-            ir_builder->setSymbolWithAssigningName(ir_struct_type, ast_struct.name);
-            return this->applyStructWithOutTemplates(ir_struct_type, ast_struct);
-        } else {
-            auto template_parameter_identifier_list =
-                getTemplateParametersIdentifiers(ast_struct.template_parameters);
+        // TODO 名字重命名错误, 需要处理
+        ir_builder->symbol_table->setWithAssigningName(
+            ir_struct_type,
+            expression_lowering_visitor->getNameOfTemplateIdentfier(ast_struct.name));
 
-            auto symbol_table = ir_builder->symbol_table;
+        std::vector<std::shared_ptr<ir::Field>> ir_fields;
+        std::transform(
+            RANGE(ast_struct.fields), std::back_inserter(ir_fields), [=](ast::Field ast_field) {
+                return ir::Field::create(ast_field.name, this->applyType(ast_field.type));
+            });
+        ir_struct_type->fields = ir_fields;
+        ir_struct_type->update();
+        this->createStructConstructor(ir_struct_type);
 
-            auto template_struct = std::make_shared<TemplateStruct>();
-            template_struct->template_parameter_identifier_list =
-                template_parameter_identifier_list;
+        ir_builder->instantiating_type = nullptr;
 
-            // 外部使用算子, 必须值捕获
-            auto template_struct_generator =
-                [symbol_table, logger = this->logger, ast_struct,
-                 template_parameter_identifier_list, template_struct](
-                    std::list<Symbol> symbol_template_arguments,
-                    std::shared_ptr<ir::Module> ir_module) -> std::shared_ptr<ir::StructType> {
-                // 包裹一层名字空间, 避免被污染
-                auto templates_symbol_table = SymbolTable::create(symbol_table);
-                PRAJNA_ASSERT(template_parameter_identifier_list.size() ==
-                              symbol_template_arguments.size());
-
-                std::string symbol_list_fullname = "<";
-                for (auto [identifier, symbol] : boost::combine(template_parameter_identifier_list,
-                                                                symbol_template_arguments)) {
-                    templates_symbol_table->set(symbol, identifier);
-                    symbol_list_fullname.append(symbolGetFullname(symbol));
-                    symbol_list_fullname.push_back(',');
-                }
-                if (symbol_list_fullname.back() == ',') symbol_list_fullname.pop_back();
-                symbol_list_fullname.push_back('>');
-
-                auto ir_struct_type = ir::StructType::create({});
-                ir_struct_type->name = ast_struct.name + symbol_list_fullname;
-                ir_struct_type->fullname =
-                    concatFullname(symbol_table->fullname(), ir_struct_type->name);
-                // @需要提前把ir_struct_type设置, 这样才能嵌套
-                template_struct->struct_type_instance_dict[symbol_template_arguments] =
-                    ir_struct_type;
-
-                auto statement_lowering_visitor = StatementLoweringVisitor::create(
-                    templates_symbol_table, logger, ir_module, nullptr);
-                return statement_lowering_visitor->applyStructWithOutTemplates(ir_struct_type,
-                                                                               ast_struct);
-            };
-
-            template_struct->template_struct_impl =
-                Template<ir::StructType>::create(template_struct_generator);
-            // auto template_struct = TemplateStruct::create(template_struct_generator);
-
-            ir_builder->setSymbolWithAssigningName(template_struct, ast_struct.name);
-
-            return template_struct;
-        }
+        return ir_struct_type;
     }
 
     void processUnaryFunction(std::shared_ptr<ir::Type> ir_type,
@@ -744,9 +681,10 @@ class StatementLoweringVisitor {
         }
     }
 
-    void applyImplementWithOutTemplates(std::shared_ptr<ir::Type> ir_type,
-                                        ast::Implement ast_implement) {
+    Symbol operator()(ast::Implement ast_implement) {
         try {
+            auto ir_type = expression_lowering_visitor->applyType(ast_implement.type);
+
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_type->name;
 
@@ -896,63 +834,6 @@ class StatementLoweringVisitor {
             logger->note(ast_implement.type);
             throw compile_error;
         }
-    }
-
-    Symbol operator()(ast::Implement ast_implement) {
-        if (ast_implement.template_paramters.empty()) {
-            auto ir_type = expression_lowering_visitor->applyType(ast_implement.type);
-            this->applyImplementWithOutTemplates(ir_type, ast_implement);
-
-        } else {
-            auto template_parameter_identifier_list =
-                getTemplateParametersIdentifiers(ast_implement.template_paramters);
-
-            if (ast_implement.type.postfix_type_operators.size()) {
-                logger->error("unexpect implement", ast_implement.type);
-            }
-
-            // TODO
-            PRAJNA_ASSERT(ast_implement.type.base_type.which() == 1);
-            auto ast_identifier_path =
-                boost::get<ast::IdentifierPath>(ast_implement.type.base_type);
-            auto ir_symbol = expression_lowering_visitor->applyIdentifierPath(ast_identifier_path);
-            auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
-            if (template_struct == nullptr) {
-                logger->error("it's not a template struct but with template parameters",
-                              ast_implement.template_paramters);
-            }
-            if (template_struct->template_parameter_identifier_list.size() !=
-                template_parameter_identifier_list.size()) {
-                logger->error("the template parameters are not matched",
-                              ast_implement.template_paramters);
-            }
-
-            auto symbol_table = ir_builder->symbol_table;
-            auto template_implement_struct_generator =
-                [symbol_table, logger = this->logger, ast_implement, template_struct,
-                 template_parameter_identifier_list](std::list<Symbol> symbol_template_arguments,
-                                                     std::shared_ptr<ir::Module> ir_module) {
-                    // 包裹一层名字空间, 避免被污染
-                    auto templates_symbol_table = SymbolTable::create(symbol_table);
-                    PRAJNA_ASSERT(template_parameter_identifier_list.size() ==
-                                  symbol_template_arguments.size());
-                    for (auto [identifier, symbol] : boost::combine(
-                             template_parameter_identifier_list, symbol_template_arguments)) {
-                        templates_symbol_table->set(symbol, identifier);
-                    }
-                    auto statement_lowering_visitor = StatementLoweringVisitor::create(
-                        templates_symbol_table, logger, ir_module, nullptr);
-                    auto ir_type =
-                        template_struct->struct_type_instance_dict[symbol_template_arguments];
-                    statement_lowering_visitor->applyImplementWithOutTemplates(ir_type,
-                                                                               ast_implement);
-                    // 仅仅用于标记是否实例化, 没有实际用途
-                    return std::shared_ptr<ImplementTag>(new ImplementTag);
-                };
-            auto template_implement_struct =
-                Template<ImplementTag>::create(template_implement_struct_generator);
-            template_struct->pushBackImplements(template_implement_struct);
-        }
 
         return nullptr;
     }
@@ -997,6 +878,122 @@ class StatementLoweringVisitor {
             logger->note(ast_template_instance);
             throw compile_error;
         }
+    }
+
+    Symbol operator()(ast::TemplateStatement ast_template_statement) {
+        return boost::apply_visitor(
+            overloaded{
+                [=](auto x) -> Symbol {
+                    PRAJNA_UNREACHABLE;
+                    return nullptr;
+                },
+                [=](ast::Struct ast_struct) -> Symbol {
+                    if (!ast_struct.name.template_arguments) {
+                        logger->error("not a template struct", ast_struct.name);
+                    }
+                    if (ast_template_statement.template_parameters.size() !=
+                        ast_struct.name.template_arguments->size()) {
+                        logger->error("the template parameter size is not matched",
+                                      ast_struct.name);
+                    }
+
+                    auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
+                        ast_template_statement.template_parameters);
+
+                    auto symbol_table = ir_builder->symbol_table;
+
+                    auto template_struct = std::make_shared<TemplateStruct>();
+                    template_struct->template_parameter_identifier_list =
+                        template_parameter_identifier_list;
+
+                    // 外部使用算子, 必须值捕获
+                    auto template_struct_generator =
+                        [symbol_table, logger = this->logger, ast_struct,
+                         template_parameter_identifier_list,
+                         template_struct](std::list<Symbol> symbol_template_arguments,
+                                          std::shared_ptr<ir::Module> ir_module)
+                        -> std::shared_ptr<ir::StructType> {
+                        // 包裹一层名字空间, 避免被污染
+                        auto templates_symbol_table = SymbolTable::create(symbol_table);
+
+                        for (auto [identifier, symbol] : boost::combine(
+                                 template_parameter_identifier_list, symbol_template_arguments)) {
+                            templates_symbol_table->set(symbol, identifier);
+                        }
+
+                        auto statement_lowering_visitor = StatementLoweringVisitor::create(
+                            templates_symbol_table, logger, ir_module, nullptr);
+                        auto ir_type = cast<ir::StructType>(
+                            symbolGet<ir::Type>((*statement_lowering_visitor)(ast_struct)));
+                        // templates_symbol_table外面访问不到, 需要重新加入的符号表里
+                        symbol_table->set(ir_type, ir_type->name);
+                        return ir_type;
+                    };
+
+                    template_struct->template_struct_impl =
+                        Template<ir::StructType>::create(template_struct_generator);
+
+                    ir_builder->setSymbolWithAssigningName(template_struct,
+                                                           ast_struct.name.identifier);
+
+                    return template_struct;
+                },
+                [=](ast::Implement ast_implement) -> Symbol {
+                    auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
+                        ast_template_statement.template_parameters);
+
+                    if (ast_implement.type.postfix_type_operators.size()) {
+                        // 只能是原始的type, 因为是自动特化的
+                        logger->error("invalid template implement", ast_implement.type);
+                    }
+
+                    // TODO
+                    PRAJNA_ASSERT(ast_implement.type.base_type.which() == 1);
+                    auto ast_identifier_path =
+                        boost::get<ast::IdentifierPath>(ast_implement.type.base_type);
+                    // 只获取模板类, 不能带模板参数
+                    auto ast_template_struct = ast_identifier_path;
+                    ast_template_struct.identifiers.back().template_arguments = boost::none;
+                    auto ir_symbol =
+                        expression_lowering_visitor->applyIdentifierPath(ast_template_struct);
+                    auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
+                    if (template_struct == nullptr) {
+                        logger->error("it's not a template struct but with template parameters",
+                                      ast_implement.template_parameters);
+                    }
+                    if (template_struct->template_parameter_identifier_list.size() !=
+                        template_parameter_identifier_list.size()) {
+                        logger->error("the template parameters are not matched",
+                                      ast_implement.template_parameters);
+                    }
+
+                    auto symbol_table = ir_builder->symbol_table;
+                    auto template_implement_struct_generator =
+                        [symbol_table, logger = this->logger, ast_implement, template_struct,
+                         template_parameter_identifier_list](
+                            std::list<Symbol> symbol_template_arguments,
+                            std::shared_ptr<ir::Module> ir_module) {
+                            // 包裹一层名字空间, 避免被污染
+                            auto templates_symbol_table = SymbolTable::create(symbol_table);
+                            PRAJNA_ASSERT(template_parameter_identifier_list.size() ==
+                                          symbol_template_arguments.size());
+                            for (auto [identifier, symbol] :
+                                 boost::combine(template_parameter_identifier_list,
+                                                symbol_template_arguments)) {
+                                templates_symbol_table->set(symbol, identifier);
+                            }
+                            auto statement_lowering_visitor = StatementLoweringVisitor::create(
+                                templates_symbol_table, logger, ir_module, nullptr);
+                            (*statement_lowering_visitor)(ast_implement);
+                            // 仅仅用于标记是否实例化, 没有实际用途
+                            return std::shared_ptr<ImplementTag>(new ImplementTag);
+                        };
+                    auto template_implement_struct =
+                        Template<ImplementTag>::create(template_implement_struct_generator);
+                    template_struct->pushBackImplements(template_implement_struct);
+                    return nullptr;
+                }},
+            ast_template_statement.statement.get());
     }
 
     Symbol operator()(ast::Expression ast_expression) {

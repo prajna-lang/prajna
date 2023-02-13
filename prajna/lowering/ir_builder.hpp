@@ -56,10 +56,11 @@ class IrBuilder {
         auto tmp_symbol_table =
             is_root ? this->symbol_table->rootSymbolTable() : this->symbol_table;
         for (size_t i = 0; i < names.size() - 1; ++i) {
-            PRAJNA_ASSERT(tmp_symbol_table);
             tmp_symbol_table = symbolGet<SymbolTable>(tmp_symbol_table->get(names[i]));
+            if (!tmp_symbol_table) {
+                return nullptr;
+            }
         }
-
         return tmp_symbol_table->get(names.back());
     }
 
@@ -283,6 +284,9 @@ class IrBuilder {
     std::shared_ptr<Logger> logger = nullptr;
 
     std::stack<std::shared_ptr<ir::Block>> block_stack;
+
+    std::shared_ptr<ir::Type> instantiating_type = nullptr;
+    ;
 };
 
 }  // namespace prajna::lowering

@@ -1,6 +1,8 @@
-struct nullptr<T: template>{}
+template <T>
+struct nullptr<T>{}
 
-implement nullptr<T: template>{
+template <T>
+implement nullptr<T>{
     @static
     func create()->T *{
         var pointer: T*;

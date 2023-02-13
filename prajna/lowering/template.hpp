@@ -70,39 +70,18 @@ class TemplateStruct : public Named {
 
     std::shared_ptr<ir::StructType> getStructInstance(std::list<Symbol> template_arguments,
                                                       std::shared_ptr<ir::Module> ir_module) {
-        // imlement_is_processing会确保 struct 实例化, implement实例化顺序执行, 而不产生递归
-        if (implement_is_processing.count(template_arguments) == 0) {
-            implement_is_processing[template_arguments] = false;
-        }
+        if (struct_type_instance_dict.count(template_arguments) == 0) {
+            struct_type_instance_dict[template_arguments];
 
-        if (struct_type_instance_dict[template_arguments] == nullptr) {
-            implement_is_processing[template_arguments] = true;
-            // 执行下面的函数时, struct_type_instance_dict[template_arguments]会被赋值,
-            // 以便解决嵌套的问题, 下面的赋值有冗余, 但还是再赋值一次
             struct_type_instance_dict[template_arguments] =
                 template_struct_impl->getInstance(template_arguments, ir_module);
-            implement_is_processing[template_arguments] = false;
-        }
+            struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
 
-        if (!implement_is_processing[template_arguments]) {
             for (auto template_implement : template_implements) {
-                if (template_implements_processed[template_arguments].count(template_implement) ==
-                    0) {
-                    template_implements_processed[template_arguments][template_implement] = false;
-                }
-
-                if (template_implements_processed[template_arguments][template_implement]) {
-                    continue;
-                } else {
-                    implement_is_processing[template_arguments] = true;
-                    template_implement->getInstance(template_arguments, ir_module);
-                    template_implements_processed[template_arguments][template_implement] = true;
-                    implement_is_processing[template_arguments] = false;
-                }
+                template_implement->getInstance(template_arguments, ir_module);
             }
         }
 
-        struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
         return struct_type_instance_dict[template_arguments];
     }
 
@@ -118,7 +97,6 @@ class TemplateStruct : public Named {
         template_implements_processed;
     std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::StructType>>
         struct_type_instance_dict;
-
     std::list<std::string> template_parameter_identifier_list;
 };
 

@@ -1,6 +1,8 @@
-struct allocator<Type_: template>{}
+template <Type_>
+struct allocator<Type_>{}
 
-implement allocator<Type_: template>{
+template <Type_>
+implement allocator<Type_>{
     @static
     func allocate(size: i64)->Type_ *{
         return cast<Type_ *>(malloc(size * sizeof(Type_)));
@@ -12,13 +14,13 @@ implement allocator<Type_: template>{
     }
 }
 
-
-struct ref_ptr<Type_: template>{
+template <Type_>
+struct ref_ptr<Type_>{
     raw_ptr: Type_*;
 }
 
-implement ref_ptr<Type_: template> {
-
+template <Type_>
+implement ref_ptr<Type_> {
     @static
     func new(size: i64)->ref_ptr<Type_>{
         var self: ref_ptr<Type_>;

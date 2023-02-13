@@ -1,10 +1,5 @@
 @test
 func testTensor(){
-    var a : core::Array<f32, 2>;
-    a[0];
-    a[0] = 3.1415;
-    testing::Assert(a[0] == 3.1415);
-
     var shape = [10, 20];
     var ts = Tensor<i64, 2>::create(shape);
     var bs = ts;

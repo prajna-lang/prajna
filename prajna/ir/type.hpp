@@ -372,6 +372,8 @@ class StructType : public Type {
         return self;
     }
 
+    static std::shared_ptr<StructType> create() { return create({}); }
+
     void update() {
         this->bytes = 0;
         for (size_t i = 0; i < this->fields.size(); ++i) {

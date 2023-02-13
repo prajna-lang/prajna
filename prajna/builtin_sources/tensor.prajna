@@ -1,9 +1,11 @@
-struct Layout<Dim_ : template>{
+template <Dim_>
+struct Layout<Dim_>{
     shape: Array<i64, Dim_>;
     stride: Array<i64, Dim_>;
 }
 
-implement Layout<Dim_ : template>{
+template <Dim_>
+implement Layout<Dim_>{
     @static
     func create(shape: Array<i64, Dim_>)->Layout<Dim_>{
         var self: Layout<Dim_>;
@@ -46,12 +48,14 @@ implement Layout<Dim_ : template>{
 
 }
 
-struct Tensor<Type_ : template, Dim_ : template> {
+template <Type_, Dim_>
+struct Tensor<Type_, Dim_> {
     data : Type_*;
     layout: Layout<Dim_>;
 }
 
-implement Tensor<Type_ : template, Dim_: template> {
+template <Type_, Dim_>
+implement Tensor<Type_, Dim_> {
     @static
     func create(shape :Array<i64, Dim_>)->Tensor<Type_, Dim_>{
         var self: Tensor<Type_, Dim_>;

@@ -22,7 +22,7 @@ implement Tmp2{
 
 // }
 
-// implement str<i: template>{}
+// implement str<i>{}
 
 // import core::tt;
 

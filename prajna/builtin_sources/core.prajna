@@ -84,11 +84,13 @@ func print(ss: str){
 export str;
 export print;
 
-struct Array<Type_: template, Length_: template>{
+template <Type_, Length_>
+struct Array<Type_, Length_>{
     data: Type_[Length_];
 }
 
-implement Array<Type_: template, Length_: template>{
+template <Type_, Length_>
+implement Array<Type_, Length_>{
 
     func length()->i64{
         return Length_;

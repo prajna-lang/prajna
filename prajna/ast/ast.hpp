@@ -34,6 +34,7 @@ struct KernelFunctionCall;
 struct PrefixCall;
 struct Array;
 struct Template;
+struct TemplateStatement;
 struct TemplateInstance;
 struct DynamicCast;
 /// @note  operator const char*() const 函数在boost::spirit的debug node的模式下是需要的,
@@ -116,11 +117,10 @@ struct Type;
 struct IdentifierPath;
 
 using TemplateArgument = boost::variant<Blank, boost::recursive_wrapper<Type>, IntLiteral>;
-// using TemplateArguments = std::list<TemplateArgument>;
 
 struct TemplateArguments : SourceLocation, std::list<TemplateArgument> {};
 
-struct IdentifierWithTemplateArguments : SourceLocation {
+struct TemplateIdentifier : SourceLocation {
     Identifier identifier;
     // @note boost::optional是不可以省略的, 会有未知错误,
     // 可能和boost::recursive_wrapper混合使用有关, 目前就不省略了
@@ -129,7 +129,7 @@ struct IdentifierWithTemplateArguments : SourceLocation {
 
 struct IdentifierPath : SourceLocation {
     boost::optional<Operator> is_root;
-    std::list<IdentifierWithTemplateArguments> identifiers;
+    std::list<TemplateIdentifier> identifiers;
 };
 
 struct Import : SourceLocation {
@@ -265,7 +265,8 @@ typedef boost::variant<
     boost::recursive_wrapper<For>, Break, Continue, boost::recursive_wrapper<Function>,
     boost::recursive_wrapper<Return>, boost::recursive_wrapper<Struct>,
     boost::recursive_wrapper<InterfacePrototype>, boost::recursive_wrapper<Implement>,
-    boost::recursive_wrapper<Template>, boost::recursive_wrapper<TemplateInstance>, Pragma>
+    boost::recursive_wrapper<Template>, boost::recursive_wrapper<TemplateStatement>,
+    boost::recursive_wrapper<TemplateInstance>, Pragma>
     Statement;
 
 // @note需要声明为class, 因为之前才能在其他模块使用前置声明.
@@ -326,10 +327,8 @@ using TemplateParameter = Identifier;
 struct TemplateParameters : SourceLocation, std::list<TemplateParameter> {};
 
 struct Struct : SourceLocation {
-    Annotations annotations;
-    Identifier name;
-    TemplateParameters template_parameters;
-    boost::optional<std::list<Field>> fields;
+    TemplateIdentifier name;
+    std::list<Field> fields;
 };
 
 struct InterfacePrototype : SourceLocation {
@@ -341,7 +340,7 @@ struct InterfacePrototype : SourceLocation {
 struct Implement : SourceLocation {
     boost::optional<IdentifierPath> interface;
     Type type;
-    TemplateParameters template_paramters;
+    TemplateParameters template_parameters;
     std::list<Function> functions;
 };
 
@@ -349,6 +348,11 @@ struct Template : SourceLocation {
     Identifier name;
     TemplateParameters template_parameters;
     Statements statements;
+};
+
+struct TemplateStatement : SourceLocation {
+    TemplateParameters template_parameters;
+    boost::recursive_wrapper<Statement> statement;
 };
 
 struct TemplateInstance : SourceLocation {
@@ -387,18 +391,18 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::While, condition, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::For, annotations, index, first, last, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Return, expr)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Field, name, type)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierWithTemplateArguments, identifier,
-                          template_arguments)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Struct, annotations, name, template_parameters, fields)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateIdentifier, identifier, template_arguments)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Struct, name, fields)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Parameter, name, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotations, name, parameters, return_type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Pragma, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Template, name, template_parameters, statements)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateStatement, template_parameters, statement)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, name, functions)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Implement, interface, type, template_paramters, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Implement, interface, type, template_parameters, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)

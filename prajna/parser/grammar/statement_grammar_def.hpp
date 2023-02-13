@@ -28,11 +28,6 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     auto success_handler_function =
         boost::phoenix::function<SuccessHandler<Iterator>>(success_handler)(_1, _2, _3, _val);
 
-    // @ref
-    // https://www.boost.org/doc/libs/1_78_0/libs/spirit/doc/html/spirit/qi/quick_reference/compound_attribute_rules.html
-    // 属性规则请参阅上述文档, 直接从tok到rule的转换报错会很复杂,
-    // 拿不准的情况下可以多用qi::as来逐步确定哪里出了问题
-
     statements.name("statements");
     statements = *statement;
     on_error<fail>(statements, error_handler_function);
@@ -40,7 +35,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     statement.name("statement");
     statement = block | if_ | struct_ | interface | implement_ | template_instance | template_ |
-                function | while_ | for_ | single_statement | semicolon_statement;
+                template_statement | function | while_ | for_ | single_statement |
+                semicolon_statement;
     on_error<fail>(statement, error_handler_function);
     on_success(statement, success_handler_function);
 
@@ -120,7 +116,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(for_, success_handler_function);
 
     struct_.name("struct");
-    struct_ = annotations >> tok.struct_ > identifier > -template_parameters > -fields;
+    struct_ = tok.struct_ > expr.template_identifier > fields;
     on_error<fail>(struct_, error_handler_function);
     on_success(struct_, success_handler_function);
 
@@ -181,7 +177,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(parameter, success_handler_function);
 
     template_.name("template");
-    template_ = tok.template_ > identifier > omit[tok.less] > (identifier % tok.comma) >
+    template_ = tok.template_ >> identifier > omit[tok.less] > (identifier % tok.comma) >
                 omit[tok.greater] > block;
     on_error<fail>(template_, error_handler_function);
     on_success(template_, success_handler_function);
@@ -189,7 +185,13 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     template_instance.name("template instance");
     template_instance = tok.instantiate > identifier_path;
     on_error<fail>(template_instance, error_handler_function);
-    on_success(template_, success_handler_function);
+    on_success(template_instance, success_handler_function);
+
+    template_statement.name("template");
+    template_statement = tok.template_ > omit[tok.less] > (identifier % tok.comma) >
+                         omit[tok.greater] > (struct_ | implement_);
+    on_error<fail>(template_statement, error_handler_function);
+    on_success(template_statement, success_handler_function);
 
     annotations.name("annotations");
     annotations = *annotation;

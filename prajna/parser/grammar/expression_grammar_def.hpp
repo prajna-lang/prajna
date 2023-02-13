@@ -150,14 +150,14 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_success(float_literal_postfix, success_handler_function);
 
     identifier_path.name("identifier path");
-    identifier_path = -tok.scope >> identifier_with_templates % tok.scope;
+    identifier_path = -tok.scope >> template_identifier % tok.scope;
     on_error<fail>(identifier_path, error_handler_function);
     on_success(identifier_path, success_handler_function);
 
-    identifier_with_templates.name("identifier with templates");
-    identifier_with_templates = identifier >> -template_arguments;
-    on_error<fail>(identifier_with_templates, error_handler_function);
-    on_success(identifier_with_templates, success_handler_function);
+    template_identifier.name("identifier with templates");
+    template_identifier = identifier >> -template_arguments;
+    on_error<fail>(template_identifier, error_handler_function);
+    on_success(template_identifier, success_handler_function);
 
     template_arguments.name("template arguments");
     template_arguments = omit[tok.less] >> template_argument % tok.comma >> omit[tok.greater];

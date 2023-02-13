@@ -46,7 +46,7 @@ struct ExpressionGrammer
     rule<ast::TemplateArgument> template_argument;
     rule<ast::IdentifierPath> identifier_path;
     rule<ast::TemplateArguments> template_arguments;
-    rule<ast::IdentifierWithTemplateArguments> identifier_with_templates;
+    rule<ast::TemplateIdentifier> template_identifier;
 
     rule<ast::Operator> logical_op;
     rule<ast::Operator> equality_op;

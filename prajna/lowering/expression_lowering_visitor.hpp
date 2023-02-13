@@ -51,8 +51,7 @@ class ExpressionLoweringVisitor {
         return !identifier_with_template_parameters.template_arguments;
     }
 
-    bool isIdentifier(
-        ast::IdentifierWithTemplateArguments ast_identifier_with_template_parameters) {
+    bool isIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
         ast::IdentifierPath ast_identifier_path;
         ast_identifier_path.identifiers = {ast_identifier_with_template_parameters};
         return this->isIdentifier(ast_identifier_path);
@@ -62,8 +61,7 @@ class ExpressionLoweringVisitor {
         return ast_identifier_path.identifiers.front().identifier;
     }
 
-    ast::Identifier getIdentifier(
-        ast::IdentifierWithTemplateArguments ast_identifier_with_template_parameters) {
+    ast::Identifier getIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
         ast::IdentifierPath ast_identifier_path;
         ast_identifier_path.identifiers = {ast_identifier_with_template_parameters};
         return this->getIdentifier(ast_identifier_path);
@@ -539,6 +537,46 @@ class ExpressionLoweringVisitor {
         return ir_type;
     }  // namespace prajna::lowering
 
+    Symbol getTemplateArgumentSymbol(ast::TemplateArgument ast_template_argument) {
+        return boost::apply_visitor(
+            overloaded{[=](ast::Blank) -> Symbol {
+                           PRAJNA_UNREACHABLE;
+                           return nullptr;
+                       },
+                       [=](ast::Type ast_type) -> Symbol {
+                           // 并不是所有模板参数都是ir::Type, 还有Rank_这类数字的,
+                           // 后面可能还需要重构
+                           if (ast_type.postfix_type_operators.size() == 0 &&
+                               ast_type.base_type.type() == typeid(ast::IdentifierPath)) {
+                               auto ast_identifier_path =
+                                   boost::get<ast::IdentifierPath>(ast_type.base_type);
+                               return this->applyIdentifierPath(ast_identifier_path);
+                           }
+
+                           return this->applyType(ast_type);
+                       },
+                       [=](ast::IntLiteral ast_int_literal) -> Symbol {
+                           return ir::ConstantInt::create(ir_builder->getIndexType(),
+                                                          ast_int_literal.value);
+                       }},
+            ast_template_argument);
+    }
+
+    std::string getNameOfTemplateIdentfier(ast::TemplateIdentifier ast_template_identifier) {
+        std::string re = ast_template_identifier.identifier;
+        if (ast_template_identifier.template_arguments) {
+            re.push_back('<');
+            for (auto ast_template_argument : *ast_template_identifier.template_arguments) {
+                re.append(
+                    symbolGetFullname(this->getTemplateArgumentSymbol(ast_template_argument)));
+                re.push_back(',');
+            }
+            re.pop_back();
+            re.push_back('>');
+        }
+        return re;
+    }
+
     Symbol applyIdentifierPath(ast::IdentifierPath ast_identifier_path) {
         Symbol symbol;
         if (ast_identifier_path.is_root) {
@@ -629,11 +667,12 @@ class ExpressionLoweringVisitor {
                                                   *iter_ast_identifier->template_arguments);
                                 }
 
-                                auto ir_template_type = template_struct->getStructInstance(
-                                    symbol_template_arguments, ir_builder->module);
-                                // 错误应该在之前特化的时候就被拦截, 不会到达这里, 故断言
-                                PRAJNA_ASSERT(ir_template_type);
-                                return ir_template_type;
+                                if (auto ir_type = template_struct->getStructInstance(
+                                        symbol_template_arguments, ir_builder->module)) {
+                                    return ir_type;
+                                } else {
+                                    return ir_builder->instantiating_type;
+                                }
                             }
 
                             if (auto tempate_ = symbolGet<Template<std::nullptr_t>>(symbol)) {

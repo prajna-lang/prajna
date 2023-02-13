@@ -33,14 +33,14 @@ func launchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
 }
 
 
-struct Tensor<Type_ : template, Dim_ : template> {
+struct Tensor<Type_, Dim_> {
     data : Type_*;
     // shape: Array<i64, Dim_>;
     layout: Layout<Dim_>;
 }
 
 
-implement Tensor<Type_ : template, Dim_: template> {
+implement Tensor<Type_, Dim_> {
     @static
     func create(shape :Array<i64, Dim_>)->Tensor<Type_, Dim_>{
         // var self: Tensor<Type_, Dim_>;
@@ -104,7 +104,7 @@ implement Tensor<Type_ : template, Dim_: template> {
     }
 }
 
-implement ::Tensor<Type_ : template, Dim_: template> {
+implement ::Tensor<Type_, Dim_> {
     func toGpu()->Tensor<Type_, Dim_>{
         var cuda_tensor = Tensor<Type_, Dim_>::create(this.layout.shape);
         var size = 1;

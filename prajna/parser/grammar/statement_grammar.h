@@ -70,6 +70,7 @@ struct StatementGrammer
     rule<ast::Function> function;
 
     rule<ast::Template> template_;
+    rule<ast::TemplateStatement> template_statement;
     rule<ast::TemplateInstance> template_instance;
 };
 

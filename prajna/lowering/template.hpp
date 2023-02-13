@@ -29,6 +29,8 @@ class Template : public Named {
     using Generator =
         std::function<std::shared_ptr<_T>(std::list<Symbol>, std::shared_ptr<ir::Module>)>;
 
+    using SpecialGenerator = std::function<std::shared_ptr<_T>(std::shared_ptr<ir::Module>)>;
+
     static std::shared_ptr<Template<_T>> create(Generator generator) {
         std::shared_ptr<Template<_T>> self(new Template<_T>);
         self->_generator = generator;
@@ -39,17 +41,23 @@ class Template : public Named {
                                             std::shared_ptr<ir::Module> ir_module) {
         if (!_instance_dict.count(symbol_template_arguments)) {
             _instance_dict[symbol_template_arguments];  // 插入默认值, 阻断多次实力化
-            _instance_dict[symbol_template_arguments] =
-                _generator(symbol_template_arguments, ir_module);
+            if (special_generators.count(symbol_template_arguments)) {
+                _instance_dict[symbol_template_arguments] =
+                    special_generators[symbol_template_arguments](ir_module);
+            } else {
+                _instance_dict[symbol_template_arguments] =
+                    _generator(symbol_template_arguments, ir_module);
+            }
         }
         return _instance_dict[symbol_template_arguments];
     }
 
    protected:
     Generator _generator;
-
-    // list自己有operator==
     std::unordered_map<std::list<Symbol>, std::shared_ptr<_T>> _instance_dict;
+
+   public:
+    std::unordered_map<std::list<Symbol>, SpecialGenerator> special_generators;
 };
 
 class TemplateStruct : public Named {

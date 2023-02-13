@@ -577,6 +577,37 @@ class ExpressionLoweringVisitor {
         return re;
     }
 
+    std::list<Symbol> applyTemplateArguments(ast::TemplateArguments ast_template_arguments) {
+        std::list<Symbol> symbol_template_arguments;
+        for (auto ast_template_argument : ast_template_arguments) {
+            auto symbol_template_argument = boost::apply_visitor(
+                overloaded{[=](ast::Blank) -> Symbol {
+                               PRAJNA_UNREACHABLE;
+                               return nullptr;
+                           },
+                           [=](ast::Type ast_type) -> Symbol {
+                               // 并不是所有模板参数都是ir::Type, 还有Rank_这类数字的,
+                               // 后面可能还需要重构
+                               if (ast_type.postfix_type_operators.size() == 0 &&
+                                   ast_type.base_type.type() == typeid(ast::IdentifierPath)) {
+                                   auto ast_identifier_path =
+                                       boost::get<ast::IdentifierPath>(ast_type.base_type);
+                                   return this->applyIdentifierPath(ast_identifier_path);
+                               }
+
+                               return this->applyType(ast_type);
+                           },
+                           [=](ast::IntLiteral ast_int_literal) -> Symbol {
+                               return ir::ConstantInt::create(ir_builder->getIndexType(),
+                                                              ast_int_literal.value);
+                           }},
+                ast_template_argument);
+            symbol_template_arguments.push_back(symbol_template_argument);
+        }
+
+        return symbol_template_arguments;
+    }
+
     Symbol applyIdentifierPath(ast::IdentifierPath ast_identifier_path) {
         Symbol symbol;
         if (ast_identifier_path.is_root) {
@@ -628,37 +659,8 @@ class ExpressionLoweringVisitor {
                         if (!iter_ast_identifier->template_arguments) {
                             return symbol;
                         } else {
-                            std::list<Symbol> symbol_template_arguments;
-                            for (auto ast_template_argument :
-                                 *iter_ast_identifier->template_arguments) {
-                                auto symbol_template_argument = boost::apply_visitor(
-                                    overloaded{
-                                        [=](ast::Blank) -> Symbol {
-                                            PRAJNA_UNREACHABLE;
-                                            return nullptr;
-                                        },
-                                        [=](ast::Type ast_type) -> Symbol {
-                                            // 并不是所有模板参数都是ir::Type, 还有Rank_这类数字的,
-                                            // 后面可能还需要重构
-                                            if (ast_type.postfix_type_operators.size() == 0 &&
-                                                ast_type.base_type.type() ==
-                                                    typeid(ast::IdentifierPath)) {
-                                                auto ast_identifier_path =
-                                                    boost::get<ast::IdentifierPath>(
-                                                        ast_type.base_type);
-                                                return this->applyIdentifierPath(
-                                                    ast_identifier_path);
-                                            }
-
-                                            return this->applyType(ast_type);
-                                        },
-                                        [=](ast::IntLiteral ast_int_literal) -> Symbol {
-                                            return ir::ConstantInt::create(
-                                                ir_builder->getIndexType(), ast_int_literal.value);
-                                        }},
-                                    ast_template_argument);
-                                symbol_template_arguments.push_back(symbol_template_argument);
-                            }
+                            auto symbol_template_arguments = this->applyTemplateArguments(
+                                *iter_ast_identifier->template_arguments);
 
                             if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
                                 if (template_struct->template_parameter_identifier_list.size() !=

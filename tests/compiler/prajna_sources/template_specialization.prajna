@@ -1,0 +1,18 @@
+template <Type>
+struct MyStruct<Type>{
+    value: Type;
+}
+
+special
+struct MyStruct<f32>{
+    value: f32;
+    value2: i64;
+}
+
+
+@test
+func testMain(){
+    var tmp: MyStruct<f32>;
+    tmp.value2 = 3;
+}
+

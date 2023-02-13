@@ -990,7 +990,6 @@ class StatementLoweringVisitor {
                         // 只能是原始的type, 因为是自动特化的
                         logger->error("invalid template implement", ast_implement_type.type);
                     }
-
                     // TODO
                     PRAJNA_ASSERT(ast_implement_type.type.base_type.which() == 1);
                     auto ast_identifier_path =
@@ -1093,6 +1092,52 @@ class StatementLoweringVisitor {
                     return nullptr;
                 }},
             ast_template_statement.statement.get());
+    }
+
+    Symbol operator()(ast::SpecialStatement ast_special_statement) {
+        return boost::apply_visitor(
+            overloaded{
+                [=](auto x) -> Symbol {
+                    PRAJNA_UNREACHABLE;
+                    return nullptr;
+                },
+                [=](ast::Struct ast_struct) -> Symbol {
+                    auto ir_symbol = ir_builder->symbol_table->get(ast_struct.name.identifier);
+                    auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
+                    if (template_struct == nullptr) {
+                        logger->error("it's not a template struct but with template parameters",
+                                      ast_struct.name);
+                    }
+                    if (template_struct->template_parameter_identifier_list.size() !=
+                        ast_struct.name.template_arguments->size()) {
+                        logger->error("the template parameters are not matched",
+                                      *ast_struct.name.template_arguments);
+                    }
+
+                    auto symbol_template_arguments =
+                        expression_lowering_visitor->applyTemplateArguments(
+                            *ast_struct.name.template_arguments);
+
+                    // 外部使用算子, 必须值捕获
+                    auto template_struct_generator = [=](std::shared_ptr<ir::Module> ir_module)
+                        -> std::shared_ptr<ir::StructType> {
+                        // // 包裹一层名字空间, 避免被污染
+                        auto templates_symbol_table = SymbolTable::create(ir_builder->symbol_table);
+
+                        auto statement_lowering_visitor = StatementLoweringVisitor::create(
+                            templates_symbol_table, logger, ir_module, nullptr);
+                        auto ir_type = cast<ir::StructType>(
+                            symbolGet<ir::Type>((*statement_lowering_visitor)(ast_struct)));
+                        return ir_type;
+                    };
+
+                    PRAJNA_ASSERT(template_struct->template_struct_impl);
+                    template_struct->template_struct_impl
+                        ->special_generators[symbol_template_arguments] = template_struct_generator;
+
+                    return nullptr;
+                }},
+            ast_special_statement.statement.get());
     }
 
     Symbol operator()(ast::Expression ast_expression) {

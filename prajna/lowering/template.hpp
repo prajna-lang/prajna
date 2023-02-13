@@ -52,15 +52,13 @@ class Template : public Named {
     std::unordered_map<std::list<Symbol>, std::shared_ptr<_T>> _instance_dict;
 };
 
-struct ImplementTag {};
-
 class TemplateStruct : public Named {
    public:
     TemplateStruct() = default;
 
    public:
     typedef Template<ir::StructType> Impl;
-    typedef Template<ImplementTag> ImplementType;
+    typedef Template<std::nullptr_t> ImplementType;
 
     static std::shared_ptr<TemplateStruct> create(Impl::Generator struct_generator) {
         std::shared_ptr<TemplateStruct> self(new TemplateStruct);

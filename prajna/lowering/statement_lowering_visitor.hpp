@@ -63,12 +63,17 @@ class StatementLoweringVisitor {
             }
         }
 
-        auto pre_symbole_table = ir_builder->symbol_table;
-        ir_builder->symbol_table = symbol_table;
-        for (auto ast_statement : ast_module.statements) {
-            (*this)(ast_statement);
+        try {
+            auto pre_symbole_table = ir_builder->symbol_table;
+            ir_builder->symbol_table = symbol_table;
+            for (auto ast_statement : ast_module.statements) {
+                (*this)(ast_statement);
+            }
+            ir_builder->symbol_table = pre_symbole_table;
+
+        } catch (CompileError compile_error) {
+            /// TODO 需要进一步处理, Compiler的error计数并未生效;
         }
-        ir_builder->symbol_table = pre_symbole_table;
 
         return symbol_table;
     }

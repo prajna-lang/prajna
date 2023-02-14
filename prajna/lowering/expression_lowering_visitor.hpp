@@ -528,7 +528,7 @@ class ExpressionLoweringVisitor {
             // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
             // 但其却有相同的名字, 这里存在问题, 回头修复.
             if (symbol_ptr_tp.which() != 0) {
-                auto ptr_tp = symbolGet<Template<std::nullptr_t>>(symbol_ptr_tp);
+                auto ptr_tp = symbolGet<Template>(symbol_ptr_tp);
                 PRAJNA_ASSERT(ptr_tp);
                 ptr_tp->getInstance({ir_value_type}, ir_builder->module);
             }
@@ -677,7 +677,7 @@ class ExpressionLoweringVisitor {
                                 }
                             }
 
-                            if (auto tempate_ = symbolGet<Template<std::nullptr_t>>(symbol)) {
+                            if (auto tempate_ = symbolGet<Template>(symbol)) {
                                 tempate_->getInstance(symbol_template_arguments,
                                                       ir_builder->module);
                                 // 错误应该在之前特化的时候就被拦截, 不会到达这里, 故断言

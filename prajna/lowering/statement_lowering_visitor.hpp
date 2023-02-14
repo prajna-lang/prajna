@@ -945,7 +945,7 @@ class StatementLoweringVisitor {
             }
         };
 
-        auto template_ = Template<std::nullptr_t>::create(template_generator);
+        auto template_ = Template::create(template_generator);
         ir_builder->setSymbolWithAssigningName(template_, ast_template.name);
         return template_;
     }
@@ -991,25 +991,23 @@ class StatementLoweringVisitor {
                         [symbol_table, logger = this->logger, ast_struct,
                          template_parameter_identifier_list,
                          template_struct](std::list<Symbol> symbol_template_arguments,
-                                          std::shared_ptr<ir::Module> ir_module)
-                        -> std::shared_ptr<ir::StructType> {
-                        // 包裹一层名字空间, 避免被污染
-                        auto templates_symbol_table = SymbolTable::create(symbol_table);
+                                          std::shared_ptr<ir::Module> ir_module) {
+                            // 包裹一层名字空间, 避免被污染
+                            auto templates_symbol_table = SymbolTable::create(symbol_table);
 
-                        for (auto [identifier, symbol] : boost::combine(
-                                 template_parameter_identifier_list, symbol_template_arguments)) {
-                            templates_symbol_table->set(symbol, identifier);
-                        }
+                            for (auto [identifier, symbol] :
+                                 boost::combine(template_parameter_identifier_list,
+                                                symbol_template_arguments)) {
+                                templates_symbol_table->set(symbol, identifier);
+                            }
 
-                        auto statement_lowering_visitor = StatementLoweringVisitor::create(
-                            templates_symbol_table, logger, ir_module, nullptr);
-                        auto ir_type = cast<ir::StructType>(
-                            symbolGet<ir::Type>((*statement_lowering_visitor)(ast_struct)));
-                        return ir_type;
-                    };
+                            auto statement_lowering_visitor = StatementLoweringVisitor::create(
+                                templates_symbol_table, logger, ir_module, nullptr);
+                            return (*statement_lowering_visitor)(ast_struct);
+                        };
 
                     template_struct->template_struct_impl =
-                        Template<ir::StructType>::create(template_struct_generator);
+                        Template::create(template_struct_generator);
 
                     ir_builder->setSymbolWithAssigningName(template_struct,
                                                            ast_struct.name.identifier);
@@ -1061,12 +1059,10 @@ class StatementLoweringVisitor {
                             }
                             auto statement_lowering_visitor = StatementLoweringVisitor::create(
                                 templates_symbol_table, logger, ir_module, nullptr);
-                            (*statement_lowering_visitor)(ast_implement_type);
-                            // 仅仅用于标记是否实例化, 没有实际用途
-                            return nullptr;
+                            return (*statement_lowering_visitor)(ast_implement_type);
                         };
                     auto template_implement_struct =
-                        Template<std::nullptr_t>::create(template_implement_struct_generator);
+                        Template::create(template_implement_struct_generator);
                     template_struct->pushBackImplements(template_implement_struct);
                     return nullptr;
                 },
@@ -1116,12 +1112,10 @@ class StatementLoweringVisitor {
                             }
                             auto statement_lowering_visitor = StatementLoweringVisitor::create(
                                 templates_symbol_table, logger, ir_module, nullptr);
-                            (*statement_lowering_visitor)(ast_implement_interface);
-                            // 仅仅用于标记是否实例化, 没有实际用途
-                            return nullptr;
+                            return (*statement_lowering_visitor)(ast_implement_interface);
                         };
                     auto template_implement_struct =
-                        Template<std::nullptr_t>::create(template_implement_struct_generator);
+                        Template::create(template_implement_struct_generator);
                     template_struct->pushBackImplements(template_implement_struct);
                     return nullptr;
                 }},
@@ -1263,7 +1257,7 @@ class StatementLoweringVisitor {
             // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
             // 但其却有相同的名字, 这里存在问题, 回头修复.
             if (symbol_ptr_tp.which() != 0) {
-                auto ptr_tp = symbolGet<Template<std::nullptr_t>>(symbol_ptr_tp);
+                auto ptr_tp = symbolGet<Template>(symbol_ptr_tp);
                 PRAJNA_ASSERT(ptr_tp);
                 ptr_tp->getInstance({ir_value_type}, ir_builder->module);
             }

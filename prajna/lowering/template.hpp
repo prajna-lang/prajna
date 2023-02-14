@@ -20,25 +20,23 @@ struct hash<std::list<prajna::lowering::Symbol>> {
 
 namespace prajna::lowering {
 
-template <typename _T>
 class Template : public Named {
    protected:
     Template() = default;
 
    public:
-    using Generator =
-        std::function<std::shared_ptr<_T>(std::list<Symbol>, std::shared_ptr<ir::Module>)>;
+    using Generator = std::function<Symbol(std::list<Symbol>, std::shared_ptr<ir::Module>)>;
 
-    using SpecialGenerator = std::function<std::shared_ptr<_T>(std::shared_ptr<ir::Module>)>;
+    using SpecialGenerator = std::function<Symbol(std::shared_ptr<ir::Module>)>;
 
-    static std::shared_ptr<Template<_T>> create(Generator generator) {
-        std::shared_ptr<Template<_T>> self(new Template<_T>);
+    static std::shared_ptr<Template> create(Generator generator) {
+        std::shared_ptr<Template> self(new Template);
         self->_generator = generator;
         return self;
     };
 
-    virtual std::shared_ptr<_T> getInstance(std::list<Symbol> symbol_template_arguments,
-                                            std::shared_ptr<ir::Module> ir_module) {
+    virtual Symbol getInstance(std::list<Symbol> symbol_template_arguments,
+                               std::shared_ptr<ir::Module> ir_module) {
         if (!_instance_dict.count(symbol_template_arguments)) {
             _instance_dict[symbol_template_arguments];  // 插入默认值, 阻断多次实力化
             if (special_generators.count(symbol_template_arguments)) {
@@ -54,7 +52,7 @@ class Template : public Named {
 
    protected:
     Generator _generator;
-    std::unordered_map<std::list<Symbol>, std::shared_ptr<_T>> _instance_dict;
+    std::unordered_map<std::list<Symbol>, Symbol> _instance_dict;
 
    public:
     std::unordered_map<std::list<Symbol>, SpecialGenerator> special_generators;
@@ -65,12 +63,9 @@ class TemplateStruct : public Named {
     TemplateStruct() = default;
 
    public:
-    typedef Template<ir::StructType> Impl;
-    typedef Template<std::nullptr_t> ImplementType;
-
-    static std::shared_ptr<TemplateStruct> create(Impl::Generator struct_generator) {
+    static std::shared_ptr<TemplateStruct> create(Template::Generator struct_generator) {
         std::shared_ptr<TemplateStruct> self(new TemplateStruct);
-        self->template_struct_impl = Impl::create(struct_generator);
+        self->template_struct_impl = Template::create(struct_generator);
         return self;
     }
 
@@ -80,7 +75,8 @@ class TemplateStruct : public Named {
             struct_type_instance_dict[template_arguments];
 
             struct_type_instance_dict[template_arguments] =
-                template_struct_impl->getInstance(template_arguments, ir_module);
+                cast<ir::StructType>(symbolGet<ir::Type>(
+                    template_struct_impl->getInstance(template_arguments, ir_module)));
             struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
 
             for (auto template_implement : template_implements) {
@@ -91,16 +87,12 @@ class TemplateStruct : public Named {
         return struct_type_instance_dict[template_arguments];
     }
 
-    void pushBackImplements(std::shared_ptr<ImplementType> implement) {
+    void pushBackImplements(std::shared_ptr<Template> implement) {
         this->template_implements.push_back(implement);
     }
 
-    bool is_processing = false;
-    std::shared_ptr<Impl> template_struct_impl = nullptr;
-    std::vector<std::shared_ptr<ImplementType>> template_implements;
-    std::unordered_map<std::list<Symbol>, bool> implement_is_processing;
-    std::unordered_map<std::list<Symbol>, std::unordered_map<std::shared_ptr<ImplementType>, bool>>
-        template_implements_processed;
+    std::shared_ptr<Template> template_struct_impl = nullptr;
+    std::vector<std::shared_ptr<Template>> template_implements;
     std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::StructType>>
         struct_type_instance_dict;
     std::list<std::string> template_parameter_identifier_list;

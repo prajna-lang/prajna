@@ -269,6 +269,28 @@ class IrBuilder {
         return ir_block;
     }
 
+    // auto createTemplateGenerator() {
+    //     return [symbol_table, logger = this->logger, ast_struct,
+    //     template_parameter_identifier_list,
+    //             template_struct](
+    //                std::list<Symbol> symbol_template_arguments,
+    //                std::shared_ptr<ir::Module> ir_module) -> std::shared_ptr<ir::StructType> {
+    //         // 包裹一层名字空间, 避免被污染
+    //         auto templates_symbol_table = SymbolTable::create(symbol_table);
+
+    //         for (auto [identifier, symbol] :
+    //              boost::combine(template_parameter_identifier_list, symbol_template_arguments)) {
+    //             templates_symbol_table->set(symbol, identifier);
+    //         }
+
+    //         auto statement_lowering_visitor = StatementLoweringVisitor::create(
+    //             templates_symbol_table, logger, ir_module, nullptr);
+    //         auto ir_type = cast<ir::StructType>(
+    //             symbolGet<ir::Type>((*statement_lowering_visitor)(ast_struct)));
+    //         return ir_type;
+    //     };
+    // }
+
    public:
     std::shared_ptr<SymbolTable> symbol_table = nullptr;
     std::shared_ptr<ir::Function> current_function = nullptr;

@@ -366,7 +366,7 @@ struct Template : SourceLocation {
 
 struct TemplateStatement : SourceLocation {
     TemplateParameters template_parameters;
-    boost::recursive_wrapper<Statement> statement;
+    boost::variant<Struct, ImplementType, ImplementInterface> statement;
 };
 
 struct Specical : SourceLocation {

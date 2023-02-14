@@ -1005,8 +1005,6 @@ class StatementLoweringVisitor {
                             templates_symbol_table, logger, ir_module, nullptr);
                         auto ir_type = cast<ir::StructType>(
                             symbolGet<ir::Type>((*statement_lowering_visitor)(ast_struct)));
-                        // templates_symbol_table外面访问不到, 需要重新加入的符号表里
-                        symbol_table->set(ir_type, ir_type->name);
                         return ir_type;
                     };
 

@@ -69,6 +69,7 @@ CodeLexer<Lexer>::CodeLexer() {
     number_sign = '#';
     this->self += at | number_sign;
 
+    module_ = "module";
     func = "func";
     struct_ = "struct";
     implement = "implement";
@@ -79,8 +80,8 @@ CodeLexer<Lexer>::CodeLexer() {
     import = "import";
     export_ = "export";
     as = "as";
-    this->self += func | struct_ | implement | interface | template_ | special | instantiate |
-                  import | as | export_;
+    this->self += module_ | func | struct_ | implement | interface | template_ | special |
+                  instantiate | import | as | export_;
 
     if_ = "if";
     else_ = "else";

@@ -34,7 +34,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(statements, success_handler_function);
 
     statement.name("statement");
-    statement = block | if_ | struct_ | interface | implement_interface | implement_type |
+    statement = module_ | block | if_ | struct_ | interface | implement_interface | implement_type |
                 template_instance | template_ | template_statement | special_statement | function |
                 while_ | for_ | single_statement | semicolon_statement;
     on_error<fail>(statement, error_handler_function);
@@ -45,8 +45,13 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_error<fail>(semicolon_statement, error_handler_function);
     on_success(semicolon_statement, success_handler_function);
 
+    module_.name("module");
+    module_ = tok.module_ > identifier_path > tok.left_braces > *statement > tok.r_braces;
+    on_error<fail>(module_, error_handler_function);
+    on_success(module_, success_handler_function);
+
     block.name("block");
-    block = (tok.left_braces > *statement > tok.r_braces);
+    block = tok.left_braces > *statement > tok.r_braces;
     on_error<fail>(block, error_handler_function);
     on_success(block, success_handler_function);
 

@@ -46,6 +46,37 @@ class StatementLoweringVisitor {
         return ir_builder->module;
     }
 
+    Symbol operator()(ast::Module ast_module) {
+        auto symbol_table = ir_builder->symbol_table;
+        for (auto ast_template_identifier : ast_module.name.identifiers) {
+            if (ast_template_identifier.template_arguments) {
+                logger->error("the invalid module name",
+                              *ast_template_identifier.template_arguments);
+            }
+            auto ast_module_name = ast_template_identifier.identifier;
+            if (!symbol_table->currentTableHas(ast_module_name)) {
+                symbol_table->set(SymbolTable::create(symbol_table), ast_module_name);
+            }
+            symbol_table = symbolGet<SymbolTable>(symbol_table->get(ast_module_name));
+            if (!symbol_table) {
+                logger->error("is not a module", ast_module_name);
+            }
+        }
+
+        auto pre_symbole_table = ir_builder->symbol_table;
+        ir_builder->symbol_table = symbol_table;
+        for (auto ast_statement : ast_module.statements) {
+            (*this)(ast_statement);
+        }
+        ir_builder->symbol_table = pre_symbole_table;
+
+        return symbol_table;
+    }
+
+    Symbol operator()(ast::Statement ast_statement) {
+        return boost::apply_visitor(*this, ast_statement);
+    }
+
     Symbol operator()(ast::Statements ast_statements) {
         for (auto ast_statement : ast_statements) {
             boost::apply_visitor(*this, ast_statement);

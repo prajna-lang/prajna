@@ -37,6 +37,7 @@ struct StatementGrammer
     rule<ast::IdentifierPath> identifier_path;
     rule<ast::Import> import;
     rule<ast::Export> export_;
+    rule<ast::Module> module_;
     rule<ast::Statements> statements;
     rule<ast::Block> block;
     rule<ast::Statement> statement;

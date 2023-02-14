@@ -1,0 +1,17 @@
+module test1{
+    func hello1(){
+        "Hello1\n".print();
+    }
+}
+
+module test1::test2{
+    func hello2(){
+        hello1();
+        "Hello2\n".print();
+    }
+}
+
+@test
+func testMain(){
+    test1::test2::hello2();
+}

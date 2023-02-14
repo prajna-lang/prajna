@@ -51,6 +51,7 @@ struct CodeLexer : lex::lexer<Lexer> {
 
     lex::token_def<lex::omit> func;
     lex::token_def<lex::omit> struct_;
+    lex::token_def<lex::omit> module_;
     lex::token_def<lex::omit> implement;
     lex::token_def<lex::omit> interface;
     lex::token_def<lex::omit> template_;

@@ -39,6 +39,7 @@ struct Special;
 struct SpecialStatement;
 struct TemplateInstance;
 struct DynamicCast;
+struct Module;
 /// @note  operator const char*() const 函数在boost::spirit的debug node的模式下是需要的,
 /// 但用处不大故直接删除了
 
@@ -263,18 +264,23 @@ struct Annotated {
 };
 
 typedef boost::variant<
-    Blank, boost::recursive_wrapper<Block>, Import, Export, VariableDeclaration, Assignment,
-    Expression, boost::recursive_wrapper<If>, boost::recursive_wrapper<While>,
-    boost::recursive_wrapper<For>, Break, Continue, boost::recursive_wrapper<Function>,
-    boost::recursive_wrapper<Return>, boost::recursive_wrapper<Struct>,
-    boost::recursive_wrapper<InterfacePrototype>, boost::recursive_wrapper<ImplementType>,
-    boost::recursive_wrapper<ImplementInterface>, boost::recursive_wrapper<Template>,
-    boost::recursive_wrapper<TemplateStatement>, boost::recursive_wrapper<SpecialStatement>,
-    boost::recursive_wrapper<TemplateInstance>, Pragma>
+    Blank, boost::recursive_wrapper<Module>, boost::recursive_wrapper<Block>, Import, Export,
+    VariableDeclaration, Assignment, Expression, boost::recursive_wrapper<If>,
+    boost::recursive_wrapper<While>, boost::recursive_wrapper<For>, Break, Continue,
+    boost::recursive_wrapper<Function>, boost::recursive_wrapper<Return>,
+    boost::recursive_wrapper<Struct>, boost::recursive_wrapper<InterfacePrototype>,
+    boost::recursive_wrapper<ImplementType>, boost::recursive_wrapper<ImplementInterface>,
+    boost::recursive_wrapper<Template>, boost::recursive_wrapper<TemplateStatement>,
+    boost::recursive_wrapper<SpecialStatement>, boost::recursive_wrapper<TemplateInstance>, Pragma>
     Statement;
 
 // @note需要声明为class, 因为之前才能在其他模块使用前置声明.
 struct Statements : SourceLocation, public std::list<Statement> {};
+
+struct Module : SourceLocation {
+    IdentifierPath name;
+    Statements statements;
+};
 
 struct Block : SourceLocation {
     Statements statements;
@@ -394,6 +400,7 @@ struct DynamicCast : SourceLocation {
 
 }  // namespace prajna::ast
 
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Module, name, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Block, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Cast, type, value)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Unary, operator_, operand)

@@ -263,11 +263,13 @@ struct Annotated {
     _T statement;
 };
 
+struct Statements;
+
 typedef boost::variant<
-    Blank, boost::recursive_wrapper<Module>, boost::recursive_wrapper<Block>, Import, Export,
-    VariableDeclaration, Assignment, Expression, boost::recursive_wrapper<If>,
-    boost::recursive_wrapper<While>, boost::recursive_wrapper<For>, Break, Continue,
-    boost::recursive_wrapper<Function>, boost::recursive_wrapper<Return>,
+    Blank, boost::recursive_wrapper<Statements>, boost::recursive_wrapper<Module>,
+    boost::recursive_wrapper<Block>, Import, Export, VariableDeclaration, Assignment, Expression,
+    boost::recursive_wrapper<If>, boost::recursive_wrapper<While>, boost::recursive_wrapper<For>,
+    Break, Continue, boost::recursive_wrapper<Function>, boost::recursive_wrapper<Return>,
     boost::recursive_wrapper<Struct>, boost::recursive_wrapper<InterfacePrototype>,
     boost::recursive_wrapper<ImplementType>, boost::recursive_wrapper<ImplementInterface>,
     boost::recursive_wrapper<Template>, boost::recursive_wrapper<TemplateStatement>,

@@ -512,23 +512,6 @@ class StatementLoweringVisitor {
         return expression_lowering_visitor->applyType(ast_postfix_type);
     }
 
-    std::list<std::string> getTemplateParametersIdentifiers(
-        std::list<ast::TemplateParameter> template_parameters) {
-        std::set<ast::Identifier> template_parameter_identifier_set;
-        std::list<std::string> template_parameter_identifier_list;
-        for (auto template_parameter : template_parameters) {
-            if (template_parameter_identifier_set.count(template_parameter)) {
-                logger->error("the template parameter is defined already", template_parameter);
-            }
-            template_parameter_identifier_list.push_back(template_parameter);
-            template_parameter_identifier_set.insert(template_parameter);
-        }
-
-        return template_parameter_identifier_list;
-    }
-
-    // std::string getTemplateIdentifierFullname(ast::TemplateIdentifier template_identifier) {}
-
     Symbol operator()(ast::Struct ast_struct) {
         auto ir_struct_type = ir::StructType::create();
         ir_builder->instantiating_type = ir_struct_type;
@@ -919,33 +902,8 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::Template ast_template) {
-        auto template_parameter_identifier_list =
-            getTemplateParametersIdentifiers(ast_template.template_parameters);
-        auto template_generator = [symbol_table = ir_builder->symbol_table, logger = this->logger,
-                                   ast_template, template_parameter_identifier_list](
-                                      std::list<Symbol> symbol_template_arguments,
-                                      std::shared_ptr<ir::Module> ir_module) -> std::nullptr_t {
-            try {
-                auto templates_symbol_table = SymbolTable::create(symbol_table);
-                PRAJNA_ASSERT(template_parameter_identifier_list.size() ==
-                              symbol_template_arguments.size());
-                for (auto [identifier, symbol] : boost::combine(template_parameter_identifier_list,
-                                                                symbol_template_arguments)) {
-                    templates_symbol_table->set(symbol, identifier);
-                }
-                auto statement_lowering_visitor = StatementLoweringVisitor::create(
-                    templates_symbol_table, logger, ir_module, nullptr);
-
-                (*statement_lowering_visitor)(ast_template.statements);
-
-                return nullptr;
-            } catch (CompileError compile_error) {
-                logger->note(ast_template.name);
-                throw compile_error;
-            }
-        };
-
-        auto template_ = Template::create(template_generator);
+        auto template_ = Template::create(this->createTemplateGenerator(
+            ast_template.template_parameters, ast_template.statements));
         ir_builder->setSymbolWithAssigningName(template_, ast_template.name);
         return template_;
     }
@@ -958,6 +916,47 @@ class StatementLoweringVisitor {
             logger->note(ast_template_instance);
             throw compile_error;
         }
+    }
+
+    std::list<std::string> getTemplateParametersIdentifiers(
+        std::list<ast::TemplateParameter> template_parameters) {
+        std::set<ast::Identifier> template_parameter_identifier_set;
+        std::list<std::string> template_parameter_identifier_list;
+        for (auto template_parameter : template_parameters) {
+            if (template_parameter_identifier_set.count(template_parameter)) {
+                logger->error("the template parameter is defined already", template_parameter);
+            }
+            template_parameter_identifier_list.push_back(template_parameter);
+            template_parameter_identifier_set.insert(template_parameter);
+        }
+
+        return template_parameter_identifier_list;
+    }
+
+    Template::Generator createTemplateGenerator(ast::TemplateParameters ast_template_paramters,
+                                                ast::Statement ast_statement) {
+        auto template_parameter_identifier_list =
+            this->getTemplateParametersIdentifiers(ast_template_paramters);
+        return [=, symbol_table = ir_builder->symbol_table, logger = this->logger](
+                   std::list<Symbol> symbol_template_arguments,
+                   std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // 包裹一层名字空间, 避免被污染
+            auto templates_symbol_table = SymbolTable::create(symbol_table);
+
+            for (auto [identifier, symbol] :
+                 boost::combine(template_parameter_identifier_list, symbol_template_arguments)) {
+                templates_symbol_table->set(symbol, identifier);
+            }
+
+            auto statement_lowering_visitor = StatementLoweringVisitor::create(
+                templates_symbol_table, logger, ir_module, nullptr);
+            try {
+                return (*statement_lowering_visitor)(ast_statement);
+            } catch (CompileError compile_error) {
+                logger->note(ast_template_paramters);
+                throw compile_error;
+            }
+        };
     }
 
     Symbol operator()(ast::TemplateStatement ast_template_statement) {
@@ -982,28 +981,9 @@ class StatementLoweringVisitor {
                     template_struct->template_parameter_identifier_list =
                         template_parameter_identifier_list;
 
-                    // 外部使用算子, 必须值捕获
-                    auto template_struct_generator =
-                        [symbol_table, logger = this->logger, ast_struct,
-                         template_parameter_identifier_list,
-                         template_struct](std::list<Symbol> symbol_template_arguments,
-                                          std::shared_ptr<ir::Module> ir_module) {
-                            // 包裹一层名字空间, 避免被污染
-                            auto templates_symbol_table = SymbolTable::create(symbol_table);
-
-                            for (auto [identifier, symbol] :
-                                 boost::combine(template_parameter_identifier_list,
-                                                symbol_template_arguments)) {
-                                templates_symbol_table->set(symbol, identifier);
-                            }
-
-                            auto statement_lowering_visitor = StatementLoweringVisitor::create(
-                                templates_symbol_table, logger, ir_module, nullptr);
-                            return (*statement_lowering_visitor)(ast_struct);
-                        };
-
                     template_struct->template_struct_impl =
-                        Template::create(template_struct_generator);
+                        Template::create(this->createTemplateGenerator(
+                            ast_template_statement.template_parameters, ast_struct));
 
                     ir_builder->setSymbolWithAssigningName(template_struct,
                                                            ast_struct.name.identifier);
@@ -1039,27 +1019,9 @@ class StatementLoweringVisitor {
                                       ast_identifier_path);
                     }
 
-                    auto symbol_table = ir_builder->symbol_table;
-                    auto template_implement_struct_generator =
-                        [symbol_table, logger = this->logger, ast_implement_type_or_interface,
-                         template_struct, template_parameter_identifier_list](
-                            std::list<Symbol> symbol_template_arguments,
-                            std::shared_ptr<ir::Module> ir_module) {
-                            // 包裹一层名字空间, 避免被污染
-                            auto templates_symbol_table = SymbolTable::create(symbol_table);
-                            PRAJNA_ASSERT(template_parameter_identifier_list.size() ==
-                                          symbol_template_arguments.size());
-                            for (auto [identifier, symbol] :
-                                 boost::combine(template_parameter_identifier_list,
-                                                symbol_template_arguments)) {
-                                templates_symbol_table->set(symbol, identifier);
-                            }
-                            auto statement_lowering_visitor = StatementLoweringVisitor::create(
-                                templates_symbol_table, logger, ir_module, nullptr);
-                            return (*statement_lowering_visitor)(ast_implement_type_or_interface);
-                        };
-                    auto template_implement_struct =
-                        Template::create(template_implement_struct_generator);
+                    auto template_implement_struct = Template::create(
+                        this->createTemplateGenerator(ast_template_statement.template_parameters,
+                                                      ast_implement_type_or_interface));
                     template_struct->pushBackImplements(template_implement_struct);
                     return nullptr;
                 }},
@@ -1091,16 +1053,14 @@ class StatementLoweringVisitor {
                             *ast_struct.name.template_arguments);
 
                     // 外部使用算子, 必须值捕获
-                    auto template_struct_generator = [=](std::shared_ptr<ir::Module> ir_module)
-                        -> std::shared_ptr<ir::StructType> {
+                    auto template_struct_generator =
+                        [=](std::shared_ptr<ir::Module> ir_module) -> Symbol {
                         // // 包裹一层名字空间, 避免被污染
                         auto templates_symbol_table = SymbolTable::create(ir_builder->symbol_table);
 
                         auto statement_lowering_visitor = StatementLoweringVisitor::create(
                             templates_symbol_table, logger, ir_module, nullptr);
-                        auto ir_type = cast<ir::StructType>(
-                            symbolGet<ir::Type>((*statement_lowering_visitor)(ast_struct)));
-                        return ir_type;
+                        return (*statement_lowering_visitor)(ast_struct);
                     };
 
                     PRAJNA_ASSERT(template_struct->template_struct_impl);

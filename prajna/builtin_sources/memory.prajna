@@ -20,7 +20,7 @@ struct ptr<Type_>{
 }
 
 template <Type_>
-implement ptr<Type_> {
+implement ptr<Type_>{
     @static
     func allocate(size: i64)->ptr<Type_>{
         var self: ptr<Type_>;
@@ -31,6 +31,37 @@ implement ptr<Type_> {
     @static
     func new()->ptr<Type_>{
         return allocate(1);
+    }
+
+    @static
+    func null()->ptr<Type_>{
+        var self: ptr<Type_>;
+        return self;
+    }
+
+    func toi64()->i64{
+        return this.raw_ptr.toi64();
+    }
+
+    // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
+    func toUndef()->ptr<undef>{
+        var undef_ptr: ptr<undef>;
+        undef_ptr.raw_ptr = cast<undef *>(this.raw_ptr);
+        return undef_ptr;
+    }
+
+    @binary("==")
+    func __equal__(rhs: ptr<Type_>)->bool{
+        return this.raw_ptr.toi64() == rhs.raw_ptr.toi64();
+    }
+
+    @binary("!=")
+    func __not_equal__(rhs: ptr<Type_>)->bool{
+        return this.raw_ptr.toi64() != rhs.raw_ptr.toi64();
+    }
+
+    func isNull()->bool{
+        return this.raw_ptr == __nullptr<Type_>::create();
     }
 
     func initialize(){
@@ -45,7 +76,7 @@ implement ptr<Type_> {
     func destroy(){
         bindings::decReferenceCount(cast<undef*>(this.raw_ptr));
         if (bindings::getReferenceCount(cast<undef*>(this.raw_ptr)) == 0){
-            if (this.raw_ptr != __nullptr<Type_>::create()){
+            if (!this.isNull()){
                 bindings::free(cast<undef*>(this.raw_ptr));
                 //TODO 应该存在问题, 后期在进行详细修复
                 this.raw_ptr = __nullptr<Type_>::create();

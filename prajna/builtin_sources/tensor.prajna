@@ -70,7 +70,7 @@ implement Tensor<Type_, Dim_> {
     }
 
     func initialize(){
-        this.data = nullptr<Type_>::create();
+        this.data = __nullptr<Type_>::create();
         bindings::registerReferenceCount(cast<undef*>(this.data));
     }
 

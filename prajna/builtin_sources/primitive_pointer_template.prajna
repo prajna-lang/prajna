@@ -1,8 +1,8 @@
 template <T>
-struct nullptr<T>{}
+struct __nullptr<T>{}
 
 template <T>
-implement nullptr<T>{
+implement __nullptr<T>{
     @static
     func create()->T *{
         var pointer: T*;
@@ -28,9 +28,9 @@ template PrimitivePointerTemplate<Type>{
         }
 
         func isNull()->bool{
-            return this == nullptr<Type>::create();
+            return this == __nullptr<Type>::create();
         }
     }
 }
 
-export nullptr;
+export __nullptr;

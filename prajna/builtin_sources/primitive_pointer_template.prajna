@@ -12,7 +12,7 @@ implement nullptr<T>{
     }
 }
 
-template ptrTp<Type>{
+template PrimitivePointerTemplate<Type>{
     implement Type* {
         @instruction("CastInst", "PtrToInt", "i64")
         func toi64()->i64;

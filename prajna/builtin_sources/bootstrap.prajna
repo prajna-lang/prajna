@@ -1,5 +1,5 @@
 import implement_primitive_types;
-import ptr;
+import primitive_pointer_template;
 import bindings;
 import memory;
 import core;

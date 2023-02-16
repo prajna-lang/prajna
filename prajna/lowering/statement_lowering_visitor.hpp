@@ -1156,7 +1156,8 @@ class StatementLoweringVisitor {
                                                            ir_function->function_type->return_type);
             // TODO 需要重构, 挪到合适的地方
             auto ir_value_type = ir_callee_type;
-            auto symbol_ptr_tp = ir_builder->getSymbolByPath(true, {"ptr", "ptrTp"});
+            auto symbol_ptr_tp = ir_builder->getSymbolByPath(
+                true, {"primitive_pointer_template", "PrimitivePointerTemplate"});
             // 加载后再执行,
             // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
             // 但其却有相同的名字, 这里存在问题, 回头修复.

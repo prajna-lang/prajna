@@ -2,5 +2,5 @@
 
 @test
 func testMain(){
-    var t = ref_ptr<i64>::new(1);
+    var t = ptr<i64>::new();
 }

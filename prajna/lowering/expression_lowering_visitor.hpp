@@ -523,7 +523,8 @@ class ExpressionLoweringVisitor {
 
         if (auto ir_pointer_type = cast<ir::PointerType>(ir_type)) {
             auto ir_value_type = ir_pointer_type->value_type;
-            auto symbol_ptr_tp = ir_builder->getSymbolByPath(true, {"ptr", "ptrTp"});
+            auto symbol_ptr_tp = ir_builder->getSymbolByPath(
+                true, {"primitive_pointer_template", "PrimitivePointerTemplate"});
             // 加载后再执行,
             // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
             // 但其却有相同的名字, 这里存在问题, 回头修复.

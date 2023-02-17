@@ -535,6 +535,7 @@ class ExpressionLoweringVisitor {
             }
         }
 
+        PRAJNA_ASSERT(ir_type);
         return ir_type;
     }  // namespace prajna::lowering
 

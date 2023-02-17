@@ -1,21 +1,6 @@
-interface IPrint{
-    func print();
-};
-
-implement IPrint for i64{
-    func print(){
-        this.tostr().print();
-    }
-};
-
-@test
-func testMain(){
-    var a = 123;
-    a.print();
-}
-
 interface Say{
     func say();
+    func createSayObject()->Say;
 }
 
 struct SayHi{
@@ -25,6 +10,10 @@ implement Say for SayHi{
     func say() {
         "Hi\n".print();
     }
+
+    func createSayObject()->Say{
+        return dynamic_cast<Say>(&this);
+    }
 }
 
 struct SayHello{}
@@ -32,6 +21,10 @@ struct SayHello{}
 implement Say for SayHello{
     func say(){
         "Hello\n".print();
+    }
+
+    func createSayObject()->Say{
+        return dynamic_cast<Say>(&this);
     }
 }
 
@@ -54,4 +47,7 @@ func testDynamicDispatch(){
 
     var say_hi2 = dynamic_cast<SayHi>(say);
     testing::Assert(say_hi2.toi64() == 0);
+
+    var say_hi3: Say = (*say_hi).createSayObject();
+    say_hi3.say();
 }

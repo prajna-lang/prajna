@@ -401,7 +401,7 @@ class InterfacePrototype : public Named {
 
    public:
     std::list<std::shared_ptr<Function>> functions;
-    std::shared_ptr<Type> dynamic_type;
+    std::shared_ptr<StructType> dynamic_type;
 };
 
 class InterfaceImplement : public Named {

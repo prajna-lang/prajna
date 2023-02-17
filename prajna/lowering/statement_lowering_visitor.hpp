@@ -812,6 +812,12 @@ class StatementLoweringVisitor {
                 ir_function->is_declaration = true;
             }
 
+            // 创建接口动态类型生成函数
+            ir_interface->dynamic_type_creator = ir_builder->createFunction(
+                "dynamic_type_creator",
+                ir::FunctionType::create({ir::PointerType::create(ir_type)},
+                                         ir_interface->prototype->dynamic_type));
+
             for (auto ast_function : ast_implement.functions) {
                 std::shared_ptr<ir::Function> ir_function = nullptr;
                 auto symbol_function = (*this)(ast_function, ir_this_pointer_type);
@@ -853,12 +859,6 @@ class StatementLoweringVisitor {
                 this->processPropertyFunction(ir_type, ir_function, ast_function);
             }
 
-            // 创建接口动态类型生成函数
-            ir_interface->dynamic_type_creator = ir_builder->createFunction(
-                "dynamic_type_creator",
-                ir::FunctionType::create({ir::PointerType::create(ir_type)},
-                                         ir_interface->prototype->dynamic_type));
-
             ir_interface->dynamic_type_creator->blocks.push_back(ir::Block::create());
             ir_interface->dynamic_type_creator->blocks.back()->parent_function =
                 ir_interface->dynamic_type_creator;
@@ -881,7 +881,6 @@ class StatementLoweringVisitor {
                     ir_interface->undef_this_pointer_functions[ir_function], ir_function_pointer);
             }
             ir_builder->create<ir::Return>(ir_self);
-
             ir_builder->popBlock();
 
             for (auto [property_name, ir_property] : ir_type->properties) {
@@ -1122,6 +1121,8 @@ class StatementLoweringVisitor {
         ir_builder->setSymbolWithAssigningName(ir_interface_prototype,
                                                ast_interface_prototype.name);
 
+        ir_interface_prototype->dynamic_type = ir::StructType::create({});
+
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ast_interface_prototype.name;
@@ -1131,7 +1132,7 @@ class StatementLoweringVisitor {
             ir_interface_prototype->functions.push_back(ir_function);
         }
 
-        ir_interface_prototype->dynamic_type = createInterfaceDynamicType(ir_interface_prototype);
+        this->createInterfaceDynamicType(ir_interface_prototype);
 
         return ir_interface_prototype;
     }
@@ -1140,8 +1141,8 @@ class StatementLoweringVisitor {
         std::shared_ptr<ir::InterfacePrototype> ir_interface_prototype) {
         auto field_object_pointer =
             ir::Field::create("object_pointer", ir::PointerType::create(ir::UndefType::create()));
-        // auto ir_vtable_filed = ir::Field::create("vtable", ir::PointerType)
-        auto ir_interface_struct = ir::StructType::create({field_object_pointer});
+        auto ir_interface_struct = ir_interface_prototype->dynamic_type;
+        ir_interface_struct->fields.push_back(field_object_pointer);
         ir_interface_struct->name = ir_interface_prototype->name;
         ir_interface_struct->fullname = ir_interface_prototype->fullname;
 

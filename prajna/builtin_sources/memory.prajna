@@ -64,6 +64,11 @@ implement ptr<Type_>{
         return this.raw_ptr == __nullptr<Type_>::create();
     }
 
+    @sugar("forward")
+    func getRawPtr(){
+        return this.raw_ptr;
+    }
+
     func initialize(){
         this.raw_ptr = __nullptr<Type_>::create();
         bindings::registerReferenceCount(cast<undef*>(this.raw_ptr));

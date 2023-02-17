@@ -25,6 +25,8 @@ implement ptr<Type_>{
     func allocate(size: i64)->ptr<Type_>{
         var self: ptr<Type_>;
         self.raw_ptr = allocator<Type_>::allocate(size);
+        bindings::registerReferenceCount(cast<undef*>(self.raw_ptr));
+        bindings::incReferenceCount(cast<undef*>(self.raw_ptr));
         return self;
     }
 
@@ -50,6 +52,13 @@ implement ptr<Type_>{
         return undef_ptr;
     }
 
+    @static
+    func fromUndef(undef_ptr: ptr<undef>)->ptr<Type_>{
+        var self: ptr<Type_>;
+        self.raw_ptr = cast<Type_ *>(undef_ptr.raw_ptr);
+        return self;
+    }
+
     @binary("==")
     func __equal__(rhs: ptr<Type_>)->bool{
         return this.raw_ptr.toi64() == rhs.raw_ptr.toi64();
@@ -65,7 +74,7 @@ implement ptr<Type_>{
     }
 
     @sugar("forward")
-    func getRawPtr(){
+    func getRawPtr()->Type_*{
         return this.raw_ptr;
     }
 
@@ -92,3 +101,4 @@ implement ptr<Type_>{
 }
 
 export allocator;
+export ptr;

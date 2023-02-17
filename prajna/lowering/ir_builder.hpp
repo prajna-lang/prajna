@@ -51,6 +51,10 @@ class IrBuilder {
                ir_type->fullname.substr(0, 17) == "::core::Array<i64";
     }
 
+    bool isPtrType(std::shared_ptr<ir::Type> ir_type) {
+        return ir_type->fullname.size() > 14 && ir_type->fullname.substr(0, 14) == "::memory::ptr<";
+    }
+
     Symbol getSymbolByPath(bool is_root, std::vector<std::string> names) {
         PRAJNA_ASSERT(this->symbol_table);
         auto tmp_symbol_table =
@@ -72,9 +76,8 @@ class IrBuilder {
         symbol_template_arguments.push_back(this->getIndexConstant(length));
 
         auto symbol_array = this->getSymbolByPath(true, {"core", "Array"});
-        PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
-                      "system libs is bad");
         auto array_template = symbolGet<TemplateStruct>(symbol_array);
+        PRAJNA_ASSERT(array_template);
         auto ir_shape3_type =
             array_template->getStructInstance(symbol_template_arguments, this->module);
         return ir_shape3_type;
@@ -82,6 +85,14 @@ class IrBuilder {
 
     std::shared_ptr<ir::StructType> getShape3Type() {
         return this->getArrayType(this->getIndexType(), 3);
+    }
+
+    std::shared_ptr<ir::StructType> getPtrType(std::shared_ptr<ir::Type> ir_value_type) {
+        auto symbol_ptr = this->getSymbolByPath(true, {"memory", "ptr"});
+        auto ptr_template = symbolGet<TemplateStruct>(symbol_ptr);
+        PRAJNA_ASSERT(ptr_template);
+        std::list<Symbol> symbol_template_arguments = {ir_value_type};
+        return ptr_template->getStructInstance(symbol_template_arguments, this->module);
     }
 
     std::shared_ptr<ir::WriteProperty> setDim3(std::shared_ptr<ir::Value> ir_shape3, int64_t index,

@@ -882,25 +882,32 @@ class ExpressionLoweringVisitor {
     std::shared_ptr<ir::Value> operator()(ast::DynamicCast ast_dynamic_cast) {
         auto symbol_target_type = this->applyIdentifierPath(ast_dynamic_cast.identifier_path);
         if (auto ir_interface_prototype = symbolGet<ir::InterfacePrototype>(symbol_target_type)) {
-            auto ir_pointer = (*this)(ast_dynamic_cast.pointer);
-            if (!is<ir::PointerType>(ir_pointer->type)) {
-                logger->error("not a pointer", ast_dynamic_cast.pointer);
+            auto ir_operand = (*this)(ast_dynamic_cast.pointer);
+            // if (!is<ir::PointerType>(ir_operand->type)) {
+            //     logger->error("not a pointer", ast_dynamic_cast.pointer);
+            // }
+            // auto ir_pointer_type = cast<ir::PointerType>(ir_operand->type);
+            // if (!is<ir::PointerType>(ir_operand)) {
+            //     logger->error("dynamic_cast operand type must be a poniter type",
+            //                   ast_dynamic_cast.pointer);
+            // }
+            if (!ir_builder->isPtrType(ir_operand->type)) {
+                logger->error("not a ptr type", ast_dynamic_cast.pointer);
             }
-            auto ir_pointer_type = cast<ir::PointerType>(ir_pointer->type);
-            if (!ir_pointer_type) {
-                logger->error("dynamic_cast operand type must be a poniter type",
-                              ast_dynamic_cast.pointer);
-            }
-            auto iter_interface =
-                std::find_if(RANGE(ir_pointer_type->value_type->interfaces),
-                             [=](auto x) { return x.second->prototype == ir_interface_prototype; });
+            auto symbol_template_arguments =
+                std::any_cast<std::list<lowering::Symbol>>(ir_operand->type->template_arguments);
+            auto ir_value_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            auto iter_interface = std::find_if(RANGE(ir_value_type->interfaces), [=](auto x) {
+                return x.second->prototype == ir_interface_prototype;
+            });
             auto ir_interface = iter_interface->second;
             if (!ir_interface) {
                 logger->error(fmt::format("the interface {} is not implemented",
                                           ir_interface_prototype->fullname),
                               ast_dynamic_cast.pointer);
             }
-            std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_pointer};
+            std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_operand};
+
             return ir_builder->create<ir::Call>(ir_interface->dynamic_type_creator, ir_arguments);
         }
 
@@ -920,8 +927,8 @@ class ExpressionLoweringVisitor {
             // interface implement必然有一个函数, 我们通过该函数来判断dynamic
             // type是否是某一个具体类型
             PRAJNA_ASSERT(ir_interface_implement->functions.front());
-            auto ir_target_pointer_type = ir::PointerType::create(ir_target_type);
-            auto ir_pointer = ir_builder->create<ir::LocalVariable>(ir_target_pointer_type);
+            auto ir_target_ptr_type = ir_builder->getPtrType(ir_target_type);
+            auto ir_ptr = ir_builder->create<ir::LocalVariable>(ir_target_ptr_type);
             auto ir_condition = ir_builder->callBinaryOperator(
                 ir_interface_implement
                     ->undef_this_pointer_functions[ir_interface_implement->functions.front()],
@@ -935,21 +942,22 @@ class ExpressionLoweringVisitor {
 
             ir_builder->pushBlock(ir_if->trueBlock());
             ir_builder->create<ir::WriteVariableLiked>(
-                ir_builder->create<ir::BitCast>(
-                    ir_builder->accessField(ir_dynamic_object, "object_pointer"),
-                    ir_target_pointer_type),
-                ir_pointer);
+                ir_builder->create<ir::Call>(
+                    ir_target_ptr_type->static_functions["fromUndef"],
+                    std::vector<std::shared_ptr<ir::Value>>{
+                        ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
+                ir_ptr);
             ir_builder->popBlock();
+            // TODO 后面需要进一步处理
+            // ir_builder->pushBlock(ir_if->falseBlock());
+            // ir_builder->create<ir::WriteVariableLiked>(
+            //     ir_builder->create<ir::CastInstruction>(ir::CastInstruction::Operation::IntToPtr,
+            //                                             ir_builder->getIndexConstant(0),
+            //                                             ir_target_ptr_type),
+            //     ir_ptr);
+            // ir_builder->popBlock();
 
-            ir_builder->pushBlock(ir_if->falseBlock());
-            ir_builder->create<ir::WriteVariableLiked>(
-                ir_builder->create<ir::CastInstruction>(ir::CastInstruction::Operation::IntToPtr,
-                                                        ir_builder->getIndexConstant(0),
-                                                        ir_target_pointer_type),
-                ir_pointer);
-            ir_builder->popBlock();
-
-            return ir_pointer;
+            return ir_ptr;
         }
 
         logger->error("the dynamic_cast target type is invalid", ast_dynamic_cast.identifier_path);

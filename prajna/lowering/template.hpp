@@ -78,6 +78,7 @@ class TemplateStruct : public Named {
                 cast<ir::StructType>(symbolGet<ir::Type>(
                     template_struct_impl->getInstance(template_arguments, ir_module)));
             struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
+            struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
 
             for (auto template_implement : template_implements) {
                 template_implement->getInstance(template_arguments, ir_module);

@@ -815,7 +815,7 @@ class StatementLoweringVisitor {
             // 创建接口动态类型生成函数
             ir_interface->dynamic_type_creator = ir_builder->createFunction(
                 "dynamic_type_creator",
-                ir::FunctionType::create({ir::PointerType::create(ir_type)},
+                ir::FunctionType::create({ir_builder->getPtrType(ir_type)},
                                          ir_interface->prototype->dynamic_type));
 
             for (auto ast_function : ast_implement.functions) {
@@ -868,8 +868,8 @@ class StatementLoweringVisitor {
                 ir_builder->create<ir::LocalVariable>(ir_interface->prototype->dynamic_type);
 
             ir_builder->create<ir::WriteVariableLiked>(
-                ir_builder->create<ir::BitCast>(ir_interface->dynamic_type_creator->parameters[0],
-                                                ir::PointerType::create(ir::UndefType::create())),
+                ir_builder->callMemberFunction(ir_interface->dynamic_type_creator->parameters[0],
+                                               "toUndef", {}),
                 ir_builder->accessField(ir_self, "object_pointer"));
             for (auto ir_function : ir_interface->functions) {
                 auto iter_field = std::find_if(
@@ -1140,7 +1140,7 @@ class StatementLoweringVisitor {
     std::shared_ptr<ir::Type> createInterfaceDynamicType(
         std::shared_ptr<ir::InterfacePrototype> ir_interface_prototype) {
         auto field_object_pointer =
-            ir::Field::create("object_pointer", ir::PointerType::create(ir::UndefType::create()));
+            ir::Field::create("object_pointer", ir_builder->getPtrType(ir::UndefType::create()));
         auto ir_interface_struct = ir_interface_prototype->dynamic_type;
         ir_interface_struct->fields.push_back(field_object_pointer);
         ir_interface_struct->name = ir_interface_prototype->name;
@@ -1148,11 +1148,9 @@ class StatementLoweringVisitor {
 
         auto ir_interface = ir::InterfaceImplement::create();
         for (auto ir_function : ir_interface_prototype->functions) {
-            // 不规则命名, 外部并不会使用到
-
             auto ir_callee_argument_types = ir_function->function_type->parameter_types;
             ir_callee_argument_types.insert(ir_callee_argument_types.begin(),
-                                            field_object_pointer->type);
+                                            ir::PointerType::create(ir::UndefType::create()));
             auto ir_callee_type = ir::FunctionType::create(ir_callee_argument_types,
                                                            ir_function->function_type->return_type);
             // TODO 需要重构, 挪到合适的地方
@@ -1161,7 +1159,6 @@ class StatementLoweringVisitor {
                 true, {"primitive_pointer_template", "PrimitivePointerTemplate"});
             // 加载后再执行,
             // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
-            // 但其却有相同的名字, 这里存在问题, 回头修复.
             if (symbol_ptr_tp.which() != 0) {
                 auto ptr_tp = symbolGet<Template>(symbol_ptr_tp);
                 PRAJNA_ASSERT(ptr_tp);
@@ -1173,38 +1170,41 @@ class StatementLoweringVisitor {
             ir_interface_struct->fields.push_back(field_function_pointer);
             ir_interface_struct->update();
 
-            auto ir_wrapped_function_argument_types = ir_function->function_type->parameter_types;
+            auto ir_member_function_argument_types = ir_function->function_type->parameter_types;
             // 必然有一个this pointer参数
-            // PRAJNA_ASSERT(ir_wrapped_function_argument_types.size() >= 1);
+            // PRAJNA_ASSERT(ir_member_function_argument_types.size() >= 1);
             // 第一个参数应该是this pointer的类型, 修改一下
             auto ir_this_pointer_type = ir::PointerType::create(ir_interface_struct);
-            ir_wrapped_function_argument_types.insert(ir_wrapped_function_argument_types.begin(),
-                                                      ir_this_pointer_type);
-            auto ir_wrapped_function_type = ir::FunctionType::create(
-                ir_wrapped_function_argument_types, ir_function->function_type->return_type);
-            auto ir_wrapped_function = ir_builder->createFunction(ir_function->name + "/wrapped",
-                                                                  ir_wrapped_function_type);
-            ir_wrapped_function->name = ir_function->name;
-            ir_wrapped_function->fullname = ir_function->fullname;
+            ir_member_function_argument_types.insert(ir_member_function_argument_types.begin(),
+                                                     ir_this_pointer_type);
+            auto ir_member_function_type = ir::FunctionType::create(
+                ir_member_function_argument_types, ir_function->function_type->return_type);
+            auto ir_member_function =
+                ir_builder->createFunction(ir_function->name + "/member", ir_member_function_type);
+            ir_member_function->name = ir_function->name;
+            ir_member_function->fullname = ir_function->fullname;
 
             // 这里还是使用类型IrBuilder
-            ir_wrapped_function->blocks.push_back(ir::Block::create());
-            ir_wrapped_function->blocks.back()->parent_function = ir_wrapped_function;
-            ir_builder->pushBlock(ir_wrapped_function->blocks.back());
+            ir_member_function->blocks.push_back(ir::Block::create());
+            ir_member_function->blocks.back()->parent_function = ir_member_function;
+            ir_builder->pushBlock(ir_member_function->blocks.back());
             ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
 
-            auto ir_this_pointer = ir_wrapped_function->parameters[0];
+            auto ir_this_pointer = ir_member_function->parameters[0];
             // 这里叫函数指针, 函数的类型就是函数指针
             auto ir_function_pointer = ir_builder->create<ir::AccessField>(
                 ir_builder->create<ir::DeferencePointer>(ir_this_pointer), field_function_pointer);
             // 直接将外层函数的参数转发进去, 除了第一个参数需要调整一下
-            auto ir_arguments = ir_wrapped_function->parameters;
-            ir_arguments[0] = ir_builder->create<ir::AccessField>(
-                ir_builder->create<ir::DeferencePointer>(ir_this_pointer), field_object_pointer);
+            auto ir_arguments = ir_member_function->parameters;
+            ir_arguments[0] = ir_builder->accessField(
+                ir_builder->create<ir::AccessField>(
+                    ir_builder->create<ir::DeferencePointer>(ir_this_pointer),
+                    field_object_pointer),
+                "raw_ptr");
             auto ir_function_call = ir_builder->create<ir::Call>(ir_function_pointer, ir_arguments);
             ir_builder->create<ir::Return>(ir_function_call);
 
-            ir_interface->functions.push_back(ir_wrapped_function);
+            ir_interface->functions.push_back(ir_member_function);
         }
         ir_interface_struct->interfaces["Self"] = ir_interface;
         return ir_interface_struct;

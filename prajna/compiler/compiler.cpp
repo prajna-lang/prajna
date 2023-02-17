@@ -31,15 +31,19 @@ inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
     for (auto path_part : result) {
         symbol_table_source_path /= std::filesystem::path(path_part);
         if (symbol_table_tree->has(path_part)) {
-            symbol_table_tree =
+            auto tmp_symbol_table_tree =
                 lowering::symbolGet<lowering::SymbolTable>(symbol_table_tree->get(path_part));
-        } else {
-            auto new_symbol_table = lowering::SymbolTable::create(symbol_table_tree);
-            symbol_table_tree->set(new_symbol_table, path_part);
-            new_symbol_table->source_path = symbol_table_source_path;
-            new_symbol_table->name = path_part;
-            symbol_table_tree = new_symbol_table;
+            if (tmp_symbol_table_tree) {
+                symbol_table_tree = tmp_symbol_table_tree;
+                continue;
+            }
         }
+
+        auto new_symbol_table = lowering::SymbolTable::create(symbol_table_tree);
+        symbol_table_tree->set(new_symbol_table, path_part);
+        new_symbol_table->source_path = symbol_table_source_path;
+        new_symbol_table->name = path_part;
+        symbol_table_tree = new_symbol_table;
     }
 
     return symbol_table_tree;

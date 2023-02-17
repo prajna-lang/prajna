@@ -12,7 +12,9 @@ implement Say for SayHi{
     }
 
     func createSayObject()->Say{
-        return dynamic_cast<Say>(&this);
+        var ptr_object: ptr<SayHi>;
+        ptr_object.raw_ptr = &this;
+        return dynamic_cast<Say>(ptr_object);
     }
 }
 
@@ -24,30 +26,34 @@ implement Say for SayHello{
     }
 
     func createSayObject()->Say{
-        return dynamic_cast<Say>(&this);
+        var ptr_object: ptr<SayHello>;
+        ptr_object.raw_ptr = &this;
+        return dynamic_cast<Say>(ptr_object);
     }
 }
 
 @test
 func testDynamicDispatch(){
-    var say_hi = allocator<SayHi>::allocate(1);
-    (*say_hi).say();
+    var say_hi = ptr<SayHi>::new();
+    (*say_hi.raw_ptr).say();
+    testing::Assert(!say_hi.raw_ptr.isNull());
 
     var say: Say = dynamic_cast<Say>(say_hi);
     say.say();
 
-    var say_hello = allocator<SayHello>::allocate(1);
-    (*say_hello).say();
+    var say_hello = ptr<SayHello>::new();
+    (*say_hello.raw_ptr).say();
 
     say = dynamic_cast<Say>(say_hello);
     say.say();
 
     var say_hello2 = dynamic_cast<SayHello>(say);
-    testing::Assert(say_hello2.toi64() != 0);
+    testing::Assert(!say_hello2.isNull());
+    (*say_hello2.raw_ptr).say();
 
     var say_hi2 = dynamic_cast<SayHi>(say);
-    testing::Assert(say_hi2.toi64() == 0);
+    testing::Assert(say_hi2.isNull());
 
-    var say_hi3: Say = (*say_hi).createSayObject();
+    var say_hi3: Say = say.createSayObject();
     say_hi3.say();
 }

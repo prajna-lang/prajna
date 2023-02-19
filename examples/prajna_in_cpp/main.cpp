@@ -5,7 +5,7 @@
 
 int main() {
     auto compiler = prajna::Compiler::create();
-    compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
+    compiler->compileBuiltinSourceFiles("prajna/prajna_builtin_packages");
     compiler->compileFile("examples/prajna_in_cpp/add.prajna");
 
     using MatrixF32 = prajna::Tensor<float, 2>;

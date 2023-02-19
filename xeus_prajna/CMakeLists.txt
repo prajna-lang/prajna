@@ -21,6 +21,7 @@ add_subdirectory(third_party/xwidgets EXCLUDE_FROM_ALL)
 
 add_executable(xeus_prajna main.cpp)
 target_link_libraries(xeus_prajna
+    PRIVATE fmt
     PRIVATE prajna_compiler
     PRIVATE cppzmq-static
     PRIVATE xeus-static
@@ -42,3 +43,4 @@ configure_file (
 install(TARGETS xeus_prajna EXPORT ${PROJECT_NAME}-targets)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/share/prajna/kernel.json
               DESTINATION ${CMAKE_INSTALL_PREFIX}/share/prajna)
+

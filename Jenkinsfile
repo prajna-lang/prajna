@@ -47,12 +47,13 @@ pipeline{
                                 sh 'git config --global --list'
                                 sh './scripts/clone_submodules.sh --depth=10'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_BUILD_JUPYTER_XEUS=ON -DPRAJNA_WITH_CPG=ON'
-                                sh './scripts/build.sh ${BUILD_TYPE}'
+                                sh './scripts/build.sh ${BUILD_TYPE} install'
                             }
                         }
                         stage('test') {
                             steps {
                                 sh './scripts/test.sh ${BUILD_TYPE}'
+                                sh 'build_{BUILD_TYPE}/install/bin/prajna exe tests/compiler/prajna_sources/main.prajna'
                             }
                         }
                     }

@@ -83,6 +83,10 @@ class Logger {
                             first_position.column, log_level, message);
         }
 
+        // 确保位置信息是有效的
+        PRAJNA_ASSERT(first_position.line >= 0);
+        PRAJNA_ASSERT(last_position.line >= 0);
+
         std::vector<std::string> code_lines;
         for (size_t i = first_position.line; i <= last_position.line; ++i) {
             code_lines.push_back(_code_lines[i - 1]);
@@ -118,6 +122,10 @@ class Logger {
                ast::SourcePosition last_position, std::string locator_ascii_color) {
         auto error_prompt = fmt::format("{}", fmt::styled("error", fmt::fg(fmt::color::red)));
         this->log(message, first_position, last_position, error_prompt, locator_ascii_color, true);
+    }
+
+    void error(std::string message) {
+        fmt::print("{}: {}\n", fmt::styled("error", fmt::fg(fmt::color::red)), message);
     }
 
     void error(std::string message, ast::SourceLocation source_location) {

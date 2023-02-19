@@ -61,15 +61,15 @@ std::shared_ptr<Compiler> Compiler::create() {
 }
 
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
-    this->addPackageDirectories(builtin_sources_dir);
-    this->compileFile("bootstrap.prajna");
+    this->addPackageDirectory(builtin_sources_dir);
+    this->compileFile("prajna_bootstrap.prajna");
 }
 
 std::shared_ptr<ir::Module> Compiler::compileCode(
     std::string code, std::shared_ptr<lowering::SymbolTable> symbol_table, std::string file_name,
     bool is_interpreter) {
     try {
-        auto logger = Logger::create(code);
+        this->logger = Logger::create(code);
         auto ast = prajna::parser::parse(code, file_name, logger);
         PRAJNA_ASSERT(ast);
         auto ir_lowering_module =
@@ -132,12 +132,50 @@ void Compiler::runTestFunctions() {
         });
 }
 
+void Compiler::runMainFunction() {
+    std::set<std::shared_ptr<ir::Function>> main_functions;
+
+    this->_symbol_table->each(
+        [jit_engine = this->jit_engine, &main_functions](lowering::Symbol symbol) {
+            if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
+                if (auto ir_function = cast<ir::Function>(ir_value)) {
+                    if (ir_function->name == "main") {
+                        main_functions.insert(ir_function);
+                        if (main_functions.size() >= 2) {
+                            return;
+                        }
+
+                        auto function_pointer = jit_engine->getValue(ir_function->fullname);
+                        jit_engine->catchRuntimeError();
+                        reinterpret_cast<void (*)(void)>(function_pointer)();
+                    }
+                }
+            }
+        });
+
+    if (main_functions.empty()) {
+        logger->error("the main function is not found");
+    }
+
+    if (main_functions.size() >= 2) {
+        logger->error("the main function is duplicate");
+        for (auto ir_function : main_functions) {
+            logger->note(ir_function->source_location);
+        }
+    }
+}
+
 size_t Compiler::getSymbolValue(std::string symbol_name) {
     return this->jit_engine->getValue(symbol_name);
 }
 
-void Compiler::addPackageDirectories(std::string package_directory) {
-    PRAJNA_ASSERT(std::filesystem::is_directory(std::filesystem::path(package_directory)));
+void Compiler::addPackageDirectory(std::string package_directory) {
+    if (!std::filesystem::is_directory(std::filesystem::path(package_directory))) {
+        auto error_message = fmt::format("{} is not a valid package directory",
+                                         fmt::styled(package_directory, fmt::fg(fmt::color::red)));
+        fmt::print(error_message);
+        throw std::runtime_error(error_message);
+    }
     package_directories.push_back(std::filesystem::path(package_directory));
 }
 
@@ -154,6 +192,8 @@ std::shared_ptr<lowering::SymbolTable> Compiler::compileFile(
     }
 
     if (prajna_source_path.empty()) {
+        fmt::print("{} is invalid program file\n",
+                   fmt::styled(prajna_source_package_path.string(), fmt::fg(fmt::color::red)));
         compile_error_count += 1;
         return nullptr;
     }

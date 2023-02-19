@@ -1,3 +1,5 @@
+#include "repl/repl.h"
+
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -26,11 +28,11 @@ bool determine_completeness(CPP_TERMINAL_MAYBE_UNUSED std::string command) {
     return complete;
 }
 
-int main() {
+int prajna_repl_main() {
     std::cout << "Prajna 0.0, all copyrights @ \"Zhang Zhimin\"" << std::endl;
 
     auto compiler = prajna::Compiler::create();
-    compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
+    compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
 
     Term::Terminal term(false, true, false, false);
     std::vector<std::string> history;

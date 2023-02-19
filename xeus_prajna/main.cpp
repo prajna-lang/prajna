@@ -1,4 +1,4 @@
-
+#include <filesystem>
 #include <iostream>
 
 #include "prajna_xeus_interpreter.hpp"
@@ -7,16 +7,17 @@
 #include "xeus/xkernel_configuration.hpp"
 
 int main(int argc, char* argv[]) {
-    auto uq_xeus_prajna_interpreter = std::make_unique<xeus_prajna::PrajnaXeusInterpreter>();
-    // Registering SIGSEGV handler
-    // Load configuration file
+    auto exe_path = std::filesystem::path(argv[0]);
+    auto prajna_builtin_packages_directory = exe_path.parent_path() / "../prajna_builtin_packages";
+    std::cout << "xeus_prajna use prajna_builtin_papckages: " << prajna_builtin_packages_directory
+              << std::endl;
+    std::cout << "xeus_prajna working directory is " << std::filesystem::current_path().string()
+              << std::endl;
+
+    auto uq_xeus_prajna_interpreter =
+        std::make_unique<xeus_prajna::PrajnaXeusInterpreter>(prajna_builtin_packages_directory);
     std::string file_name = std::string(argv[2]);
-
     auto context = xeus::make_context<zmq::context_t>();
-
-    // Create kernel instance and start it
-    // xeus::xkernel kernel(config, xeus::get_user_name(), std::move(interpreter));
-    // kernel.start();
     using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
     history_manager_ptr hist = xeus::make_in_memory_history_manager();
 

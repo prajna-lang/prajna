@@ -10,10 +10,10 @@ namespace xeus_prajna {
 
 class PrajnaXeusInterpreter : public xeus::xinterpreter {
    public:
-    PrajnaXeusInterpreter() {
+    PrajnaXeusInterpreter(std::string prajna_builtin_packages_directory) {
         xeus::register_interpreter(this);
         compiler = prajna::Compiler::create();
-        compiler->compileBuiltinSourceFiles("builtin_sources");
+        compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
     }
 
     virtual ~PrajnaXeusInterpreter() = default;

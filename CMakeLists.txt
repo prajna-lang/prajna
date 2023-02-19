@@ -57,7 +57,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(PRAJNA_BUILD_TOOLS "Build Prajna tools" ON)
 option(PRAJNA_BUILD_EXAMPLES "Build Prajna examples" ON)
 option(PRAJNA_BUILD_TESTS "Build Prajna tests" ON)
-option(PRAJNA_BUILD_JUPYTER_XEUS "Build Jupyter Xeus Prajna" ON)
+option(PRAJNA_WITH_JUPYTER_JUPYTER "Build Jupyter Xeus Prajna" ON)
 option(PRAJNA_WITH_GPU "With CUDA" OFF)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_WITH_GPU "With CUDA" OFF)
@@ -66,7 +66,7 @@ option(PRAAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
 
 add_subdirectory(prajna)
 
-if (PRAJNA_BUILD_JUPYTER_XEUS)
+if (PRAJNA_WITH_JUPYTER_JUPYTER)
     add_subdirectory(xeus_prajna)
 endif()
 
@@ -84,6 +84,8 @@ endif()
 
 include(CMakePackageConfigHelpers)
 
-install(TARGETS prajna_repl EXPORT ${PROJECT_NAME}-targets)
+install(TARGETS prajna EXPORT ${PROJECT_NAME}-targets)
+install(DIRECTORY prajna_builtin_packages
+              DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 

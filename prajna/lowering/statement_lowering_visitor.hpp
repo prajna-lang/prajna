@@ -273,7 +273,7 @@ class StatementLoweringVisitor {
                       std::shared_ptr<ir::Type> ir_this_poiner_type = nullptr) {
         try {
             auto ir_function = applyFunctionHeader(ast_function.declaration, ir_this_poiner_type);
-
+            ir_function->source_location = ast_function.declaration.name;
             // 进入参数域,
 
             // @note 将function的第一个block作为最上层的block

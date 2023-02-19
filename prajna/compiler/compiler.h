@@ -9,6 +9,8 @@
 
 namespace prajna {
 
+class Logger;
+
 namespace lowering {
 class SymbolTable;
 }
@@ -49,7 +51,9 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
 
     void runTestFunctions();
 
-    void addPackageDirectories(std::string package_directory);
+    void runMainFunction();
+
+    void addPackageDirectory(std::string package_directory);
 
     /**
      * @brief 编译单个源文件
@@ -65,6 +69,8 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
     std::shared_ptr<jit::ExecutionEngine> jit_engine;
     std::vector<std::filesystem::path> package_directories;
     std::size_t compile_error_count = 0;
+
+    std::shared_ptr<Logger> logger = nullptr;
 };
 
 }  // namespace prajna

@@ -20,8 +20,8 @@ class CompilerSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
     auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
-    compiler->addPackageDirectories(".");
-    compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
+    compiler->addPackageDirectory(".");
+    compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
     compiler->compileFile(prajna_source_path);
     ASSERT_EQ(0, compiler->compile_error_count);
     compiler->runTestFunctions();
@@ -30,7 +30,7 @@ TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
 class CompilerScriptTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerScriptTests, TestScriptFromDirectory) {
     auto compiler = Compiler::create();
-    compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
+    compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
     std::string prajna_script_path = GetParam();
     std::ifstream ifs(prajna_script_path);
     while (ifs.good()) {
@@ -48,8 +48,8 @@ class CompilerErrorSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerErrorSourceTests, TestSourceFromDirectory) {
     auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
-    compiler->addPackageDirectories(".");
-    compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
+    compiler->addPackageDirectory(".");
+    compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
     compiler->compileFile(prajna_source_path);
     compiler->runTestFunctions();
 }
@@ -57,8 +57,8 @@ TEST_P(CompilerErrorSourceTests, TestSourceFromDirectory) {
 class CompilerErrorScriptTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerErrorScriptTests, TestScriptFromDirectory) {
     auto compiler = Compiler::create();
-    compiler->addPackageDirectories(".");
-    compiler->compileBuiltinSourceFiles("prajna/builtin_sources");
+    compiler->addPackageDirectory(".");
+    compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
     std::string prajna_script_path = GetParam();
     std::ifstream ifs(prajna_script_path);
     while (ifs.good()) {

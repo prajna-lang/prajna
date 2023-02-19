@@ -53,7 +53,7 @@ pipeline{
                         stage('test') {
                             steps {
                                 sh './scripts/test.sh ${BUILD_TYPE}'
-                                sh 'build_{BUILD_TYPE}/install/bin/prajna exe tests/compiler/prajna_sources/main.prajna'
+                                sh 'build_${BUILD_TYPE}/install/bin/prajna exe tests/compiler/prajna_sources/main.prajna'
                             }
                         }
                     }

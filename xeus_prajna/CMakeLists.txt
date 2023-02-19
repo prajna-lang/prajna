@@ -35,12 +35,6 @@ target_compile_options(xeus_prajna
     PRIVATE -Wno-deprecated-declarations
 )
 
-configure_file (
-    share/prajna/kernel.json.in
-    ${CMAKE_CURRENT_BINARY_DIR}/share/prajna/kernel.json
-)
-
 install(TARGETS xeus_prajna EXPORT ${PROJECT_NAME}-targets)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/share/prajna/kernel.json
-              DESTINATION ${CMAKE_INSTALL_PREFIX}/share/prajna)
+
 

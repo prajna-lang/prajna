@@ -31,6 +31,11 @@ std::shared_ptr<lowering::SymbolTable> createPrimitiveTypes();
 
 // @brief 负责将般若编译器的各个模块整合到一块, 以及和外界的交互
 class Compiler : public std::enable_shared_from_this<Compiler> {
+   public:
+    struct Settings {
+        bool print_result = true;
+    };
+
    private:
     Compiler() = default;
 
@@ -71,9 +76,10 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
    public:
     std::shared_ptr<jit::ExecutionEngine> jit_engine;
     std::vector<std::filesystem::path> package_directories;
-    std::size_t compile_error_count = 0;
 
     std::shared_ptr<Logger> logger = nullptr;
+
+    Settings settings;
 };
 
 }  // namespace prajna

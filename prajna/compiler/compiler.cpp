@@ -114,6 +114,7 @@ void Compiler::executeCodeInRelp(std::string script_code) {
 }
 
 void Compiler::executeProgram(std::filesystem::path program_path) {
+    this->settings.print_result = false;
     bool is_script = program_path.extension() == ".prajnascript";
     auto ir_module = compileProgram(program_path, is_script);
     if (is_script) {
@@ -211,7 +212,6 @@ std::shared_ptr<ir::Module> Compiler::compileProgram(
         logger->error(
             fmt::format("{} is invalid program file\n", prajna_source_package_path.string()));
         throw CompileError();
-        compile_error_count += 1;
         return nullptr;
     }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "prajna/compiler/compiler.h"
 #include "prajna/lowering/statement_lowering_visitor.hpp"
 
 namespace prajna::lowering {
@@ -13,6 +14,7 @@ class InterpreterLoweringVisitor {
         std::shared_ptr<Compiler> compiler) {
         std::shared_ptr<InterpreterLoweringVisitor> self(new InterpreterLoweringVisitor);
         self->logger = logger;
+        self->compiler = compiler;
         self->_statement_lowering_visitor =
             StatementLoweringVisitor::create(symbol_table, logger, nullptr, compiler);
         return self;
@@ -52,7 +54,9 @@ class InterpreterLoweringVisitor {
             boost::apply_visitor(
                 overloaded{[=](auto x) {},
                            [=](std::shared_ptr<ir::Value> ir_result_value) {
-                               if (not ir_result_value->type) return;
+                               if (!ir_result_value->type || !compiler->settings.print_result)
+                                   return;
+
                                if (!ir_builder->getMemberFunction(ir_result_value->type, "tostr"))
                                    return;
                                auto ir_result_string =
@@ -96,6 +100,7 @@ class InterpreterLoweringVisitor {
     std::shared_ptr<StatementLoweringVisitor> _statement_lowering_visitor = nullptr;
     static size_t _command_id;
     std::shared_ptr<Logger> logger;
+    std::shared_ptr<Compiler> compiler;
 };
 
 }  // namespace prajna::lowering

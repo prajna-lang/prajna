@@ -23,12 +23,12 @@ implement People{
 @test
 func testProperty(){
     var people = People("Mike", 18);
-    testing::Assert(people._age == 18);
+    testing::assert(people._age == 18);
     // 我们可以像字段一样使用属性
-    testing::Assert(people.age == 18);
+    testing::assert(people.age == 18);
     people.age = 22;
-    testing::Assert(people._age == 22);
-    testing::Assert(people.age == 22);
+    testing::assert(people._age == 22);
+    testing::assert(people.age == 22);
 
     people.age;
 }

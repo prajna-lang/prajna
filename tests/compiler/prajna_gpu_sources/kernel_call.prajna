@@ -24,6 +24,6 @@ func testKernel(){
     var host_tensor = gpu_tensor.toHost();
     for i in 0 to size{
         // host_tensor.data[i].tostr().print();
-        testing::Assert(host_tensor.data[i] == i);
+        testing::assert(host_tensor.data[i] == i);
     }
 }

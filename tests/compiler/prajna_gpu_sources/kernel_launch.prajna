@@ -21,7 +21,7 @@ func testKernel(){
     var parameters_ptr = &parameters[0];
 
     var re = ::gpu::launchKernel(cast<i8*>(myKernel), gridShape, blockShape, parameters_ptr);
-    testing::Assert(re == 0);
+    testing::assert(re == 0);
 
     host_tensor = gpu_tensor.toHost();
     "\ndata[0] is: ".print();

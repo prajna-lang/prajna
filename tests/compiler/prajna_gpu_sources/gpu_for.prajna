@@ -13,7 +13,7 @@ import gpu;
 //     // 运行完后, gpu的数据会自动拷贝的tmp_tensor上
 
 //     for i in 0 to shape[0] {
-//         testing::Assert(tmp_tensor.data[i] == i);
+//         testing::assert(tmp_tensor.data[i] == i);
 //     }
 // }
 
@@ -30,6 +30,6 @@ func testGpuFor2d(){
 
     // 运行完后, gpu的数据会自动拷贝的tmp_tensor上
     for i in [0, 0] to shape{
-        testing::Assert(tmp_tensor.at(i) == 1);
+        testing::assert(tmp_tensor.at(i) == 1);
     }
 }

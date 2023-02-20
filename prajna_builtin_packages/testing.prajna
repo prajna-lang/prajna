@@ -1,4 +1,4 @@
 
-func Assert(success: bool){
+func assert(success: bool){
     bindings::assert(success);
 }

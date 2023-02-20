@@ -5,13 +5,13 @@ func testTensor(){
     var bs = ts;
 
     ts.at([1, 2]) = 2;
-    testing::Assert(ts.at([1,2]) == 2);
-    testing::Assert(bs.at([1,2]) == ts.at([1,2]));
-    testing::Assert(ts.data[22] == 2);
+    testing::assert(ts.at([1,2]) == 2);
+    testing::assert(bs.at([1,2]) == ts.at([1,2]));
+    testing::assert(ts.data[22] == 2);
 
     var ts1 = Tensor<f32, 2>::create(shape);
     ts1.at([1,2]) = 3.1415;
-    testing::Assert(ts1[1,2] == 3.1415);
+    testing::assert(ts1[1,2] == 3.1415);
 
     var ts0 = Tensor<i64, 1>::create([2]);
     ts0[0] = 1;

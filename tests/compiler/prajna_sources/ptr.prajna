@@ -5,8 +5,8 @@ func testMain(){
     // var p = __nullptr<i64>::create();
     // p.toi64();
 
-    // testing::Assert(p == __nullptr<i64>::create());
-    // testing::Assert(p.toi64() == 0i64);
-    // testing::Assert(p.isNull());
+    // testing::assert(p == __nullptr<i64>::create());
+    // testing::assert(p.toi64() == 0i64);
+    // testing::assert(p.isNull());
     // p.toi64().tostr().print();
 }

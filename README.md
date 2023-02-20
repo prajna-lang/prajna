@@ -16,6 +16,7 @@ func testMain(){
 ```
 
 为了更适合人工智能, 机器学习等领域的研发, 般若还提供命令行编程环境
+
 ```
 >> "Hello, World!"
 Hello, World!
@@ -23,6 +24,7 @@ Hello, World!
 12
 >>
 ```
+
 目前支持命令行的语言大部分都是解释型的, 而般若采用的是即时编译. "即时编译"意味着般若编译器是跨架构的, 不管是是ARM, X86和RSIC-V架构, 对般若来说没区别, 都可以简单快速地部署执行代码.
 
 <!-- ## 般若编译器的架构 -->
@@ -34,12 +36,10 @@ graph LR;
 上图是般若编译器的执行流程图, 和般若项目的代码结构是完全对应的.
 整个般若编译器的实现有着非常好的层次化和模块化, 非常适合用户去理解. 笔者认为编译器和编程是相辅相成的, 理解了编译器自然知道如何去编程, 掌握了编程语言也大概知道编译器该怎么实现. 如果编译器本身很混乱, 那么它的编程语言也会很混乱. 基于这样的认识, 般若编译器实现时遵循的核心原则是"尽可能简单",  这个和"简单明了"原则是相呼应的.
 
-
 <!-- ## 演变式IR
 
 很多项目都提到了多层次IR的重要性, MLIR和Rust都有多层次IR的概念, 笔者也深受启发. 演变式IR的本质就是多层次IR, 但不会有明显的界限.
  -->
-
 
 ## 支持异构计算
 
@@ -81,11 +81,12 @@ func testKernel(){
     // 将gpu的tensor拷贝会主机
     var host_tensor = gpu_tensor.toHost();
     for i in 0 to size{
-        testing::Assert(host_tensor.data[i] == i);
+        testing::assert(host_tensor.data[i] == i);
     }
 }
 
 ```
+
 上面是一段gpu的代码, 该代码和CUDA是高度相似的. 般若并非要做一个国产版的CUDA, 般若追求更加自然和统一异构计算编程范式. 下面是般若里更为简洁的gpu调用, 无需繁琐的核函数实现, 也无需CPU和GPU之间的数据传输, 这一切编译器会自动处理.
 
 ```
@@ -101,7 +102,7 @@ func testMain(){
     // 运行完后, gpu的数据会自动拷贝的tmp_tensor上
 
     for i in 0 to shape[0] {
-        testing::Assert(tmp_tensor.data[i] == i);
+        testing::assert(tmp_tensor.data[i] == i);
     }
 }
 ```
@@ -149,6 +150,7 @@ func convolution_depthwise(Input: tensor, Kernel: tensor) {
     return Output;
 }
 ```
+
 上述代码显示了在波罗蜜多子编译器中分离卷积的预期实现(最终实现可能和广告有所出入). 请注意上面的代码是没有控制流的(这里的for是循环体,并非控制流), 没有控制流的编程范式是比较容易和AI加速器适配的. 波罗蜜多会主要基于"多面体优化技术", 实现全自动的优化. 像其他AI编译器一样, 波罗蜜多也会关注"算子融合","计算分块","内存重排"等优化
 
 ```mermaid
@@ -161,6 +163,7 @@ graph LR
     end
     Origin--"算子融合"-->Fusion
 ```
+
 不同于现有的神经网络框架, 波罗蜜多融合算子后不会需要你再去实现一个"ConvolutionRelu"的算子, 这一切都会基于全自动的优化.
 
 ## 混合编译
@@ -242,16 +245,17 @@ git clone https://github.com/matazure/prajna.git
 # 运行测试
 ./scripts/test.sh release
 ```
+
 由于没有库管理, 可以直接修改tests/compiler/prajna_sources里的源码进行试用.
 
 英伟达GPU运行依赖CUDA环境, 需要提前安装. 此外还需要安装llvm的llc程序, 可以通过如下方式安装
+
 ```bash
 cd build_release/third_party/llvm-project/llvm
 make install
 cd -
 sudo cp -r build_release/install/* /usr
 ```
-
 
 ## 其他
 
@@ -272,14 +276,7 @@ sudo cp -r build_release/install/* /usr
 ### 招聘实习生
 
 招聘实习生三位, 本科及其以上学历, 最后一周能投入16个小时以上. 1. 具备一定的编程和数学基础 2. 对编译器和人工智能基础设施很有兴趣. 不必担心没有项目经验和相关基础, 很容易学的. 可以加微信直接投递简历, 主要涉及以下几个方向可供选择,
+
 1. 编译器全栈, 编译器的前后端实现, 包括编语言的解析, IR优化, 代码生成等, 还有针对循环体的特别优化.
 2. 软件全栈, 基于vscode, jupyter等开源项目的IDE开发, 科学计算等的可视化环境开发.
 3. 科学计算全栈, 基于般若编程语言开发标准库, 线性代数库和神经网络库等.
-
-
-
-
-
-
-
-

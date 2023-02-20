@@ -35,7 +35,7 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
             code_line.push_back(';');
         }
         code_line.push_back('\n');
-        compiler->compileCommandLine(code_line);
+        compiler->executeCodeInRelp(code_line);
 
         // auto slider = new xw::slider<double>;
         // slider->display();
@@ -86,7 +86,7 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
         // result["language_info"]["codemirror_mode"] = "prajna";
         result["language_info"]["mimetype"] = "text/x-prajna";
         result["language_info"]["version"] = PRAJNA_VERSION;
-        result["language_info"]["file_extension"] = ".prajna";
+        result["language_info"]["file_extension"] = ".prajnascripts";
 
         return result;
     }

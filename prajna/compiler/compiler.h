@@ -45,22 +45,25 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
 
     void bindBuiltinFunctions();
 
-    void compileCommandLine(std::string command_line_code);
+    void executeCodeInRelp(std::string command_line_code);
 
     size_t getSymbolValue(std::string symbol_name);
 
-    void runTestFunctions();
+    void executateTestFunctions();
 
-    void runMainFunction();
+    void executeProgram(std::filesystem::path program_path);
 
-    void addPackageDirectory(std::string package_directory);
+    void executateMainFunction();
+
+    void addPackageDirectoryPath(std::string package_directory);
 
     /**
      * @brief 编译单个源文件
      * @param[in] prajna_source_dir
      * @param[in]
      */
-    std::shared_ptr<lowering::SymbolTable> compileFile(std::filesystem::path prajna_source_file);
+    std::shared_ptr<ir::Module> compileProgram(std::filesystem::path prajna_source_file,
+                                               bool is_interpreter);
 
    private:
     std::shared_ptr<lowering::SymbolTable> _symbol_table;

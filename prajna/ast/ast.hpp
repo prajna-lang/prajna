@@ -8,15 +8,10 @@
 #include "boost/optional.hpp"
 // #include "boost/tuple/tuple.hpp" // 感觉匹配属性的时候存在很多问题, 不推荐使用了
 #include "boost/variant/recursive_variant.hpp"
+#include "prajna/ast/source_position.hpp"
 #include "prajna/config.hpp"
 
 namespace prajna::ast {
-
-struct SourcePosition {
-    int line = -1;
-    int column = -1;
-    std::string file;
-};
 
 struct SourceLocation {
     SourcePosition first_position;

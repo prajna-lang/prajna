@@ -5,6 +5,7 @@
 
 #include "gtest/gtest.h"
 #include "prajna/compiler/compiler.h"
+#include "prajna/exception.hpp"
 #include "tests/utility.hpp"
 
 using namespace prajna;
@@ -20,11 +21,10 @@ class CompilerSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
     auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
-    compiler->addPackageDirectory(".");
+    compiler->addPackageDirectoryPath(".");
     compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
-    compiler->compileFile(prajna_source_path);
-    ASSERT_EQ(0, compiler->compile_error_count);
-    compiler->runTestFunctions();
+    compiler->compileProgram(prajna_source_path, false);
+    compiler->executateTestFunctions();
 }
 
 class CompilerScriptTests : public testing::TestWithParam<std::string> {};
@@ -38,26 +38,24 @@ TEST_P(CompilerScriptTests, TestScriptFromDirectory) {
         std::getline(ifs, code);
         // 修复//注释的问题
         code.append("\n");
-        compiler->compileCommandLine(code);
+        compiler->executeCodeInRelp(code);
         std::cout << std::endl;
     }
-    ASSERT_EQ(0, compiler->compile_error_count);
 }
 
 class CompilerErrorSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerErrorSourceTests, TestSourceFromDirectory) {
     auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
-    compiler->addPackageDirectory(".");
+    compiler->addPackageDirectoryPath(".");
     compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
-    compiler->compileFile(prajna_source_path);
-    compiler->runTestFunctions();
+    EXPECT_THROW(compiler->compileProgram(prajna_source_path, false), prajna::CompileError);
 }
 
 class CompilerErrorScriptTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerErrorScriptTests, TestScriptFromDirectory) {
     auto compiler = Compiler::create();
-    compiler->addPackageDirectory(".");
+    compiler->addPackageDirectoryPath(".");
     compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
     std::string prajna_script_path = GetParam();
     std::ifstream ifs(prajna_script_path);
@@ -66,7 +64,7 @@ TEST_P(CompilerErrorScriptTests, TestScriptFromDirectory) {
         std::getline(ifs, code);
         // 修复//注释的问题
         code.append("\n");
-        compiler->compileCommandLine(code);
+        compiler->executeCodeInRelp(code);
         std::cout << std::endl;
     }
 }

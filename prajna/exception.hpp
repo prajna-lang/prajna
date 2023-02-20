@@ -1,18 +1,23 @@
-// #pragma once
+#pragma once
 
-// #include <memory>
+#pragma once
 
-// namespace prajna {
+#include "prajna/ast/source_position.hpp"
 
-// class CompileError {
-//    public:
-//     CompileError() = default;
+namespace prajna {
 
-//     //    public:
-//     //     static std::shared_ptr<CompileError> create() {
-//     //         std::shared_ptr<CompileError> self(new CompileError);
-//     //         return self;
-//     //     }
-// };
+struct InvalidEscapeChar {
+    ast::SourcePosition source_position;
+};
 
-// }  // namespace prajna
+class CompileError {
+   public:
+    CompileError() = default;
+};
+
+class RuntimeError {
+   public:
+    RuntimeError() = default;
+};
+
+}  // namespace prajna

@@ -61,97 +61,113 @@ std::shared_ptr<Compiler> Compiler::create() {
 }
 
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
-    this->addPackageDirectory(builtin_sources_dir);
-    this->compileFile("prajna_bootstrap.prajna");
+    this->addPackageDirectoryPath(builtin_sources_dir);
+    this->compileProgram("prajna_bootstrap.prajna", false);
 }
 
 std::shared_ptr<ir::Module> Compiler::compileCode(
     std::string code, std::shared_ptr<lowering::SymbolTable> symbol_table, std::string file_name,
     bool is_interpreter) {
-    try {
-        this->logger = Logger::create(code);
-        auto ast = prajna::parser::parse(code, file_name, logger);
-        PRAJNA_ASSERT(ast);
-        auto ir_lowering_module =
-            prajna::lowering::lower(ast, symbol_table, logger, shared_from_this(), is_interpreter);
-        ir_lowering_module->name = file_name;
-        ir_lowering_module->fullname = ir_lowering_module->name;
-        for (auto [ir_target, ir_sub_module] : ir_lowering_module->modules) {
-            if (ir_sub_module == nullptr) continue;
-            ir_sub_module->name = ir_lowering_module->name + "_" + ir::targetToString(ir_target);
-            ir_sub_module->fullname = ir_sub_module->name;
-        }
-        auto ir_ssa_module = prajna::transform::transform(ir_lowering_module);
-        auto ir_codegen_module = prajna::codegen::llvmCodegen(ir_ssa_module, ir::Target::host);
-        // auto ir_llvm_optimize_module = prajna::codegen::llvmPass(ir_codegen_module);
-
-        jit_engine->addIRModule(ir_codegen_module);
-
-        return ir_lowering_module;
-    } catch (CompileError &) {
-        ++compile_error_count;
-        return nullptr;
-    }
-}
-
-void Compiler::compileCommandLine(std::string command_line_code) {
-    static int command_id = 0;
-    auto ir_module = this->compileCode(command_line_code, _symbol_table,
-                                       ":cmd" + std::to_string(command_id++), true);
-    if (not ir_module) return;
-
+    // interpreter模式时候, lowering会直接执行函数, 故这里开始就捕获异常
     jit_engine->catchRuntimeError();
-    // @note 会有一次输入多个句子的情况
-    for (auto ir_function : ir_module->functions) {
-        if (ir_function->annotations.count("\\command")) {
-            auto fun_fullname = ir_function->fullname;
-            auto fun_ptr = reinterpret_cast<void (*)(void)>(jit_engine->getValue(fun_fullname));
-            fun_ptr();
+
+    this->logger = Logger::create(code);
+    auto ast = prajna::parser::parse(code, file_name, logger);
+    PRAJNA_ASSERT(ast);
+    auto ir_lowering_module =
+        prajna::lowering::lower(ast, symbol_table, logger, shared_from_this(), is_interpreter);
+    ir_lowering_module->name = file_name;
+    ir_lowering_module->fullname = ir_lowering_module->name;
+    for (auto [ir_target, ir_sub_module] : ir_lowering_module->modules) {
+        if (ir_sub_module == nullptr) continue;
+        ir_sub_module->name = ir_lowering_module->name + "_" + ir::targetToString(ir_target);
+        ir_sub_module->fullname = ir_sub_module->name;
+    }
+    auto ir_ssa_module = prajna::transform::transform(ir_lowering_module);
+    auto ir_codegen_module = prajna::codegen::llvmCodegen(ir_ssa_module, ir::Target::host);
+    auto ir_llvm_optimize_module = prajna::codegen::llvmPass(ir_codegen_module);
+
+    jit_engine->addIRModule(ir_codegen_module);
+
+    return ir_lowering_module;
+}
+
+void Compiler::executeCodeInRelp(std::string script_code) {
+    try {
+        static int command_id = 0;
+
+        auto ir_module = this->compileCode(script_code, _symbol_table,
+                                           ":cmd" + std::to_string(command_id++), true);
+        if (not ir_module) return;
+
+        // @note 会有一次输入多个句子的情况
+        for (auto ir_function : ir_module->functions) {
+            if (ir_function->annotations.count("\\command")) {
+                auto fun_fullname = ir_function->fullname;
+                auto fun_ptr = reinterpret_cast<void (*)(void)>(getSymbolValue(fun_fullname));
+                fun_ptr();
+            }
         }
+    } catch (CompileError error) {
+        ///  编译器需要继续执行其他指令
     }
 }
 
-void Compiler::runTestFunctions() {
+void Compiler::executeProgram(std::filesystem::path program_path) {
+    bool is_script = program_path.extension() == ".prajnascript";
+    auto ir_module = compileProgram(program_path, is_script);
+    if (is_script) {
+        for (auto ir_function : ir_module->functions) {
+            if (ir_function->annotations.count("\\command")) {
+                auto fun_fullname = ir_function->fullname;
+                auto fun_ptr = reinterpret_cast<void (*)(void)>(getSymbolValue(fun_fullname));
+                fun_ptr();
+            }
+        }
+    } else {
+        executateMainFunction();
+    }
+}
+
+void Compiler::executateTestFunctions() {
     std::set<std::shared_ptr<ir::Function>> function_tested_set;
-    this->_symbol_table->each(
-        [jit_engine = this->jit_engine, &function_tested_set](lowering::Symbol symbol) {
-            if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
-                if (auto ir_function = cast<ir::Function>(ir_value)) {
-                    if (function_tested_set.count(ir_function)) {
+    this->_symbol_table->each([=, &function_tested_set](lowering::Symbol symbol) {
+        if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
+            if (auto ir_function = cast<ir::Function>(ir_value)) {
+                if (function_tested_set.count(ir_function)) {
+                    return;
+                }
+
+                function_tested_set.insert(ir_function);
+                if (ir_function->annotations.count("test")) {
+                    auto function_pointer = getSymbolValue(ir_function->fullname);
+                    jit_engine->catchRuntimeError();
+                    reinterpret_cast<void (*)(void)>(function_pointer)();
+                }
+            }
+        }
+    });
+}
+
+void Compiler::executateMainFunction() {
+    std::set<std::shared_ptr<ir::Function>> main_functions;
+
+    this->_symbol_table->each([=, &main_functions](lowering::Symbol symbol) {
+        if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
+            if (auto ir_function = cast<ir::Function>(ir_value)) {
+                if (ir_function->name == "main") {
+                    main_functions.insert(ir_function);
+                    if (main_functions.size() >= 2) {
                         return;
                     }
 
-                    function_tested_set.insert(ir_function);
-                    if (ir_function->annotations.count("test")) {
-                        auto function_pointer = jit_engine->getValue(ir_function->fullname);
-                        jit_engine->catchRuntimeError();
-                        reinterpret_cast<void (*)(void)>(function_pointer)();
-                    }
+                    auto function_pointer = getSymbolValue(ir_function->fullname);
+                    jit_engine->catchRuntimeError();
+                    reinterpret_cast<void (*)(void)>(function_pointer)();
                 }
             }
-        });
-}
-
-void Compiler::runMainFunction() {
-    std::set<std::shared_ptr<ir::Function>> main_functions;
-
-    this->_symbol_table->each(
-        [jit_engine = this->jit_engine, &main_functions](lowering::Symbol symbol) {
-            if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
-                if (auto ir_function = cast<ir::Function>(ir_value)) {
-                    if (ir_function->name == "main") {
-                        main_functions.insert(ir_function);
-                        if (main_functions.size() >= 2) {
-                            return;
-                        }
-
-                        auto function_pointer = jit_engine->getValue(ir_function->fullname);
-                        jit_engine->catchRuntimeError();
-                        reinterpret_cast<void (*)(void)>(function_pointer)();
-                    }
-                }
-            }
-        });
+        }
+    });
 
     if (main_functions.empty()) {
         logger->error("the main function is not found");
@@ -169,7 +185,7 @@ size_t Compiler::getSymbolValue(std::string symbol_name) {
     return this->jit_engine->getValue(symbol_name);
 }
 
-void Compiler::addPackageDirectory(std::string package_directory) {
+void Compiler::addPackageDirectoryPath(std::string package_directory) {
     if (!std::filesystem::is_directory(std::filesystem::path(package_directory))) {
         auto error_message = fmt::format("{} is not a valid package directory",
                                          fmt::styled(package_directory, fmt::fg(fmt::color::red)));
@@ -179,8 +195,8 @@ void Compiler::addPackageDirectory(std::string package_directory) {
     package_directories.push_back(std::filesystem::path(package_directory));
 }
 
-std::shared_ptr<lowering::SymbolTable> Compiler::compileFile(
-    std::filesystem::path prajna_source_package_path) {
+std::shared_ptr<ir::Module> Compiler::compileProgram(
+    std::filesystem::path prajna_source_package_path, bool is_interpreter) {
     std::filesystem::path prajna_source_path;
     for (auto package_directory : package_directories) {
         auto tmp_path =
@@ -192,23 +208,24 @@ std::shared_ptr<lowering::SymbolTable> Compiler::compileFile(
     }
 
     if (prajna_source_path.empty()) {
-        fmt::print("{} is invalid program file\n",
-                   fmt::styled(prajna_source_package_path.string(), fmt::fg(fmt::color::red)));
+        logger->error(
+            fmt::format("{} is invalid program file\n", prajna_source_package_path.string()));
+        throw CompileError();
         compile_error_count += 1;
         return nullptr;
     }
-
-    // PRAJNA_ASSERT(!prajna_source_path.empty());
 
     auto current_symbol_table = createSymbolTableTree(_symbol_table, prajna_source_package_path);
 
     std::ifstream ifs(prajna_source_path.string());
     if (ifs.good()) {
         std::string code((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-        this->compileCode(code, current_symbol_table, prajna_source_path.string(), false);
+        return this->compileCode(code, current_symbol_table, prajna_source_path.string(),
+                                 is_interpreter);
+    } else {
+        logger->error("invalid program");
+        return nullptr;
     }
-
-    return current_symbol_table;
 }
 
 }  // namespace prajna

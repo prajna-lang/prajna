@@ -64,7 +64,7 @@ int prajna_repl_main() {
             code_line.insert(std::prev(code_line.end()), ';');
         }
         // code_line.push_back('\n'); // 自带\n
-        compiler->compileCommandLine(code_line);
+        compiler->executeCodeInRelp(code_line);
 
         std::cout << "\n";
     }

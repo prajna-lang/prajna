@@ -21,12 +21,15 @@
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "prajna/assert.hpp"
 #include "prajna/compiler/compiler.h"
+#include "prajna/exception.hpp"
 #include "prajna/ir/ir.hpp"
 #include "prajna/reference_count.hpp"
 
 namespace prajna {
+
 std::map<void *, std::atomic<int64_t>> ptr_count_dict;
-}
+
+}  // namespace prajna
 
 namespace prajna::jit {
 
@@ -207,7 +210,7 @@ void ExecutionEngine::bindCFunction(void *fun_ptr, std::string mangle_name) {
 void ExecutionEngine::catchRuntimeError() {
     auto error = setjmp(buf);
     if (error != 0) {
-        throw std::runtime_error("Prajna Runtime Error");
+        throw RuntimeError();
     }
 }
 

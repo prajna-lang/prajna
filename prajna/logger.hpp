@@ -54,11 +54,6 @@ struct formatter<prajna::LogLevel> {
 
 namespace prajna {
 
-class CompileError {
-   public:
-    CompileError() = default;
-};
-
 class Logger {
    protected:
     Logger() = default;
@@ -126,6 +121,12 @@ class Logger {
 
     void error(std::string message) {
         fmt::print("{}: {}\n", fmt::styled("error", fmt::fg(fmt::color::red)), message);
+    }
+
+    void error(std::string message, ast::SourcePosition first_position) {
+        auto last_position = first_position;
+        last_position.column = first_position.column + 1;
+        error(message, first_position, last_position, std::string(BLU));
     }
 
     void error(std::string message, ast::SourceLocation source_location) {

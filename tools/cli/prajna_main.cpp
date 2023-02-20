@@ -46,11 +46,10 @@ int prajna_exe_main(int argc, char* argv[]) {
 
     if (result.count("program")) {
         auto compiler = prajna::Compiler::create();
-        auto program_file = result["program"].as<std::string>();
+        auto program_path = std::filesystem::path(result["program"].as<std::string>());
         compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
-        compiler->addPackageDirectory(std::filesystem::current_path());
-        compiler->compileFile(program_file);
-        compiler->runMainFunction();
+        // compiler->addPackageDirectoryPath(std::filesystem::current_path());
+        compiler->executeProgram(std::filesystem::current_path() / program_path);
         return 0;
     }
 

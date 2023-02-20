@@ -10,6 +10,7 @@
 
 #include "boost/spirit/home/classic/iterator/position_iterator.hpp"
 #include "prajna/config.hpp"
+#include "prajna/exception.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/parser/grammar/statement_grammar.h"
 #include "prajna/parser/lexer/code_lexer_config.hpp"
@@ -28,10 +29,16 @@ bool parse(std::string code, prajna::ast::Statements& ast, std::string file_name
 
     prajna::parser::grammar::StatementGrammer<iterator_type, CodeLexerType> statement_grammar(
         tokens, error_handler, success_handler);
-    auto skip = boost::spirit::qi::in_state("WS")[tokens.self];
 
-    return boost::spirit::qi::phrase_parse(iter, end, statement_grammar, skip,
-                                           boost::spirit::qi::skip_flag::postskip, ast);
+    try {
+        auto skip = boost::spirit::qi::in_state("WS")[tokens.self];
+
+        return boost::spirit::qi::phrase_parse(iter, end, statement_grammar, skip,
+                                               boost::spirit::qi::skip_flag::postskip, ast);
+    } catch (InvalidEscapeChar lexer_error) {
+        logger->error("invalid escape char", lexer_error.source_position);
+        return false;
+    }
 }
 
 std::shared_ptr<prajna::ast::Statements> parse(std::string code, std::string file_name,

@@ -43,7 +43,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
                                 symbol_table == ir_builder->symbol_table
                                     ? filename_path
                                     : symbol_table->source_path / filename_path;
-                            auto source_symbol_table = compiler->compileFile(source_package_path);
+                            auto source_symbol_table =
+                                compiler->compileProgram(source_package_path, false)->symbol_table;
                             if (!source_symbol_table) {
                                 logger->error("not find valid source file", *iter_ast_identifier);
                             }

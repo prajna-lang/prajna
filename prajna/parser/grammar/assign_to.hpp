@@ -1,13 +1,23 @@
 #pragma once
 
 #include "boost/spirit/include/qi.hpp"
+#include "prajna/assert.hpp"
 #include "prajna/ast/ast.hpp"
+#include "prajna/exception.hpp"
 
 namespace boost::spirit::traits {
 
 namespace {
 
-inline char get_escape_char(char c) {
+template <typename Iterator>
+prajna::ast::SourcePosition get_source_position(const Iterator& iter) {
+    auto pos = iter.get_position();
+    return prajna::ast::SourcePosition{pos.line, pos.column, pos.file};
+}
+
+template <typename Iterator>
+inline char get_escape_char(Iterator iter) {
+    auto c = *iter;
     switch (c) {
         case 'a': {
             return '\a';
@@ -50,16 +60,12 @@ inline char get_escape_char(char c) {
             return '\"';
         }
         default:
-            assert(false);  /// todo
+            prajna::InvalidEscapeChar lexer_error;
+            lexer_error.source_position = get_source_position(iter);
+            throw lexer_error;
     }
 
     return '\0';
-}
-
-template <typename Iterator>
-prajna::ast::SourcePosition get_source_position(const Iterator& iter) {
-    auto pos = iter.get_position();
-    return prajna::ast::SourcePosition{pos.line, pos.column, pos.file};
 }
 
 }  // namespace
@@ -123,20 +129,18 @@ struct assign_to_attribute_from_iterators<prajna::ast::CharLiteral, Iterator> {
         attr.first_position = get_source_position(first);
         attr.last_position = get_source_position(last);
 
-        auto tmp = std::string(first, last);
-        auto first1 = tmp.begin();
-        auto last1 = tmp.end();
-        if ((last1 - first1) == 3) {
-            attr.value = *(first1 + 1);
-            return;
-        }
-        if ((last1 - first1) == 4) {
-            assert(*(first1 + 1) == '\\');  /// todo
-            attr.value = get_escape_char(*(first1 + 2));
+        if (last == std::next(first, 3)) {
+            attr.value = *std::next(first);
             return;
         }
 
-        assert(false);
+        if (last == std::next(first, 4)) {
+            PRAJNA_ASSERT(*std::next(first) == '\\');
+            attr.value = get_escape_char(std::next(first, 2));
+            return;
+        }
+
+        PRAJNA_ASSERT(false);
     }
 };
 
@@ -148,12 +152,15 @@ struct assign_to_attribute_from_iterators<prajna::ast::StringLiteral, Iterator> 
         attr.last_position = get_source_position(last);
 
         auto tmp = std::string(first, last);
-        for (auto it = tmp.begin() + 1; it != tmp.end() - 1; ++it) {
+        for (auto it = std::next(first); std::next(it) != last; ++it) {
             if (*it != '\\') {
                 attr.value.push_back(*it);
             } else {
                 ++it;
-                attr.value.push_back(get_escape_char(*it));
+                if (std::next(it) == last) {
+                    throw prajna::InvalidEscapeChar{get_source_position(it)};
+                }
+                attr.value.push_back(get_escape_char(it));
             }
         }
     }

@@ -242,12 +242,23 @@ class ExpressionLoweringVisitor {
         }
 
         std::string member_name = boost::get<ast::Identifier>(ast_binary_operation.operand);
-        auto ir_member = ir_builder->accessMember(ir_lhs, member_name);
-        if (!ir_member) {
-            logger->error(fmt::format("{} is not a member", member_name),
-                          ast_binary_operation.operand);
+        if (auto ir_member = ir_builder->accessMember(ir_lhs, member_name)) {
+            return ir_member;
         }
-        return ir_member;
+
+        // 语法糖, ptr类型会寻找raw_ptr的成员函数
+        if (ir_builder->isPtrType(ir_lhs->type)) {
+            auto ir_raw_ptr = ir_builder->accessField(ir_lhs, "raw_ptr");
+            auto ir_object = ir_builder->create<ir::DeferencePointer>(ir_raw_ptr);
+            if (auto ir_member =
+                    this->applyBinaryOperationAccessMember(ir_object, ast_binary_operation)) {
+                return ir_member;
+            }
+        }
+        // ir_lhs
+
+        logger->error(fmt::format("{} is not a member", member_name), ast_binary_operation.operand);
+        return nullptr;
     }
 
     std::shared_ptr<ir::Value> applyBinaryOperationIndexArray(

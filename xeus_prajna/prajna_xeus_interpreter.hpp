@@ -86,6 +86,7 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
         // result["language_info"]["codemirror_mode"] = "prajna";
         result["language_info"]["mimetype"] = "text/x-prajna";
         result["language_info"]["version"] = PRAJNA_VERSION;
+        // 会决定download时的文件名后缀
         result["language_info"]["file_extension"] = ".prajnascripts";
 
         return result;

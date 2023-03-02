@@ -35,21 +35,21 @@ implement Say for SayHello{
 @test
 func testDynamicDispatch(){
     var say_hi = ptr<SayHi>::new();
-    (*say_hi.raw_ptr).say();
+    say_hi.say();
     testing::assert(!say_hi.raw_ptr.isNull());
 
     var say: Say = dynamic_cast<Say>(say_hi);
     say.say();
 
     var say_hello = ptr<SayHello>::new();
-    (*say_hello.raw_ptr).say();
+    say_hello.say();
 
     say = dynamic_cast<Say>(say_hello);
     say.say();
 
     var say_hello2 = dynamic_cast<SayHello>(say);
     testing::assert(!say_hello2.isNull());
-    (*say_hello2.raw_ptr).say();
+    say_hello2.say();
 
     var say_hi2 = dynamic_cast<SayHi>(say);
     testing::assert(say_hi2.isNull());

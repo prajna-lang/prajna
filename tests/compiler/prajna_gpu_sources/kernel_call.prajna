@@ -10,8 +10,6 @@ func myKernel(tensor: gpu::Tensor<i64, 1>){
 
 @test
 func testKernel(){
-    // gpu::setDevice(0); // error,  会释放核函数的资源, 待修复
-
     var size = 13;
     var gridShape = [1,1,1];
     var blockShape = [size, 1, 1];

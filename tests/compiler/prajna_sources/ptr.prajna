@@ -2,11 +2,11 @@
 
 @test
 func testMain(){
-    // var p = __nullptr<i64>::create();
-    // p.toi64();
+    var p = __nullptr<i64>::create();
+    p.toi64();
 
-    // testing::assert(p == __nullptr<i64>::create());
-    // testing::assert(p.toi64() == 0i64);
-    // testing::assert(p.isNull());
-    // p.toi64().tostr().print();
+    testing::assert(p == __nullptr<i64>::create());
+    testing::assert(p.toi64() == 0i64);
+    testing::assert(p.isNull());
+    p.toi64().tostr().print();
 }

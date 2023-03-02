@@ -1,9 +1,9 @@
-import gpu::__thread_idx_x;
+import gpu;
 
 @kernel
 @target("nvptx")
 func myKernel(tensor: gpu::Tensor<i64, 1>, value: i64){
-    tensor.data[__thread_idx_x().toi64()] = value;
+    tensor.at(gpu::threadIndex()) = value;
 }
 
 @test

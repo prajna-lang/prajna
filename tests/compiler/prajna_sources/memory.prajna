@@ -3,4 +3,5 @@
 @test
 func testMain(){
     var t = ptr<i64>::new();
+    var t0 = t.toi32();
 }

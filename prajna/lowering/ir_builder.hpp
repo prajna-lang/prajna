@@ -139,9 +139,6 @@ class IrBuilder {
 
     std::shared_ptr<ir::Function> getMemberFunction(std::shared_ptr<ir::Type> ir_type,
                                                     std::string member_name) {
-        if (member_name == "tochar") {
-            int a = 0;
-        }
         for (auto [interface_name, ir_interface] : ir_type->interfaces) {
             for (auto ir_function : ir_interface->functions) {
                 if (ir_function->name == member_name) {

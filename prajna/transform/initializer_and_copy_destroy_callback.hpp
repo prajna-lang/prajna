@@ -272,9 +272,14 @@ inline std::shared_ptr<ir::Module> insertCopyAndDestroyCallbackForCallandReturn(
                 auto iter = std::find(RANGE(ir_call->parent_block->values), ir_call);
                 ir_builder->inserter_iterator = std::next(iter);
             } else {
-                auto ir_instructon = ir_call->instruction_with_index_list.front().instruction;
+                auto ir_instruction = ir_call->instruction_with_index_list.front().instruction;
+
+                // 返回值则不进行destroy处理, 相应的在return时也不会有copy处理,
+                // 因为return后再destroy是无效的.
+                if (is<ir::Return>(ir_instruction)) continue;
+
                 // 使用完才能destroy
-                auto iter = std::find(RANGE(ir_instructon->parent_block->values), ir_instructon);
+                auto iter = std::find(RANGE(ir_instruction->parent_block->values), ir_instruction);
                 ir_builder->inserter_iterator = std::next(iter);
             }
 
@@ -289,6 +294,10 @@ inline std::shared_ptr<ir::Module> insertCopyAndDestroyCallbackForCallandReturn(
             ir_builder->pushBlock(ir_return->parent_block);
             auto iter = std::find(RANGE(ir_return->parent_block->values), ir_return);
             ir_builder->inserter_iterator = iter;
+
+            // 和call的处理相对应
+            if (is<ir::Call>(ir_return->value())) continue;
+
             copyVariableLikedCallback(ir_return->value(), ir_builder);
         }
     }

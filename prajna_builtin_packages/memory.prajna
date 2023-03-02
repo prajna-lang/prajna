@@ -32,7 +32,8 @@ implement ptr<Type_>{
 
     @static
     func new()->ptr<Type_>{
-        return allocate(1);
+        var t = allocate(1);
+        return t;
     }
 
     @static
@@ -89,10 +90,14 @@ implement ptr<Type_>{
                 bindings::free(cast<undef*>(this.raw_ptr));
                 //TODO 应该存在问题, 后期在进行详细修复
                 this.raw_ptr = __nullptr<Type_>::create();
+                "hit zzm\n".print();
             }
         }
     }
 
+    func referenceCount()->i64 {
+        return bindings::getReferenceCount(cast<undef*>(this.raw_ptr));
+    }
 }
 
 export allocator;

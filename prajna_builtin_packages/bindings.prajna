@@ -8,8 +8,8 @@ func free(pointer: undef*);
 
 func registerReferenceCount(pointer: undef*);
 func getReferenceCount(pointer: undef*)->i64;
-func incReferenceCount(pointer: undef*);
-func decReferenceCount(pointer: undef*);
+func incrementReferenceCount(pointer: undef*);
+func decrementReferenceCount(pointer: undef*);
 
 export print_c;
 export assert;

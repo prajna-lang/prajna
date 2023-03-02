@@ -1,20 +1,4 @@
 template <Type_>
-struct allocator<Type_>{}
-
-template <Type_>
-implement allocator<Type_>{
-    @static
-    func allocate(size: i64)->Type_ *{
-        return cast<Type_ *>(malloc(size * sizeof(Type_)));
-    }
-
-    @static
-    func deallocate(ptr: Type_*){
-        free(cast<undef *>(ptr));
-    }
-}
-
-template <Type_>
 struct ptr<Type_>{
     raw_ptr: Type_*;
 }
@@ -24,9 +8,9 @@ implement ptr<Type_>{
     @static
     func allocate(size: i64)->ptr<Type_>{
         var self: ptr<Type_>;
-        self.raw_ptr = allocator<Type_>::allocate(size);
+        self.raw_ptr =  cast<Type_ *>(malloc(size * sizeof(Type_)));
         bindings::registerReferenceCount(cast<undef*>(self.raw_ptr));
-        bindings::incReferenceCount(cast<undef*>(self.raw_ptr));
+        bindings::incrementReferenceCount(cast<undef*>(self.raw_ptr));
         return self;
     }
 
@@ -74,23 +58,22 @@ implement ptr<Type_>{
         return this.raw_ptr == __nullptr<Type_>::create();
     }
 
-    func initialize(){
+    func __registerReferenceCount(){
         this.raw_ptr = __nullptr<Type_>::create();
         bindings::registerReferenceCount(cast<undef*>(this.raw_ptr));
     }
 
-    func copy(){
-        bindings::incReferenceCount(cast<undef*>(this.raw_ptr));
+    func __incrementReferenceCount(){
+        bindings::incrementReferenceCount(cast<undef*>(this.raw_ptr));
     }
 
-    func destroy(){
-        bindings::decReferenceCount(cast<undef*>(this.raw_ptr));
+    func __decrementReferenceCount(){
+        bindings::decrementReferenceCount(cast<undef*>(this.raw_ptr));
         if (bindings::getReferenceCount(cast<undef*>(this.raw_ptr)) == 0){
             if (!this.isNull()){
                 bindings::free(cast<undef*>(this.raw_ptr));
                 //TODO 应该存在问题, 后期在进行详细修复
                 this.raw_ptr = __nullptr<Type_>::create();
-                "hit zzm\n".print();
             }
         }
     }
@@ -100,5 +83,4 @@ implement ptr<Type_>{
     }
 }
 
-export allocator;
 export ptr;

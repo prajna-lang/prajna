@@ -57,3 +57,4 @@ func testDynamicDispatch(){
     var say_hi3: Say = say.createSayObject();
     say_hi3.say();
 }
+

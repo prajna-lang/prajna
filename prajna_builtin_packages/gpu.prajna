@@ -62,7 +62,7 @@ implement Tensor<Type_, Dim_> {
         var bytes = self.layout.length() * sizeof(Type_);
         cuda::cuMemAlloc(cast<i8**>(&self.data), bytes);
         bindings::registerReferenceCount(cast<undef*>(self.data));
-        bindings::incReferenceCount(cast<undef*>(self.data));
+        bindings::incrementReferenceCount(cast<undef*>(self.data));
 
         return self;
     }

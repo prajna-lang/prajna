@@ -41,14 +41,12 @@ class Type : public Named {
    public:
     virtual ~Type() {}
 
+    std::shared_ptr<Function> getMemberFunction(std::string member_function_name);
+
    public:
     // @ref https://llvm.org/docs/LangRef.html#langref-datalayout bytes是多少可参阅datalyout的描述
     size_t bytes = 0;
     std::shared_ptr<Function> constructor = nullptr;
-    std::shared_ptr<Function> clone_function = nullptr;
-    std::shared_ptr<Function> initialize_function = nullptr;
-    std::shared_ptr<Function> copy_function = nullptr;
-    std::shared_ptr<Function> destroy_function = nullptr;
 
     std::map<std::string, std::shared_ptr<Function>> static_functions;
     std::map<std::string, std::shared_ptr<Function>> unary_functions;

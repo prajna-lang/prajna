@@ -13,21 +13,21 @@ implement TestA {
         "malloc memory\n".print();
         self.name = "create_self";
         bindings::registerReferenceCount(self.data);
-        bindings::incReferenceCount(self.data);
+        bindings::incrementReferenceCount(self.data);
         return self; // 调用 copy函数
         // 退出时会调用destropy 函数
     }
 
-    func initialize(){
+    func __registerReferenceCount(){
         this.name = "undef";
         this.data = __nullptr<undef>::create();
         bindings::registerReferenceCount(this.data);
-        "TestA initialize\n".print();
+        "TestA __registerReferenceCount\n".print();
     }
 
-    func destroy(){
+    func __decrementReferenceCount(){
         (this.name + " TestA destropy callback\n").print();
-        bindings::decReferenceCount(this.data);
+        bindings::decrementReferenceCount(this.data);
 
         var ref_count = bindings::getReferenceCount(this.data);
         (this.name + " ref count: " + ref_count.tostr() + "\n").print();
@@ -38,9 +38,9 @@ implement TestA {
         }
     }
 
-    func copy(){
-        (this.name + " TestA copy callback\n").print();
-        bindings::incReferenceCount(this.data);
+    func __incrementReferenceCount(){
+        (this.name + " TestA __incrementReferenceCount callback\n").print();
+        bindings::incrementReferenceCount(this.data);
 
         var ref_count = bindings::getReferenceCount(this.data);
         (this.name + " ref count: " + ref_count.tostr() + "\n").print();

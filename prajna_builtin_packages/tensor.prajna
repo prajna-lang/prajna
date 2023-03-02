@@ -64,22 +64,22 @@ implement Tensor<Type_, Dim_> {
         var bytes = self.layout.length() * sizeof(Type_);
         self.data = cast<Type_ *>(bindings::bindings::malloc(bytes));
         bindings::registerReferenceCount(cast<undef*>(self.data));
-        bindings::incReferenceCount(cast<undef*>(self.data));
+        bindings::incrementReferenceCount(cast<undef*>(self.data));
 
         return self;
     }
 
-    func initialize(){
+    func __registerReferenceCount(){
         this.data = __nullptr<Type_>::create();
         bindings::registerReferenceCount(cast<undef*>(this.data));
     }
 
-    func copy(){
-        bindings::incReferenceCount(cast<undef*>(this.data));
+    func __incrementReferenceCount(){
+        bindings::incrementReferenceCount(cast<undef*>(this.data));
     }
 
-    func destroy(){
-        bindings::decReferenceCount(cast<undef*>(this.data));
+    func __decrementReferenceCount(){
+        bindings::decrementReferenceCount(cast<undef*>(this.data));
         if (bindings::getReferenceCount(cast<undef*>(this.data)) == 0){
            bindings::free(cast<undef*>(this.data));
         }

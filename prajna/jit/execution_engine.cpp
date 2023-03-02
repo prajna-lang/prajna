@@ -225,10 +225,10 @@ void ExecutionEngine::bindBuiltinFunction() {
                         "::bindings::registerReferenceCount");
     this->bindCFunction(reinterpret_cast<void *>(getReferenceCount),
                         "::bindings::getReferenceCount");
-    this->bindCFunction(reinterpret_cast<void *>(incReferenceCount),
-                        "::bindings::incReferenceCount");
-    this->bindCFunction(reinterpret_cast<void *>(decReferenceCount),
-                        "::bindings::decReferenceCount");
+    this->bindCFunction(reinterpret_cast<void *>(incrementReferenceCount),
+                        "::bindings::incrementReferenceCount");
+    this->bindCFunction(reinterpret_cast<void *>(decrementReferenceCount),
+                        "::bindings::decrementReferenceCount");
 
 #ifdef PRAJNA_WITH_GPU
     this->bindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");

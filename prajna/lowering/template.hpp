@@ -35,7 +35,7 @@ class Template : public Named {
         return self;
     };
 
-    virtual Symbol getInstance(std::list<Symbol> symbol_template_arguments,
+    virtual Symbol instantiate(std::list<Symbol> symbol_template_arguments,
                                std::shared_ptr<ir::Module> ir_module) {
         if (!_instance_dict.count(symbol_template_arguments)) {
             _instance_dict[symbol_template_arguments];  // 插入默认值, 阻断多次实力化
@@ -69,19 +69,18 @@ class TemplateStruct : public Named {
         return self;
     }
 
-    std::shared_ptr<ir::StructType> getStructInstance(std::list<Symbol> template_arguments,
-                                                      std::shared_ptr<ir::Module> ir_module) {
+    std::shared_ptr<ir::StructType> instantiateStructAndImplement(
+        std::list<Symbol> template_arguments, std::shared_ptr<ir::Module> ir_module) {
         if (struct_type_instance_dict.count(template_arguments) == 0) {
             struct_type_instance_dict[template_arguments];
 
             struct_type_instance_dict[template_arguments] =
                 cast<ir::StructType>(symbolGet<ir::Type>(
-                    template_struct_impl->getInstance(template_arguments, ir_module)));
-            struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
+                    template_struct_impl->instantiate(template_arguments, ir_module)));
             struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
 
             for (auto template_implement : template_implements) {
-                template_implement->getInstance(template_arguments, ir_module);
+                template_implement->instantiate(template_arguments, ir_module);
             }
         }
 

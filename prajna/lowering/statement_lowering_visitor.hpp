@@ -613,16 +613,6 @@ class StatementLoweringVisitor {
                 fmt::format("the {} function should has no parameters", ir_function->name),
                 ast_function.declaration.parameters);
         }
-
-        if (ir_function->name == "initialize") {
-            ir_type->initialize_function = ir_function;
-        }
-        if (ir_function->name == "copy") {
-            ir_type->copy_function = ir_function;
-        }
-        if (ir_function->name == "destroy") {
-            ir_type->destroy_function = ir_function;
-        }
     }
 
     bool isPropertyGetterSetterFunctionTypeMatched(
@@ -1162,7 +1152,7 @@ class StatementLoweringVisitor {
             if (symbol_ptr_tp.which() != 0) {
                 auto ptr_tp = symbolGet<Template>(symbol_ptr_tp);
                 PRAJNA_ASSERT(ptr_tp);
-                ptr_tp->getInstance({ir_value_type}, ir_builder->module);
+                ptr_tp->instantiate({ir_value_type}, ir_builder->module);
             }
 
             auto field_function_pointer = ir::Field::create(

@@ -1660,16 +1660,23 @@ inline std::shared_ptr<Value> Block::clone(std::shared_ptr<FunctionCloner> funct
     ir_new->parent_function = cast<Function>(function_cloner->value_dict[this->parent_function]);
     ir_new->parent_block = cast<Block>(function_cloner->value_dict[this->parent_block]);
 
-    // auto instruction_with_index_list_copy = this->instruction_with_index_list;
-    // for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
-    //     ir_instruction->operand(op_idx, ir_new);
-    // }
-
     return ir_new;
 }
 
 inline std::string getKernelFunctionAddressName(std::shared_ptr<Function> ir_kernel_function) {
     return concatFullname(ir_kernel_function->fullname, "kernel_function_address");
+}
+
+inline std::shared_ptr<Function> Type::getMemberFunction(std::string member_function_name) {
+    for (auto [interface_name, ir_interface] : this->interfaces) {
+        for (auto ir_function : ir_interface->functions) {
+            if (ir_function->name == member_function_name) {
+                return ir_function;
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 }  // namespace prajna::ir

@@ -32,14 +32,14 @@ std::shared_ptr<lowering::IrBuilder> makeIRbuilder() {
     return ir_builder;
 }
 
-inline bool isInitializeCallbackAble(std::shared_ptr<ir::Type> ir_type) {
-    if (ir_type->initialize_function) {
+inline bool isRegisterReferenceCountAble(std::shared_ptr<ir::Type> ir_type) {
+    if (ir_type->getMemberFunction("__registerReferenceCount")) {
         return true;
     }
 
     if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
-            if (isInitializeCallbackAble(ir_field->type)) {
+            if (isRegisterReferenceCountAble(ir_field->type)) {
                 return true;
             }
         }
@@ -48,14 +48,14 @@ inline bool isInitializeCallbackAble(std::shared_ptr<ir::Type> ir_type) {
     return false;
 }
 
-inline bool isDestroyCallbackAble(std::shared_ptr<ir::Type> ir_type) {
-    if (ir_type->destroy_function) {
+inline bool isDecrementReferenceCountAble(std::shared_ptr<ir::Type> ir_type) {
+    if (ir_type->getMemberFunction("__decrementReferenceCount")) {
         return true;
     }
 
     if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
-            if (isDestroyCallbackAble(ir_field->type)) {
+            if (isDecrementReferenceCountAble(ir_field->type)) {
                 return true;
             }
         }
@@ -64,14 +64,14 @@ inline bool isDestroyCallbackAble(std::shared_ptr<ir::Type> ir_type) {
     return false;
 }
 
-inline bool isCopyCallbackAble(std::shared_ptr<ir::Type> ir_type) {
-    if (ir_type->copy_function) {
+inline bool isIncrementReferenceCountAble(std::shared_ptr<ir::Type> ir_type) {
+    if (ir_type->getMemberFunction("__incrementReferenceCount")) {
         return true;
     }
 
     if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
-            if (isCopyCallbackAble(ir_field->type)) {
+            if (isIncrementReferenceCountAble(ir_field->type)) {
                 return true;
             }
         }
@@ -83,10 +83,10 @@ inline bool isCopyCallbackAble(std::shared_ptr<ir::Type> ir_type) {
 inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> ir_variable_liked,
                                             std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_variable_liked->type;
-    if (isInitializeCallbackAble(ir_type)) {
+    if (isRegisterReferenceCountAble(ir_type)) {
         if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
             for (auto ir_field : is_struct_type->fields) {
-                if (isInitializeCallbackAble(ir_field->type)) {
+                if (isRegisterReferenceCountAble(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
                     initializeVariableLikedCallback(ir_access_field, ir_builder);
@@ -94,11 +94,12 @@ inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
             }
         }
 
-        if (ir_type->initialize_function) {
+        if (ir_type->getMemberFunction("__registerReferenceCount")) {
             auto ir_this_pointer =
                 ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_this_pointer};
-            ir_builder->create<ir::Call>(ir_type->initialize_function, ir_arguments);
+            ir_builder->create<ir::Call>(ir_type->getMemberFunction("__registerReferenceCount"),
+                                         ir_arguments);
         };
     }
 }
@@ -106,11 +107,11 @@ inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
 inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
                                          std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_value->type;
-    if (isDestroyCallbackAble(ir_type)) {
+    if (isDecrementReferenceCountAble(ir_type)) {
         auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_value);
         if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
             for (auto ir_field : is_struct_type->fields) {
-                if (isDestroyCallbackAble(ir_field->type)) {
+                if (isDecrementReferenceCountAble(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
                     destroyVariableLikedCallback(ir_access_field, ir_builder);
@@ -118,11 +119,12 @@ inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
             }
         }
 
-        if (ir_type->destroy_function) {
+        if (ir_type->getMemberFunction("__decrementReferenceCount")) {
             auto ir_this_pointer =
                 ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_this_pointer};
-            ir_builder->create<ir::Call>(ir_type->destroy_function, ir_arguments);
+            ir_builder->create<ir::Call>(ir_type->getMemberFunction("__decrementReferenceCount"),
+                                         ir_arguments);
         };
     }
 }
@@ -134,11 +136,11 @@ inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
 inline void copyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
                                       std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_value->type;
-    if (isCopyCallbackAble(ir_type)) {
+    if (isIncrementReferenceCountAble(ir_type)) {
         auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_value);
         if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
             for (auto ir_field : ir_struct_type->fields) {
-                if (isCopyCallbackAble(ir_field->type)) {
+                if (isIncrementReferenceCountAble(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
                     copyVariableLikedCallback(ir_access_field, ir_builder);
@@ -146,16 +148,17 @@ inline void copyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
             }
         }
 
-        if (ir_type->copy_function) {
+        if (ir_type->getMemberFunction("__incrementReferenceCount")) {
             auto ir_this_pointer =
                 ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_this_pointer};
-            ir_builder->create<ir::Call>(ir_type->copy_function, ir_arguments);
+            ir_builder->create<ir::Call>(ir_type->getMemberFunction("__incrementReferenceCount"),
+                                         ir_arguments);
         }
     }
 }
 
-inline std::shared_ptr<ir::Module> insertLocalVariableInitializeCallback(
+inline std::shared_ptr<ir::Module> insertLocalVariableRegisterReferenceCount(
     std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_local_variables = utility::getValuesInFunction<ir::LocalVariable>(ir_function);
@@ -217,7 +220,7 @@ inline void insertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_blo
     }
 }
 
-inline std::shared_ptr<ir::Module> insertLoacalVariableScopeDestroyCallback(
+inline std::shared_ptr<ir::Module> insertLoacalVariableScopeDecrementReferenceCount(
     std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         for (auto ir_block : ir_function->blocks) {
@@ -231,7 +234,7 @@ inline std::shared_ptr<ir::Module> insertLoacalVariableScopeDestroyCallback(
 /// @param ir_module
 /// @note 需要再destroyVariable前面执行
 /// @return
-inline std::shared_ptr<ir::Module> insertVariableCopyCallback(
+inline std::shared_ptr<ir::Module> insertVariableIncrementReferenceCount(
     std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_write_variable_likes =
@@ -256,12 +259,12 @@ inline std::shared_ptr<ir::Module> insertVariableCopyCallback(
     return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> insertCopyAndDestroyCallbackForCallandReturn(
+inline std::shared_ptr<ir::Module> insertCopyAndDecrementReferenceCountForCallandReturn(
     std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_calls = utility::getValuesInFunction<ir::Call>(ir_function);
         for (auto ir_call : ir_calls) {
-            if (not isDestroyCallbackAble(ir_call->type)) continue;
+            if (not isDecrementReferenceCountAble(ir_call->type)) continue;
 
             auto ir_builder = makeIRbuilder();
             ir_builder->pushBlock(ir_call->parent_block);
@@ -288,7 +291,7 @@ inline std::shared_ptr<ir::Module> insertCopyAndDestroyCallbackForCallandReturn(
 
         auto ir_returns = utility::getValuesInFunction<ir::Return>(ir_function);
         for (auto ir_return : ir_returns) {
-            if (not isCopyCallbackAble(ir_return->type)) continue;
+            if (not isIncrementReferenceCountAble(ir_return->type)) continue;
 
             auto ir_builder = makeIRbuilder();
             ir_builder->pushBlock(ir_return->parent_block);
@@ -307,12 +310,11 @@ inline std::shared_ptr<ir::Module> insertCopyAndDestroyCallbackForCallandReturn(
 
 }  // namespace
 
-inline std::shared_ptr<ir::Module> insertInitializeAndCopyAndDestroyCallback(
-    std::shared_ptr<ir::Module> ir_module) {
-    ir_module = insertLocalVariableInitializeCallback(ir_module);
-    ir_module = insertVariableCopyCallback(ir_module);
-    ir_module = insertCopyAndDestroyCallbackForCallandReturn(ir_module);
-    ir_module = insertLoacalVariableScopeDestroyCallback(ir_module);
+inline std::shared_ptr<ir::Module> insertReferenceCount(std::shared_ptr<ir::Module> ir_module) {
+    ir_module = insertLocalVariableRegisterReferenceCount(ir_module);
+    ir_module = insertVariableIncrementReferenceCount(ir_module);
+    ir_module = insertCopyAndDecrementReferenceCountForCallandReturn(ir_module);
+    ir_module = insertLoacalVariableScopeDecrementReferenceCount(ir_module);
     return ir_module;
 }
 

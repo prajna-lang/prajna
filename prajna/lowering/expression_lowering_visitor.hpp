@@ -542,7 +542,7 @@ class ExpressionLoweringVisitor {
             if (symbol_ptr_tp.which() != 0) {
                 auto ptr_tp = symbolGet<Template>(symbol_ptr_tp);
                 PRAJNA_ASSERT(ptr_tp);
-                ptr_tp->getInstance({ir_value_type}, ir_builder->module);
+                ptr_tp->instantiate({ir_value_type}, ir_builder->module);
             }
         }
 
@@ -682,7 +682,7 @@ class ExpressionLoweringVisitor {
                                                   *iter_ast_identifier->template_arguments);
                                 }
 
-                                if (auto ir_type = template_struct->getStructInstance(
+                                if (auto ir_type = template_struct->instantiateStructAndImplement(
                                         symbol_template_arguments, ir_builder->module)) {
                                     return ir_type;
                                 } else {
@@ -691,7 +691,7 @@ class ExpressionLoweringVisitor {
                             }
 
                             if (auto tempate_ = symbolGet<Template>(symbol)) {
-                                tempate_->getInstance(symbol_template_arguments,
+                                tempate_->instantiate(symbol_template_arguments,
                                                       ir_builder->module);
                                 // 错误应该在之前特化的时候就被拦截, 不会到达这里, 故断言
                                 return nullptr;
@@ -772,8 +772,8 @@ class ExpressionLoweringVisitor {
         PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
                       "system libs is bad");
         auto array_template = symbolGet<TemplateStruct>(symbol_array);
-        auto ir_array_type =
-            array_template->getStructInstance(symbol_template_arguments, ir_builder->module);
+        auto ir_array_type = array_template->instantiateStructAndImplement(
+            symbol_template_arguments, ir_builder->module);
 
         auto ir_array_tmp = ir_builder->create<ir::LocalVariable>(ir_array_type);
         auto ir_index_property = ir_array_type->properties["["];

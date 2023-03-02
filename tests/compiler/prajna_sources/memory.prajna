@@ -1,5 +1,4 @@
 
-
 @test
 func testMain(){
     var t = ptr<i64>::new();

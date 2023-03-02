@@ -8,12 +8,8 @@
 var a;
 
 implement Tmp2{
-    // @static
-    // func initialize(){}
 
-    // func copy()->i64{ return 0;}
-
-    func destroy(a:i64)
+    func __decrementReferenceCount(a:i64)
 }
 
 

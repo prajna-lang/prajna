@@ -9,7 +9,7 @@
 #include "prajna/parser/parse.h"
 #include "prajna/transform/extract_gpu_grid_pass.hpp"
 #include "prajna/transform/flattern_block.hpp"
-#include "prajna/transform/initializer_and_copy_destroy_callback.hpp"
+#include "prajna/transform/reference_count.hpp"
 #include "prajna/transform/transform_pass.hpp"
 #include "prajna/transform/utility.hpp"
 #include "prajna/transform/verify.hpp"
@@ -350,7 +350,7 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         auto ir_rank = lowering::symbolGet<ir::ConstantInt>(ir_array_template_arguments.back());
         std::list<lowering::Symbol> template_arguments = {ir_rank};
         auto ir_layout_type =
-            ir_layout_template_struct->getStructInstance(template_arguments, ir_module);
+            ir_layout_template_struct->instantiateStructAndImplement(template_arguments, ir_module);
         auto ir_layout =
             ir_builder->create<ir::Call>(ir_layout_type->static_functions["create"],
                                          std::vector<std::shared_ptr<ir::Value>>{ir_for->last()});
@@ -393,7 +393,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = wrapInstructionFunction(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = insertInitializeAndCopyAndDestroyCallback(ir_module);
+    ir_module = insertReferenceCount(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = flatternBlock(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));

@@ -85,15 +85,17 @@ class Tensor {
         self.data = reinterpret_cast<Type_*>(malloc(bytes));
 
         registerReferenceCount(self.data);
-        incReferenceCount(self.data);
+        incrementReferenceCount(self.data);
 
         return self;
     }
 
-    Tensor(const Tensor& ts) : data(ts.data), layout(ts.layout) { incReferenceCount(this->data); }
+    Tensor(const Tensor& ts) : data(ts.data), layout(ts.layout) {
+        incrementReferenceCount(this->data);
+    }
 
     ~Tensor() {
-        decReferenceCount(this->data);
+        decrementReferenceCount(this->data);
         if (this->data) {
             if (getReferenceCount(this->data) == 0) {
                 free(this->data);

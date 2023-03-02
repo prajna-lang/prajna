@@ -29,6 +29,12 @@ inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
     auto symbol_table_tree = root_symbol_table;
     std::filesystem::path symbol_table_source_path;
     for (auto path_part : result) {
+        // .prajna不增加名字空间,
+        // https://en.cppreference.com/w/cpp/filesystem/path/stem, ".prajna"的stem仍然是".prajna"
+        if (path_part == ".prajna") {
+            continue;
+        }
+
         symbol_table_source_path /= std::filesystem::path(path_part);
         if (symbol_table_tree->has(path_part)) {
             auto tmp_symbol_table_tree =
@@ -63,6 +69,7 @@ std::shared_ptr<Compiler> Compiler::create() {
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
     this->addPackageDirectoryPath(builtin_sources_dir);
     this->compileProgram("prajna_bootstrap.prajna", false);
+    this->compileProgram(".prajna", false);
 }
 
 std::shared_ptr<ir::Module> Compiler::compileCode(

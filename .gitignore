@@ -28,3 +28,4 @@ build_release
 *.target.mk
 
 .*
+!.prajna

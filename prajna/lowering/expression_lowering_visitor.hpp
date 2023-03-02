@@ -632,6 +632,11 @@ class ExpressionLoweringVisitor {
 
         for (auto iter_ast_identifier = ast_identifier_path.identifiers.begin();
              iter_ast_identifier != ast_identifier_path.identifiers.end(); ++iter_ast_identifier) {
+            std::string flag = iter_ast_identifier->identifier;
+            if (flag == "ptr") {
+                int a = 0;
+            }
+
             symbol = boost::apply_visitor(
                 overloaded{
                     [=](auto x) -> Symbol {

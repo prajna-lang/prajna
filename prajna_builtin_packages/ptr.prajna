@@ -83,4 +83,4 @@ implement ptr<Type_>{
     }
 }
 
-export ptr;
+

@@ -52,7 +52,7 @@ class IrBuilder {
     }
 
     bool isPtrType(std::shared_ptr<ir::Type> ir_type) {
-        return ir_type->fullname.size() > 14 && ir_type->fullname.substr(0, 14) == "::memory::ptr<";
+        return ir_type->fullname.size() > 11 && ir_type->fullname.substr(0, 11) == "::ptr::ptr<";
     }
 
     Symbol getSymbolByPath(bool is_root, std::vector<std::string> names) {
@@ -88,7 +88,7 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::StructType> getPtrType(std::shared_ptr<ir::Type> ir_value_type) {
-        auto symbol_ptr = this->getSymbolByPath(true, {"memory", "ptr"});
+        auto symbol_ptr = this->getSymbolByPath(true, {"ptr", "ptr"});
         auto ptr_template = symbolGet<TemplateStruct>(symbol_ptr);
         PRAJNA_ASSERT(ptr_template);
         std::list<Symbol> symbol_template_arguments = {ir_value_type};

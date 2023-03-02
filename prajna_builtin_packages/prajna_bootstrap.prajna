@@ -1,7 +1,7 @@
 import implement_primitive_types;
 import primitive_pointer_template;
 import bindings;
-import memory;
+import ptr;
 import core;
 import tensor;
 import serialize;

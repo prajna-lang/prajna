@@ -1,0 +1,68 @@
+
+
+template <Type_, Length_>
+struct Array<Type_, Length_>{
+    data: Type_[Length_];
+}
+
+template <Type_, Length_>
+implement Array<Type_, Length_>{
+
+    func length()->i64{
+        return Length_;
+    }
+
+    @property("[", "getter")
+    func index_getter(idx: i64)->Type_{
+        return this.data[idx];
+    }
+
+    @property("[", "setter")
+    func index_setter(idx: i64, value: Type_){
+        this.data[idx] = value;
+    }
+
+    func cumprod()->Type_{
+        var re = Type_::one();
+        for i in 0 to Length_{
+            re = re * this[i];
+        }
+        return re;
+    }
+
+    @static
+    func one()->Array<Type_, Length_>{
+        var re_one : Array<Type_, Length_>;
+        for i in 0 to re_one.length() {
+            re_one[i] = Type_::one();
+        }
+        return re_one;
+    }
+}
+
+template <Type_, Length_>
+implement operator::Add<Array<Type_, Length_>> for Array<Type_, Length_> {
+    func Add(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
+        var re : Array<Type_, Length_>;
+        for i in 0 to this.length() {
+            re[i] = this[i] + operand[i];
+        }
+
+        return re;
+    }
+}
+
+template <Type_, Length_>
+implement operator::Sub<Array<Type_, Length_>> for Array<Type_, Length_> {
+    func Sub(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
+        var re : Array<Type_, Length_>;
+        for i in 0 to this.length() {
+            re[i] = this[i] - operand[i];
+        }
+
+        return re;
+    }
+}
+
+export Array;
+

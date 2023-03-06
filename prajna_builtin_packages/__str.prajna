@@ -53,8 +53,13 @@ implement str{
         this.data[this.size] = '\0';
     }
 
-    @binary("+")
-    func concat(str_re: str)->str{
+    func tostr()->str{
+        return this;
+    }
+}
+
+implement operator::Add<str> for str {
+    func Add(str_re: str)->str{
         var new_str = str::create(this.size + str_re.size);
         var i = 0;
         while (i < this.size){
@@ -70,10 +75,6 @@ implement str{
 
         return new_str;
     }
-
-    func tostr()->str{
-        return this;
-    }
 }
 
 func print(ss: str){
@@ -82,66 +83,3 @@ func print(ss: str){
 
 export str;
 export print;
-
-template <Type_, Length_>
-struct Array<Type_, Length_>{
-    data: Type_[Length_];
-}
-
-template <Type_, Length_>
-implement Array<Type_, Length_>{
-
-    func length()->i64{
-        return Length_;
-    }
-
-    @property("[", "getter")
-    func index_getter(idx: i64)->Type_{
-        return this.data[idx];
-    }
-
-    @property("[", "setter")
-    func index_setter(idx: i64, value: Type_){
-        this.data[idx] = value;
-    }
-
-    func cumprod()->Type_{
-        var re = Type_::one();
-        for i in 0 to Length_{
-            re = re * this[i];
-        }
-        return re;
-    }
-
-    @static
-    func one()->Array<Type_, Length_>{
-        var re_one : Array<Type_, Length_>;
-        for i in 0 to re_one.length() {
-            re_one[i] = Type_::one();
-        }
-        return re_one;
-    }
-
-    @binary("-")
-    func sub(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
-        var re : Array<Type_, Length_>;
-        for i in 0 to this.length() {
-            re[i] = this[i] - operand[i];
-        }
-
-        return re;
-    }
-
-    @binary("+")
-    func add(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
-        var re : Array<Type_, Length_>;
-        for i in 0 to this.length() {
-            re[i] = this[i] + operand[i];
-        }
-
-        return re;
-    }
-}
-
-export Array;
-

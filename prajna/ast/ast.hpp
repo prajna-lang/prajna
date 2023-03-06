@@ -339,7 +339,8 @@ struct Struct : SourceLocation {
 };
 
 struct InterfacePrototype : SourceLocation {
-    Identifier name;
+    Annotations annotations;
+    TemplateIdentifier name;
     // 函数声明也采用Function, 但其没有实现
     std::list<Function> functions;
 };
@@ -350,6 +351,7 @@ struct ImplementType : SourceLocation {
 };
 
 struct ImplementInterface : SourceLocation {
+    Annotations annotations;
     IdentifierPath interface;
     Type type;
     std::list<Function> functions;
@@ -363,7 +365,7 @@ struct Template : SourceLocation {
 
 struct TemplateStatement : SourceLocation {
     TemplateParameters template_parameters;
-    boost::variant<Struct, ImplementType, ImplementInterface> statement;
+    boost::variant<Struct, InterfacePrototype, ImplementType, ImplementInterface> statement;
 };
 
 struct Specical : SourceLocation {
@@ -423,9 +425,9 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateStatement, template_parameters, s
 // BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Special, identifier_path)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SpecialStatement, statement)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, name, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, annotations, name, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, functions)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterface, interface, type, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterface, annotations, interface, type, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)

@@ -687,6 +687,8 @@ class ExpressionLoweringVisitor {
                                                   *iter_ast_identifier->template_arguments);
                                 }
 
+                                // 如果获取到nullptr则说明实例化正在进行中,
+                                // 使用instantiating_type来获取相应类型
                                 if (auto ir_type = template_struct->instantiateStructAndImplement(
                                         symbol_template_arguments, ir_builder->module)) {
                                     return ir_type;
@@ -696,10 +698,8 @@ class ExpressionLoweringVisitor {
                             }
 
                             if (auto tempate_ = symbolGet<Template>(symbol)) {
-                                tempate_->instantiate(symbol_template_arguments,
-                                                      ir_builder->module);
-                                // 错误应该在之前特化的时候就被拦截, 不会到达这里, 故断言
-                                return nullptr;
+                                return tempate_->instantiate(symbol_template_arguments,
+                                                             ir_builder->module);
                             }
 
                             logger->error(
@@ -871,7 +871,8 @@ class ExpressionLoweringVisitor {
         // 会把binary operator转换为成员函数的调用
         auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_lhs);
         auto binary_operator_name = ast_binary_operation.operator_.string_token;
-        auto ir_function = ir_variable_liked->type->binary_functions[binary_operator_name];
+        auto ir_function =
+            ir_builder->getBinaryOperator(ir_variable_liked->type, binary_operator_name);
         if (not ir_function) {
             logger->error(
                 fmt::format("{} operator not found", ast_binary_operation.operator_.string_token),
@@ -964,14 +965,12 @@ class ExpressionLoweringVisitor {
                         ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
                 ir_ptr);
             ir_builder->popBlock();
-            // TODO 后面需要进一步处理
-            // ir_builder->pushBlock(ir_if->falseBlock());
-            // ir_builder->create<ir::WriteVariableLiked>(
-            //     ir_builder->create<ir::CastInstruction>(ir::CastInstruction::Operation::IntToPtr,
-            //                                             ir_builder->getIndexConstant(0),
-            //                                             ir_target_ptr_type),
-            //     ir_ptr);
-            // ir_builder->popBlock();
+
+            ir_builder->pushBlock(ir_if->falseBlock());
+            auto ir_nullptr = ir_builder->create<ir::Call>(
+                ir_ptr->type->static_functions["null"], std::vector<std::shared_ptr<ir::Value>>{});
+            ir_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
+            ir_builder->popBlock();
 
             return ir_ptr;
         }

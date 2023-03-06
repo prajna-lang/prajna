@@ -1,0 +1,68 @@
+@disable_dynamic_dispatch
+implement operator::Equal<i64> for i64 {
+    @instruction("ICmp", "ICMP_EQ")
+    func Equal(operand: i64)->bool;
+}
+
+@disable_dynamic_dispatch
+implement operator::NotEqual<i64> for i64 {
+    @instruction("ICmp", "ICMP_NE")
+    func NotEqual(operand: i64)->bool;
+}
+
+@disable_dynamic_dispatch
+implement operator::Add<i64> for i64 {
+    @instruction("BinaryOperator", "Add")
+    func Add(operand: i64)->i64;
+}
+
+@disable_dynamic_dispatch
+implement operator::Sub<i64> for i64 {
+    @instruction("BinaryOperator", "Sub")
+    func Sub(operand: i64)->i64;
+}
+
+@disable_dynamic_dispatch
+implement operator::Multiply<i64> for i64 {
+    @instruction("BinaryOperator", "Mul")
+    func Multiply(operand: i64)->i64;
+}
+
+@disable_dynamic_dispatch
+implement operator::Divide<i64> for i64 {
+    @instruction("BinaryOperator", "SDiv")
+    func Divide(operand: i64)->i64;
+}
+
+
+@disable_dynamic_dispatch
+implement operator::Remaind<i64> for i64 {
+    @instruction("BinaryOperator", "SRem")
+    func Remaind(operand: i64)->i64;
+}
+
+@disable_dynamic_dispatch
+implement operator::Greater<i64> for i64 {
+    @instruction("ICmp", "ICMP_SGT")
+    func Greater(operand: i64)->bool;
+}
+
+@disable_dynamic_dispatch
+implement operator::Less<i64> for i64 {
+    @instruction("ICmp", "ICMP_SLT")
+    func Less(operand: i64)->bool;
+}
+
+@disable_dynamic_dispatch
+implement operator::GreaterOrEqual<i64> for i64 {
+    @instruction("ICmp", "ICMP_SGE")
+    func GreaterOrEqual(operand: i64)->bool;
+}
+
+@disable_dynamic_dispatch
+implement operator::LessOrEqual<i64> for i64 {
+    @instruction("ICmp", "ICMP_SLE")
+    func LessOrEqual(operand: i64)->bool;
+}
+
+

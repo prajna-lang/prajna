@@ -1,0 +1,54 @@
+template <T>
+interface Add<T> {
+    func Add(operand: T)->T;
+}
+
+template <T>
+interface Sub<T> {
+    func Sub(operand: T)->T;
+}
+
+template <T>
+interface Multiply<T> {
+    func Multiply(operand: T)->T;
+}
+
+template <T>
+interface Divide<T> {
+    func Divide(operand: T)->T;
+}
+
+template <T>
+interface Remaind<T> {
+    func Remaind(operand: T)->T;
+}
+
+template <T>
+interface Equal<T> {
+    func Equal(operand: T)->bool;
+}
+
+template <T>
+interface NotEqual<T> {
+    func NotEqual(operand: T)->bool;
+}
+
+template <T>
+interface Greater<T> {
+    func Greater(operand: T)->bool;
+}
+
+template <T>
+interface Less<T> {
+    func Less(operand: T)->bool;
+}
+
+template <T>
+interface GreaterOrEqual<T> {
+    func GreaterOrEqual(operand: T)->bool;
+}
+
+template <T>
+interface LessOrEqual<T> {
+    func LessOrEqual(operand: T)->bool;
+}

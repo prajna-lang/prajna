@@ -1,0 +1,14 @@
+// implement operator::Add<i64> for i64 {
+//     func Add(operand: i64)->i64{
+//         return this.__add__(operand);
+//     }
+// }
+
+
+@test
+func testMain(){
+    var t = 3;
+    var g = t + 4;
+    t.Add(6);
+    // t.__add__(4).tostr().print();
+}

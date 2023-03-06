@@ -136,12 +136,13 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(field, success_handler_function);
 
     interface.name("interface");
-    interface = tok.interface > identifier > functions;
+    interface = annotations >> tok.interface > expr.template_identifier > functions;
     on_error<fail>(interface, error_handler_function);
     on_success(interface, success_handler_function);
 
     implement_interface.name("implement interface");
-    implement_interface = tok.implement >> expr.identifier_path >> tok.for_ > type > functions;
+    implement_interface =
+        annotations >> tok.implement >> expr.identifier_path >> tok.for_ >> type >> functions;
     on_error<fail>(implement_interface, error_handler_function);
     on_success(implement_interface, success_handler_function);
 
@@ -203,7 +204,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     template_statement.name("template statement");
     template_statement = tok.template_ > omit[tok.less] > (identifier % tok.comma) >
-                         omit[tok.greater] > (struct_ | implement_interface | implement_type);
+                         omit[tok.greater] >
+                         (struct_ | implement_interface | implement_type | interface);
     on_error<fail>(template_statement, error_handler_function);
     on_success(template_statement, success_handler_function);
 

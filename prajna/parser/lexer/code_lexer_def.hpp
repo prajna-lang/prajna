@@ -10,11 +10,6 @@ CodeLexer<Lexer>::CodeLexer() {
     line_comment = "\\/\\/[^\\n]*\\n";
     this->self("WS") = space | c_comment | line_comment;
 
-    // 需要在前面否在会干扰其他一个字符的运算符
-    shift_left = "<<";
-    shift_right = ">>";
-    this->self = shift_left | shift_right;
-
     equal = "==";
     not_equal = "!=";
     less_or_equal = "<=";

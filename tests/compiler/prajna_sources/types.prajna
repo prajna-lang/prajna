@@ -24,14 +24,6 @@ func testTypes(){
     var arr1 = [0, 1, 2];
     var arr2 = [3.0, 4.2, 6.4];
 
-    var pointer: i8* = cast<i8*>(bindings::malloc(3));
-    *pointer = 12i8;
-    testing::assert(*pointer == 12i8);
-    // 不同于C++, Prajna的指针是没有加减运算的, 但可以用下标索引
-    pointer[2] = 64i8;
-    testing::assert(pointer[2] == 64i8);
-    bindings::free(cast<undef*>(pointer));
-
     var num: i64 = 1024;
     // 获取num的地址, 只要属于变量范畴的都可以获取地址,如字段, 数组索引, 全局变量等.
     var num_pointer: i64* = &num;

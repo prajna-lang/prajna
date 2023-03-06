@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stack>
+#include <unordered_map>
 
 #include "prajna/ir/ir.hpp"
 #include "prajna/lowering/builtin.hpp"
@@ -47,8 +48,8 @@ class IrBuilder {
     }
 
     bool isArrayIndexType(std::shared_ptr<ir::Type> ir_type) {
-        return ir_type->fullname.size() > 17 &&
-               ir_type->fullname.substr(0, 17) == "::core::Array<i64";
+        return ir_type->fullname.size() > 18 &&
+               ir_type->fullname.substr(0, 18) == "::array::Array<i64";
     }
 
     bool isPtrType(std::shared_ptr<ir::Type> ir_type) {
@@ -75,7 +76,7 @@ class IrBuilder {
         symbol_template_arguments.push_back(ir_type);
         symbol_template_arguments.push_back(this->getIndexConstant(length));
 
-        auto symbol_array = this->getSymbolByPath(true, {"core", "Array"});
+        auto symbol_array = this->getSymbolByPath(true, {"array", "Array"});
         auto array_template = symbolGet<TemplateStruct>(symbol_array);
         PRAJNA_ASSERT(array_template);
         auto ir_shape3_type =
@@ -197,14 +198,43 @@ class IrBuilder {
         return this->create<ir::Call>(ir_member_function, ir_arguments);
     }
 
+    std::shared_ptr<ir::Function> getBinaryOperator(std::shared_ptr<ir::Type> ir_type,
+                                                    std::string binary_operator_name) {
+        std::unordered_map<std::string, std::string> binary_operator_map = {
+            {"==", "Equal"},       {"!=", "NotEqual"}, {"<", "Less"},
+            {"<=", "LessOrEqual"}, {">", "Greater"},   {">=", "GreaterOrEqual"},
+            {"+", "Add"},          {"-", "Sub"},       {"*", "Multiply"},
+            {"/", "Divide"},       {"%", "Remaind"},   {"&", "And"},
+            {"|", "Or"},           {"^", "Xor"},       {"!", "Not"}};
+
+        // TODO 后面需要
+        // if (auto ir_interface_implement =
+        //         ir_type->interfaces["operator::" + binary_operator_map[binary_operator_name]]) {
+        if (auto ir_interface_implement =
+                ir_type->interfaces[binary_operator_map[binary_operator_name] + "<" +
+                                    ir_type->fullname + ">"]) {
+            auto iter_function = std::find_if(
+                RANGE(ir_interface_implement->functions),
+                [=](std::shared_ptr<ir::Function> ir_function) -> bool {
+                    return binary_operator_map.count(binary_operator_name) &&
+                           ir_function->name == binary_operator_map.at(binary_operator_name);
+                });
+            if (iter_function != ir_interface_implement->functions.end()) {
+                return *iter_function;
+            }
+        }
+
+        return nullptr;
+    }
+
     std::shared_ptr<ir::Call> callBinaryOperator(std::shared_ptr<ir::Value> ir_object,
-                                                 std::string binary_operator,
+                                                 std::string binary_operator_name,
                                                  std::shared_ptr<ir::Value> ir_operand) {
         std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_operand};
         auto ir_variable_liked = this->variableLikedNormalize(ir_object);
         auto ir_this_pointer = this->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         ir_arguments.insert(ir_arguments.begin(), ir_this_pointer);
-        auto ir_member_function = ir_object->type->binary_functions[binary_operator];
+        auto ir_member_function = getBinaryOperator(ir_object->type, binary_operator_name);
         PRAJNA_ASSERT(ir_member_function);
         return this->create<ir::Call>(ir_member_function, ir_arguments);
     }
@@ -294,7 +324,6 @@ class IrBuilder {
     std::stack<std::shared_ptr<ir::Block>> block_stack;
 
     std::shared_ptr<ir::Type> instantiating_type = nullptr;
-    ;
 };
 
 }  // namespace prajna::lowering

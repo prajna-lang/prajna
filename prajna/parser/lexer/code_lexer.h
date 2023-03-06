@@ -29,8 +29,6 @@ struct CodeLexer : lex::lexer<Lexer> {
 
     lex::token_def<ast::Operator> plus, minus, times, divide, remain;  // arithmetic
 
-    lex::token_def<ast::Operator> shift_left, shift_right;
-
     lex::token_def<ast::SourceLocation> assign;
 
     lex::token_def<ast::Operator> left_bracket;         // left bracket

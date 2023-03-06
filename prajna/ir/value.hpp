@@ -16,16 +16,6 @@
 #include "prajna/ir/global_context.h"
 #include "prajna/ir/type.hpp"
 
-namespace llvm {
-class Module;
-}
-
-namespace prajna::lowering {
-
-class SymbolTable;
-
-}
-
 namespace prajna::ir {
 
 enum struct Target { none, host, nvptx };

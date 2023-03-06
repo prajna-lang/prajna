@@ -1,8 +1,13 @@
+import operator;
 import implement_primitive_types;
 import primitive_pointer_template;
-import __ptr;
+import __i64;
+import __f32;
+import __char;
 import bindings;
-import core;
+import __ptr;
+import __str;
+import testing;
+import array;
 import tensor;
 import serialize;
-import testing;

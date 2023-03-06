@@ -1,6 +1,7 @@
 template <T>
 struct __nullptr<T>{}
 
+// TODO 可能使用IntToPtr的方式更好, 后面再做处理
 template <T>
 implement __nullptr<T>{
     @static
@@ -17,16 +18,23 @@ template PrimitivePointerTemplate<Type>{
         @instruction("CastInst", "PtrToInt", "i64")
         func toi64()->i64;
 
-        @binary("==")
-        func __equal__(rhs: Type*)->bool{
+    }
+
+    @disable_dynamic_dispatch
+    implement operator::Equal<Type *> for Type * {
+        func Equal(rhs: Type*)->bool{
             return this.toi64() == rhs.toi64();
         }
+    }
 
-        @binary("!=")
-        func __not_equal__(rhs: Type*)->bool{
+    @disable_dynamic_dispatch
+    implement operator::NotEqual<Type *> for Type * {
+        func NotEqual(rhs: Type*)->bool{
             return this.toi64() != rhs.toi64();
         }
+    }
 
+    implement Type* {
         func isNull()->bool{
             return this == __nullptr<Type>::create();
         }

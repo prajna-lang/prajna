@@ -1,0 +1,11 @@
+@disable_dynamic_dispatch
+implement operator::Equal<char> for char {
+    @instruction("ICmp", "ICMP_EQ")
+    func Equal(operand: char)->bool;
+}
+
+@disable_dynamic_dispatch
+implement operator::NotEqual<char> for char {
+    @instruction("ICmp", "ICMP_NE")
+    func NotEqual(operand: char)->bool;
+}

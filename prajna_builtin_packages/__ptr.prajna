@@ -1,3 +1,8 @@
+
+interface ReferenceCountAble {
+    func incrementReferenceCount();
+}
+
 template <Type_>
 struct ptr<Type_>{
     raw_ptr: Type_*;
@@ -8,7 +13,7 @@ implement ptr<Type_>{
     @static
     func allocate(size: i64)->ptr<Type_>{
         var self: ptr<Type_>;
-        self.raw_ptr =  cast<Type_ *>(malloc(size * sizeof(Type_)));
+        self.raw_ptr =  cast<Type_ *>(malloc(size.__multiply__(sizeof(Type_))));
         bindings::registerReferenceCount(cast<undef*>(self.raw_ptr));
         bindings::incrementReferenceCount(cast<undef*>(self.raw_ptr));
         return self;
@@ -23,6 +28,7 @@ implement ptr<Type_>{
     @static
     func null()->ptr<Type_>{
         var self: ptr<Type_>;
+        self.raw_ptr = __nullptr<Type_>::create();
         return self;
     }
 
@@ -44,18 +50,9 @@ implement ptr<Type_>{
         return self;
     }
 
-    @binary("==")
-    func __equal__(rhs: ptr<Type_>)->bool{
-        return this.raw_ptr.toi64() == rhs.raw_ptr.toi64();
-    }
-
-    @binary("!=")
-    func __not_equal__(rhs: ptr<Type_>)->bool{
-        return this.raw_ptr.toi64() != rhs.raw_ptr.toi64();
-    }
 
     func isNull()->bool{
-        return this.raw_ptr == __nullptr<Type_>::create();
+        return this.raw_ptr.isNull();
     }
 
     func __registerReferenceCount(){
@@ -84,3 +81,4 @@ implement ptr<Type_>{
 }
 
 
+export ptr;

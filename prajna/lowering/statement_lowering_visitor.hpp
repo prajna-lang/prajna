@@ -560,33 +560,6 @@ class StatementLoweringVisitor {
         ir_type->unary_functions[operator_token] = ir_function;
     }
 
-    void processBinaryFunction(std::shared_ptr<ir::Type> ir_type,
-                               std::shared_ptr<ir::Function> ir_function,
-                               ast::Function ast_function) {
-        if (not ir_function->annotations.count("binary")) return;
-
-        if (ir_function->function_type->parameter_types.size() != 2) {
-            logger->error("the parameters size of a binary function must be 2",
-                          ast_function.declaration.parameters);
-        }
-        auto binary_annotation = ir_function->annotations["binary"];
-        auto iter_binary_annotation = std::find_if(
-            RANGE(ast_function.declaration.annotations),
-            [](ast::Annotation ast_annotation) { return ast_annotation.name == "binary"; });
-        if (binary_annotation.size() != 1) {
-            logger->error("the binary annotation should only have one value to represent operator",
-                          *iter_binary_annotation);
-        }
-        auto operator_token = binary_annotation[0];
-        std::set<std::string> binary_operators_set = {
-            "==", "!=", "<",  "<=", ">", ">=", "+", "-", "*",
-            "/",  "%",  "<<", ">>", "&", "|",  "^", "!"};
-        if (not binary_operators_set.count(operator_token)) {
-            logger->error("not valid binary operator", iter_binary_annotation->values.front());
-        }
-        ir_type->binary_functions[operator_token] = ir_function;
-    }
-
     void processInitializeCopyDestroyFunction(std::shared_ptr<ir::Type> ir_type,
                                               std::shared_ptr<ir::Function> ir_function,
                                               ast::Function ast_function) {
@@ -740,8 +713,6 @@ class StatementLoweringVisitor {
                 }
 
                 this->processUnaryFunction(ir_type, ir_function, ast_function);
-                this->processBinaryFunction(ir_type, ir_function, ast_function);
-                this->processInitializeCopyDestroyFunction(ir_type, ir_function, ast_function);
                 this->processPropertyFunction(ir_type, ir_function, ast_function);
             }
 
@@ -802,18 +773,38 @@ class StatementLoweringVisitor {
                 ir_function->is_declaration = true;
             }
 
-            // 创建接口动态类型生成函数
-            ir_interface->dynamic_type_creator = ir_builder->createFunction(
-                "dynamic_type_creator",
-                ir::FunctionType::create({ir_builder->getPtrType(ir_type)},
-                                         ir_interface->prototype->dynamic_type));
+            bool disable_dynamic_dispatch = false;
+            for (auto ast_annotation : ast_implement.annotations) {
+                if (ast_annotation.name == "disable_dynamic_dispatch") {
+                    disable_dynamic_dispatch = true;
+                }
+            }
+
+            // 需要前置, 因为函数会用的接口类型本身
+            if (!disable_dynamic_dispatch) {
+                // 创建接口动态类型生成函数
+                ir_interface->dynamic_type_creator = ir_builder->createFunction(
+                    "dynamic_type_creator",
+                    ir::FunctionType::create({ir_builder->getPtrType(ir_type)},
+                                             ir_interface->prototype->dynamic_type));
+            }
 
             for (auto ast_function : ast_implement.functions) {
                 std::shared_ptr<ir::Function> ir_function = nullptr;
                 auto symbol_function = (*this)(ast_function, ir_this_pointer_type);
                 ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
+            }
 
-                // 包装一个undef this pointer的函数
+            if (disable_dynamic_dispatch) {
+                ir_builder->popSymbolTable();
+                ir_builder->popSymbolTable();
+                return nullptr;
+            }
+
+            this->createInterfaceDynamicType(ir_interface_prototype);
+
+            // 包装一个undef this pointer的函数
+            for (auto ir_function : ir_interface->functions) {
                 std::vector<std::shared_ptr<ir::Type>>
                     ir_undef_this_pointer_function_argument_types =
                         ir_function->function_type->parameter_types;
@@ -843,10 +834,8 @@ class StatementLoweringVisitor {
                     ir_builder->create<ir::Call>(ir_function, ir_arguments));
                 ir_builder->popBlock();
 
-                this->processUnaryFunction(ir_type, ir_function, ast_function);
-                this->processBinaryFunction(ir_type, ir_function, ast_function);
-                this->processInitializeCopyDestroyFunction(ir_type, ir_function, ast_function);
-                this->processPropertyFunction(ir_type, ir_function, ast_function);
+                // this->processUnaryFunction(ir_type, ir_function, ast_function);
+                // this->processPropertyFunction(ir_type, ir_function, ast_function);
             }
 
             ir_interface->dynamic_type_creator->blocks.push_back(ir::Block::create());
@@ -873,13 +862,6 @@ class StatementLoweringVisitor {
             ir_builder->create<ir::Return>(ir_self);
             ir_builder->popBlock();
 
-            for (auto [property_name, ir_property] : ir_type->properties) {
-                if (not ir_property->getter_function) {
-                    logger->error(
-                        fmt::format("the property { } getter must be defined", property_name),
-                        ast_implement.type);
-                }
-            }
             ir_builder->popSymbolTable();
             ir_builder->popSymbolTable();
         } catch (CompileError compile_error) {
@@ -1013,6 +995,13 @@ class StatementLoweringVisitor {
                                                       ast_implement_type_or_interface));
                     template_struct->pushBackImplements(template_implement_struct);
                     return nullptr;
+                },
+                [=](ast::InterfacePrototype ast_interface_prototype) -> Symbol {
+                    auto lowering_template = Template::create(this->createTemplateGenerator(
+                        ast_template_statement.template_parameters, ast_interface_prototype));
+                    ir_builder->setSymbolWithAssigningName(lowering_template,
+                                                           ast_interface_prototype.name.identifier);
+                    return lowering_template;
                 }},
             ast_template_statement.statement);
     }
@@ -1108,27 +1097,32 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::InterfacePrototype ast_interface_prototype) {
         auto ir_interface_prototype = ir::InterfacePrototype::create();
-        ir_builder->setSymbolWithAssigningName(ir_interface_prototype,
-                                               ast_interface_prototype.name);
+        auto ir_interface_prototype_name =
+            expression_lowering_visitor->getNameOfTemplateIdentfier(ast_interface_prototype.name);
+        ir_builder->symbol_table->setWithAssigningName(ir_interface_prototype,
+                                                       ir_interface_prototype_name);
 
         ir_interface_prototype->dynamic_type = ir::StructType::create({});
 
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ir_builder->pushSymbolTable();
-            ir_builder->symbol_table->name = ast_interface_prototype.name;
+            ir_builder->symbol_table->name = ir_interface_prototype_name;
             auto symbol_function = (*this)(ast_function_declaration);
             auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
             ir_builder->popSymbolTable();
             ir_interface_prototype->functions.push_back(ir_function);
         }
 
-        this->createInterfaceDynamicType(ir_interface_prototype);
+        // 用到的时候再进行该操作, 因为很多原生接口实现时候ptr还未
+        // this->createInterfaceDynamicType(ir_interface_prototype);
 
         return ir_interface_prototype;
     }
 
-    std::shared_ptr<ir::Type> createInterfaceDynamicType(
+    void createInterfaceDynamicType(
         std::shared_ptr<ir::InterfacePrototype> ir_interface_prototype) {
+        if (!ir_interface_prototype->dynamic_type->fields.empty()) return;
+
         auto field_object_pointer =
             ir::Field::create("object_pointer", ir_builder->getPtrType(ir::UndefType::create()));
         auto ir_interface_struct = ir_interface_prototype->dynamic_type;
@@ -1196,8 +1190,8 @@ class StatementLoweringVisitor {
 
             ir_interface->functions.push_back(ir_member_function);
         }
+
         ir_interface_struct->interfaces["Self"] = ir_interface;
-        return ir_interface_struct;
     }
 
     Symbol operator()(ast::Blank) { return nullptr; }

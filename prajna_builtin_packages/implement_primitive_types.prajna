@@ -25,7 +25,7 @@ implement bool {
 
     @unary("!")
     func __not__()->bool{
-        return true ^ this;
+        return this.__or__(true);
     }
 }
 
@@ -94,7 +94,7 @@ implement i8 {
 
     @unary("-")
     func __unary_sub__()->i8{
-        return 0i8 - this;
+        return 0i8.__sub__(this);
     }
 
     @instruction("CastInst", "SExt", "i64")
@@ -160,7 +160,7 @@ implement i16 {
 
     @unary("-")
     func __unary_sub__()->i16{
-        return 0i16 - this;
+        return 0i16.__sub__(this);
     }
 
     @instruction("CastInst", "SExt", "i64")
@@ -225,7 +225,7 @@ implement i32 {
 
     @unary("-")
     func __unary_sub__()->i32{
-        return 0i32 - this;
+        return 0i32.__sub__(this);
     }
 
     @instruction("CastInst", "SExt", "i64")
@@ -294,7 +294,7 @@ implement i64 {
 
     @unary("-")
     func __unary_sub__()->i64{
-        return 0 - this;
+        return 0i64.__sub__(this);
     }
 
     @instruction("CastInst", "SIToFP", "f32")
@@ -370,10 +370,10 @@ implement u32 {
         return this;
     }
 
-    // @unary("-")
-    // func __unary_sub__()->u32{
-    // //     return 0 - this;
-    // }
+    @unary("-")
+    func __unary_sub__()->u32{
+        return 0u32.__sub__(this);
+    }
 
     @instruction("CastInst", "ZExt", "i64")
     func toi64()->i64;
@@ -437,7 +437,7 @@ implement f32 {
 
     @unary("-")
     func __unary_sub__()->f32{
-        return 0.0 - this;
+        return 0.0f32.__sub__(this);
     }
 
     @instruction("CastInst", "FPToSI", "i64")

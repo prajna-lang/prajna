@@ -15,8 +15,17 @@
 namespace llvm {
 
 class Type;
+class Module;
 
-}
+}  // namespace llvm
+
+namespace prajna::lowering {
+
+class SymbolTable;
+class Template;
+class TemplateStruct;
+
+}  // namespace prajna::lowering
 
 namespace prajna::ir {
 
@@ -56,6 +65,8 @@ class Type : public Named {
     // fields必须有顺序关系, 故没有使用map
     std::vector<std::shared_ptr<Field>> fields;
 
+    // 用于追溯类型是被什么模板实例化的
+    std::shared_ptr<lowering::TemplateStruct> template_struct = nullptr;
     std::any template_arguments;
 
     llvm::Type* llvm_type = nullptr;
@@ -400,6 +411,10 @@ class InterfacePrototype : public Named {
    public:
     std::list<std::shared_ptr<Function>> functions;
     std::shared_ptr<StructType> dynamic_type;
+
+    // 用于追溯模板接口
+    std::shared_ptr<lowering::Template> template_interface = nullptr;
+    std::any template_arguments;
 };
 
 class InterfaceImplement : public Named {
@@ -420,8 +435,8 @@ class InterfaceImplement : public Named {
     std::list<std::shared_ptr<Function>> functions;
     // 将第一个参数包装为undef指针, 以便用于动态分发
     std::map<std::shared_ptr<Function>, std::shared_ptr<Function>> undef_this_pointer_functions;
-    std::shared_ptr<Function> dynamic_type_creator = nullptr;
     std::shared_ptr<InterfacePrototype> prototype = nullptr;
+    std::shared_ptr<Function> dynamic_type_creator = nullptr;
 };
 
 }  // namespace prajna::ir

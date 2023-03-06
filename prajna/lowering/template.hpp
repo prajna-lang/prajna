@@ -20,7 +20,7 @@ struct hash<std::list<prajna::lowering::Symbol>> {
 
 namespace prajna::lowering {
 
-class Template : public Named {
+class Template : public Named, public std::enable_shared_from_this<Template> {
    protected:
     Template() = default;
 
@@ -38,13 +38,21 @@ class Template : public Named {
     virtual Symbol instantiate(std::list<Symbol> symbol_template_arguments,
                                std::shared_ptr<ir::Module> ir_module) {
         if (!_instance_dict.count(symbol_template_arguments)) {
-            _instance_dict[symbol_template_arguments];  // 插入默认值, 阻断多次实力化
+            _instance_dict
+                [symbol_template_arguments];  // 插入默认值, 阻断多次实力化,
+                                              // 阻断之后依赖IrBuild里的instantiating_type来获取类型
             if (special_generators.count(symbol_template_arguments)) {
                 _instance_dict[symbol_template_arguments] =
                     special_generators[symbol_template_arguments](ir_module);
             } else {
                 _instance_dict[symbol_template_arguments] =
                     _generator(symbol_template_arguments, ir_module);
+            }
+
+            if (auto ir_interface_prototype =
+                    symbolGet<ir::InterfacePrototype>(_instance_dict[symbol_template_arguments])) {
+                ir_interface_prototype->template_interface = this->shared_from_this();
+                ir_interface_prototype->template_arguments = symbol_template_arguments;
             }
         }
         return _instance_dict[symbol_template_arguments];
@@ -58,7 +66,7 @@ class Template : public Named {
     std::unordered_map<std::list<Symbol>, SpecialGenerator> special_generators;
 };
 
-class TemplateStruct : public Named {
+class TemplateStruct : public Named, public std::enable_shared_from_this<TemplateStruct> {
    public:
     TemplateStruct() = default;
 
@@ -77,6 +85,8 @@ class TemplateStruct : public Named {
             struct_type_instance_dict[template_arguments] =
                 cast<ir::StructType>(symbolGet<ir::Type>(
                     template_struct_impl->instantiate(template_arguments, ir_module)));
+            struct_type_instance_dict[template_arguments]->template_struct =
+                this->shared_from_this();
             struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
 
             for (auto template_implement : template_implements) {

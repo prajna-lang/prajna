@@ -2,7 +2,7 @@
 
 @test
 func testMain(){
-    var p: __ptr::ptr<i64>;
+    var p: ptr<i64>;
     p.toi64();
 
     // testing::assert(p == ptr<i64>::create());

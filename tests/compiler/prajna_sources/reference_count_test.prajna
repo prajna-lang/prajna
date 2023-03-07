@@ -59,20 +59,20 @@ implement TestA {
 func testMemoryManager(){
     var a1 = TestA::create(10); // 调用copy函数, 然后调用destroy函数
     a1.name = "a1";
-    testing::assert(bindings::getReferenceCount(a1.data) == 1);
+    debug::assert(bindings::getReferenceCount(a1.data) == 1);
 
     var a2 = a1; // 调用copy函数
     a2.name = "a2";
-    testing::assert(bindings::getReferenceCount(a1.data) == 2);
+    debug::assert(bindings::getReferenceCount(a1.data) == 2);
 
     {
         var sub_a0 = a1; // 变量拷贝, 调用copy函数
         sub_a0.name = "sub_a0";
-        testing::assert(bindings::getReferenceCount(a1.data) == 3);
+        debug::assert(bindings::getReferenceCount(a1.data) == 3);
 
         TestA::create(100); // 调用destroy 函数
     }
 
-    testing::assert(bindings::getReferenceCount(a1.data) == 2);
+    debug::assert(bindings::getReferenceCount(a1.data) == 2);
 }
 

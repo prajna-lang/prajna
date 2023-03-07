@@ -54,13 +54,13 @@ func test(){
 
     var t: i64[3];
     t.length2();
-    testing::assert(t.length2() == 3);
+    debug::assert(t.length2() == 3);
 
     var tt: i64*;
     print(tt.toi64().tostr());
     root.nextValue();
 
     var tmp: MyArray<i64, 2>;
-    testing::assert(root.nextValue() == 2.0);
+    debug::assert(root.nextValue() == 2.0);
 }
 

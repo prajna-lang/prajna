@@ -1,14 +1,14 @@
 import gpu;
 
-testing::assert(cuda::cuInit(0i32) == 0i32);
+debug::assert(cuda::cuInit(0i32) == 0i32);
 var count: i32;
-testing::assert(cuda::cuDeviceGetCount(&count) == 0i32);
+debug::assert(cuda::cuDeviceGetCount(&count) == 0i32);
 "device count is : " + count.tostr() + "\n";
 var mp_count: i32;
-testing::assert(cuda::cuDeviceGetAttribute(&mp_count, 16i32, 0i32) == 0i32);
+debug::assert(cuda::cuDeviceGetAttribute(&mp_count, 16i32, 0i32) == 0i32);
 "multi processor count is " + mp_count.tostr() + "\n";
 var max_thread_per_block: i32;
-testing::assert(cuda::cuDeviceGetAttribute(&max_thread_per_block, 1i32, 0i32) == 0i32);
+debug::assert(cuda::cuDeviceGetAttribute(&max_thread_per_block, 1i32, 0i32) == 0i32);
 "max thread: " + max_thread_per_block.tostr() + "\n";
 
 gpu::init();

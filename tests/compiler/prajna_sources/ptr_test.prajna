@@ -5,8 +5,8 @@ func testMain(){
     var p: ptr<i64>;
     p.toi64();
 
-    // testing::assert(p == ptr<i64>::create());
-    testing::assert(p.toi64() == 0i64);
-    testing::assert(p.isNull());
+    // debug::assert(p == ptr<i64>::create());
+    debug::assert(p.toi64() == 0i64);
+    debug::assert(p.isNull());
     p.toi64().tostr().print();
 }

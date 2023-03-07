@@ -81,7 +81,7 @@ func testKernel(){
     // 将gpu的tensor拷贝会主机
     var host_tensor = gpu_tensor.toHost();
     for i in 0 to size{
-        testing::assert(host_tensor.data[i] == i);
+        debug::assert(host_tensor.data[i] == i);
     }
 }
 
@@ -102,7 +102,7 @@ func testMain(){
     // 运行完后, gpu的数据会自动拷贝的tmp_tensor上
 
     for i in 0 to shape[0] {
-        testing::assert(tmp_tensor.data[i] == i);
+        debug::assert(tmp_tensor.data[i] == i);
     }
 }
 ```

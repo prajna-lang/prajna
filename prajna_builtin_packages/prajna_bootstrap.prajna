@@ -1,4 +1,5 @@
 import operator;
+import reference_count;
 import implement_primitive_types;
 import primitive_pointer_template;
 import __i64;

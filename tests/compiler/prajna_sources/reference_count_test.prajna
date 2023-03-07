@@ -4,28 +4,21 @@ struct TestA {
     name: str;
 }
 
-implement TestA {
-
-    @static
-    func create(bytes: i64)->TestA{
-        var self: TestA;
-        self.data = bindings::malloc(bytes);
-        "malloc memory\n".print();
-        self.name = "create_self";
-        bindings::registerReferenceCount(self.data);
-        bindings::incrementReferenceCount(self.data);
-        return self; // 调用 copy函数
-        // 退出时会调用destropy 函数
-    }
-
-    func __registerReferenceCount(){
+@disable_dynamic_dispatch
+implement reference_count::ReferenceCount for TestA {
+    func initialize(){
         this.name = "undef";
         this.data = __nullptr<undef>::create();
+        this.registerReferenceCount();
+        "TestA __registerReferenceCount\n".print();
+    }
+
+    func registerReferenceCount(){
         bindings::registerReferenceCount(this.data);
         "TestA __registerReferenceCount\n".print();
     }
 
-    func __decrementReferenceCount(){
+    func decrementReferenceCount(){
         (this.name + " TestA destropy callback\n").print();
         bindings::decrementReferenceCount(this.data);
 
@@ -38,7 +31,7 @@ implement TestA {
         }
     }
 
-    func __incrementReferenceCount(){
+    func incrementReferenceCount(){
         (this.name + " TestA __incrementReferenceCount callback\n").print();
         bindings::incrementReferenceCount(this.data);
 
@@ -47,11 +40,23 @@ implement TestA {
     }
 }
 
+implement TestA {
+    @static
+    func create(bytes: i64)->TestA{
+        var self: TestA;
+        self.data = bindings::malloc(bytes);
+        "malloc memory\n".print();
+        self.name = "create_self";
+
+        self.incrementReferenceCount();
+
+        return self; // 调用 copy函数
+        // 退出时会调用destropy 函数
+    }
+}
+
 @test
 func testMemoryManager(){
-    // var a0 : TestA;
-    // a0.name = "a0";
-
     var a1 = TestA::create(10); // 调用copy函数, 然后调用destroy函数
     a1.name = "a1";
     testing::assert(bindings::getReferenceCount(a1.data) == 1);

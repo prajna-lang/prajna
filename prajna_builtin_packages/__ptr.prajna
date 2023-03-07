@@ -1,8 +1,4 @@
 
-interface ReferenceCountAble {
-    func incrementReferenceCount();
-}
-
 template <Type_>
 struct ptr<Type_>{
     raw_ptr: Type_*;
@@ -55,16 +51,28 @@ implement ptr<Type_>{
         return this.raw_ptr.isNull();
     }
 
-    func __registerReferenceCount(){
+    func referenceCount()->i64 {
+        return bindings::getReferenceCount(cast<undef*>(this.raw_ptr));
+    }
+}
+
+template <Type_>
+@disable_dynamic_dispatch
+implement reference_count::ReferenceCount for ptr<Type_> {
+    func initialize() {
         this.raw_ptr = __nullptr<Type_>::create();
+        this.registerReferenceCount();
+    }
+
+    func registerReferenceCount() {
         bindings::registerReferenceCount(cast<undef*>(this.raw_ptr));
     }
 
-    func __incrementReferenceCount(){
+    func incrementReferenceCount() {
         bindings::incrementReferenceCount(cast<undef*>(this.raw_ptr));
     }
 
-    func __decrementReferenceCount(){
+    func decrementReferenceCount() {
         bindings::decrementReferenceCount(cast<undef*>(this.raw_ptr));
         if (bindings::getReferenceCount(cast<undef*>(this.raw_ptr)) == 0){
             if (!this.isNull()){
@@ -74,11 +82,6 @@ implement ptr<Type_>{
             }
         }
     }
-
-    func referenceCount()->i64 {
-        return bindings::getReferenceCount(cast<undef*>(this.raw_ptr));
-    }
 }
-
 
 export ptr;

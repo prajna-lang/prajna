@@ -749,7 +749,7 @@ class StatementLoweringVisitor {
             ir_interface->name = ir_interface_prototype->name;
             ir_interface->prototype = ir_interface_prototype;
             ir_interface->fullname = concatFullname(ir_type->fullname, ir_interface->name);
-            if (ir_type->interfaces.count(ir_interface->name)) {
+            if (ir_type->interfaces[ir_interface->name]) {
                 logger->error("interface has implemented", ast_implement.interface);
             }
             ir_type->interfaces[ir_interface->name] = ir_interface;
@@ -833,7 +833,6 @@ class StatementLoweringVisitor {
                 ir_builder->create<ir::Return>(
                     ir_builder->create<ir::Call>(ir_function, ir_arguments));
                 ir_builder->popBlock();
-
                 // this->processUnaryFunction(ir_type, ir_function, ast_function);
                 // this->processPropertyFunction(ir_type, ir_function, ast_function);
             }

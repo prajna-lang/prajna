@@ -141,6 +141,8 @@ class IrBuilder {
     std::shared_ptr<ir::Function> getMemberFunction(std::shared_ptr<ir::Type> ir_type,
                                                     std::string member_name) {
         for (auto [interface_name, ir_interface] : ir_type->interfaces) {
+            if (!ir_interface) continue;
+
             for (auto ir_function : ir_interface->functions) {
                 if (ir_function->name == member_name) {
                     return ir_function;
@@ -190,11 +192,17 @@ class IrBuilder {
     std::shared_ptr<ir::Call> callMemberFunction(
         std::shared_ptr<ir::Value> ir_object, std::string member_function,
         std::vector<std::shared_ptr<ir::Value>> ir_arguments) {
+        auto ir_member_function = this->getMemberFunction(ir_object->type, member_function);
+        PRAJNA_ASSERT(ir_member_function);
+        return this->callMemberFunction(ir_object, ir_member_function, ir_arguments);
+    }
+
+    std::shared_ptr<ir::Call> callMemberFunction(
+        std::shared_ptr<ir::Value> ir_object, std::shared_ptr<ir::Function> ir_member_function,
+        std::vector<std::shared_ptr<ir::Value>> ir_arguments) {
         auto ir_variable_liked = this->variableLikedNormalize(ir_object);
         auto ir_this_pointer = this->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         ir_arguments.insert(ir_arguments.begin(), ir_this_pointer);
-        auto ir_member_function = this->getMemberFunction(ir_object->type, member_function);
-        PRAJNA_ASSERT(ir_member_function);
         return this->create<ir::Call>(ir_member_function, ir_arguments);
     }
 

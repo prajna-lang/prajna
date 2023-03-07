@@ -50,7 +50,7 @@ implement Layout<Dim_>{
 
 template <Type_, Dim_>
 struct Tensor<Type_, Dim_> {
-    data : Type_*;
+    data : ptr<Type_>;
     layout: Layout<Dim_>;
 }
 
@@ -61,40 +61,21 @@ implement Tensor<Type_, Dim_> {
         var self: Tensor<Type_, Dim_>;
         self.layout = Layout<Dim_>::create(shape);
 
-        var bytes = self.layout.length() * sizeof(Type_);
-        self.data = cast<Type_ *>(bindings::bindings::malloc(bytes));
-        bindings::registerReferenceCount(cast<undef*>(self.data));
-        bindings::incrementReferenceCount(cast<undef*>(self.data));
-
+        self.data = ptr<Type_>::allocate(self.layout.length());
         return self;
     }
 
-    func __registerReferenceCount(){
-        this.data = __nullptr<Type_>::create();
-        bindings::registerReferenceCount(cast<undef*>(this.data));
-    }
-
-    func __incrementReferenceCount(){
-        bindings::incrementReferenceCount(cast<undef*>(this.data));
-    }
-
-    func __decrementReferenceCount(){
-        bindings::decrementReferenceCount(cast<undef*>(this.data));
-        if (bindings::getReferenceCount(cast<undef*>(this.data)) == 0){
-           bindings::free(cast<undef*>(this.data));
-        }
-    }
 
     @property("at", "getter")
     func at_getter(idx: Array<i64, Dim_>)->Type_{
         var offset = this.layout.arrayIndexToLinearIndex(idx);
-        return this.data[offset];
+        return this.data.raw_ptr[offset];
     }
 
     @property("at", "setter")
     func at_setter(idx: Array<i64, Dim_>, value: Type_){
         var offset = this.layout.arrayIndexToLinearIndex(idx);
-        this.data[offset] = value;
+        this.data.raw_ptr[offset] = value;
     }
 
     // index property存在语法糖,

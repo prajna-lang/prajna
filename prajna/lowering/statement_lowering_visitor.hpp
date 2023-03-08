@@ -1001,6 +1001,13 @@ class StatementLoweringVisitor {
                     ir_builder->setSymbolWithAssigningName(lowering_template,
                                                            ast_interface_prototype.name.identifier);
                     return lowering_template;
+                },
+                [=](ast::Function ast_function) -> Symbol {
+                    auto lowering_template = Template::create(this->createTemplateGenerator(
+                        ast_template_statement.template_parameters, ast_function));
+                    ir_builder->setSymbolWithAssigningName(lowering_template,
+                                                           ast_function.declaration.name);
+                    return lowering_template;
                 }},
             ast_template_statement.statement);
     }
@@ -1044,6 +1051,10 @@ class StatementLoweringVisitor {
                     template_struct->template_struct_impl
                         ->special_generators[symbol_template_arguments] = template_struct_generator;
 
+                    return nullptr;
+                },
+                [=](ast::Function ast_function) -> Symbol {
+                    PRAJNA_TODO;
                     return nullptr;
                 }},
             ast_special_statement.statement.get());

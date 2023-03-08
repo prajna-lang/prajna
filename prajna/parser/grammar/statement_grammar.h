@@ -72,6 +72,7 @@ struct StatementGrammer
     rule<ast::FunctionHeader> function_header;
     rule<ast::Function> function;
 
+    rule<ast::TemplateAbleStatement> templateable_statement;
     rule<ast::Template> template_;
     rule<ast::TemplateStatement> template_statement;
     rule<ast::Special> special;

@@ -1,0 +1,13 @@
+
+template <T>
+func print(value: T) {
+    value.tostr().print();
+
+}
+
+@test
+func testMain() {
+    print(3.1415);
+    "\n".print();
+    print(3);
+}

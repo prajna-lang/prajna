@@ -363,9 +363,12 @@ struct Template : SourceLocation {
     Statements statements;
 };
 
+typedef boost::variant<Function, Struct, InterfacePrototype, ImplementType, ImplementInterface>
+    TemplateAbleStatement;
+
 struct TemplateStatement : SourceLocation {
     TemplateParameters template_parameters;
-    boost::variant<Struct, InterfacePrototype, ImplementType, ImplementInterface> statement;
+    TemplateAbleStatement statement;
 };
 
 struct Specical : SourceLocation {
@@ -373,7 +376,7 @@ struct Specical : SourceLocation {
 };
 
 struct SpecialStatement : SourceLocation {
-    boost::recursive_wrapper<Statement> statement;
+    boost::recursive_wrapper<TemplateAbleStatement> statement;
 };
 
 struct TemplateInstance : SourceLocation {

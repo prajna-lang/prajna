@@ -204,15 +204,20 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     template_statement.name("template statement");
     template_statement = tok.template_ > omit[tok.less] > (identifier % tok.comma) >
-                         omit[tok.greater] >
-                         (struct_ | implement_interface | implement_type | interface);
+                         omit[tok.greater] > templateable_statement;
     on_error<fail>(template_statement, error_handler_function);
     on_success(template_statement, success_handler_function);
 
     special_statement.name("special statement");
-    special_statement = tok.special > (struct_ | implement_interface | implement_type);
+    special_statement = tok.special > templateable_statement;
     on_error<fail>(special_statement, error_handler_function);
     on_success(special_statement, success_handler_function);
+
+    templateable_statement.name("templateable statement");
+    templateable_statement = struct_ | function | implement_interface | implement_type | interface;
+    // boost::variant并未实现相应重载函数, 并非必须的, 故不去实现,直接注释
+    // on_error<fail>(templateable_statement, error_handler_function);
+    // on_success(templateable_statement, success_handler_function);
 
     annotations.name("annotations");
     annotations = *annotation;

@@ -1539,7 +1539,19 @@ class Module : public Named, public std::enable_shared_from_this<Module> {
     llvm::Module* llvm_module = nullptr;
 };
 
-#pragma region("nvptx")
+class ValueAny : public Value {
+   protected:
+    ValueAny() = default;
+
+   public:
+    static std::shared_ptr<ValueAny> create(std::any any) {
+        std::shared_ptr<ValueAny> self(new ValueAny);
+        self->any = any;
+        return self;
+    };
+
+    std::any any;
+};
 
 class KernelFunctionCall : public Instruction {
    protected:
@@ -1592,8 +1604,6 @@ class KernelFunctionCall : public Instruction {
         return arguments_re;
     }
 };
-
-#pragma endregion("nvptx")
 
 inline std::shared_ptr<Function> Value::getParentFunction() {
     if (!parent_block) {

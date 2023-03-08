@@ -400,6 +400,20 @@ class ExpressionLoweringVisitor {
             return ir_access_property;
         }
 
+        if (auto ir_value_any = cast<ir::ValueAny>(ir_lhs)) {
+            auto lowering_template = std::any_cast<std::shared_ptr<Template>>(ir_value_any->any);
+            std::list<lowering::Symbol> symbol_template_argument_list;
+            std::transform(RANGE(ir_arguments), std::back_inserter(symbol_template_argument_list),
+                           [](auto ir_argument) { return ir_argument->type; });
+            auto template_instance =
+                lowering_template->instantiate(symbol_template_argument_list, ir_builder->module);
+            if (auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(template_instance))) {
+                return ir_builder->create<ir::Call>(ir_function, ir_arguments);
+            } else {
+                logger->error("not a valid template function", ast_binary_operaton.operator_);
+            }
+        }
+
         logger->error("not a valid callable", ast_binary_operaton);
         return nullptr;
     }
@@ -735,6 +749,9 @@ class ExpressionLoweringVisitor {
                     // 需要在block里插入, 这才符合后面IR转换生成的规则
                     PRAJNA_ASSERT(ir_constant_int->type == ir_builder->getIndexType());
                     return ir_builder->getIndexConstant(ir_constant_int->value);
+                },
+                [=](std::shared_ptr<Template> template_) -> std::shared_ptr<ir::Value> {
+                    return ir::ValueAny::create(template_);
                 },
                 [=](auto x) {
                     logger->error(fmt::format("use invalid symbol as a value"),

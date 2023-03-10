@@ -64,7 +64,7 @@ struct StatementGrammer
     rule<std::list<ast::Function>> functions;
     rule<ast::InterfacePrototype> interface;
     rule<ast::ImplementType> implement_type;
-    rule<ast::ImplementInterface> implement_interface;
+    rule<ast::ImplementInterfaceForType> implement_interface;
 
     rule<ast::Parameter> parameter;
     rule<ast::Parameters> parameters;

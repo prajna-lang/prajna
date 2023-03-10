@@ -733,7 +733,7 @@ class StatementLoweringVisitor {
         return nullptr;
     }
 
-    Symbol operator()(ast::ImplementInterface ast_implement) {
+    Symbol operator()(ast::ImplementInterfaceForType ast_implement) {
         try {
             auto ir_type = expression_lowering_visitor->applyType(ast_implement.type);
 
@@ -871,10 +871,38 @@ class StatementLoweringVisitor {
         return nullptr;
     }
 
+    std::list<Symbol> getTemplateConcepts(ast::TemplateParameters ast_template_parameter_list) {
+        std::list<Symbol> symbol_template_concepts;
+        std::transform(RANGE(ast_template_parameter_list),
+                       std::back_inserter(symbol_template_concepts),
+                       [=](ast::TemplateParameter ast_template_parameter) -> Symbol {
+                           if (ast_template_parameter.concept_) {
+                               return expression_lowering_visitor->applyIdentifierPath(
+                                   *ast_template_parameter.concept_);
+                           } else {
+                               return nullptr;
+                           }
+                       });
+        return symbol_template_concepts;
+    }
+
+    std::shared_ptr<Template> getOrCreateTemplate(ast::Identifier ast_identifier) {
+        if (ir_builder->symbol_table->currentTableHas(ast_identifier)) {
+            auto template_ = symbolGet<Template>(ir_builder->symbol_table->get(ast_identifier));
+            PRAJNA_ASSERT(template_);
+            return template_;
+        } else {
+            auto template_ = Template::create();
+            ir_builder->setSymbolWithAssigningName(template_, ast_identifier);
+            return template_;
+        }
+    }
+
     Symbol operator()(ast::Template ast_template) {
-        auto template_ = Template::create(this->createTemplateGenerator(
-            ast_template.template_parameters, ast_template.statements));
-        ir_builder->setSymbolWithAssigningName(template_, ast_template.name);
+        auto template_ = this->getOrCreateTemplate(ast_template.name);
+        template_->generators[getTemplateConcepts(ast_template.template_parameters)] =
+            this->createTemplateGenerator(ast_template.template_parameters,
+                                          ast_template.statements);
         return template_;
     }
 
@@ -893,11 +921,11 @@ class StatementLoweringVisitor {
         std::set<ast::Identifier> template_parameter_identifier_set;
         std::list<std::string> template_parameter_identifier_list;
         for (auto template_parameter : template_parameters) {
-            if (template_parameter_identifier_set.count(template_parameter)) {
+            if (template_parameter_identifier_set.count(template_parameter.name)) {
                 logger->error("the template parameter is defined already", template_parameter);
             }
-            template_parameter_identifier_list.push_back(template_parameter);
-            template_parameter_identifier_set.insert(template_parameter);
+            template_parameter_identifier_list.push_back(template_parameter.name);
+            template_parameter_identifier_set.insert(template_parameter.name);
         }
 
         return template_parameter_identifier_list;
@@ -930,49 +958,43 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::TemplateStatement ast_template_statement) {
+        auto template_concepts =
+            this->getTemplateConcepts(ast_template_statement.template_parameters);
+
         return boost::apply_visitor(
             overloaded{
                 [=](ast::Struct ast_struct) -> Symbol {
-                    if (!ast_struct.name.template_arguments) {
-                        logger->error("not a template struct", ast_struct.name);
+                    std::shared_ptr<TemplateStruct> template_struct;
+                    if (ir_builder->symbol_table->currentTableHas(ast_struct.name.identifier)) {
+                        template_struct = symbolGet<TemplateStruct>(
+                            ir_builder->symbol_table->get(ast_struct.name.identifier));
+                        PRAJNA_ASSERT(template_struct);
+                    } else {
+                        template_struct = TemplateStruct::create();
+                        ir_builder->setSymbolWithAssigningName(template_struct,
+                                                               ast_struct.name.identifier);
                     }
-                    if (ast_template_statement.template_parameters.size() !=
-                        ast_struct.name.template_arguments->size()) {
-                        logger->error("the template parameter size is not matched",
-                                      ast_struct.name);
-                    }
 
-                    auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
-                        ast_template_statement.template_parameters);
-
-                    auto symbol_table = ir_builder->symbol_table;
-
-                    auto template_struct = std::make_shared<TemplateStruct>();
-                    template_struct->template_parameter_identifier_list =
-                        template_parameter_identifier_list;
-
-                    template_struct->template_struct_impl =
-                        Template::create(this->createTemplateGenerator(
-                            ast_template_statement.template_parameters, ast_struct));
-
-                    ir_builder->setSymbolWithAssigningName(template_struct,
-                                                           ast_struct.name.identifier);
+                    template_struct->template_struct_impl->generators[getTemplateConcepts(
+                        ast_template_statement.template_parameters)] =
+                        this->createTemplateGenerator(ast_template_statement.template_parameters,
+                                                      ast_struct);
 
                     return template_struct;
                 },
-                [=](auto ast_implement_type_or_interface) -> Symbol {
+                [=](ast::ImplementInterfaceForType ast_implement_type_for_interface) -> Symbol {
                     auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
                         ast_template_statement.template_parameters);
 
-                    if (ast_implement_type_or_interface.type.postfix_type_operators.size()) {
+                    if (ast_implement_type_for_interface.type.postfix_type_operators.size()) {
                         // 只能是原始的type, 因为是自动特化的
                         logger->error("invalid template implement",
-                                      ast_implement_type_or_interface.type);
+                                      ast_implement_type_for_interface.type);
                     }
                     // TODO
-                    PRAJNA_ASSERT(ast_implement_type_or_interface.type.base_type.which() == 1);
+                    PRAJNA_ASSERT(ast_implement_type_for_interface.type.base_type.which() == 1);
                     auto ast_identifier_path = boost::get<ast::IdentifierPath>(
-                        ast_implement_type_or_interface.type.base_type);
+                        ast_implement_type_for_interface.type.base_type);
                     // 只获取模板类, 不能带模板参数
                     auto ast_template_struct = ast_identifier_path;
                     ast_template_struct.identifiers.back().template_arguments = boost::none;
@@ -983,82 +1005,82 @@ class StatementLoweringVisitor {
                         logger->error("it's not a template struct but with template parameters",
                                       ast_identifier_path);
                     }
-                    if (template_struct->template_parameter_identifier_list.size() !=
-                        template_parameter_identifier_list.size()) {
-                        logger->error("the template parameters are not matched",
+
+                    // 清楚结尾的模板
+                    auto identifier_path_without_template_arguments =
+                        ast_implement_type_for_interface.interface;
+                    identifier_path_without_template_arguments.identifiers.back()
+                        .template_arguments.reset();
+                    // 也有可能是一个模板接口
+                    auto symbol_interface = expression_lowering_visitor->applyIdentifierPath(
+                        identifier_path_without_template_arguments);
+                    if (!template_struct->template_implement_interface_for_type_dict.count(
+                            symbol_interface)) {
+                        template_struct
+                            ->template_implement_interface_for_type_dict[symbol_interface] =
+                            Template::create();
+                    }
+                    auto template_ =
+                        template_struct
+                            ->template_implement_interface_for_type_dict[symbol_interface];
+
+                    template_->generators[template_concepts] =
+                        this->createTemplateGenerator(ast_template_statement.template_parameters,
+                                                      ast_implement_type_for_interface);
+                    template_struct->template_implement_type_vec.push_back(template_);
+
+                    return template_;
+                },
+                [=](ast::ImplementType ast_implement_type) -> Symbol {
+                    auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
+                        ast_template_statement.template_parameters);
+
+                    if (ast_implement_type.type.postfix_type_operators.size()) {
+                        // 只能是原始的type, 因为是自动特化的
+                        logger->error("invalid template implement", ast_implement_type.type);
+                    }
+                    // TODO
+                    PRAJNA_ASSERT(ast_implement_type.type.base_type.which() == 1);
+                    auto ast_identifier_path =
+                        boost::get<ast::IdentifierPath>(ast_implement_type.type.base_type);
+                    // 只获取模板类, 不能带模板参数
+                    auto ast_template_struct = ast_identifier_path;
+                    ast_template_struct.identifiers.back().template_arguments = boost::none;
+                    auto ir_symbol =
+                        expression_lowering_visitor->applyIdentifierPath(ast_template_struct);
+                    auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
+                    if (template_struct == nullptr) {
+                        logger->error("it's not a template struct but with template parameters",
                                       ast_identifier_path);
                     }
 
-                    auto template_implement_struct = Template::create(
-                        this->createTemplateGenerator(ast_template_statement.template_parameters,
-                                                      ast_implement_type_or_interface));
-                    template_struct->pushBackImplements(template_implement_struct);
-                    return nullptr;
+                    auto template_ = Template::create();
+                    template_->generators[template_concepts] = this->createTemplateGenerator(
+                        ast_template_statement.template_parameters, ast_implement_type);
+                    template_struct->template_implement_type_vec.push_back(template_);
+                    return template_;
                 },
                 [=](ast::InterfacePrototype ast_interface_prototype) -> Symbol {
-                    auto lowering_template = Template::create(this->createTemplateGenerator(
-                        ast_template_statement.template_parameters, ast_interface_prototype));
-                    ir_builder->setSymbolWithAssigningName(lowering_template,
-                                                           ast_interface_prototype.name.identifier);
-                    return lowering_template;
+                    auto template_ =
+                        this->getOrCreateTemplate(ast_interface_prototype.name.identifier);
+                    template_->generators[this->getTemplateConcepts(
+                        ast_template_statement.template_parameters)] =
+                        this->createTemplateGenerator(ast_template_statement.template_parameters,
+                                                      ast_interface_prototype);
+                    return template_;
                 },
                 [=](ast::Function ast_function) -> Symbol {
-                    auto lowering_template = Template::create(this->createTemplateGenerator(
-                        ast_template_statement.template_parameters, ast_function));
-                    ir_builder->setSymbolWithAssigningName(lowering_template,
-                                                           ast_function.declaration.name);
-                    return lowering_template;
+                    auto template_ = this->getOrCreateTemplate(ast_function.declaration.name);
+                    template_->generators[this->getTemplateConcepts(
+                        ast_template_statement.template_parameters)] =
+                        this->createTemplateGenerator(ast_template_statement.template_parameters,
+                                                      ast_function);
+                    return template_;
                 }},
             ast_template_statement.statement);
     }
 
-    Symbol operator()(ast::SpecialStatement ast_special_statement) {
-        return boost::apply_visitor(
-            overloaded{
-                [=](auto x) -> Symbol {
-                    PRAJNA_UNREACHABLE;
-                    return nullptr;
-                },
-                [=](ast::Struct ast_struct) -> Symbol {
-                    auto ir_symbol = ir_builder->symbol_table->get(ast_struct.name.identifier);
-                    auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
-                    if (template_struct == nullptr) {
-                        logger->error("it's not a template struct but with template parameters",
-                                      ast_struct.name);
-                    }
-                    if (template_struct->template_parameter_identifier_list.size() !=
-                        ast_struct.name.template_arguments->size()) {
-                        logger->error("the template parameters are not matched",
-                                      *ast_struct.name.template_arguments);
-                    }
-
-                    auto symbol_template_arguments =
-                        expression_lowering_visitor->applyTemplateArguments(
-                            *ast_struct.name.template_arguments);
-
-                    // 外部使用算子, 必须值捕获
-                    auto template_struct_generator =
-                        [=](std::shared_ptr<ir::Module> ir_module) -> Symbol {
-                        // // 包裹一层名字空间, 避免被污染
-                        auto templates_symbol_table = SymbolTable::create(ir_builder->symbol_table);
-
-                        auto statement_lowering_visitor = StatementLoweringVisitor::create(
-                            templates_symbol_table, logger, ir_module, nullptr);
-                        return (*statement_lowering_visitor)(ast_struct);
-                    };
-
-                    PRAJNA_ASSERT(template_struct->template_struct_impl);
-                    template_struct->template_struct_impl
-                        ->special_generators[symbol_template_arguments] = template_struct_generator;
-
-                    return nullptr;
-                },
-                [=](ast::Function ast_function) -> Symbol {
-                    PRAJNA_TODO;
-                    return nullptr;
-                }},
-            ast_special_statement.statement.get());
-    }
+    Symbol operator()(ast::SpecialStatement ast_special_statement) { PRAJNA_TODO; }
 
     Symbol operator()(ast::Expression ast_expression) {
         return this->applyExpression(ast_expression);

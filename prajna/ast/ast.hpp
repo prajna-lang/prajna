@@ -224,7 +224,7 @@ struct Return;
 struct Struct;
 struct InterfacePrototype;
 struct ImplementType;
-struct ImplementInterface;
+struct ImplementInterfaceForType;
 struct Class;
 struct FunctionHeader;
 struct Function;
@@ -266,7 +266,7 @@ typedef boost::variant<
     boost::recursive_wrapper<If>, boost::recursive_wrapper<While>, boost::recursive_wrapper<For>,
     Break, Continue, boost::recursive_wrapper<Function>, boost::recursive_wrapper<Return>,
     boost::recursive_wrapper<Struct>, boost::recursive_wrapper<InterfacePrototype>,
-    boost::recursive_wrapper<ImplementType>, boost::recursive_wrapper<ImplementInterface>,
+    boost::recursive_wrapper<ImplementType>, boost::recursive_wrapper<ImplementInterfaceForType>,
     boost::recursive_wrapper<Template>, boost::recursive_wrapper<TemplateStatement>,
     boost::recursive_wrapper<SpecialStatement>, boost::recursive_wrapper<TemplateInstance>, Pragma>
     Statement;
@@ -330,7 +330,11 @@ struct Field : SourceLocation {
     Type type;
 };
 
-using TemplateParameter = Identifier;
+struct TemplateParameter : SourceLocation {
+    Identifier name;
+    boost::optional<IdentifierPath> concept_;
+};
+
 struct TemplateParameters : SourceLocation, std::list<TemplateParameter> {};
 
 struct Struct : SourceLocation {
@@ -350,7 +354,7 @@ struct ImplementType : SourceLocation {
     std::list<Function> functions;
 };
 
-struct ImplementInterface : SourceLocation {
+struct ImplementInterfaceForType : SourceLocation {
     Annotations annotations;
     IdentifierPath interface;
     Type type;
@@ -363,7 +367,8 @@ struct Template : SourceLocation {
     Statements statements;
 };
 
-typedef boost::variant<Function, Struct, InterfacePrototype, ImplementType, ImplementInterface>
+typedef boost::variant<Function, Struct, InterfacePrototype, ImplementType,
+                       ImplementInterfaceForType>
     TemplateAbleStatement;
 
 struct TemplateStatement : SourceLocation {
@@ -430,7 +435,8 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SpecialStatement, statement)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, annotations, name, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, functions)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterface, annotations, interface, type, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotations, interface, type,
+                          functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)
@@ -444,5 +450,6 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, 
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCall, kernel_function, operation)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Array, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::DynamicCast, identifier_path, pointer)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateParameter, name, concept_)
 
 BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotations, statement)

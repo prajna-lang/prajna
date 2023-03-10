@@ -2,8 +2,13 @@
 template <T>
 func print(value: T) {
     value.tostr().print();
-
 }
+
+template <T: i64>
+func print(value: i64){
+    "Hi\n".print();
+}
+
 
 @test
 func testMain() {

@@ -162,7 +162,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(template_parameters, success_handler_function);
 
     template_parameter.name("template parameter");
-    template_parameter = as<ast::TemplateParameter>()[identifier > tok.colon > tok.template_];
+    template_parameter = identifier > -(tok.colon > identifier_path);
     on_error<fail>(template_parameter, error_handler_function);
     on_success(template_parameter, success_handler_function);
 
@@ -192,7 +192,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(parameter, success_handler_function);
 
     template_.name("template");
-    template_ = tok.template_ >> identifier > omit[tok.less] > (identifier % tok.comma) >
+    template_ = tok.template_ >> identifier > omit[tok.less] > (template_parameter % tok.comma) >
                 omit[tok.greater] > block;
     on_error<fail>(template_, error_handler_function);
     on_success(template_, success_handler_function);
@@ -203,7 +203,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(template_instance, success_handler_function);
 
     template_statement.name("template statement");
-    template_statement = tok.template_ > omit[tok.less] > (identifier % tok.comma) >
+    template_statement = tok.template_ > omit[tok.less] > (template_parameter % tok.comma) >
                          omit[tok.greater] > templateable_statement;
     on_error<fail>(template_statement, error_handler_function);
     on_success(template_statement, success_handler_function);

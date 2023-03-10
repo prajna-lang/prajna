@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 
+#include "boost/range/combine.hpp"
 #include "boost/variant.hpp"
 #include "prajna/assert.hpp"
 #include "prajna/ast/ast.hpp"
@@ -695,12 +696,6 @@ class ExpressionLoweringVisitor {
                                 *iter_ast_identifier->template_arguments);
 
                             if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
-                                if (template_struct->template_parameter_identifier_list.size() !=
-                                    symbol_template_arguments.size()) {
-                                    logger->error("the template arguments size are not matched",
-                                                  *iter_ast_identifier->template_arguments);
-                                }
-
                                 // 如果获取到nullptr则说明实例化正在进行中,
                                 // 使用instantiating_type来获取相应类型
                                 if (auto ir_type = template_struct->instantiateStructAndImplement(

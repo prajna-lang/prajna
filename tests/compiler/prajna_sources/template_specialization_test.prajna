@@ -3,7 +3,7 @@ struct MyStruct<Type>{
     value: Type;
 }
 
-special
+template <Type: f32>
 struct MyStruct<f32>{
     value: f32;
     value2: i64;

@@ -1,0 +1,11 @@
+
+
+@test
+func testMain(){
+    var a = ptr<i64>::new();
+    var b = ptr<f32>::new();
+
+    var t = dynamic_cast<Serializable>(a);
+    t.tostr();
+
+}

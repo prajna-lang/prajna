@@ -927,6 +927,7 @@ class ExpressionLoweringVisitor {
                 std::any_cast<std::list<lowering::Symbol>>(ir_operand->type->template_arguments);
             auto ir_value_type = symbolGet<ir::Type>(symbol_template_arguments.front());
             auto iter_interface = std::find_if(RANGE(ir_value_type->interfaces), [=](auto x) {
+                if (!x.second) return false;
                 return x.second->prototype == ir_interface_prototype;
             });
             auto ir_interface = iter_interface->second;

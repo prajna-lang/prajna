@@ -853,6 +853,7 @@ class StatementLoweringVisitor {
                 auto iter_field = std::find_if(
                     RANGE(ir_interface->prototype->dynamic_type->fields),
                     [=](auto ir_field) { return ir_field->name == ir_function->name + "/fp"; });
+                PRAJNA_ASSERT(iter_field != ir_interface->prototype->dynamic_type->fields.end());
                 auto ir_function_pointer =
                     ir_builder->create<ir::AccessField>(ir_self, *iter_field);
                 ir_builder->create<ir::WriteVariableLiked>(
@@ -1137,12 +1138,15 @@ class StatementLoweringVisitor {
         ir_interface_prototype->dynamic_type = ir::StructType::create({});
 
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
+            ///  TODO function_type and name , 下面的代码会导致函数重复
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_interface_prototype_name;
             auto symbol_function = (*this)(ast_function_declaration);
             auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
             ir_builder->popSymbolTable();
             ir_interface_prototype->functions.push_back(ir_function);
+            // 需要将去从module移出来, 这里的function并不会实际被生成
+            ir_builder->module->functions.remove(ir_function);
         }
 
         // 用到的时候再进行该操作, 因为很多原生接口实现时候ptr还未

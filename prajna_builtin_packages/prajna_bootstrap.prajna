@@ -8,6 +8,7 @@ import __char;
 import bindings;
 import __ptr;
 import __str;
+import serializable;
 import debug;
 import array;
 import tensor;

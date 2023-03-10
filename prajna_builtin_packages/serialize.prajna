@@ -1,19 +1,12 @@
-interface Serialize{
+// import serializable::Serializable;
+
+interface Serializable{
     func tostr()->str;
-    // func fromstr()->str;
 }
 
-implement Serialize for bool{
-    func tostr()->str{
-        if (this){
-            return "true";
-        } else {
-            return "false";
-        }
-    }
-}
+export Serializable;
 
-implement Serialize for i64{
+implement Serializable for i64{
 
     func tostr()->str{
         if (this == 0){
@@ -48,20 +41,33 @@ implement Serialize for i64{
 
 }
 
-implement Serialize for i32{
+
+implement Serializable for bool{
+    func tostr()->str{
+        if (this){
+            return "true";
+        } else {
+            return "false";
+        }
+    }
+}
+
+
+
+implement Serializable for i32{
     func tostr()->str{
         return this.toi64().tostr();
     }
 }
 
-implement Serialize for u32{
+implement Serializable for u32{
     func tostr()->str{
         return this.toi64().tostr();
     }
 }
 
 
-implement Serialize for f32{
+implement Serializable for f32{
 
 func tostr()->str{
     var x = this;
@@ -97,7 +103,7 @@ func tostr()->str{
 }
 
 template <Type_, Dim_>
-implement Serialize for Array<Type_, Dim_>{
+implement Serializable for Array<Type_, Dim_>{
     func tostr()->str{
         var re = "[";
         for i in 0 to Dim_ {

@@ -94,6 +94,7 @@ class LlvmCodegen {
                            ir_function_type->parameter_types.end(), llvm_argument_types.begin(),
                            [=](std::shared_ptr<ir::Type> ir_type) {
                                this->emitType(ir_type);
+                               PRAJNA_ASSERT(ir_type->llvm_type);
                                return ir_type->llvm_type;
                            });
             this->emitType(ir_function_type->return_type);

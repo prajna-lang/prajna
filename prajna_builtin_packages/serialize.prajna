@@ -1,11 +1,3 @@
-// import serializable::Serializable;
-
-interface Serializable{
-    func tostr()->str;
-}
-
-export Serializable;
-
 implement Serializable for i64{
 
     func tostr()->str{

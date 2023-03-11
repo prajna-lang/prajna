@@ -773,15 +773,8 @@ class StatementLoweringVisitor {
                 ir_function->is_declaration = true;
             }
 
-            bool disable_dynamic_dispatch = false;
-            for (auto ast_annotation : ast_implement.annotations) {
-                if (ast_annotation.name == "disable_dynamic_dispatch") {
-                    disable_dynamic_dispatch = true;
-                }
-            }
-
             // 需要前置, 因为函数会用的接口类型本身
-            if (!disable_dynamic_dispatch) {
+            if (!ir_interface_prototype->disable_dynamic_dispatch) {
                 // 创建接口动态类型生成函数
                 ir_interface->dynamic_type_creator = ir_builder->createFunction(
                     "dynamic_type_creator",
@@ -795,13 +788,11 @@ class StatementLoweringVisitor {
                 ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
             }
 
-            if (disable_dynamic_dispatch) {
+            if (ir_interface_prototype->disable_dynamic_dispatch) {
                 ir_builder->popSymbolTable();
                 ir_builder->popSymbolTable();
                 return nullptr;
             }
-
-            this->createInterfaceDynamicType(ir_interface_prototype);
 
             // 包装一个undef this pointer的函数
             for (auto ir_function : ir_interface->functions) {
@@ -1135,7 +1126,13 @@ class StatementLoweringVisitor {
         ir_builder->symbol_table->setWithAssigningName(ir_interface_prototype,
                                                        ir_interface_prototype_name);
 
-        ir_interface_prototype->dynamic_type = ir::StructType::create({});
+        ir_interface_prototype->disable_dynamic_dispatch = std::any_of(
+            RANGE(ast_interface_prototype.annotations),
+            [](auto ast_annotation) { return ast_annotation.name == "disable_dynamic_dispatch"; });
+
+        if (!ir_interface_prototype->disable_dynamic_dispatch) {
+            ir_interface_prototype->dynamic_type = ir::StructType::create({});
+        }
 
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ///  TODO function_type and name , 下面的代码会导致函数重复
@@ -1149,16 +1146,17 @@ class StatementLoweringVisitor {
             ir_builder->module->functions.remove(ir_function);
         }
 
+        if (!ir_interface_prototype->disable_dynamic_dispatch) {
+            this->createInterfaceDynamicType(ir_interface_prototype);
+        }
+
         // 用到的时候再进行该操作, 因为很多原生接口实现时候ptr还未
-        // this->createInterfaceDynamicType(ir_interface_prototype);
 
         return ir_interface_prototype;
     }
 
     void createInterfaceDynamicType(
         std::shared_ptr<ir::InterfacePrototype> ir_interface_prototype) {
-        if (!ir_interface_prototype->dynamic_type->fields.empty()) return;
-
         auto field_object_pointer =
             ir::Field::create("object_pointer", ir_builder->getPtrType(ir::UndefType::create()));
         auto ir_interface_struct = ir_interface_prototype->dynamic_type;

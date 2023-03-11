@@ -1,5 +1,5 @@
-// interface Serializable{
-//     func tostr()->str;
-// }
+interface Serializable{
+    func tostr()->str;
+}
 
-// export Serializable;
+export Serializable;

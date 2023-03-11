@@ -959,12 +959,12 @@ class ExpressionLoweringVisitor {
             PRAJNA_ASSERT(ir_interface_implement->functions.front());
             auto ir_target_ptr_type = ir_builder->getPtrType(ir_target_type);
             auto ir_ptr = ir_builder->create<ir::LocalVariable>(ir_target_ptr_type);
-            auto ir_condition = ir_builder->callBinaryOperator(
+            auto ir_condition = ir_builder->callMemberFunction(
                 ir_interface_implement
                     ->undef_this_pointer_functions[ir_interface_implement->functions.front()],
-                "==",
-                ir_builder->accessField(ir_dynamic_object,
-                                        ir_interface_implement->functions.front()->name + "/fp"));
+                "__equal__",
+                {ir_builder->accessField(ir_dynamic_object,
+                                         ir_interface_implement->functions.front()->name + "/fp")});
             auto ir_if =
                 ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
             ir_if->trueBlock()->parent_function = ir_builder->current_function;

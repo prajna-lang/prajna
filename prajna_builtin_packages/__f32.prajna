@@ -1,22 +1,18 @@
-@disable_dynamic_dispatch
 implement operator::Equal<f32> for f32 {
     @instruction("FCmp", "FCMP_OEQ")
     func Equal(operand: f32)->bool;
 }
 
-@disable_dynamic_dispatch
 implement operator::NotEqual<f32> for f32 {
     @instruction("FCmp", "FCMP_ONE")
     func NotEqual(operand: f32)->bool;
 }
 
-@disable_dynamic_dispatch
 implement operator::Add<f32> for f32 {
     @instruction("BinaryOperator", "FAdd")
     func Add(operand: f32)->f32;
 }
 
-@disable_dynamic_dispatch
 implement operator::Sub<f32> for f32 {
     @instruction("BinaryOperator", "FSub")
     func Sub(operand: f32)->f32;

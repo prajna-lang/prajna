@@ -5,7 +5,7 @@ struct TestA {
 }
 
 @disable_dynamic_dispatch
-implement reference_count::ReferenceCount for TestA {
+implement reference_count::ReferenceCountable for TestA {
     func initialize(){
         this.name = "undef";
         this.data = __nullptr<undef>::create();

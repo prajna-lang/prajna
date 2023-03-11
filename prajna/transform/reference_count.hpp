@@ -23,7 +23,7 @@ namespace prajna::transform {
 namespace {
 
 bool isReferenceCount(std::shared_ptr<ir::Type> ir_type) {
-    auto ir_interface_implement = ir_type->interfaces["ReferenceCount"];
+    auto ir_interface_implement = ir_type->interfaces["ReferenceCountable"];
     return ir_interface_implement != nullptr;
 }
 
@@ -69,7 +69,7 @@ inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
 
         if (isReferenceCount(ir_type)) {
             auto ir_function = ir::getFunctionByName(
-                ir_type->interfaces["ReferenceCount"]->functions, "initialize");
+                ir_type->interfaces["ReferenceCountable"]->functions, "initialize");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         };
     }
@@ -92,7 +92,7 @@ inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
 
         if (isReferenceCount(ir_type)) {
             auto ir_function = ir::getFunctionByName(
-                ir_type->interfaces["ReferenceCount"]->functions, "decrementReferenceCount");
+                ir_type->interfaces["ReferenceCountable"]->functions, "decrementReferenceCount");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         };
     }
@@ -119,7 +119,7 @@ inline void copyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
 
         if (isReferenceCount(ir_type)) {
             auto ir_function = ir::getFunctionByName(
-                ir_type->interfaces["ReferenceCount"]->functions, "incrementReferenceCount");
+                ir_type->interfaces["ReferenceCountable"]->functions, "incrementReferenceCount");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         }
     }

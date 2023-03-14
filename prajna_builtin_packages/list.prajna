@@ -1,0 +1,10 @@
+import __ptr::ptr;
+
+template <ValueType>
+struct Node {
+    next: ptr<Node>;
+    pre: ptr<Node>;
+    value: ValueType;
+}
+
+export Node;

@@ -9,7 +9,7 @@ func ceilPowerOf2(value: i64)->i64{
 }
 
 template <ValueType>
-struct DynamicArray{
+struct DynamicArray<ValueType>{
     data: ptr<ValueType>;
     length: i64;
     capacity: i64;

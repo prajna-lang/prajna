@@ -1,0 +1,6 @@
+@test
+func testMain() {
+    var tmp = "Hello World";
+    tmp.append('\n');
+    tmp.print();
+}

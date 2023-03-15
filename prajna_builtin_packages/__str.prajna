@@ -1,56 +1,41 @@
 struct str{
-    data: char*;
+    darray: DynamicArray<char>;
     size: i64;
-    buffer_size : i64;
 }
 
 implement str{
     @static
     func create(size: i64)->str{
         var str_re: str;
+        str_re.darray = DynamicArray<char>::create(size+1);
         str_re.size = size;
-        str_re.buffer_size = (str_re.size + 1) * 2;
-        str_re.data = cast<char *>(bindings::malloc(str_re.buffer_size));
-        str_re.data[str_re.size] = '\0';
         return str_re;
     }
 
     @static
-    func from_char_ptr(data: char*)->str {
-        var str_re: str;
-        str_re.size = 0;
-        while (data[str_re.size] != '\0'){
-            str_re.size = str_re.size + 1;
+    func from_char_ptr(cstr_ptr: char*)->str {
+        var str_size = 0;
+        while (cstr_ptr[str_size] != '\0'){
+            str_size = str_size + 1;
         }
-        str_re.data = cast<char *>(bindings::malloc(str_re.size + 100));
-
-        var i = 0;
-        while (i != str_re.size + 1){
-            str_re.data[i] = data[i];
-            i = i + 1;
+        var str_re = str::create(str_size);
+        for i in 0 to str_re.size {
+            str_re.darray[i] = cstr_ptr[i];
         }
 
         return str_re;
     }
 
     func print(){
-        print_c(this.data);
+        print_c(this.darray.data.raw_ptr);
     }
 
     func append(v: char){
+        this.darray.pushBack(v);
         this.size = this.size + 1;
-        if (this.size > this.buffer_size){
-            this.buffer_size = this.size * 2;
-            var new_data = cast<char *>(bindings::malloc(this.buffer_size));
-            var i = 0;
-            while (i != this.size - 1){
-                new_data[i] = this.data[i];
-                i = i + 1;
-            }
-            this.data = new_data;
-        }
-        this.data[this.size-1] = v;
-        this.data[this.size] = '\0';
+        this.size = this.size + 1;
+        this.darray[this.size-1] = v;
+        this.darray[this.size] = '\0';
     }
 
     func tostr()->str{
@@ -63,12 +48,12 @@ implement operator::Add<str> for str {
         var new_str = str::create(this.size + str_re.size);
         var i = 0;
         while (i < this.size){
-            new_str.data[i] = this.data[i];
+            new_str.darray[i] = this.darray[i];
             i = i + 1;
         }
         var j = 0;
         while ( i < new_str.size ){
-            new_str.data[i] = str_re.data[j];
+            new_str.darray[i] = str_re.darray[j];
             j = j + 1;
             i = i + 1;
         }

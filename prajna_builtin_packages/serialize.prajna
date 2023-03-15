@@ -20,7 +20,7 @@ implement Serializable for i64{
         var re = str::create(inverse_re.size);
         var j = 0;
         while (j < re.size){
-            re.data[j] = inverse_re.data[inverse_re.size-j-1];
+            re.darray[j] = inverse_re.darray[inverse_re.size-j-1];
             j = j + 1;
         }
 

@@ -1,0 +1,11 @@
+@test
+func testMain(){
+    var darray = DynamicArray<i64>::create(64);
+    debug::assert(darray.length == 64);
+    debug::assert(darray.capacity == 64);
+    darray[3] = 4;
+    debug::assert(darray[3] == 4);
+    darray.pushBack(13);
+    // debug::assert(darray[64] == 13);
+    // debug::assert(darray.length == 65);
+}

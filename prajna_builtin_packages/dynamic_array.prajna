@@ -1,0 +1,54 @@
+func ceilPowerOf2(value: i64)->i64{
+    // TODO
+    debug::assert(value >= 0);
+    var re = 1;
+    while (re < value) {
+        re = re * 2;
+    }
+    return re;
+}
+
+template <ValueType>
+struct DynamicArray{
+    data: ptr<ValueType>;
+    length: i64;
+    capacity: i64;
+}
+
+template <ValueType>
+implement DynamicArray<ValueType> {
+    @static
+    func create(length: i64)->DynamicArray<ValueType>{
+        var self: DynamicArray<ValueType>;
+        self.length = length;
+        self.capacity = ceilPowerOf2(length);
+        self.data = ptr<ValueType>::allocate(self.capacity);
+        return self;
+    }
+
+    @property("[", "getter")
+    func index_getter(idx: i64)->ValueType{
+        return this.data.raw_ptr[idx];
+    }
+
+    @property("[", "setter")
+    func index_setter(idx: i64, value: ValueType){
+        this.data.raw_ptr[idx] = value;
+    }
+
+    func pushBack(value: ValueType) {
+        if (this.length + 1 > this.capacity) {
+            var new_self = DynamicArray<ValueType>::create(this.length + 1);
+            this = new_self;
+            for idx in 0 to this.length {
+                new_self[idx] = this[idx];
+            }
+        } else {
+            this.length = this.length + 1;
+        }
+
+        this[this.length] = value;
+    }
+}
+
+export DynamicArray;

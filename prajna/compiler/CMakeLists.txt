@@ -1,4 +1,4 @@
-add_library(prajna_compiler compiler.cpp print_callback.cpp)
+add_library(prajna_compiler compiler.cpp stdio_callback.cpp)
 
 target_link_libraries(prajna_compiler
     PUBLIC prajna_parser

@@ -28,6 +28,7 @@ implement DynamicArray<ValueType> {
 
     @property("[", "getter")
     func index_getter(idx: i64)->ValueType{
+        debug::assert(!this.data.raw_ptr.isNull());
         return this.data.raw_ptr[idx];
     }
 

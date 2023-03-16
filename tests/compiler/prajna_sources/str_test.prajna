@@ -9,4 +9,6 @@ func testMain() {
     tmp.append('\n');
     tmp.print();
     debug::assert(tmp.size == 4);
+
+    ("Hello" + " World!\n").print();
 }

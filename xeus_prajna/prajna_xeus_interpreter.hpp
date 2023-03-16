@@ -30,6 +30,15 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
             publish_execution_result(execution_counter, pub_data, nl::json::object());
         };
 
+        std::string value;
+        prajna::input_callback = [=, &value]() -> char* {
+            this->register_input_handler([&value](const std::string& v) { value = v; });
+            std::string prompt = "input";
+            bool password = false;
+            this->input_request("", password);
+            return (char*)value.c_str();
+        };
+
         auto code_line = code;
         if (code_line.size() >= 1 and not(code_line.back() == ';' or code_line.back() == '}')) {
             code_line.push_back(';');

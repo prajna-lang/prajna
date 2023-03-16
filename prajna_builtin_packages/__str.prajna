@@ -27,6 +27,7 @@ implement str{
     }
 
     func print(){
+        this.darray[this.size] = '\0';
         print_c(this.darray.data.raw_ptr);
     }
 
@@ -34,7 +35,6 @@ implement str{
         this.darray.pushBack('\0');
         this.size = this.size + 1;
         this.darray[this.size-1] = v;
-        // this.darray[this.size] = '\0';
     }
 
 

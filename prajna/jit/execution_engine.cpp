@@ -43,9 +43,9 @@ inline void checkCudaErrors(bool re) { PRAJNA_ASSERT(re == 0); }
 jmp_buf buf;
 
 void c_jmp_exit() { longjmp(buf, 1); }
-void c_print(char *c_str) { print_callback(std::string(c_str)); }
-void c_read(char *c_str) {}
-void c_assert(bool t) {
+void print_c(char *c_str) { print_callback(std::string(c_str)); }
+char *input_c() { return input_callback(); }
+void assert_c(bool t) {
     if (!t) {
         printf("%s\n", "Prajna runtime error");
         longjmp(buf, 1);
@@ -217,11 +217,13 @@ void ExecutionEngine::catchRuntimeError() {
 
 void ExecutionEngine::bindBuiltinFunction() {
     this->bindCFunction(reinterpret_cast<void *>(c_jmp_exit), "::bindings::jmp_exit_c");
-    this->bindCFunction(reinterpret_cast<void *>(c_print), "::bindings::print_c");
-    this->bindCFunction(reinterpret_cast<void *>(c_assert), "::bindings::assert");
+    this->bindCFunction(reinterpret_cast<void *>(assert_c), "::bindings::assert");
     this->bindCFunction(reinterpret_cast<void *>(malloc), "::bindings::malloc");
     this->bindCFunction(reinterpret_cast<void *>(free), "::bindings::free");
     this->bindCFunction(reinterpret_cast<void *>(getchar), "::bindings::getchar");
+
+    this->bindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print_c");
+    this->bindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input_c");
 
     this->bindCFunction(reinterpret_cast<void *>(registerReferenceCount),
                         "::bindings::registerReferenceCount");

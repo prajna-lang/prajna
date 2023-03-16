@@ -4,13 +4,13 @@ struct TestA {
     name: str;
 }
 
-@disable_dynamic_dispatch
+// @disable_dynamic_dispatch
 implement reference_count::ReferenceCountable for TestA {
     func initialize(){
         this.name = "undef";
         this.data = __nullptr<undef>::create();
         this.registerReferenceCount();
-        "TestA __registerReferenceCount\n".print();
+        "TestA __initialize\n".print();
     }
 
     func registerReferenceCount(){
@@ -25,8 +25,10 @@ implement reference_count::ReferenceCountable for TestA {
         var ref_count = bindings::getReferenceCount(this.data);
         (this.name + " ref count: " + ref_count.tostr() + "\n").print();
 
-        if (ref_count == 0){
-            bindings::free(this.data);
+        if (ref_count == 0 ){
+            if (!this.data.isNull()) {
+                bindings::free(this.data);
+            }
             "free memory\n".print();
         }
     }
@@ -48,6 +50,7 @@ implement TestA {
         "malloc memory\n".print();
         self.name = "create_self";
 
+        self.registerReferenceCount();
         self.incrementReferenceCount();
 
         return self; // 调用 copy函数
@@ -57,6 +60,7 @@ implement TestA {
 
 @test
 func testMemoryManager(){
+    var a : TestA;
     var a1 = TestA::create(10); // 调用copy函数, 然后调用destroy函数
     a1.name = "a1";
     debug::assert(bindings::getReferenceCount(a1.data) == 1);

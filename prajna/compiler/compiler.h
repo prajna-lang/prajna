@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "prajna/compiler/print_callback.h"
+#include "prajna/compiler/stdio_callback.h"
 
 namespace prajna {
 

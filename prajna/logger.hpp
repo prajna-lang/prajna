@@ -7,7 +7,7 @@
 #include "fmt/format.h"
 #include "prajna/assert.hpp"
 #include "prajna/ast/ast.hpp"
-#include "prajna/compiler/print_callback.h"
+#include "prajna/compiler/stdio_callback.h"
 #include "prajna/exception.hpp"
 #include "prajna/rich_bash.hpp"
 

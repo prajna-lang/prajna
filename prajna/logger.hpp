@@ -105,8 +105,8 @@ class Logger {
             code_region.append("\n");
         }
 
-        print_callback(what_message.c_str());
-        print_callback(code_region.c_str());
+        print_callback(what_message);
+        print_callback(code_region);
 
         if (throw_error) {
             throw CompileError();

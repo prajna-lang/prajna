@@ -4,8 +4,6 @@
 
 namespace prajna {
 
-std::function<void(const char *)> print_callback = [](const char *c_str) {
-    std::cout << std::string(c_str);
-};
+std::function<void(std::string)> print_callback = [](std::string str) { std::cout << str; };
 
 }  // namespace prajna

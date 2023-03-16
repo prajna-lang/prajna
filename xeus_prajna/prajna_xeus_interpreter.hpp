@@ -24,9 +24,9 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
     nl::json execute_request_impl(int execution_counter, const std::string& code, bool silent,
                                   bool store_history, nl::json user_expressions,
                                   bool allow_stdin) override {
-        prajna::print_callback = [=, compiler = compiler](const char* c_str) {
+        prajna::print_callback = [=, compiler = compiler](std::string str) {
             nl::json pub_data;
-            pub_data["text/plain"] = std::string(c_str);
+            pub_data["text/plain"] = str;
             publish_execution_result(execution_counter, pub_data, nl::json::object());
         };
 

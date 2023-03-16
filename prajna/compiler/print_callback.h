@@ -4,6 +4,6 @@
 
 namespace prajna {
 
-extern std::function<void(const char *)> print_callback;
+extern std::function<void(std::string)> print_callback;
 
 }

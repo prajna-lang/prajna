@@ -43,7 +43,8 @@ inline void checkCudaErrors(bool re) { PRAJNA_ASSERT(re == 0); }
 jmp_buf buf;
 
 void c_jmp_exit() { longjmp(buf, 1); }
-void c_print(char *c_str) { print_callback(c_str); }
+void c_print(char *c_str) { print_callback(std::string(c_str)); }
+void c_read(char *c_str) {}
 void c_assert(bool t) {
     if (!t) {
         printf("%s\n", "Prajna runtime error");

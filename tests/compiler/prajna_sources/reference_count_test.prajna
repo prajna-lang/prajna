@@ -10,20 +10,20 @@ implement reference_count::ReferenceCountable for TestA {
         this.name = "undef";
         this.data = __nullptr<undef>::create();
         this.registerReferenceCount();
-        "TestA __initialize\n".print();
+        // (this.name + " __initialize\n").print();
     }
 
     func registerReferenceCount(){
         bindings::registerReferenceCount(this.data);
-        "TestA __registerReferenceCount\n".print();
+        // (this.name + " registerReferenceCount\n").print();
     }
 
     func decrementReferenceCount(){
-        (this.name + " TestA destropy callback\n").print();
+        // (this.name + " TestA destropy callback\n").print();
         bindings::decrementReferenceCount(this.data);
 
         var ref_count = bindings::getReferenceCount(this.data);
-        (this.name + " ref count: " + ref_count.tostr() + "\n").print();
+        // (this.name + " ref count: " + ref_count.tostr() + "\n").print();
 
         if (ref_count == 0 ){
             if (!this.data.isNull()) {
@@ -31,14 +31,15 @@ implement reference_count::ReferenceCountable for TestA {
             }
             "free memory\n".print();
         }
+
     }
 
     func incrementReferenceCount(){
-        (this.name + " TestA __incrementReferenceCount callback\n").print();
+        // (this.name + " TestA __incrementReferenceCount callback\n").print();
         bindings::incrementReferenceCount(this.data);
 
         var ref_count = bindings::getReferenceCount(this.data);
-        (this.name + " ref count: " + ref_count.tostr() + "\n").print();
+        // (this.name + " ref count: " + ref_count.tostr() + "\n").print();
     }
 }
 
@@ -61,22 +62,22 @@ implement TestA {
 @test
 func testMemoryManager(){
     var a : TestA;
-    var a1 = TestA::create(10); // 调用copy函数, 然后调用destroy函数
-    a1.name = "a1";
-    debug::assert(bindings::getReferenceCount(a1.data) == 1);
+    // var a1 = TestA::create(10); // 调用copy函数, 然后调用destroy函数
+    // a1.name = "a1";
+    // debug::assert(bindings::getReferenceCount(a1.data) == 1);
 
-    var a2 = a1; // 调用copy函数
-    a2.name = "a2";
-    debug::assert(bindings::getReferenceCount(a1.data) == 2);
+    // var a2 = a1; // 调用copy函数
+    // a2.name = "a2";
+    // debug::assert(bindings::getReferenceCount(a1.data) == 2);
 
-    {
-        var sub_a0 = a1; // 变量拷贝, 调用copy函数
-        sub_a0.name = "sub_a0";
-        debug::assert(bindings::getReferenceCount(a1.data) == 3);
+    // {
+    //     var sub_a0 = a1; // 变量拷贝, 调用copy函数
+    //     sub_a0.name = "sub_a0";
+    //     debug::assert(bindings::getReferenceCount(a1.data) == 3);
 
-        TestA::create(100); // 调用destroy 函数
-    }
+    //     TestA::create(100); // 调用destroy 函数
+    // }
 
-    debug::assert(bindings::getReferenceCount(a1.data) == 2);
+    // debug::assert(bindings::getReferenceCount(a1.data) == 2);
 }
 

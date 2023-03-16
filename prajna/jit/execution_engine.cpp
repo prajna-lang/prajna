@@ -220,6 +220,7 @@ void ExecutionEngine::bindBuiltinFunction() {
     this->bindCFunction(reinterpret_cast<void *>(c_assert), "::bindings::assert");
     this->bindCFunction(reinterpret_cast<void *>(malloc), "::bindings::malloc");
     this->bindCFunction(reinterpret_cast<void *>(free), "::bindings::free");
+    this->bindCFunction(reinterpret_cast<void *>(getchar), "::bindings::getchar");
 
     this->bindCFunction(reinterpret_cast<void *>(registerReferenceCount),
                         "::bindings::registerReferenceCount");

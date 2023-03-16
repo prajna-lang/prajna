@@ -31,12 +31,23 @@ implement str{
     }
 
     func append(v: char){
-        this.darray.pushBack(v);
-        this.size = this.size + 1;
+        this.darray.pushBack('\0');
         this.size = this.size + 1;
         this.darray[this.size-1] = v;
-        this.darray[this.size] = '\0';
+        // this.darray[this.size] = '\0';
     }
+
+
+    @property("[", "getter")
+    func index_getter(idx: i64)->char{
+        return this.darray[idx];
+    }
+
+    @property("[", "setter")
+    func index_setter(idx: i64, value: char){
+        this.darray[idx] = value;
+    }
+
 
     func tostr()->str{
         return this;

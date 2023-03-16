@@ -7,3 +7,5 @@ implement operator::NotEqual<char> for char {
     @instruction("ICmp", "ICMP_NE")
     func NotEqual(operand: char)->bool;
 }
+
+

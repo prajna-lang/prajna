@@ -107,3 +107,10 @@ implement Serializable for Array<Type_, Dim_>{
     }
 }
 
+implement Serializable for char {
+    func tostr()->str{
+        var re = str::create(1);
+        re.darray[0] = this;
+        return re;
+    }
+}

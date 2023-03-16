@@ -1,0 +1,4 @@
+func main(){
+    var input = io::read();
+    input.print();
+}

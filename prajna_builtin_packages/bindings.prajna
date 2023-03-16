@@ -6,6 +6,8 @@ func assert(flag : bool);
 func malloc(bytes: i64)->undef*;
 func free(pointer: undef*);
 
+func getchar()->char;
+
 func registerReferenceCount(pointer: undef*);
 func getReferenceCount(pointer: undef*)->i64;
 func incrementReferenceCount(pointer: undef*);

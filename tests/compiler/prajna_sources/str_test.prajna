@@ -1,6 +1,12 @@
 @test
 func testMain() {
-    var tmp = "Hello World";
+    var tmp = str::create(2);
+    tmp[0] = 'H';
+    tmp[1] = 'i';
+    tmp.print();
+    debug::assert(tmp.size == 2);
+    tmp.append('!');
     tmp.append('\n');
     tmp.print();
+    debug::assert(tmp.size == 4);
 }

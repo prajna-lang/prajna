@@ -6,6 +6,11 @@ func testMain(){
     darray[3] = 4;
     debug::assert(darray[3] == 4);
     darray.pushBack(13);
-    // debug::assert(darray[64] == 13);
-    // debug::assert(darray.length == 65);
+    debug::assert(darray[64] == 13);
+    debug::assert(darray.length == 65);
+    debug::assert(darray.capacity == 128);
+    darray.pushBack(14);
+    debug::assert(darray[65] == 14);
+    debug::assert(darray.length == 66);
+    debug::assert(darray.capacity == 128);
 }

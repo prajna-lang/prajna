@@ -38,16 +38,16 @@ implement DynamicArray<ValueType> {
 
     func pushBack(value: ValueType) {
         if (this.length + 1 > this.capacity) {
-            var new_self = DynamicArray<ValueType>::create(this.length + 1);
-            this = new_self;
+            var new_self = create(this.length + 1);
             for idx in 0 to this.length {
                 new_self[idx] = this[idx];
             }
+            this = new_self;
         } else {
             this.length = this.length + 1;
         }
 
-        this[this.length] = value;
+        this[this.length-1] = value;
     }
 }
 

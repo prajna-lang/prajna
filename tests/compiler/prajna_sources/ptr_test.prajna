@@ -5,8 +5,25 @@ func testMain(){
     var p: ptr<i64>;
     p.toi64();
 
-    // debug::assert(p == ptr<i64>::create());
+    debug::assert(p.toi64() == 0i64);
+    // debug::assert(p == ptr<i64>::null());
+    debug::assert(p.isNull());
+
+    p = ptr<i64>::new();
+    debug::assert(!p.isNull());
+}
+
+@test
+func testLocal() {
+    var p: ptr<i64>;
+    p.toi64();
+
     debug::assert(p.toi64() == 0i64);
     debug::assert(p.isNull());
-    p.toi64().tostr().print();
+    {
+       var p1 = ptr<i64>::new();
+       debug::assert(!p1.isNull());
+       p = p1;
+    }
+    debug::assert(!p.isNull());
 }

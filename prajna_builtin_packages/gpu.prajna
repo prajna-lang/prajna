@@ -79,15 +79,6 @@ implement Tensor<Type_, Dim_> {
         this.data[offset] = value;
     }
 
-    @property("[", "getter")
-    func index_getter(idx: Array<i64, Dim_>)->Type_{
-        return this.at(idx);
-    }
-
-    @property("[", "setter")
-    func index_setter(idx: Array<i64, Dim_>, value: Type_){
-        this.at(idx) = value;
-    }
 
     func toHost()->::Tensor<Type_, Dim_>{
         var host_tensor = ::Tensor<Type_, Dim_>::create(this.layout.shape);
@@ -95,12 +86,19 @@ implement Tensor<Type_, Dim_> {
         for i in 0 to Dim_ {
             size = size * this.layout.shape[i];
         }
-        // print("toHost: size");
-        // size.tostr().print();
-        // print("re: ");
         var re =  cuda::cudaMemcpy(cast<i8*>(host_tensor.data), cast<i8*>(this.data), size * sizeof(Type_), 2i32);
-        // re.tostr().print();
         return host_tensor;
+    }
+}
+
+template <Type_, Dim_>
+implement operator::ArrayIndex<Type_, Dim_> for Tensor<Type_, Dim_> {
+    func get(idx: Array<i64, Dim_>)->Type_{
+        return this.at(idx);
+    }
+
+    func set(idx: Array<i64, Dim_>, value: Type_){
+        this.at(idx) = value;
     }
 }
 
@@ -112,11 +110,7 @@ implement ::Tensor<Type_, Dim_> {
         for i in 0 to Dim_ {
             size = size * this.layout.shape[i];
         }
-        // print("tocuda: size");
-        // size.tostr().print();
-        // print("re: ");
         var re = cuda::cudaMemcpy(cast<i8*>(cuda_tensor.data), cast<i8*>(this.data), size * sizeof(Type_), 1i32);
-        // re.tostr().print();
         return cuda_tensor;
     }
 }

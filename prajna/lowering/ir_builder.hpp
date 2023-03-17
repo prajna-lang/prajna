@@ -117,6 +117,27 @@ class IrBuilder {
         }
     }
 
+    std::shared_ptr<ir::Property> getArrayIndexProperty(std::shared_ptr<ir::Type> ir_type) {
+        auto iter_array_index_interface =
+            std::find_if(RANGE(ir_type->interfaces), [](auto key_value) {
+                if (!key_value.second) return false;
+
+                return key_value.second->name.size() > 11 &&
+                       key_value.second->name.substr(0, 11) == "ArrayIndex<";
+            });
+        if (iter_array_index_interface != ir_type->interfaces.end()) {
+            auto ir_array_index_interface = iter_array_index_interface->second;
+            auto ir_index_property = ir::Property::create();
+            ir_index_property->get_function =
+                ir::getFunctionByName(ir_array_index_interface->functions, "get");
+            ir_index_property->set_function =
+                ir::getFunctionByName(ir_array_index_interface->functions, "set");
+            return ir_index_property;
+        } else {
+            return nullptr;
+        }
+    }
+
     std::shared_ptr<ir::WriteProperty> setDim3(std::shared_ptr<ir::Value> ir_shape3, int64_t index,
                                                std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(this->isArrayIndexType(ir_shape3->type));

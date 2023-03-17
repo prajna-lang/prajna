@@ -77,16 +77,15 @@ implement Tensor<Type_, Dim_> {
         var offset = this.layout.arrayIndexToLinearIndex(idx);
         this.data.raw_ptr[offset] = value;
     }
+}
 
-    // index property存在语法糖,
-    // ts[0,1] 等价于 ts.index_getter([0,1]); 其会将参数弄成数组
-    @property("[", "getter")
-    func index_getter(idx: Array<i64, Dim_>)->Type_{
+template <Type_, Dim_>
+implement operator::ArrayIndex<Type_, Dim_> for Tensor<Type_, Dim_> {
+    func get(idx: Array<i64, Dim_>)->Type_{
         return this.at(idx);
     }
 
-    @property("[", "setter")
-    func index_setter(idx: Array<i64, Dim_>, value: Type_){
+    func set(idx: Array<i64, Dim_>, value: Type_){
         this.at(idx) = value;
     }
 }

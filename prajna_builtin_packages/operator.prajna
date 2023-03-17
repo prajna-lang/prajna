@@ -70,3 +70,10 @@ interface LinearIndex<T> {
     func get(index: i64)->T;
     func set(index: i64, value: T);
 }
+
+template <ValueType, Dim>
+@disable_dynamic_dispatch
+interface ArrayIndex<ValueType, Dim> {
+    func get(index: Array<i64, Dim>)->ValueType;
+    func set(index: Array<i64, Dim>, value: ValueType);
+}

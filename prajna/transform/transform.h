@@ -55,14 +55,14 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
                 ir_arguments.push_back(ir_write_property->value());
                 auto ir_setter_call = ir_builder->create<ir::Call>(
-                    ir_access_property->property->setter_function, ir_arguments);
+                    ir_access_property->property->set_function, ir_arguments);
                 utility::removeFromParent(ir_write_property);
                 ir_write_property->finalize();
             } else {
                 auto ir_arguments = ir_access_property->arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
                 auto ir_getter_call = ir_builder->create<ir::Call>(
-                    ir_access_property->property->getter_function, ir_arguments);
+                    ir_access_property->property->get_function, ir_arguments);
                 ir_inst->operand(op_idx, ir_getter_call);
             }
         }
@@ -71,7 +71,7 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
             auto ir_arguments = ir_access_property->arguments();
             ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
             auto ir_getter_call = ir_builder->create<ir::Call>(
-                ir_access_property->property->getter_function, ir_arguments);
+                ir_access_property->property->get_function, ir_arguments);
         }
 
         utility::removeFromParent(ir_access_property);

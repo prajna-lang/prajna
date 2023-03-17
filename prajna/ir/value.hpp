@@ -1433,14 +1433,14 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
     static std::shared_ptr<AccessProperty> create(std::shared_ptr<Value> ir_this_pointer,
                                                   std::shared_ptr<ir::Property> ir_property) {
         std::shared_ptr<AccessProperty> self(new AccessProperty);
-        PRAJNA_ASSERT(ir_property->getter_function);
-        self->type = ir_property->getter_function->function_type->return_type;
+        PRAJNA_ASSERT(ir_property->get_function);
+        self->type = ir_property->get_function->function_type->return_type;
         self->operandResize(1);
         self->thisPointer(ir_this_pointer);
         self->property = ir_property;
         self->tag = "AccessProperty";
 
-        if (not ir_property->setter_function) {
+        if (not ir_property->set_function) {
             self->is_writeable = false;
         }
 

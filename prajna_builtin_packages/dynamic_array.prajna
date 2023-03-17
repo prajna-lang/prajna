@@ -16,6 +16,18 @@ struct DynamicArray<ValueType>{
 }
 
 template <ValueType>
+implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
+    func get(idx: i64)->ValueType{
+        debug::assert(!this.data.raw_ptr.isNull());
+        return this.data.raw_ptr[idx];
+    }
+
+    func set(idx: i64, value: ValueType){
+        this.data.raw_ptr[idx] = value;
+    }
+}
+
+template <ValueType>
 implement DynamicArray<ValueType> {
     @static
     func create(length: i64)->DynamicArray<ValueType>{
@@ -24,17 +36,6 @@ implement DynamicArray<ValueType> {
         self.capacity = ceilPowerOf2(length);
         self.data = ptr<ValueType>::allocate(self.capacity);
         return self;
-    }
-
-    @property("[", "getter")
-    func index_getter(idx: i64)->ValueType{
-        debug::assert(!this.data.raw_ptr.isNull());
-        return this.data.raw_ptr[idx];
-    }
-
-    @property("[", "setter")
-    func index_setter(idx: i64, value: ValueType){
-        this.data.raw_ptr[idx] = value;
     }
 
     func pushBack(value: ValueType) {

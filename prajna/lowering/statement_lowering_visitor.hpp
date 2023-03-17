@@ -163,10 +163,10 @@ class StatementLoweringVisitor {
         }
 
         if (auto ir_property = cast<ir::AccessProperty>(ir_lhs)) {
-            if (not ir_property->property->setter_function) {
+            if (not ir_property->property->set_function) {
                 logger->error("the property has not a setter function", ast_assignment.left);
             }
-            if (ir_property->property->setter_function->function_type->parameter_types.back() !=
+            if (ir_property->property->set_function->function_type->parameter_types.back() !=
                 ir_rhs->type) {
                 logger->error("the type is not matched", ast_assignment);
             }
@@ -637,30 +637,30 @@ class StatementLoweringVisitor {
         }
         auto property = ir_type->properties[property_name];
         if (property_tag == "setter") {
-            if (property->setter_function) {
+            if (property->set_function) {
                 logger->error("the property setter has defined", *iter_property_annotation);
             }
-            if (property->getter_function) {
+            if (property->get_function) {
                 if (not isPropertyGetterSetterFunctionTypeMatched(
-                        property->getter_function->function_type, ir_function->function_type)) {
+                        property->get_function->function_type, ir_function->function_type)) {
                     logger->error("the property setter getter functiontype are not matched",
                                   ast_function.declaration);
                 }
             }
-            property->setter_function = ir_function;
+            property->set_function = ir_function;
         } else {
-            if (property->getter_function) {
+            if (property->get_function) {
                 logger->error("the property getter has defined", *iter_property_annotation);
             }
 
-            if (property->setter_function) {
+            if (property->set_function) {
                 if (not isPropertyGetterSetterFunctionTypeMatched(
-                        ir_function->function_type, property->setter_function->function_type)) {
+                        ir_function->function_type, property->set_function->function_type)) {
                     logger->error("the property setter getter functiontype are not matched",
                                   ast_function.declaration);
                 }
             }
-            property->getter_function = ir_function;
+            property->get_function = ir_function;
         }
     }
 
@@ -717,7 +717,7 @@ class StatementLoweringVisitor {
             }
 
             for (auto [property_name, ir_property] : ir_type->properties) {
-                if (not ir_property->getter_function) {
+                if (not ir_property->get_function) {
                     logger->error(
                         fmt::format("the property { } getter must be defined", property_name),
                         ast_implement.type);
@@ -1072,7 +1072,10 @@ class StatementLoweringVisitor {
             ast_template_statement.statement);
     }
 
-    Symbol operator()(ast::SpecialStatement ast_special_statement) { PRAJNA_TODO; }
+    Symbol operator()(ast::SpecialStatement ast_special_statement) {
+        PRAJNA_TODO;
+        return nullptr;
+    }
 
     Symbol operator()(ast::Expression ast_expression) {
         return this->applyExpression(ast_expression);

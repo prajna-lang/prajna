@@ -63,3 +63,10 @@ template <T>
 interface LessOrEqual<T> {
     func LessOrEqual(operand: T)->bool;
 }
+
+template <T>
+@disable_dynamic_dispatch
+interface LinearIndex<T> {
+    func get(index: i64)->T;
+    func set(index: i64, value: T);
+}

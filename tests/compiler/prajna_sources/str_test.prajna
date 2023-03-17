@@ -3,6 +3,7 @@ func testMain() {
     var tmp = str::create(2);
     tmp[0] = 'H';
     tmp[1] = 'i';
+    debug::assert(tmp[1] == 'i');
     tmp.print();
     debug::assert(tmp.size == 2);
     tmp.append('!');

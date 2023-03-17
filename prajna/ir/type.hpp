@@ -37,8 +37,10 @@ struct InterfacePrototype;
 struct InterfaceImplement;
 
 struct Property {
-    std::shared_ptr<ir::Function> setter_function;
-    std::shared_ptr<ir::Function> getter_function;
+    std::shared_ptr<ir::Function> set_function;
+    std::shared_ptr<ir::Function> get_function;
+
+    static std::shared_ptr<Property> create() { return std::shared_ptr<Property>(new Property); }
 };
 
 using Annotations = std::map<std::string, std::vector<std::string>>;

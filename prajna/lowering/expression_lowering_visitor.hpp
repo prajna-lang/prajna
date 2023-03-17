@@ -288,10 +288,20 @@ class ExpressionLoweringVisitor {
             }
             return ir_builder->create<ir::IndexPointer>(ir_variable_liked, ir_index);
         }
+
+        if (auto ir_linear_index_property = ir_builder->getLinearIndexProperty(ir_object->type)) {
+            auto ir_this_pointer =
+                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+            auto ir_access_property =
+                ir_builder->create<ir::AccessProperty>(ir_this_pointer, ir_linear_index_property);
+            ir_access_property->arguments({ir_index});
+            return ir_access_property;
+        }
+
         if (auto ir_index_property = ir_object->type->properties["["]) {
             // "[" propert在生成的时候就会被限制
             if (ir_builder->isArrayIndexType(
-                    ir_index_property->getter_function->function_type->parameter_types.back())) {
+                    ir_index_property->get_function->function_type->parameter_types.back())) {
                 PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
                 auto ast_arguments = boost::get<ast::Expressions>(ast_binary_operation.operand);
                 auto ir_array_argument = this->applyArray(ast_arguments);
@@ -304,7 +314,7 @@ class ExpressionLoweringVisitor {
                 return ir_access_property;
             } else {
                 if (ir_index->type !=
-                    ir_index_property->getter_function->function_type->parameter_types.back()) {
+                    ir_index_property->get_function->function_type->parameter_types.back()) {
                     // 需要进一步完善
                     PRAJNA_TODO;
                 }
@@ -373,7 +383,7 @@ class ExpressionLoweringVisitor {
         if (auto ir_access_property = cast<ir::AccessProperty>(ir_lhs)) {
             // getter函数必须存在
             auto ir_getter_function_type =
-                ir_access_property->property->getter_function->function_type;
+                ir_access_property->property->get_function->function_type;
             if (ir_arguments.size() != ir_getter_function_type->parameter_types.size() - 1) {
                 logger->error(
                     fmt::format("the property arguments size is not matched, require {} argument, "
@@ -793,7 +803,7 @@ class ExpressionLoweringVisitor {
             symbol_template_arguments, ir_builder->module);
 
         auto ir_array_tmp = ir_builder->create<ir::LocalVariable>(ir_array_type);
-        auto ir_index_property = ir_array_type->properties["["];
+        auto ir_index_property = ir_builder->getLinearIndexProperty(ir_array_type);
         PRAJNA_VERIFY(ir_index_property, "Array index property is missing");
         size_t i = 0;
         for (auto ast_array_value : ast_array_values) {

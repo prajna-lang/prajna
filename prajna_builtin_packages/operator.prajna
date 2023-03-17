@@ -1,54 +1,65 @@
 template <T>
+@disable_dynamic_dispatch
 interface Add<T> {
     func Add(operand: T)->T;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface Sub<T> {
     func Sub(operand: T)->T;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface Multiply<T> {
     func Multiply(operand: T)->T;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface Divide<T> {
     func Divide(operand: T)->T;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface Remaind<T> {
     func Remaind(operand: T)->T;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface Equal<T> {
     func Equal(operand: T)->bool;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface NotEqual<T> {
     func NotEqual(operand: T)->bool;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface Greater<T> {
     func Greater(operand: T)->bool;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface Less<T> {
     func Less(operand: T)->bool;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface GreaterOrEqual<T> {
     func GreaterOrEqual(operand: T)->bool;
 }
 
 template <T>
+@disable_dynamic_dispatch
 interface LessOrEqual<T> {
     func LessOrEqual(operand: T)->bool;
 }

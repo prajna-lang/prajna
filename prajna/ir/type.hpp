@@ -62,7 +62,6 @@ class Type : public Named {
     std::map<std::string, std::shared_ptr<Function>> static_functions;
     std::map<std::string, std::shared_ptr<Function>> unary_functions;
     std::map<std::string, std::shared_ptr<Function>> binary_functions;
-    std::map<std::string, std::shared_ptr<Property>> properties;
     std::map<std::string, std::shared_ptr<InterfaceImplement>> interfaces;
     // fields必须有顺序关系, 故没有使用map
     std::vector<std::shared_ptr<Field>> fields;

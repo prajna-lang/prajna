@@ -4,18 +4,17 @@ struct People{
     _age: i64;
 }
 
-implement People{
-    // 属性的置值函数, "age"表示属性名, getter表示置值
-    @property("age", "getter")
-    func age_getter()->i64{
-        // "get age\n".print();
+interface ageProperty {
+    func get()->i64;
+    func set(v: i64);
+}
+
+implement ageProperty for People{
+    func get()->i64{
         return this._age;
     }
 
-    // 属性的取值函数, "age"表示属性名, setter表示取值
-    // 值得注意的是, Prajna要求属性同时有getter和setter函数, 某种意义上是不必要的, 但这样会代码的使用更加简单
-    @property("age", "setter")
-    func age_setter(v: i64){
+    func set(v: i64){
         this._age = v;
     }
 }

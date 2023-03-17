@@ -611,59 +611,6 @@ class StatementLoweringVisitor {
         return true;
     }
 
-    void processPropertyFunction(std::shared_ptr<ir::Type> ir_type,
-                                 std::shared_ptr<ir::Function> ir_function,
-                                 ast::Function ast_function) {
-        if (not ir_function->annotations.count("property")) return;
-
-        auto iter_property_annotation = std::find_if(
-            RANGE(ast_function.declaration.annotations),
-            [](ast::Annotation ast_annotation) { return ast_annotation.name == "properties"; });
-        auto property_annotation = ir_function->annotations["property"];
-        if (property_annotation.size() != 2) {
-            logger->error("the property annoation should only have two values",
-                          iter_property_annotation->values.front());
-        }
-
-        auto property_name = property_annotation[0];
-        auto property_tag = property_annotation[1];
-        if (property_tag != "setter" && property_tag != "getter") {
-            logger->error("should be setter or getter", iter_property_annotation->values.front());
-        }
-
-        auto ir_setter_function_type = ir_function->function_type;
-        if (not ir_type->properties[property_name]) {
-            ir_type->properties[property_name] = std::make_shared<ir::Property>();
-        }
-        auto property = ir_type->properties[property_name];
-        if (property_tag == "setter") {
-            if (property->set_function) {
-                logger->error("the property setter has defined", *iter_property_annotation);
-            }
-            if (property->get_function) {
-                if (not isPropertyGetterSetterFunctionTypeMatched(
-                        property->get_function->function_type, ir_function->function_type)) {
-                    logger->error("the property setter getter functiontype are not matched",
-                                  ast_function.declaration);
-                }
-            }
-            property->set_function = ir_function;
-        } else {
-            if (property->get_function) {
-                logger->error("the property getter has defined", *iter_property_annotation);
-            }
-
-            if (property->set_function) {
-                if (not isPropertyGetterSetterFunctionTypeMatched(
-                        ir_function->function_type, property->set_function->function_type)) {
-                    logger->error("the property setter getter functiontype are not matched",
-                                  ast_function.declaration);
-                }
-            }
-            property->get_function = ir_function;
-        }
-    }
-
     Symbol operator()(ast::ImplementType ast_implement) {
         try {
             auto ir_type = expression_lowering_visitor->applyType(ast_implement.type);
@@ -713,16 +660,8 @@ class StatementLoweringVisitor {
                 }
 
                 this->processUnaryFunction(ir_type, ir_function, ast_function);
-                this->processPropertyFunction(ir_type, ir_function, ast_function);
             }
 
-            for (auto [property_name, ir_property] : ir_type->properties) {
-                if (not ir_property->get_function) {
-                    logger->error(
-                        fmt::format("the property { } getter must be defined", property_name),
-                        ast_implement.type);
-                }
-            }
             ir_builder->popSymbolTable();
             ir_builder->popSymbolTable();
         } catch (CompileError compile_error) {
@@ -824,8 +763,6 @@ class StatementLoweringVisitor {
                 ir_builder->create<ir::Return>(
                     ir_builder->create<ir::Call>(ir_function, ir_arguments));
                 ir_builder->popBlock();
-                // this->processUnaryFunction(ir_type, ir_function, ast_function);
-                // this->processPropertyFunction(ir_type, ir_function, ast_function);
             }
 
             ir_interface->dynamic_type_creator->blocks.push_back(ir::Block::create());

@@ -40,22 +40,28 @@ struct Tensor<Type_, Dim_> {
 }
 
 template <Type_, Dim_>
+interface atProperty {
+    func get(idx: Array<i64, Dim_>)->Type_;
+    func set(idx: Array<i64, Dim_>, value: Type_);
+}
+
+template <Type_, Dim_>
+implement atProperty for Tensor<Type_, Dim_>{
+    func get(idx: Array<i64, Dim_>)->Type_{
+        var offset = this.layout.arrayIndexToLinearIndex(idx);
+        return this.data[offset];
+    }
+
+    func set(idx: Array<i64, Dim_>, value: Type_){
+        var offset = this.layout.arrayIndexToLinearIndex(idx);
+        this.data[offset] = value;
+    }
+}
+
+template <Type_, Dim_>
 implement Tensor<Type_, Dim_> {
     @static
     func create(shape :Array<i64, Dim_>)->Tensor<Type_, Dim_>{
-        // var self: Tensor<Type_, Dim_>;
-        // self.shape = shape;
-        // var size = 1;
-        // for i in 0 to Dim_ {
-        //     size = size * shape[i];
-        // }
-        // var bytes = size * sizeof(Type_);
-        // // bytes.tostr().print();
-        // var re = cuda::cuMemAlloc(cast<i8**>(&self.data), bytes);
-        // // "cuMemAlloc".print();
-        // // re.tostr().print();
-        // return self;
-
         var self: Tensor<Type_, Dim_>;
         self.layout = Layout<Dim_>::create(shape);
 
@@ -66,19 +72,6 @@ implement Tensor<Type_, Dim_> {
 
         return self;
     }
-
-    @property("at", "getter")
-    func at_getter(idx: Array<i64, Dim_>)->Type_{
-        var offset = this.layout.arrayIndexToLinearIndex(idx);
-        return this.data[offset];
-    }
-
-    @property("at", "setter")
-    func at_setter(idx: Array<i64, Dim_>, value: Type_){
-        var offset = this.layout.arrayIndexToLinearIndex(idx);
-        this.data[offset] = value;
-    }
-
 
     func toHost()->::Tensor<Type_, Dim_>{
         var host_tensor = ::Tensor<Type_, Dim_>::create(this.layout.shape);

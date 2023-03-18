@@ -738,8 +738,14 @@ class IndexPointer : virtual public VariableLiked, virtual public Instruction {
         return self;
     }
 
-    std::shared_ptr<Value> object() { return this->operand(0); }
-    void object(std::shared_ptr<Value> ir_object) { this->operand(0, ir_object); }
+    std::shared_ptr<Value> object() {
+        PRAJNA_ASSERT(this->operandSize() == 2);
+        return this->operand(0);
+    }
+    void object(std::shared_ptr<Value> ir_object) {
+        PRAJNA_ASSERT(this->operandSize() == 2);
+        this->operand(0, ir_object);
+    }
 
     std::shared_ptr<Value> index() { return this->operand(1); }
     void index(std::shared_ptr<Value> ir_index) { this->operand(1, ir_index); }

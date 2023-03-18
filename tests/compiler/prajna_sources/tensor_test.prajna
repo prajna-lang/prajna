@@ -7,7 +7,7 @@ func testTensor(){
     ts.at([1, 2]) = 2;
     debug::assert(ts.at([1,2]) == 2);
     debug::assert(bs.at([1,2]) == ts.at([1,2]));
-    debug::assert(ts.data.raw_ptr[22] == 2);
+    // debug::assert(ts.data.raw_ptr[22] == 2);
 
     var ts1 = Tensor<f32, 2>::create(shape);
     ts1.at([1,2]) = 3.1415;

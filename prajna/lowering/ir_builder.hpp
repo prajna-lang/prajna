@@ -22,7 +22,6 @@ class IrBuilder {
                                              std::shared_ptr<ir::Module> ir_module,
                                              std::shared_ptr<Logger> logger) {
         std::shared_ptr<IrBuilder> self(new IrBuilder);
-        self->current_function = nullptr;
         self->module = ir_module;
         self->symbol_table = symbol_table;
         self->logger = logger;
@@ -357,7 +356,6 @@ class IrBuilder {
     std::shared_ptr<ir::Function> createFunction(
         std::string name, std::shared_ptr<ir::FunctionType> ir_function_type) {
         auto ir_function = ir::Function::create(ir_function_type);
-        this->current_function = ir_function;
         this->symbol_table->setWithAssigningName(ir_function, name);
         ir_function->parent_module = this->module;
         this->module->functions.push_back(ir_function);
@@ -366,10 +364,10 @@ class IrBuilder {
 
     std::shared_ptr<ir::Block> createTopBlockForFunction(
         std::shared_ptr<ir::Function> ir_function) {
-        this->current_function = ir_function;
+        this->function_stack.push(ir_function);
         auto ir_block = ir::Block::create();
-        this->current_function->blocks.push_back(ir_block);
-        ir_block->parent_function = this->current_function;
+        this->function_stack.top()->blocks.push_back(ir_block);
+        ir_block->parent_function = this->function_stack.top();
         this->pushBlock(ir_block);
         this->inserter_iterator = ir_block->values.end();
         return ir_block;
@@ -377,10 +375,9 @@ class IrBuilder {
 
    public:
     std::shared_ptr<SymbolTable> symbol_table = nullptr;
-    std::shared_ptr<ir::Function> current_function = nullptr;
     std::shared_ptr<ir::Module> module = nullptr;
 
-    std::shared_ptr<ir::Type> return_type = nullptr;
+    std::stack<std::shared_ptr<ir::Function>> function_stack;
 
     std::stack<std::shared_ptr<ir::Label>> loop_after_label_stack;
     std::stack<std::shared_ptr<ir::Label>> loop_before_label_stack;
@@ -391,7 +388,7 @@ class IrBuilder {
 
     std::stack<std::shared_ptr<ir::Block>> block_stack;
 
-    std::shared_ptr<ir::Type> instantiating_type = nullptr;
+    std::stack<std::shared_ptr<ir::Type>> instantiating_type_stack;
 };
 
 }  // namespace prajna::lowering

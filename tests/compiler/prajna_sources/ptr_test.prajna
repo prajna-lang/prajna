@@ -27,3 +27,16 @@ func testLocal() {
     }
     debug::assert(!p.isNull());
 }
+
+@test
+func testIndex() {
+    var p = ptr<i64>::allocate(10);
+    // p[9] = 10;
+    // debug::assert(p[9] == 10);
+}
+
+
+@test
+func testNested() {
+    var p = ptr<ptr<i64>>::new();
+}

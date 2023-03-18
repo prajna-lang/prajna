@@ -695,7 +695,8 @@ class ExpressionLoweringVisitor {
                                         symbol_template_arguments, ir_builder->module)) {
                                     return ir_type;
                                 } else {
-                                    return ir_builder->instantiating_type;
+                                    PRAJNA_ASSERT(ir_builder->instantiating_type_stack.size());
+                                    return ir_builder->instantiating_type_stack.top();
                                 }
                             }
 
@@ -960,8 +961,8 @@ class ExpressionLoweringVisitor {
                                          ir_interface_implement->functions.front()->name + "/fp")});
             auto ir_if =
                 ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
-            ir_if->trueBlock()->parent_function = ir_builder->current_function;
-            ir_if->falseBlock()->parent_function = ir_builder->current_function;
+            ir_if->trueBlock()->parent_function = ir_builder->function_stack.top();
+            ir_if->falseBlock()->parent_function = ir_builder->function_stack.top();
 
             ir_builder->pushBlock(ir_if->trueBlock());
             ir_builder->create<ir::WriteVariableLiked>(

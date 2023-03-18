@@ -279,8 +279,6 @@ class StatementLoweringVisitor {
             // @note 将function的第一个block作为最上层的block
             if (ast_function.body) {
                 ir_builder->pushSymbolTable();
-                ir_builder->return_type = ir_function->function_type->return_type;
-
                 ir_builder->createTopBlockForFunction(ir_function);
 
                 auto iter_argument = ir_function->parameters.begin();
@@ -317,8 +315,8 @@ class StatementLoweringVisitor {
                     }
                 }
 
-                ir_builder->return_type = nullptr;
                 ir_builder->popBlock();
+                ir_builder->function_stack.pop();
                 ir_builder->popSymbolTable();
                 ir_function->is_declaration = false;
             } else {
@@ -342,9 +340,10 @@ class StatementLoweringVisitor {
             ir_return = ir_builder->create<ir::Return>(ir_void_value);
         }
 
-        if (ir_return->type != ir_builder->return_type) {
+        auto ir_return_type = ir_builder->function_stack.top()->function_type->return_type;
+        if (ir_return->type != ir_return_type) {
             logger->error(fmt::format("the type is {} , but then function return type is {}",
-                                      ir_return->type->fullname, ir_builder->return_type->fullname),
+                                      ir_return->type->fullname, ir_return_type->fullname),
                           ast_return);
         }
 
@@ -355,8 +354,8 @@ class StatementLoweringVisitor {
         auto ir_condition = applyExpression(ast_if.condition);
         auto ir_if =
             ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
-        ir_if->trueBlock()->parent_function = ir_builder->current_function;
-        ir_if->falseBlock()->parent_function = ir_builder->current_function;
+        ir_if->trueBlock()->parent_function = ir_builder->function_stack.top();
+        ir_if->falseBlock()->parent_function = ir_builder->function_stack.top();
 
         ir_builder->pushBlock(ir_if->trueBlock());
         (*this)(ast_if.then);
@@ -378,7 +377,7 @@ class StatementLoweringVisitor {
         ir_builder->loop_after_label_stack.push(ir_loop_after);
 
         auto ir_condition_block = ir::Block::create();
-        ir_condition_block->parent_function = ir_builder->current_function;
+        ir_condition_block->parent_function = ir_builder->function_stack.top();
         ir_builder->pushBlock(ir_condition_block);
         // 把ir_loop_before插入到条件块的开头
         ir_builder->insert(ir_loop_before);
@@ -386,7 +385,7 @@ class StatementLoweringVisitor {
         ir_builder->popBlock();
 
         auto ir_loop_block = ir::Block::create();
-        ir_loop_block->parent_function = ir_builder->current_function;
+        ir_loop_block->parent_function = ir_builder->function_stack.top();
         auto ir_while = ir_builder->create<ir::While>(ir_condition, ir_condition_block,
                                                       ir_loop_block, ir_loop_before, ir_loop_after);
 
@@ -421,7 +420,7 @@ class StatementLoweringVisitor {
         auto ir_first_value = ir_builder->cloneValue(ir_first);
         auto ir_last_value = ir_builder->cloneValue(ir_last);
         auto ir_loop_block = ir::Block::create();
-        ir_loop_block->parent_function = ir_builder->current_function;
+        ir_loop_block->parent_function = ir_builder->function_stack.top();
         auto ir_index = ir_builder->create<ir::LocalVariable>(ir_last->type);
         // 迭代变量应该在下一层迭代空间
         ir_builder->pushSymbolTable();
@@ -489,14 +488,9 @@ class StatementLoweringVisitor {
         ir_constructor->name = concatFullname(ir_struct_type->name, "constructor");
         ir_constructor->fullname = ir_constructor->name;
         ir_constructor->parent_module = ir_builder->module;
-
-        auto ir_block = ir::Block::create();
-        ir_block->parent_function = ir_builder->current_function;
-        ir_block->parent_function = ir_constructor;
-        ir_constructor->blocks.push_back(ir_block);
-        ir_builder->pushBlock(ir_block);
-
         ir_builder->module->functions.push_back(ir_constructor);
+
+        ir_builder->createTopBlockForFunction(ir_constructor);
 
         auto ir_variable = ir_builder->create<ir::LocalVariable>(ir_struct_type);
         for (size_t i = 0; i < ir_fields.size(); ++i) {
@@ -506,6 +500,7 @@ class StatementLoweringVisitor {
         }
         ir_builder->create<ir::Return>(ir_variable);
         ir_builder->popBlock();
+        ir_builder->function_stack.pop();
     }
 
     std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
@@ -514,7 +509,7 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::Struct ast_struct) {
         auto ir_struct_type = ir::StructType::create();
-        ir_builder->instantiating_type = ir_struct_type;
+        ir_builder->instantiating_type_stack.push(ir_struct_type);
 
         // TODO 名字重命名错误, 需要处理
         ir_builder->symbol_table->setWithAssigningName(
@@ -530,7 +525,7 @@ class StatementLoweringVisitor {
         ir_struct_type->update();
         this->createStructConstructor(ir_struct_type);
 
-        ir_builder->instantiating_type = nullptr;
+        ir_builder->instantiating_type_stack.pop();
 
         return ir_struct_type;
     }

@@ -58,10 +58,10 @@ implement ptr<Type_>{
 
 // template <Type_>
 // implement operator::LinearIndex<Type_> for ptr<Type_> {
-//     func get(index: i64)->Type_ {
-//         return this.raw_ptr[index];
+//     func gets(index: i64)->Type_ {
+//         return  this.raw_ptr[index];
 //     }
-//     func set(index: i64, value: Type_) {
+//     func sets(index: i64, value: Type_) {
 //         this.raw_ptr[index] = value;
 //     }
 // }

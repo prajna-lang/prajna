@@ -20,22 +20,6 @@ template PrimitivePointerTemplate<Type>{
 
     }
 
-    // @disable_dynamic_dispatch
-    // implement operator::Equal<Type *> for Type * {
-    //     func Equal(rhs: Type*)->bool{
-    //         return this.toi64().__equal__(rhs.toi64());
-    //     }
-    // }
-
-    // @disable_dynamic_dispatch
-    // implement operator::NotEqual<Type *> for Type * {
-    //     func NotEqual(rhs: Type*)->bool{
-    //         return this.toi64().__not_equal__(rhs.toi64());
-    //     }
-    // }
-
-
-
     implement Type* {
         func __equal__(rhs: Type*)->bool{
             return this.toi64().__equal__(rhs.toi64());

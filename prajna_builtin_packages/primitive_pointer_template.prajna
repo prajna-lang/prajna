@@ -30,7 +30,7 @@ template PrimitivePointerTemplate<Type>{
         }
 
         func isNull()->bool{
-            return this.__equal__(__nullptr<Type>::create());
+            return this.__equal__(i64_to_rawptr<Type>(0));
         }
     }
 }

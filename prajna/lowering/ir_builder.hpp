@@ -96,9 +96,11 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::Property> getProperty(std::shared_ptr<ir::Type> ir_type, std::string name) {
-        auto iter_property_interface = std::find_if(
-            RANGE(ir_type->interfaces),
-            [=](auto key_value) { return key_value.second->name == name + "Property"; });
+        auto iter_property_interface =
+            std::find_if(RANGE(ir_type->interfaces), [=](auto key_value) {
+                if (!key_value.second) return false;
+                return key_value.second->name == name + "Property";
+            });
         if (iter_property_interface != ir_type->interfaces.end()) {
             auto ir_property_interface = iter_property_interface->second;
             auto ir_property = ir::Property::create();

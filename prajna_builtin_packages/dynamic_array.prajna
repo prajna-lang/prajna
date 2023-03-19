@@ -18,7 +18,6 @@ struct DynamicArray<ValueType>{
 template <ValueType>
 implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
     func get(idx: i64)->ValueType{
-        debug::assert(!this.data.raw_ptr.isNull());
         return this.data.raw_ptr[idx];
     }
 

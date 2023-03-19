@@ -540,20 +540,6 @@ class ExpressionLoweringVisitor {
                 postfix_operator);
         }
 
-        if (auto ir_pointer_type = cast<ir::PointerType>(ir_type)) {
-            auto ir_value_type = ir_pointer_type->value_type;
-            auto symbol_ptr_tp = ir_builder->getSymbolByPath(
-                true, {"primitive_pointer_template", "PrimitivePointerTemplate"});
-            // 加载后再执行,
-            // 函数指针类型存在问题, 回头再做修复, 现在参数返回值类型一样的函数类型是不相同,
-            // 但其却有相同的名字, 这里存在问题, 回头修复.
-            if (symbol_ptr_tp.which() != 0) {
-                auto ptr_tp = symbolGet<Template>(symbol_ptr_tp);
-                PRAJNA_ASSERT(ptr_tp);
-                ptr_tp->instantiate({ir_value_type}, ir_builder->module);
-            }
-        }
-
         PRAJNA_ASSERT(ir_type);
         return ir_type;
     }  // namespace prajna::lowering
@@ -596,6 +582,60 @@ class ExpressionLoweringVisitor {
             re.push_back('>');
         }
         return re;
+    }
+
+    std::shared_ptr<Template> createI64ToRawptrTemplate() {
+        auto lowering_template = Template::create();
+
+        lowering_template->generators[{nullptr}] =
+            [symbol_table = this->ir_builder->symbol_table, logger = this->logger, this](
+                std::list<Symbol> symbol_template_arguments,
+                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+
+            auto ir_value_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            auto ir_pointer_type = ir::PointerType::create(ir_value_type);
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type =
+                ir::FunctionType::create({ir_tmp_builder->getIndexType()}, ir_pointer_type);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "i64_to_rawptr<" + ir_value_type->fullname + ">", ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CastInstruction>(
+                ir::CastInstruction::Operation::IntToPtr, ir_function->parameters.front(),
+                ir_pointer_type));
+            return ir_function;
+        };
+
+        return lowering_template;
+    }
+
+    std::shared_ptr<Template> createRawptrToI64Template() {
+        auto lowering_template = Template::create();
+
+        lowering_template->generators[{nullptr}] =
+            [symbol_table = this->ir_builder->symbol_table, logger = this->logger, this](
+                std::list<Symbol> symbol_template_arguments,
+                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+
+            auto ir_pointer_type =
+                cast<ir::PointerType>(symbolGet<ir::Type>(symbol_template_arguments.front()));
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type =
+                ir::FunctionType::create({ir_pointer_type}, ir_tmp_builder->getIndexType());
+            auto ir_function = ir_tmp_builder->createFunction(
+                "rawptr_to_i64<" + ir_pointer_type->value_type->fullname + ">", ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CastInstruction>(
+                ir::CastInstruction::Operation::PtrToInt, ir_function->parameters.front(),
+                ir_function_type->return_type));
+            return ir_function;
+        };
+
+        return lowering_template;
     }
 
     std::list<Symbol> applyTemplateArguments(ast::TemplateArguments ast_template_arguments) {
@@ -953,12 +993,22 @@ class ExpressionLoweringVisitor {
             PRAJNA_ASSERT(ir_interface_implement->functions.front());
             auto ir_target_ptr_type = ir_builder->getPtrType(ir_target_type);
             auto ir_ptr = ir_builder->create<ir::LocalVariable>(ir_target_ptr_type);
-            auto ir_condition = ir_builder->callMemberFunction(
+            auto ir_interface_implement_function0 =
                 ir_interface_implement
-                    ->undef_this_pointer_functions[ir_interface_implement->functions.front()],
-                "__equal__",
-                {ir_builder->accessField(ir_dynamic_object,
-                                         ir_interface_implement->functions.front()->name + "/fp")});
+                    ->undef_this_pointer_functions[ir_interface_implement->functions.front()];
+            auto template_rawptr_to_i64_function =
+                symbolGet<Template>(ir_builder->symbol_table->get("rawptr_to_i64"));
+            auto ir_rawptr_to_i64_function_instance =
+                symbolGet<ir::Value>(template_rawptr_to_i64_function->instantiate(
+                    {ir_interface_implement_function0->type}, ir_builder->module));
+            auto ir_rawptr_i64_0 = ir_builder->create<ir::Call>(ir_rawptr_to_i64_function_instance,
+                                                                ir_interface_implement_function0);
+            auto ir_rawptr_i64_1 = ir_builder->create<ir::Call>(
+                ir_rawptr_to_i64_function_instance,
+                ir_builder->accessField(ir_dynamic_object,
+                                        ir_interface_implement->functions.front()->name + "/fp"));
+            auto ir_condition =
+                ir_builder->callMemberFunction(ir_rawptr_i64_0, "__equal__", {ir_rawptr_i64_1});
             auto ir_if =
                 ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
             ir_if->trueBlock()->parent_function = ir_builder->function_stack.top();

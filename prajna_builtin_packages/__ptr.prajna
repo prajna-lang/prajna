@@ -24,12 +24,12 @@ implement ptr<Type_>{
     @static
     func null()->ptr<Type_>{
         var self: ptr<Type_>;
-        self.raw_ptr = __nullptr<Type_>::create();
+        self.raw_ptr = i64_to_rawptr<Type_>(0);
         return self;
     }
 
     func toi64()->i64{
-        return this.raw_ptr.toi64();
+        return rawptr_to_i64(this.raw_ptr);
     }
 
     // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
@@ -48,7 +48,7 @@ implement ptr<Type_>{
 
 
     func isNull()->bool{
-        return this.raw_ptr.isNull();
+        return this.toi64() == 0;
     }
 
     func referenceCount()->i64 {
@@ -70,7 +70,7 @@ template <Type_>
 @disable_dynamic_dispatch
 implement reference_count::ReferenceCountable for ptr<Type_> {
     func initialize() {
-        this.raw_ptr = __nullptr<Type_>::create();
+        this.raw_ptr = i64_to_rawptr<Type_>(0);
         this.registerReferenceCount();
     }
 
@@ -87,7 +87,7 @@ implement reference_count::ReferenceCountable for ptr<Type_> {
         if (bindings::getReferenceCount(cast<undef*>(this.raw_ptr)).__equal__(0)){
             if (!this.isNull()){
                 bindings::free(cast<undef*>(this.raw_ptr));
-                this.raw_ptr = __nullptr<Type_>::create();
+                this.raw_ptr = i64_to_rawptr<Type_>(0);
             }
         }
     }

@@ -50,7 +50,7 @@ implement Layout<Dim_>{
 
 template <Type_, Dim_>
 struct Tensor<Type_, Dim_> {
-    data2 : ptr<Type_>;
+    data : ptr<Type_>;
     layout: Layout<Dim_>;
 }
 
@@ -64,12 +64,12 @@ template <Type_, Dim_>
 implement atProperty<Type_, Dim_> for Tensor<Type_, Dim_>{
     func get(idx: Array<i64, Dim_>)->Type_{
         var offset = this.layout.arrayIndexToLinearIndex(idx);
-        return this.data2.raw_ptr[offset];
+        return this.data.raw_ptr[offset];
     }
 
     func set(idx: Array<i64, Dim_>, value: Type_){
         var offset = this.layout.arrayIndexToLinearIndex(idx);
-        this.data2.raw_ptr[offset] = value;
+        this.data.raw_ptr[offset] = value;
     }
 }
 
@@ -80,7 +80,7 @@ implement Tensor<Type_, Dim_> {
         var self: Tensor<Type_, Dim_>;
         self.layout = Layout<Dim_>::create(shape);
 
-        self.data2 = ptr<Type_>::allocate(self.layout.length());
+        self.data = ptr<Type_>::allocate(self.layout.length());
         return self;
     }
 }

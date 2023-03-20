@@ -159,8 +159,8 @@ class IrBuilder {
     std::shared_ptr<ir::WriteProperty> setDim3(std::shared_ptr<ir::Value> ir_shape3, int64_t index,
                                                std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(this->isArrayIndexType(ir_shape3->type));
-        auto ir_index_property = this->getArrayIndexProperty(ir_shape3->type);
-        PRAJNA_VERIFY(ir_index_property, "Array index property is missing");
+        auto ir_index_property = this->getLinearIndexProperty(ir_shape3->type);
+        PRAJNA_VERIFY(ir_index_property, "linear index property is missing");
 
         auto ir_shape3_variable_liked = this->variableLikedNormalize(ir_shape3);
         auto ir_array_tmp_this_pointer =

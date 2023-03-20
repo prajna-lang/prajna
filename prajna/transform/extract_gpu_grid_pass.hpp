@@ -115,23 +115,23 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         auto symbol_table = ir_module->symbol_table;
         auto statement_lowering_visitor =
             lowering::StatementLoweringVisitor::create(symbol_table, logger, nullptr, nullptr);
-        auto ir_builder = statement_lowering_visitor->ir_builder;
-        ir_builder->pushSymbolTable();
-        ir_builder->pushBlock(ir_block);
+        auto ir_tmp_builder = statement_lowering_visitor->ir_builder;
+        ir_tmp_builder->function_stack.push(ir_kernel_function);
+        ir_tmp_builder->pushSymbolTable();
+        ir_tmp_builder->pushBlock(ir_block);
 
-        ir_builder->symbol_table->set(ir_index, "i");
-        ir_builder->symbol_table->set(ir_first, "first");
-        ir_builder->symbol_table->set(ir_last, "last");
+        ir_tmp_builder->symbol_table->set(ir_index, "i");
+        ir_tmp_builder->symbol_table->set(ir_first, "first");
+        ir_tmp_builder->symbol_table->set(ir_last, "last");
 
         auto ast = prajna::parser::parse(code, "//None", logger);
 
         statement_lowering_visitor->apply(ast);
-        ir_builder->popSymbolTable();
-        ir_builder->popBlock();
 
         // 插入ir_gpu_for里的逻辑
         auto ir_kernel_while = cast<ir::While>(*std::prev(ir_block->values.end(), 2));
         PRAJNA_ASSERT(ir_kernel_while);
+        ir_kernel_while->conditionBlock()->parent_function = nullptr;
         auto ir_kernel_while_loop_block =
             cast<ir::Block>(ir_kernel_while->loopBlock()->values.front());
         PRAJNA_ASSERT(ir_kernel_while_loop_block);

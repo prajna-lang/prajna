@@ -3,8 +3,8 @@ import gpu;
 @kernel
 @target("nvptx")
 func myKernel(tensor: gpu::Tensor<i64, 1>, value: i64){
-    var idx = gpu::threadIndex()[0];
-    tensor[idx] = value;
+    var idx = gpu::threadIndex();
+    tensor[idx[0]] = value;
 }
 
 @test

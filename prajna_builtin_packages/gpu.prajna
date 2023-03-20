@@ -21,10 +21,8 @@ func multiProcessorsCount(device: i64)->i64{
 }
 
 func launchKernel(kernel_function_pointer: i8*, gridShape: Array<i64, 3>, blockShape: Array<i64, 3>, kernel_params: i8**)->i64{
-    var re = cuda::cuLaunchKernel(kernel_function_pointer, gridShape[0].tou32(), gridShape[1].tou32(), gridShape[2].tou32(), blockShape[0].tou32(), blockShape[1].tou32(), blockShape[2].tou32(), 0u32, i64_to_rawptr<i8>::create(), kernel_params, cast<i8**>(__nullptr<i8>(0)));
-    // "launch re: ".print();
-    // re.tostr().print();
-    // "\n".print();
+    var re = cuda::cuLaunchKernel(kernel_function_pointer, gridShape[0].tou32(), gridShape[1].tou32(),
+    gridShape[2].tou32(), blockShape[0].tou32(), blockShape[1].tou32(), blockShape[2].tou32(), 0u32, i64_to_rawptr<i8>(0), kernel_params, i64_to_rawptr<i8*>(0));
     return re.toi64();
 }
 
@@ -35,7 +33,6 @@ func launchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
 template <Type_, Dim_>
 struct Tensor<Type_, Dim_> {
     data : Type_*;
-    // shape: Array<i64, Dim_>;
     layout: Layout<Dim_>;
 }
 
@@ -46,7 +43,7 @@ interface atProperty {
 }
 
 template <Type_, Dim_>
-implement atProperty for Tensor<Type_, Dim_>{
+implement atProperty<Type_, Dim_> for Tensor<Type_, Dim_>{
     func get(idx: Array<i64, Dim_>)->Type_{
         var offset = this.layout.arrayIndexToLinearIndex(idx);
         return this.data[offset];
@@ -55,6 +52,17 @@ implement atProperty for Tensor<Type_, Dim_>{
     func set(idx: Array<i64, Dim_>, value: Type_){
         var offset = this.layout.arrayIndexToLinearIndex(idx);
         this.data[offset] = value;
+    }
+}
+
+template <Type_, Dim_>
+implement operator::ArrayIndex<Type_, Dim_> for Tensor<Type_, Dim_> {
+    func get(index: Array<i64, Dim_>)->Type_{
+        return this.at(index);
+    }
+
+    func set(index: Array<i64, Dim_>, value: Type_){
+        this.at(index) = value;
     }
 }
 
@@ -79,7 +87,7 @@ implement Tensor<Type_, Dim_> {
         for i in 0 to Dim_ {
             size = size * this.layout.shape[i];
         }
-        var re =  cuda::cudaMemcpy(cast<i8*>(host_tensor.data), cast<i8*>(this.data), size * sizeof(Type_), 2i32);
+        var re =  cuda::cudaMemcpy(cast<i8*>(host_tensor.data.raw_ptr), cast<i8*>(this.data), size * sizeof(Type_), 2i32);
         return host_tensor;
     }
 }
@@ -103,7 +111,7 @@ implement ::Tensor<Type_, Dim_> {
         for i in 0 to Dim_ {
             size = size * this.layout.shape[i];
         }
-        var re = cuda::cudaMemcpy(cast<i8*>(cuda_tensor.data), cast<i8*>(this.data), size * sizeof(Type_), 1i32);
+        var re = cuda::cudaMemcpy(cast<i8*>(cuda_tensor.data), cast<i8*>(this.data.raw_ptr), size * sizeof(Type_), 1i32);
         return cuda_tensor;
     }
 }

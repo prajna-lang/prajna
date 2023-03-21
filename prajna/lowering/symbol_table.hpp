@@ -114,7 +114,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
 
    public:
     std::string name = "";
-    std::filesystem::path source_path;
+    std::filesystem::path directory_path;
     std::shared_ptr<SymbolTable> parent_symbol_table = nullptr;
     std::unordered_map<std::string, Symbol> current_symbol_dict;
 };

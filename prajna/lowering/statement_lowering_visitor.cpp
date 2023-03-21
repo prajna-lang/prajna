@@ -1,10 +1,13 @@
 #include "prajna/lowering/statement_lowering_visitor.hpp"
 
 #include <filesystem>
+#include <fstream>
 
 #include "prajna/compiler/compiler.h"
 
 namespace prajna::lowering {
+
+using std::filesystem::path;
 
 Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
     try {
@@ -16,7 +19,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
         }
         PRAJNA_ASSERT(symbol.which() != 0);
 
-        std::filesystem::path source_path;
+        path directory_path;
         for (auto iter_ast_identifier = ast_import.identifier_path.identifiers.begin();
              iter_ast_identifier != ast_import.identifier_path.identifiers.end();
              ++iter_ast_identifier) {
@@ -37,19 +40,43 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
                         if (symbol.which() != 0) {
                             return symbol;
                         } else {
-                            auto filename_path =
-                                std::filesystem::path(current_identifer + ".prajna");
-                            auto source_package_path =
-                                symbol_table == ir_builder->symbol_table
-                                    ? filename_path
-                                    : symbol_table->source_path / filename_path;
-                            auto source_symbol_table =
-                                compiler->compileProgram(source_package_path, false)->symbol_table;
-                            if (!source_symbol_table) {
-                                logger->error("not find valid source file", *iter_ast_identifier);
+                            auto new_symbol_table = lowering::SymbolTable::create(symbol_table);
+                            symbol_table->set(new_symbol_table, current_identifer);
+                            new_symbol_table->directory_path =
+                                symbol_table->directory_path / path(current_identifer);
+                            new_symbol_table->name = current_identifer;
+
+                            path source_path;
+                            // 存在xxx.prajna文件
+                            if (std::filesystem::exists(symbol_table->directory_path /
+                                                        path(current_identifer + ".prajna"))) {
+                                source_path = symbol_table->directory_path /
+                                              path(current_identifer + ".prajna");
+                            } else {
+                                // 存在xxx目录
+                                if (std::filesystem::is_directory(symbol_table->directory_path /
+                                                                  path(current_identifer))) {
+                                    // xxx/.prajna存在
+                                    if (std::filesystem::exists(symbol_table->directory_path /
+                                                                path(current_identifer) /
+                                                                ".prajna")) {
+                                        source_path = symbol_table->directory_path /
+                                                      path(current_identifer) / ".prajna";
+                                    } else {  // xxx/.prajna不存在
+                                        // 无需编译代码, 直接返回
+                                        return new_symbol_table;
+                                    }
+                                }
                             }
 
-                            return source_symbol_table;
+                            std::ifstream ifs(source_path.string());
+                            PRAJNA_ASSERT(ifs.good());
+                            std::string code((std::istreambuf_iterator<char>(ifs)),
+                                             std::istreambuf_iterator<char>());
+                            this->compiler->compileCode(code, new_symbol_table,
+                                                        source_path.string(), false);
+
+                            return new_symbol_table;
                         }
                     }},
                 symbol);
@@ -57,7 +84,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
             PRAJNA_ASSERT(symbol.which() != 0);
         }
 
-        symbol = expression_lowering_visitor->applyIdentifierPath(ast_import.identifier_path);
+        // symbol = expression_lowering_visitor->applyIdentifierPath(ast_import.identifier_path);
 
         ir_builder->symbol_table->set(symbol,
                                       ast_import.identifier_path.identifiers.back().identifier);

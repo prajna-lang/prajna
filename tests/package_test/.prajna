@@ -1,0 +1,24 @@
+// import mod_b;
+
+module mod_local {
+    func test_local(){
+        "mod_local::test_local".printLine();
+    }
+}
+
+func test() {
+    "test".printLine();
+}
+
+import package_test::mod_b;
+import mod_a::mod_aa;
+import mod_c;
+
+func main() {
+    tests::package_test::test(); //父mod依赖于该文件是怎么被依赖的
+    test();
+    mod_local::test_local();
+    mod_a::mod_aa::test();
+    mod_c::mod_ca::test();
+    "Hi".print();
+}

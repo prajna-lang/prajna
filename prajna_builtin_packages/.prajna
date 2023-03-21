@@ -1,2 +1,23 @@
-// 该文件会指向根名字空降::, 这里会存在一些问题, 后面还需要进一步的处理, 目前先这样吧
-import __ptr::ptr as ptr;
+#stage1;
+
+import __rawptr;
+import operator;
+import reference_count;
+import implement_primitive_types;
+import bindings;
+import debug;
+import __ptr;
+import __i64;
+import __f32;
+import __char;
+import dynamic_array;
+import __str;
+import array;
+import tensor;
+import serializable;
+import serialize;
+import list;
+import io;
+
+
+import array::Array;

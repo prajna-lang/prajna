@@ -85,7 +85,7 @@ implement reference_count::ReferenceCountable for ptr<Type_> {
     func decrementReferenceCount() {
         bindings::decrementReferenceCount(cast<undef*>(this.raw_ptr));
         if (bindings::getReferenceCount(cast<undef*>(this.raw_ptr)).__equal__(0)){
-            if (!this.isNull()){
+            if (rawptr_to_i64(this.raw_ptr) != 0){
                 bindings::free(cast<undef*>(this.raw_ptr));
                 this.raw_ptr = i64_to_rawptr<Type_>(0);
             }

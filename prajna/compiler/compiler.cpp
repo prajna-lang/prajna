@@ -47,7 +47,7 @@ inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
 
         auto new_symbol_table = lowering::SymbolTable::create(symbol_table_tree);
         symbol_table_tree->set(new_symbol_table, path_part);
-        new_symbol_table->source_path = symbol_table_source_path;
+        new_symbol_table->directory_path = symbol_table_source_path;
         new_symbol_table->name = path_part;
         symbol_table_tree = new_symbol_table;
     }
@@ -68,7 +68,7 @@ std::shared_ptr<Compiler> Compiler::create() {
 
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
     this->addPackageDirectoryPath(builtin_sources_dir);
-    this->compileProgram("prajna_bootstrap.prajna", false);
+    // this->compileProgram("prajna_bootstrap.prajna", false);
     this->compileProgram(".prajna", false);
 }
 
@@ -206,10 +206,12 @@ void Compiler::addPackageDirectoryPath(std::string package_directory) {
 std::shared_ptr<ir::Module> Compiler::compileProgram(
     std::filesystem::path prajna_source_package_path, bool is_interpreter) {
     std::filesystem::path prajna_source_path;
+    std::filesystem::path prajna_directory_path;
     for (auto package_directory : package_directories) {
         auto tmp_path =
             std::filesystem::current_path() / package_directory / prajna_source_package_path;
         if (std::filesystem::exists(tmp_path)) {
+            prajna_directory_path = std::filesystem::current_path() / package_directory;
             prajna_source_path = tmp_path;
             break;
         }
@@ -223,6 +225,8 @@ std::shared_ptr<ir::Module> Compiler::compileProgram(
     }
 
     auto current_symbol_table = createSymbolTableTree(_symbol_table, prajna_source_package_path);
+    current_symbol_table->directory_path =
+        prajna_directory_path / current_symbol_table->directory_path;
 
     std::ifstream ifs(prajna_source_path.string());
     if (ifs.good()) {

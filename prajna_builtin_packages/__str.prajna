@@ -47,6 +47,12 @@ implement str{
         this.darray[this.size-1] = v;
     }
 
+    func printLine() {
+        var tmp = this;
+        tmp.append('\n');
+        tmp.print();
+    }
+
     func tostr()->str{
         return this;
     }
@@ -96,5 +102,10 @@ func print(ss: str){
     ss.print();
 }
 
+func printLine(ss: str) {
+    ss.printLine();
+}
+
 export str;
 export print;
+export printLine;

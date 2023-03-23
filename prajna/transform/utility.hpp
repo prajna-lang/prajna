@@ -140,16 +140,15 @@ inline bool isGeneralCapturedType(std::shared_ptr<ir::Type> ir_type) {
 }
 
 inline bool isTensorType(std::shared_ptr<ir::Type> ir_type) {
-    std::string tensor_fullname_prefix = "::tensor::Tensor<";
-    if (ir_type->fullname.size() > tensor_fullname_prefix.size()) {
-        if (std::equal(RANGE(tensor_fullname_prefix), ir_type->fullname.begin())) {
-            if (ir_type->fullname.back() == '>') {
-                return true;
-            }
-        }
-    }
-
+    PRAJNA_TODO;
     return false;
+    // auto gpu_tensor_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
+    //     ir_builder->getSymbolByPath(true, {"gpu", "Tensor"}));
+    // auto host_tensor_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
+    //     ir_builder->getSymbolByPath(true, {"Tensor"}));
+
+    // return ir_type->template_str == gpu_tensor_template_struct ||
+    //        ir_type->template_arguments == host_tensor_template_struct;
 }
 
 inline bool isCapturedType(std::shared_ptr<ir::Type> ir_type) {
@@ -182,38 +181,38 @@ inline std::list<ir::Target> getTargets(std::shared_ptr<ir::Function> ir_functio
     return ir_target_list;
 }
 
-inline bool isHostTensorType(std::shared_ptr<ir::Type> ir_type) {
-    std::string host_tensor_type__fullname_prefix = "::tensor::Tensor";
-    if (ir_type->fullname.size() > host_tensor_type__fullname_prefix.size() &&
-        ir_type->fullname.substr(0, host_tensor_type__fullname_prefix.size()) ==
-            host_tensor_type__fullname_prefix) {
-        return true;
-    }
-
-    return false;
+inline bool isHostTensorType(std::shared_ptr<ir::Type> ir_type,
+                             std::shared_ptr<ir::Module> ir_module) {
+    auto ir_builder = lowering::IrBuilder::create(ir_module->symbol_table, nullptr, nullptr);
+    // 需要更新为固定路径
+    auto host_tensor_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
+        ir_builder->getSymbolByPath(true, {"Tensor"}));
+    PRAJNA_ASSERT(host_tensor_template_struct);
+    PRAJNA_ASSERT(ir_type->template_struct);
+    return ir_type->template_struct == host_tensor_template_struct;
 }
 
-inline bool isGpuTensorType(std::shared_ptr<ir::Type> ir_type) {
-    std::string host_tensor_type__fullname_prefix = "::gpu::Tensor";
-    if (ir_type->fullname.size() > host_tensor_type__fullname_prefix.size() &&
-        ir_type->fullname.substr(0, host_tensor_type__fullname_prefix.size()) ==
-            host_tensor_type__fullname_prefix) {
-        return true;
-    }
-
-    return false;
+inline bool isGpuTensorType(std::shared_ptr<ir::Type> ir_type,
+                            std::shared_ptr<ir::Module> ir_module) {
+    auto ir_builder = lowering::IrBuilder::create(ir_module->symbol_table, nullptr, nullptr);
+    // 需要更新为固定路径
+    auto gpu_tensor_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
+        ir_builder->getSymbolByPath(true, {"gpu", "Tensor"}));
+    PRAJNA_ASSERT(gpu_tensor_template_struct);
+    PRAJNA_ASSERT(ir_type->template_struct);
+    return ir_type->template_struct == gpu_tensor_template_struct;
 }
 
 inline std::shared_ptr<ir::Type> getGpuTensorTypeOfHostTensorType(
-    std::shared_ptr<ir::Type> ir_type) {
-    PRAJNA_ASSERT(isHostTensorType(ir_type));
-    auto ir_gpu_tensor_type_fullname = "::gpu" + ir_type->fullname.substr(8);  //"::tensor"
-    for (auto ir_type : ir::global_context.created_types) {
-        if (ir_type->fullname == ir_gpu_tensor_type_fullname) return ir_type;
-    }
-
-    PRAJNA_ASSERT(false, "import gpu package before using host tensor");
-    return nullptr;
+    std::shared_ptr<ir::Type> ir_type, std::shared_ptr<ir::Module> ir_module) {
+    auto ir_builder = lowering::IrBuilder::create(ir_module->symbol_table, nullptr, nullptr);
+    // 需要更新为固定路径
+    auto gpu_tensor_template_struct = lowering::symbolGet<lowering::TemplateStruct>(
+        ir_builder->getSymbolByPath(true, {"gpu", "Tensor"}));
+    PRAJNA_ASSERT(gpu_tensor_template_struct);
+    PRAJNA_ASSERT(ir_type->template_struct);
+    return gpu_tensor_template_struct->instantiateStructAndImplement(
+        std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments), ir_module);
 }
 
 }  // namespace prajna::transform::utility

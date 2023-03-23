@@ -28,9 +28,10 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     ir_argument_types[0] = ir_gpu_for->first()->type;
     ir_argument_types[1] = ir_gpu_for->last()->type;
     std::transform(RANGE(ir_captured_variables_list), std::back_inserter(ir_argument_types),
-                   [](std::shared_ptr<ir::Value> ir_value) {
-                       if (utility::isHostTensorType(ir_value->type)) {
-                           return utility::getGpuTensorTypeOfHostTensorType(ir_value->type);
+                   [=](std::shared_ptr<ir::Value> ir_value) {
+                       if (utility::isHostTensorType(ir_value->type, ir_module)) {
+                           return utility::getGpuTensorTypeOfHostTensorType(ir_value->type,
+                                                                            ir_module);
                        } else {
                            return ir_value->type;
                        }
@@ -203,7 +204,7 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
             RANGE(ir_captured_variables_list), std::back_inserter(ir_arguments),
             [=, &gpu_host_tensor_dict](
                 std::shared_ptr<ir::Variable> ir_captured_variable) -> std::shared_ptr<ir::Value> {
-                if (utility::isHostTensorType(ir_captured_variable->type)) {
+                if (utility::isHostTensorType(ir_captured_variable->type, ir_module)) {
                     auto ir_gpu_tensor =
                         ir_builder->callMemberFunction(ir_captured_variable, "toGpu", {});
                     gpu_host_tensor_dict[ir_gpu_tensor] = ir_captured_variable;
@@ -216,7 +217,7 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
         ir_builder->create<ir::KernelFunctionCall>(ir_kernel_function, ir_grid_shape,
                                                    ir_block_shape, ir_arguments);
         for (auto [ir_gpu_tensor, ir_host_tensor_variable] : gpu_host_tensor_dict) {
-            PRAJNA_ASSERT(utility::isGpuTensorType(ir_gpu_tensor->type));
+            PRAJNA_ASSERT(utility::isGpuTensorType(ir_gpu_tensor->type, ir_module));
             auto ir_host_tensor = ir_builder->callMemberFunction(ir_gpu_tensor, "toHost", {});
             ir_builder->create<ir::WriteVariableLiked>(ir_host_tensor, ir_host_tensor_variable);
         }

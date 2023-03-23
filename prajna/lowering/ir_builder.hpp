@@ -47,12 +47,17 @@ class IrBuilder {
     }
 
     bool isArrayIndexType(std::shared_ptr<ir::Type> ir_type) {
-        return ir_type->fullname.size() > 18 &&
-               ir_type->fullname.substr(0, 18) == "::array::Array<i64";
+        auto array_template_struct =
+            symbolGet<TemplateStruct>(this->getSymbolByPath(true, {"array", "Array"}));
+        PRAJNA_ASSERT(array_template_struct);
+        return ir_type->template_struct == array_template_struct;
     }
 
     bool isPtrType(std::shared_ptr<ir::Type> ir_type) {
-        return ir_type->fullname.size() > 13 && ir_type->fullname.substr(0, 13) == "::__ptr::ptr<";
+        auto ptr_template_struct =
+            symbolGet<TemplateStruct>(this->getSymbolByPath(true, {"__ptr", "ptr"}));
+        PRAJNA_ASSERT(ptr_template_struct);
+        return ir_type->template_struct == ptr_template_struct;
     }
 
     Symbol getSymbolByPath(bool is_root, std::vector<std::string> names) {

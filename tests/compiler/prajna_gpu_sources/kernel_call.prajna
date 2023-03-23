@@ -1,4 +1,4 @@
-import gpu;
+import ::gpu;
 
 @kernel
 @target("nvptx")

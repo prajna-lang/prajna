@@ -1,21 +1,24 @@
-import gpu;
+import ::gpu;
 
 @test
 func testGpuFor2d(){
     var shape = [10, 20];
-    var tmp_tensor = Tensor<i64, 2>::create(shape);
+    var tensor0 = Tensor<i64, 2>::create(shape);
+    var tensor1 = Tensor<i64, 2>::create(shape);
+    var tensor2 = Tensor<i64, 2>::create(shape);
 
-    @gpu // 标注后, 编译器会将tmp_tensor的内存拷贝到gpu, 并在gpu上执行下面的运算
-    for idx in [0, 0] to shape{
-        var x = idx[0];
-        var y = idx[1];
-        tmp_tensor[x, y] = 1;
-        // 等价于上面的代码
-        // tmp_tensor.at(idx) = 1;
+    for idx in [0, 0] to shape {
+        tensor0.at(idx) = 1;
+        tensor1.at(idx) = 2;
     }
 
-    // 运行完后, gpu的数据会自动拷贝的tmp_tensor上
-    for i in [0, 0] to shape{
-        debug::assert(tmp_tensor.at(i) == 1);
+    @gpu // 标注后, 编译器会将tensor0的内存拷贝到gpu, 并在gpu上执行下面的运算
+    for idx in [0, 0] to shape{
+        tensor2.at(idx) = tensor0.at(idx) + tensor1.at(idx);
+    }
+
+    // 运行完后, gpu的数据会自动拷贝的tensor0上
+    for idx in [0, 0] to shape{
+        debug::assert(tensor2.at(idx) == 3);
     }
 }

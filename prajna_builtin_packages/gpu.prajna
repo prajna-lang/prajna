@@ -1,4 +1,4 @@
-import cuda;
+import ::cuda;
 
 func init(){
     cuda::cuInit(0i32);

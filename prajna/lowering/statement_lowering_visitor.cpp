@@ -66,6 +66,9 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
                                         // 无需编译代码, 直接返回
                                         return new_symbol_table;
                                     }
+                                } else {
+                                    logger->error("module is not found",
+                                                  iter_ast_identifier->identifier);
                                 }
                             }
 

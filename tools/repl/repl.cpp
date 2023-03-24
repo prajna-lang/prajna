@@ -28,11 +28,17 @@ bool determine_completeness(CPP_TERMINAL_MAYBE_UNUSED std::string command) {
     return complete;
 }
 
-int prajna_repl_main() {
+int prajna_repl_main(int argc, char* argv[]) {
     std::cout << "Prajna 0.0, all copyrights @ \"Zhang Zhimin\"" << std::endl;
 
     auto compiler = prajna::Compiler::create();
-    compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+    if (std::filesystem::exists("prajna_builtin_packages")) {
+        compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+    } else {
+        auto prajna_builtin_packages_directory =
+            std::filesystem::path(argv[0]).parent_path() / "../prajna_builtin_packages";
+        compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
+    }
 
     Term::Terminal term(false, true, false, false);
     std::vector<std::string> history;

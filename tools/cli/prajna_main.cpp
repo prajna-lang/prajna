@@ -47,7 +47,13 @@ int prajna_exe_main(int argc, char* argv[]) {
     if (result.count("program")) {
         auto compiler = prajna::Compiler::create();
         auto program_path = std::filesystem::path(result["program"].as<std::string>());
-        compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+        if (std::filesystem::exists("prajna_builtin_packages")) {
+            compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+        } else {
+            auto prajna_builtin_packages_directory =
+                std::filesystem::path(argv[0]).parent_path() / "../prajna_builtin_packages";
+            compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
+        }
         compiler->addPackageDirectoryPath(std::filesystem::current_path());
         compiler->executeProgram(program_path);
         return 0;
@@ -134,7 +140,7 @@ int main(int argc, char* argv[]) {
             options.add_options()("h,help", "prajna repl help");
             auto result = options.parse(sub_argc, sub_argv.data());
 
-            return prajna_repl_main();
+            return prajna_repl_main(sub_argc, sub_argv.data());
         }
 
         if (sub_command == "jupyter") {

@@ -29,8 +29,7 @@
 ```
 import ::gpu;
 
-@test
-func testGpuFor2d(){
+func main(){
     var shape = [10, 20];
     var tensor0 = Tensor<i64, 2>::create(shape);
     var tensor1 = Tensor<i64, 2>::create(shape);

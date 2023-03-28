@@ -40,12 +40,12 @@ func main(){
         tensor1.at(idx) = 2;
     }
 
-    @gpu // 标注后, 编译器会将tensor0的内存拷贝到gpu, 并在gpu上执行下面的运算
+    @gpu // 标注后, 会自动拷贝数据到gpu上
     for idx in [0, 0] to shape{
         tensor2.at(idx) = tensor0.at(idx) + tensor1.at(idx);
     }
 
-    // 运行完后, gpu的数据会自动拷贝的tensor0上
+    // 运行完后, gpu的数据会自动拷贝的主机上
     for idx in [0, 0] to shape{
         debug::assert(tensor2.at(idx) == 3);
     }

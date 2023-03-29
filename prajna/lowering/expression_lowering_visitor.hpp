@@ -497,11 +497,6 @@ class ExpressionLoweringVisitor {
                                return ir_type;
                            }
 
-                           if (auto ir_interface_prototype =
-                                   symbolGet<ir::InterfacePrototype>(symbol_type)) {
-                               return ir_interface_prototype->dynamic_type;
-                           }
-
                            logger->error("the symbol is not a type", ast_postfix_type);
 
                            return nullptr;
@@ -636,6 +631,25 @@ class ExpressionLoweringVisitor {
         };
 
         return lowering_template;
+    }
+
+    std::shared_ptr<Template> createDynamicTemplate() {
+        auto dynamic_template = Template::create();
+
+        dynamic_template->generators[{nullptr}] =
+            [symbol_table = this->ir_builder->symbol_table, logger = this->logger, this](
+                std::list<Symbol> symbol_template_arguments,
+                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+
+            auto ir_interface_prototype =
+                symbolGet<ir::InterfacePrototype>(symbol_template_arguments.front());
+            PRAJNA_ASSERT(ir_interface_prototype);
+            return ir_interface_prototype->dynamic_type;
+        };
+
+        return dynamic_template;
     }
 
     std::list<Symbol> applyTemplateArguments(ast::TemplateArguments ast_template_arguments) {

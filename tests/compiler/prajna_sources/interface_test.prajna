@@ -1,6 +1,6 @@
 interface Say{
     func say();
-    func createSayObject()->Say;
+    func createSayObject()->dynamic<Say>;
 }
 
 struct SayHi{
@@ -11,7 +11,7 @@ implement Say for SayHi{
         "Hi\n".print();
     }
 
-    func createSayObject()->Say{
+    func createSayObject()->dynamic<Say>{
         var ptr_object: ptr<SayHi>;
         ptr_object.raw_ptr = &this;
         return dynamic_cast<Say>(ptr_object);
@@ -25,7 +25,7 @@ implement Say for SayHello{
         "Hello\n".print();
     }
 
-    func createSayObject()->Say{
+    func createSayObject()->dynamic<Say>{
         var ptr_object: ptr<SayHello>;
         ptr_object.raw_ptr = &this;
         return dynamic_cast<Say>(ptr_object);
@@ -38,7 +38,7 @@ func testDynamicDispatch(){
     say_hi.say();
     debug::assert(!say_hi.isNull());
 
-    var say: Say = dynamic_cast<Say>(say_hi);
+    var say: dynamic<Say> = dynamic_cast<Say>(say_hi);
     say.say();
 
     var say_hello = ptr<SayHello>::new();
@@ -54,7 +54,7 @@ func testDynamicDispatch(){
     var say_hi2 = dynamic_cast<SayHi>(say);
     debug::assert(say_hi2.isNull());
 
-    var say_hi3: Say = say.createSayObject();
+    var say_hi3: dynamic<Say> = say.createSayObject();
     say_hi3.say();
 }
 

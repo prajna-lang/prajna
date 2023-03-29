@@ -1054,6 +1054,8 @@ class StatementLoweringVisitor {
                 expression_lowering_visitor->createI64ToRawptrTemplate(), "i64_to_rawptr");
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 expression_lowering_visitor->createRawptrToI64Template(), "rawptr_to_i64");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                expression_lowering_visitor->createDynamicTemplate(), "dynamic");
             return nullptr;
         }
 

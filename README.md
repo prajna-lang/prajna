@@ -1,6 +1,17 @@
 # 般若编程语言
 
-般若是一门专门为构建更加模块化, 自动化和智能化的人工智能基础设施而研发的编程语言. 般若编程语言的目标是同时满足人工智能研究, 训练和部署等多个阶段的使用; 可以简易使用的CPU, GPU和各种NPU加速器为人工智能提供算力.
+般若是一门专门为构建更加模块化, 自动化和智能化的人工智能基础设施而研发的编程语言. 般若编程语言的目标是同时满足人工智能研究, 训练和部署等多个阶段的使用; 可以简易使用的CPU, GPU和各种NPU为人工智能提供算力.
+
+```mermaid
+graph LR
+    CPU --> Prajna
+    GPU --> Prajna
+    NPU --> Prajna
+
+    Prajna --> Training
+    Prajna --> Deployment
+    Prajna --> Research
+```
 
 ## 特点
 
@@ -56,7 +67,50 @@ func main(){
 
 可以查阅[般若编程语言指南](docs/般若编程语言指南.md)来进一步了解.
 
-## 其他
+## 架构
+
+下图是一个般若相关的思维导图, 显示了般若项目的一些规划和构成.
+
+```mermaid
+mindmap
+  root((Prajna))
+    Backend
+      LLVM
+      Wasmtime
+    Paramita Runtime
+        Tensor Computing Optimization
+          Polyhedral Optimization
+          TVM
+          MLIR
+        Auto Diff
+        Symbol Compute
+    Framework
+      Nerual Networks
+      Mathmatics Tools
+    IDE
+      Vscode
+        ISP
+        Debug
+      Jupyter
+        PyWidgets
+        Notebook
+
+
+```
+
+下面是般若编译器相关的的路线图
+
+```mermaid
+timeline
+    title 玄青矩阵路线图
+    般若编程语言: 编译器实现: 数据可视化: IDE
+    波罗蜜多运行时: 张量计算优化: 自动微分: 符号计算
+    框架: 数学库: 神经网络库: AutoML
+    应用: 视觉/语音/NPL: 自动驾驶: 多模态大模型
+
+```
+
+## 合作
 
 项目本身还有很多问题, 需要组建一个团队才能克服, 故在此寻求天使投资, 期望更多志同道合的朋友加入.
 

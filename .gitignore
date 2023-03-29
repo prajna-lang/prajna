@@ -20,6 +20,11 @@
 *.out
 *.app
 
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+
 *.xcodeproj
 build*
 build_debug

@@ -23,7 +23,7 @@
 	path = xeus_prajna/third_party/xeus
 	url = https://github.com/jupyter-xeus/xeus
 [submodule "third_party/json"]
-	path = third_party/json
+	path = xeus_prajna/third_party/json
 	url = https://github.com/nlohmann/json.git
 [submodule "third_party/xtl"]
 	path = xeus_prajna/third_party/xtl

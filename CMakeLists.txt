@@ -49,7 +49,6 @@ add_subdirectory(third_party/cxxopts EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/fmt EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/cpp-terminal EXCLUDE_FROM_ALL)
-add_subdirectory(third_party/json EXCLUDE_FROM_ALL)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -66,7 +65,6 @@ option(PRAAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
 option(PRAAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
 
 add_subdirectory(prajna)
-
 if (PRAJNA_WITH_JUPYTER)
     add_subdirectory(xeus_prajna)
 endif()
@@ -76,6 +74,11 @@ if (PRAJNA_BUILD_TESTS)
 endif()
 
 if (PRAJNA_BUILD_TOOLS)
+    # nlohmann_json会在xeus_prajna里被加入, 所以需要判断
+    if (NOT TARGET nlohmann_json)
+        add_subdirectory(xeus_prajna/third_party/json EXCLUDE_FROM_ALL)
+    endif()
+
     add_subdirectory(tools)
 endif()
 
@@ -86,6 +89,8 @@ endif()
 include(CMakePackageConfigHelpers)
 
 install(TARGETS prajna EXPORT ${PROJECT_NAME}-targets)
+# xeus_prajna依赖
+install(TARGETS nlohmann_json EXPORT ${PROJECT_NAME}-targets)
 install(DIRECTORY prajna_builtin_packages
               DESTINATION ${CMAKE_INSTALL_PREFIX})
 

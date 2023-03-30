@@ -201,9 +201,10 @@ void ExecutionEngine::bindCFunction(void *fun_ptr, std::string mangle_name) {
     _up_lljit->getMainJITDylib().addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             _up_lljit->getDataLayout().getGlobalPrefix())));
+
     auto fun_symbol = llvm::orc::absoluteSymbols(
         {{_up_lljit->mangleAndIntern(mangle_name),
-          {llvm::pointerToJITTargetAddress(fun_ptr),
+          {llvm::orc::ExecutorAddr::fromPtr(fun_ptr),
            llvm::JITSymbolFlags::Exported | llvm::JITSymbolFlags::Absolute}}});
     exit_on_error(_up_lljit->getMainJITDylib().define(fun_symbol));
 }

@@ -17,6 +17,11 @@ struct hash<std::list<prajna::lowering::Symbol>> {
     }
 };
 
+template <>
+struct hash<prajna::lowering::Symbol> {
+    std::size_t operator()(prajna::lowering::Symbol symbol) const noexcept { return 1; }
+};
+
 }  // namespace std
 
 namespace prajna::lowering {

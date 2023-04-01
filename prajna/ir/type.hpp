@@ -163,7 +163,7 @@ class IntType : public RealNumberType {
 
         std::shared_ptr<IntType> self(new IntType);
         self->bits = bits;
-        self->bytes = bits / 8;
+        self->bytes = (bits + 7) / 8;
         self->is_signed = is_signed;
         self->name = std::string(is_signed ? "i" : "u") + std::to_string(bits);
         self->fullname = std::string(is_signed ? "i" : "u") + std::to_string(bits);

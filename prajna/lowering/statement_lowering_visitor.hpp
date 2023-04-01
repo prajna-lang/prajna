@@ -797,9 +797,8 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::Template ast_template) {
         auto template_ = this->getOrCreateTemplate(ast_template.name);
-        template_->generators[getTemplateConcepts(ast_template.template_parameters)] =
-            this->createTemplateGenerator(ast_template.template_parameters,
-                                          ast_template.statements);
+        template_->generator = this->createTemplateGenerator(ast_template.template_parameters,
+                                                             ast_template.statements);
         return template_;
     }
 
@@ -872,8 +871,7 @@ class StatementLoweringVisitor {
                                                                ast_struct.name.identifier);
                     }
 
-                    template_struct->template_struct_impl->generators[getTemplateConcepts(
-                        ast_template_statement.template_parameters)] =
+                    template_struct->template_struct_impl->generator =
                         this->createTemplateGenerator(ast_template_statement.template_parameters,
                                                       ast_struct);
 
@@ -921,7 +919,7 @@ class StatementLoweringVisitor {
                         template_struct
                             ->template_implement_interface_for_type_dict[symbol_interface];
 
-                    template_->generators[template_concepts] =
+                    template_->generator =
                         this->createTemplateGenerator(ast_template_statement.template_parameters,
                                                       ast_implement_type_for_interface);
                     template_struct->template_implement_type_vec.push_back(template_);
@@ -952,7 +950,7 @@ class StatementLoweringVisitor {
                     }
 
                     auto template_ = Template::create();
-                    template_->generators[template_concepts] = this->createTemplateGenerator(
+                    template_->generator = this->createTemplateGenerator(
                         ast_template_statement.template_parameters, ast_implement_type);
                     template_struct->template_implement_type_vec.push_back(template_);
                     return template_;
@@ -960,18 +958,14 @@ class StatementLoweringVisitor {
                 [=](ast::InterfacePrototype ast_interface_prototype) -> Symbol {
                     auto template_ =
                         this->getOrCreateTemplate(ast_interface_prototype.name.identifier);
-                    template_->generators[this->getTemplateConcepts(
-                        ast_template_statement.template_parameters)] =
-                        this->createTemplateGenerator(ast_template_statement.template_parameters,
-                                                      ast_interface_prototype);
+                    template_->generator = this->createTemplateGenerator(
+                        ast_template_statement.template_parameters, ast_interface_prototype);
                     return template_;
                 },
                 [=](ast::Function ast_function) -> Symbol {
                     auto template_ = this->getOrCreateTemplate(ast_function.declaration.name);
-                    template_->generators[this->getTemplateConcepts(
-                        ast_template_statement.template_parameters)] =
-                        this->createTemplateGenerator(ast_template_statement.template_parameters,
-                                                      ast_function);
+                    template_->generator = this->createTemplateGenerator(
+                        ast_template_statement.template_parameters, ast_function);
                     return template_;
                 }},
             ast_template_statement.statement);
@@ -1027,6 +1021,10 @@ class StatementLoweringVisitor {
                 expression_lowering_visitor->createI64ToRawptrTemplate(), "i64_to_rawptr");
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 expression_lowering_visitor->createRawptrToI64Template(), "rawptr_to_i64");
+
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                expression_lowering_visitor->createBitCastTemplate(), "bit_cast");
+
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 expression_lowering_visitor->createDynamicTemplate(), "dynamic");
             return nullptr;

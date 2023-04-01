@@ -580,13 +580,39 @@ class ExpressionLoweringVisitor {
         return re;
     }
 
+    std::shared_ptr<Template> createBitCastTemplate() {
+        auto lowering_template = Template::create();
+
+        lowering_template->generator = [symbol_table = this->ir_builder->symbol_table,
+                                        logger = this->logger,
+                                        this](std::list<Symbol> symbol_template_arguments,
+                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 2);
+
+            auto ir_source_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            auto ir_target_type = symbolGet<ir::Type>(symbol_template_arguments.back());
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "bit_cast<" + ir_source_type->fullname + ", " + ir_target_type->fullname + ">",
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BitCast>(
+                ir_function->parameters.front(), ir_target_type));
+            return ir_function;
+        };
+
+        return lowering_template;
+    }
+
     std::shared_ptr<Template> createI64ToRawptrTemplate() {
         auto lowering_template = Template::create();
 
-        lowering_template->generators[{nullptr}] =
-            [symbol_table = this->ir_builder->symbol_table, logger = this->logger, this](
-                std::list<Symbol> symbol_template_arguments,
-                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+        lowering_template->generator = [symbol_table = this->ir_builder->symbol_table,
+                                        logger = this->logger,
+                                        this](std::list<Symbol> symbol_template_arguments,
+                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // TODO
             PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
 
@@ -610,10 +636,10 @@ class ExpressionLoweringVisitor {
     std::shared_ptr<Template> createRawptrToI64Template() {
         auto lowering_template = Template::create();
 
-        lowering_template->generators[{nullptr}] =
-            [symbol_table = this->ir_builder->symbol_table, logger = this->logger, this](
-                std::list<Symbol> symbol_template_arguments,
-                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+        lowering_template->generator = [symbol_table = this->ir_builder->symbol_table,
+                                        logger = this->logger,
+                                        this](std::list<Symbol> symbol_template_arguments,
+                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // TODO
             PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
 
@@ -637,10 +663,10 @@ class ExpressionLoweringVisitor {
     std::shared_ptr<Template> createDynamicTemplate() {
         auto dynamic_template = Template::create();
 
-        dynamic_template->generators[{nullptr}] =
-            [symbol_table = this->ir_builder->symbol_table, logger = this->logger, this](
-                std::list<Symbol> symbol_template_arguments,
-                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+        dynamic_template->generator = [symbol_table = this->ir_builder->symbol_table,
+                                       logger = this->logger,
+                                       this](std::list<Symbol> symbol_template_arguments,
+                                             std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // TODO
             PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
 

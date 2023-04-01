@@ -69,26 +69,13 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
         return compatibility;
     }
 
-    virtual Symbol instantiate(std::list<Symbol> symbol_template_arguments,
-                               std::shared_ptr<ir::Module> ir_module) {
+    Symbol instantiate(std::list<Symbol> symbol_template_arguments,
+                       std::shared_ptr<ir::Module> ir_module) {
         if (!_instance_dict.count(symbol_template_arguments)) {
             _instance_dict[symbol_template_arguments];  // 插入默认值, 阻断多次实力化,
-            // 阻断之后依赖IrBuild里的instantiating_type来获取类型
 
-            int max_concept_compatibility = -1;
-            Generator selected_generator;
-            for (auto [symbol_template_concepts, generator] : generators) {
-                auto cur_concept_compatibility =
-                    conceptCompatibility(symbol_template_arguments, symbol_template_concepts);
-                if (cur_concept_compatibility > max_concept_compatibility) {
-                    max_concept_compatibility = cur_concept_compatibility;
-                    selected_generator = generator;
-                }
-            }
-
-            PRAJNA_ASSERT(max_concept_compatibility > 0);
             _instance_dict[symbol_template_arguments] =
-                selected_generator(symbol_template_arguments, ir_module);
+                this->generator(symbol_template_arguments, ir_module);
 
             if (auto ir_interface_prototype =
                     symbolGet<ir::InterfacePrototype>(_instance_dict[symbol_template_arguments])) {
@@ -103,7 +90,8 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
     std::unordered_map<std::list<Symbol>, Symbol> _instance_dict;
 
    public:
-    std::unordered_map<std::list<Symbol>, Generator> generators;
+    Generator generator;
+    size_t template_parameters_size = 0;
 };
 
 // class TemplateCollection : public Named, public std::enable_shared_from_this<TemplateCollection>

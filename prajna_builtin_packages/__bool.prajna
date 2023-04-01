@@ -1,0 +1,5 @@
+implement operator::Not<bool> for bool {
+    func Not()->bool {
+        return this.__not__();
+    }
+}

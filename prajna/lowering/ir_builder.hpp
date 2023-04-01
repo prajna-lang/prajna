@@ -271,6 +271,29 @@ class IrBuilder {
         return this->create<ir::Call>(ir_member_function, ir_arguments);
     }
 
+    std::shared_ptr<ir::Function> getUnaryOperator(std::shared_ptr<ir::Type> ir_type,
+                                                   std::string unary_operator_name) {
+        std::unordered_map<std::string, std::string> unary_operator_map = {
+            {"!", "Not"}, {"+", "Positive"}, {"-", "Negative"}};
+        PRAJNA_ASSERT(unary_operator_map.count(unary_operator_name));
+
+        // TODO binary_operator_name的前缀有问题
+        auto unary_operator_interface_name =
+            unary_operator_map[unary_operator_name] + "<" + ir_type->fullname + ">";
+        if (auto ir_interface_implement = ir_type->interfaces[unary_operator_interface_name]) {
+            auto iter_function = std::find_if(
+                RANGE(ir_interface_implement->functions),
+                [=](std::shared_ptr<ir::Function> ir_function) -> bool {
+                    return ir_function->name == unary_operator_map.at(unary_operator_name);
+                });
+            if (iter_function != ir_interface_implement->functions.end()) {
+                return *iter_function;
+            }
+        }
+
+        return nullptr;
+    }
+
     std::shared_ptr<ir::Function> getBinaryOperator(std::shared_ptr<ir::Type> ir_type,
                                                     std::string binary_operator_name) {
         std::unordered_map<std::string, std::string> binary_operator_map = {
@@ -280,10 +303,7 @@ class IrBuilder {
             {"/", "Divide"},       {"%", "Remaind"},   {"&", "And"},
             {"|", "Or"},           {"^", "Xor"},       {"!", "Not"}};
 
-        // TODO 后面需要
-        // if (auto ir_interface_implement =
-        //         ir_type->interfaces["operator::" +
-        //         binary_operator_map[binary_operator_name]]) {
+        // TODO binary_operator_name的前缀有问题
         if (auto ir_interface_implement =
                 ir_type->interfaces[binary_operator_map[binary_operator_name] + "<" +
                                     ir_type->fullname + ">"]) {

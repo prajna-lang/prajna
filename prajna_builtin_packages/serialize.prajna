@@ -70,7 +70,7 @@ func tostr()->str{
 
     if (x < 0.0){
         re.append('-');
-        x = -x;
+        x = 0.0-x;
     }
 
     var int_part = x.toi64();

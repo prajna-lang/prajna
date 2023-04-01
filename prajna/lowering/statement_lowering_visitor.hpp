@@ -530,31 +530,6 @@ class StatementLoweringVisitor {
         return ir_struct_type;
     }
 
-    void processUnaryFunction(std::shared_ptr<ir::Type> ir_type,
-                              std::shared_ptr<ir::Function> ir_function,
-                              ast::Function ast_function) {
-        if (not ir_function->annotations.count("unary")) return;
-
-        if (ir_function->function_type->parameter_types.size() != 1) {
-            logger->error("the parameters size of a unary function must be 1",
-                          ast_function.declaration.parameters);
-        }
-        auto unary_annotation = ir_function->annotations["unary"];
-        auto iter_unary_annotation = std::find_if(
-            RANGE(ast_function.declaration.annotations),
-            [](ast::Annotation ast_annotation) { return ast_annotation.name == "unary"; });
-        if (unary_annotation.size() != 1) {
-            logger->error("the unary annotation should only have one value to represent operator",
-                          *iter_unary_annotation);
-        }
-        auto operator_token = unary_annotation[0];
-        std::set<std::string> unary_operators_set = {"+", "-", "*", "&", "!"};
-        if (not unary_operators_set.count(operator_token)) {
-            logger->error("not valid unary operator", iter_unary_annotation->values.front());
-        }
-        ir_type->unary_functions[operator_token] = ir_function;
-    }
-
     void processInitializeCopyDestroyFunction(std::shared_ptr<ir::Type> ir_type,
                                               std::shared_ptr<ir::Function> ir_function,
                                               ast::Function ast_function) {
@@ -653,8 +628,6 @@ class StatementLoweringVisitor {
                     auto symbol_function = (*this)(ast_function);
                     ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
                 }
-
-                this->processUnaryFunction(ir_type, ir_function, ast_function);
             }
 
             ir_builder->popSymbolTable();

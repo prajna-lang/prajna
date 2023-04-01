@@ -461,7 +461,8 @@ class ExpressionLoweringVisitor {
 
         auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_operand);
         auto unary_operator_name = ast_unary.operator_.string_token;
-        auto ir_function = ir_variable_liked->type->unary_functions[unary_operator_name];
+        auto ir_function =
+            ir_builder->getUnaryOperator(ir_variable_liked->type, unary_operator_name);
         if (not ir_function) {
             logger->error("unary operator not found", ast_unary.operator_);
         }

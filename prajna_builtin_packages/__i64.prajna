@@ -53,3 +53,9 @@ implement operator::LessOrEqual<i64> for i64 {
     @instruction("ICmp", "ICMP_SLE")
     func LessOrEqual(operand: i64)->bool;
 }
+
+implement operator::Negative<i64> for i64 {
+    func Negative()->i64 {
+        return 0i64 - this;
+    }
+}

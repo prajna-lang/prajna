@@ -77,3 +77,16 @@ interface ArrayIndex<ValueType, Dim> {
     func get(index: Array<i64, Dim>)->ValueType;
     func set(index: Array<i64, Dim>, value: ValueType);
 }
+
+
+template <T>
+@disable_dynamic_dispatch
+interface Negative<T> {
+    func Negative()->T;
+}
+
+template <T>
+@disable_dynamic_dispatch
+interface Not<T> {
+    func Not()->T;
+}

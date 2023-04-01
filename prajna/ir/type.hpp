@@ -60,16 +60,12 @@ class Type : public Named {
     std::shared_ptr<Function> constructor = nullptr;
 
     std::map<std::string, std::shared_ptr<Function>> static_functions;
-    std::map<std::string, std::shared_ptr<Function>> unary_functions;
-    std::map<std::string, std::shared_ptr<Function>> binary_functions;
     std::map<std::string, std::shared_ptr<InterfaceImplement>> interfaces;
     // fields必须有顺序关系, 故没有使用map
     std::vector<std::shared_ptr<Field>> fields;
-
     // 用于追溯类型是被什么模板实例化的
     std::shared_ptr<lowering::TemplateStruct> template_struct = nullptr;
     std::any template_arguments;
-
     llvm::Type* llvm_type = nullptr;
 };
 

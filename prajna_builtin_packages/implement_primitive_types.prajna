@@ -23,9 +23,8 @@ implement bool {
     @binary("^")
     func __xor__(rhs: bool)->bool;
 
-    @unary("!")
     func __not__()->bool{
-        return this.__or__(true);
+        return this.__xor__(true);
     }
 }
 
@@ -87,12 +86,6 @@ implement i8 {
     @binary("%")
     func __remain__(rhs: i8)->i8;
 
-    @unary("+")
-    func __unary_add__()->i8{
-        return this;
-    }
-
-    @unary("-")
     func __unary_sub__()->i8{
         return 0i8.__sub__(this);
     }
@@ -153,12 +146,6 @@ implement i16 {
     @binary("%")
     func __remain__(rhs: i16)->i16;
 
-    @unary("+")
-    func __unary_add__()->i16{
-        return this;
-    }
-
-    @unary("-")
     func __unary_sub__()->i16{
         return 0i16.__sub__(this);
     }
@@ -218,12 +205,6 @@ implement i32 {
     @binary("%")
     func __remain__(rhs: i32)->i32;
 
-    @unary("+")
-    func __unary_add__()->i32{
-        return this;
-    }
-
-    @unary("-")
     func __unary_sub__()->i32{
         return 0i32.__sub__(this);
     }
@@ -287,12 +268,6 @@ implement i64 {
     @binary("%")
     func __remain__(rhs: i64)->i64;
 
-    @unary("+")
-    func __unary_add__()->i64{
-        return this;
-    }
-
-    @unary("-")
     func __unary_sub__()->i64{
         return 0i64.__sub__(this);
     }
@@ -365,12 +340,10 @@ implement u32 {
     @binary("%")
     func __remain__(rhs: u32)->u32;
 
-    @unary("+")
     func __unary_add__()->u32{
         return this;
     }
 
-    @unary("-")
     func __unary_sub__()->u32{
         return 0u32.__sub__(this);
     }
@@ -430,12 +403,6 @@ implement f32 {
     @binary("%")
     func __remain__(rhs: f32)->f32;
 
-    @unary("+")
-    func __unary_add__()->f32{
-        return this;
-    }
-
-    @unary("-")
     func __unary_sub__()->f32{
         return 0.0f32.__sub__(this);
     }

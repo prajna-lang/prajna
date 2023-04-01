@@ -1000,6 +1000,25 @@ class StatementLoweringVisitor {
         return symbol;
     }
 
+    std::shared_ptr<Template> createIntTypeTemplate() {
+        auto lowering_template = Template::create();
+
+        lowering_template->generator = [symbol_table = this->ir_builder->symbol_table,
+                                        logger = this->logger,
+                                        this](std::list<Symbol> symbol_template_arguments,
+                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+
+            auto ir_constant_bit_size =
+                symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
+
+            return ir::IntType::create(ir_constant_bit_size->value, true);
+        };
+
+        return lowering_template;
+    }
+
     Symbol operator()(ast::Pragma ast_pragma) {
         if (ast_pragma.name == "error") {
             std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
@@ -1024,6 +1043,9 @@ class StatementLoweringVisitor {
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 expression_lowering_visitor->createBitCastTemplate(), "bit_cast");
+
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createIntTypeTemplate(), "int");
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 expression_lowering_visitor->createDynamicTemplate(), "dynamic");

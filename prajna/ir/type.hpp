@@ -59,7 +59,7 @@ class Type : public Named {
     size_t bytes = 0;
     std::shared_ptr<Function> constructor = nullptr;
 
-    std::map<std::string, std::shared_ptr<Function>> static_functions;
+    std::map<std::string, std::shared_ptr<Function>> functions;
     std::map<std::string, std::shared_ptr<InterfaceImplement>> interfaces;
     // fields必须有顺序关系, 故没有使用map
     std::vector<std::shared_ptr<Field>> fields;

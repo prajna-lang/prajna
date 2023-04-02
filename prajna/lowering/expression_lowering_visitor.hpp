@@ -108,7 +108,7 @@ class ExpressionLoweringVisitor {
         ast_identifier_path.identifiers.front().identifier = "str";
         auto string_type = cast<ir::StructType>(
             symbolGet<ir::Type>(this->applyIdentifierPath(ast_identifier_path)));
-        auto ir_string_from_char_pat = string_type->static_functions["from_char_ptr"];
+        auto ir_string_from_char_pat = string_type->functions["from_char_ptr"];
 
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
         return ir_builder->create<ir::Call>(
@@ -738,7 +738,7 @@ class ExpressionLoweringVisitor {
                     },
                     [=](std::shared_ptr<ir::Type> ir_type) -> Symbol {
                         auto static_function_identifier = iter_ast_identifier->identifier;
-                        auto ir_static_fun = ir_type->static_functions[static_function_identifier];
+                        auto ir_static_fun = ir_type->functions[static_function_identifier];
                         if (ir_static_fun == nullptr) {
                             logger->error(
                                 fmt::format("the static function {} is not exit in type {}",
@@ -1058,7 +1058,7 @@ class ExpressionLoweringVisitor {
             ir_builder->pushBlock(ir_if->trueBlock());
             ir_builder->create<ir::WriteVariableLiked>(
                 ir_builder->create<ir::Call>(
-                    ir_target_ptr_type->static_functions["fromUndef"],
+                    ir_target_ptr_type->functions["fromUndef"],
                     std::vector<std::shared_ptr<ir::Value>>{
                         ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
                 ir_ptr);
@@ -1066,7 +1066,7 @@ class ExpressionLoweringVisitor {
 
             ir_builder->pushBlock(ir_if->falseBlock());
             auto ir_nullptr = ir_builder->create<ir::Call>(
-                ir_ptr->type->static_functions["null"], std::vector<std::shared_ptr<ir::Value>>{});
+                ir_ptr->type->functions["null"], std::vector<std::shared_ptr<ir::Value>>{});
             ir_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
             ir_builder->popBlock();
 

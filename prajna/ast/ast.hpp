@@ -351,7 +351,7 @@ struct InterfacePrototype : SourceLocation {
 
 struct ImplementType : SourceLocation {
     Type type;
-    std::list<Function> functions;
+    Statements statements;
 };
 
 struct ImplementInterfaceForType : SourceLocation {
@@ -434,7 +434,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateStatement, template_parameters, s
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SpecialStatement, statement)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, annotations, name, functions)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotations, interface, type,
                           functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)

@@ -58,6 +58,11 @@ implement str{
     }
 }
 
+func print2(ss:str) {
+    ss.print();
+}
+
+
 implement reference_count::ReferenceCountable for str {
     func initialize(){
         this.size = 0;
@@ -77,6 +82,7 @@ implement reference_count::ReferenceCountable for str {
 
     }
 }
+
 
 implement operator::Add<str> for str {
     func Add(str_re: str)->str{

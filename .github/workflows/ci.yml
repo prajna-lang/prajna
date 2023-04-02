@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
 
+runs:
+  using: 'docker'
+  image: 'dockerfiles/ubuntu_dev_nvgpu.dockerfile'
+  args:
+    - '--gpus all'
+    - '--network host'
 
 jobs:
 

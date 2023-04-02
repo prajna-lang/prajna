@@ -205,6 +205,10 @@ class IrBuilder {
 
     std::shared_ptr<ir::Function> getMemberFunction(std::shared_ptr<ir::Type> ir_type,
                                                     std::string member_name) {
+        if (ir_type->functions.count(member_name)) {
+            return ir_type->functions[member_name];
+        }
+
         for (auto [interface_name, ir_interface] : ir_type->interfaces) {
             if (!ir_interface) continue;
 
@@ -400,6 +404,8 @@ class IrBuilder {
         return ir_block;
     }
 
+    bool isBuildingMemberfunction() { return this_pointer_type && !is_static_function; }
+
    public:
     std::shared_ptr<SymbolTable> symbol_table = nullptr;
     std::shared_ptr<ir::Module> module = nullptr;
@@ -416,6 +422,10 @@ class IrBuilder {
     std::stack<std::shared_ptr<ir::Block>> block_stack;
 
     std::stack<std::shared_ptr<ir::Type>> instantiating_type_stack;
+
+    /// TODO we should not build function inside a function which is builting.
+    std::shared_ptr<ir::Type> this_pointer_type = nullptr;
+    bool is_static_function = false;
 };
 
 }  // namespace prajna::lowering

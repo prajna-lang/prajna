@@ -147,7 +147,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(implement_interface, success_handler_function);
 
     implement_type.name("implement type");
-    implement_type = tok.implement > type > functions;
+    implement_type =
+        tok.implement > type > tok.left_braces > +(function | template_statement) > tok.r_braces;
     on_error<fail>(implement_type, error_handler_function);
     on_success(implement_type, success_handler_function);
 

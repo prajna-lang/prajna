@@ -1,4 +1,11 @@
 # action.yml
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+
 name: 'Hello World'
 description: 'Greet someone and record the time'
 inputs:

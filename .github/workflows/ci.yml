@@ -22,6 +22,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Prajna CI
-     run: nvidia-smi
+      run: nvidia-smi
     # - run: cd  dockerfiles && docker build . --file ubuntu_dev_nvgpu.dockerfile -t ubuntu_nvgpu
     # - run: docker run

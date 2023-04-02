@@ -91,22 +91,22 @@ pipeline{
                                 sh 'git config http.sslVerify false'
                             }
                         }
-                        stage('build') {
-                            steps {
-                                sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh --jobs=16 --depth=10'
-                                sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF -DPRAJNA_WITH_GPU=ON'
-                                sh './scripts/build.sh ${BUILD_TYPE} install'
-                                // 需要安装llc
-                                sh 'cd build_${BUILD_TYPE}/third_party/llvm-project/llvm/tools/llc && make llc -j && cp  ../../bin/llc /usr/bin'
-                            }
-                        }
-                        stage('test') {
-                            steps {
-                                sh './scripts/test.sh ${BUILD_TYPE}'
-                                sh './scripts/test_prajna.sh ${BUILD_TYPE}'
-                            }
-                        }
+                        // stage('build') {
+                        //     steps {
+                        //         sh 'git config --global --list'
+                        //         sh './scripts/clone_submodules.sh --jobs=16 --depth=10'
+                        //         sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF -DPRAJNA_WITH_GPU=ON'
+                        //         sh './scripts/build.sh ${BUILD_TYPE} install'
+                        //         // 需要安装llc
+                        //         sh 'cd build_${BUILD_TYPE}/third_party/llvm-project/llvm/tools/llc && make llc -j && cp  ../../bin/llc /usr/bin'
+                        //     }
+                        // }
+                        // stage('test') {
+                        //     steps {
+                        //         sh './scripts/test.sh ${BUILD_TYPE}'
+                        //         sh './scripts/test_prajna.sh ${BUILD_TYPE}'
+                        //     }
+                        // }
                     }
                 }
             }

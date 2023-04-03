@@ -9,9 +9,9 @@ implement ptr<Type_>{
     @static
     func allocate(size: i64)->ptr<Type_>{
         var self: ptr<Type_>;
-        self.raw_ptr =  bit_cast<undef* ,Type_ *>(malloc(size.__multiply__(sizeof(Type_))));
-        bindings::registerReferenceCount(bit_cast<Type_* ,undef*>(self.raw_ptr));
-        bindings::incrementReferenceCount(bit_cast<Type_* ,undef*>(self.raw_ptr));
+        self.raw_ptr =  __bit_cast<undef* ,Type_ *>(malloc(size.__multiply__(sizeof(Type_))));
+        bindings::registerReferenceCount(__bit_cast<Type_* ,undef*>(self.raw_ptr));
+        bindings::incrementReferenceCount(__bit_cast<Type_* ,undef*>(self.raw_ptr));
         return self;
     }
 
@@ -35,14 +35,14 @@ implement ptr<Type_>{
     // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
     func toUndef()->ptr<undef>{
         var undef_ptr: ptr<undef>;
-        undef_ptr.raw_ptr = bit_cast<Type_* ,undef *>(this.raw_ptr);
+        undef_ptr.raw_ptr = __bit_cast<Type_* ,undef *>(this.raw_ptr);
         return undef_ptr;
     }
 
     @static
     func fromUndef(undef_ptr: ptr<undef>)->ptr<Type_>{
         var self: ptr<Type_>;
-        self.raw_ptr = bit_cast<undef* ,Type_ *>(undef_ptr.raw_ptr);
+        self.raw_ptr = __bit_cast<undef* ,Type_ *>(undef_ptr.raw_ptr);
         return self;
     }
 
@@ -52,7 +52,7 @@ implement ptr<Type_>{
     }
 
     func referenceCount()->i64 {
-        return bindings::getReferenceCount(bit_cast<Type_* ,undef*>(this.raw_ptr));
+        return bindings::getReferenceCount(__bit_cast<Type_* ,undef*>(this.raw_ptr));
     }
 }
 
@@ -75,18 +75,18 @@ implement reference_count::ReferenceCountable for ptr<Type_> {
     }
 
     func registerReferenceCount() {
-        bindings::registerReferenceCount(bit_cast<Type_* ,undef*>(this.raw_ptr));
+        bindings::registerReferenceCount(__bit_cast<Type_* ,undef*>(this.raw_ptr));
     }
 
     func incrementReferenceCount() {
-        bindings::incrementReferenceCount(bit_cast<Type_* ,undef*>(this.raw_ptr));
+        bindings::incrementReferenceCount(__bit_cast<Type_* ,undef*>(this.raw_ptr));
     }
 
     func decrementReferenceCount() {
-        bindings::decrementReferenceCount(bit_cast<Type_* ,undef*>(this.raw_ptr));
-        if (bindings::getReferenceCount(bit_cast<Type_* ,undef*>(this.raw_ptr)).__equal__(0)){
+        bindings::decrementReferenceCount(__bit_cast<Type_* ,undef*>(this.raw_ptr));
+        if (bindings::getReferenceCount(__bit_cast<Type_* ,undef*>(this.raw_ptr)).__equal__(0)){
             if (rawptr_to_i64(this.raw_ptr) != 0){
-                bindings::free(bit_cast<Type_* ,undef*>(this.raw_ptr));
+                bindings::free(__bit_cast<Type_* ,undef*>(this.raw_ptr));
                 this.raw_ptr = i64_to_rawptr<Type_>(0);
             }
         }

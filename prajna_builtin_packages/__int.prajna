@@ -1,4 +1,12 @@
 template <Bits>
+implement int<Bits> {
+    template <TargetType>
+    func cast()->TargetType{
+        return __cast<int<Bits>, TargetType>(this);
+    }
+}
+
+template <Bits>
 implement operator::Equal<int<Bits>> for int<Bits> {
     @instruction("ICmp", "ICMP_EQ")
     func Equal(operand: int<Bits>)->bool;
@@ -73,6 +81,10 @@ implement operator::Negative<int<Bits>> for int<Bits> {
     }
 }
 
+// walkaround. Increased instantiating is not supported.
 func tmp(){
-    var a: int<64>;
+    var a0: int<8>;
+    var a1: int<16>;
+    var a2: int<32>;
+    var a3: int<64>;
 }

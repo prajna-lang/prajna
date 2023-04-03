@@ -1014,6 +1014,78 @@ class StatementLoweringVisitor {
         return symbol;
     }
 
+    std::shared_ptr<Template> createCastInstructionTemplate() {
+        auto template_cast_instruction = Template::create();
+        template_cast_instruction->generator =
+            [symbol_table = this->ir_builder->symbol_table, logger = this->logger, this](
+                std::list<Symbol> symbol_template_arguments,
+                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 2);
+            auto ir_source_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            auto ir_target_type = symbolGet<ir::Type>(symbol_template_arguments.back());
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__cast<" + ir_target_type->fullname + ">", ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+
+            PRAJNA_ASSERT(ir_source_type != ir_target_type);
+
+            auto cast_operation = ir::CastInstruction::Operation::BitCast;
+
+            if (auto ir_source_int_type = cast<ir::IntType>(ir_source_type)) {
+                if (is<ir::FloatType>(ir_target_type)) {
+                    cast_operation = ir_source_int_type->is_signed
+                                         ? ir::CastInstruction::Operation::SIToFP
+                                         : ir::CastInstruction::Operation::UIToFP;
+                }
+
+                if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
+                    if (ir_source_int_type->bits > ir_target_int_type->bits) {
+                        cast_operation = ir::CastInstruction::Operation::Trunc;
+                    }
+
+                    if (ir_source_int_type->bits < ir_target_int_type->bits) {
+                        cast_operation = ir_target_int_type->is_signed
+                                             ? ir::CastInstruction::Operation::SExt
+                                             : ir::CastInstruction::Operation::ZExt;
+                    }
+                }
+
+                if (is<ir::PointerType>(ir_target_type)) {
+                    cast_operation = ir::CastInstruction::Operation::IntToPtr;
+                }
+            }
+
+            if (auto ir_source_float_type = cast<ir::FloatType>(ir_source_type)) {
+                if (auto ir_target_float_type = cast<ir::FloatType>(ir_target_type)) {
+                    cast_operation = ir_source_float_type->bits > ir_target_float_type->bits
+                                         ? ir::CastInstruction::Operation::FPTrunc
+                                         : ir::CastInstruction::Operation::FPExt;
+                }
+                if (auto ir_target_int_type = cast<ir::IntType>(ir_source_type)) {
+                    cast_operation = ir_target_int_type->is_signed
+                                         ? ir::CastInstruction::Operation::FPToSI
+                                         : ir::CastInstruction::Operation::FPToUI;
+                }
+            }
+
+            if (is<ir::PointerType>(ir_source_type)) {
+                if (is<ir::IntType>(ir_target_type)) {
+                    cast_operation = ir::CastInstruction::Operation::PtrToInt;
+                }
+            }
+
+            PRAJNA_ASSERT(cast_operation != ir::CastInstruction::Operation::BitCast);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CastInstruction>(
+                cast_operation, ir_function->parameters.front(), ir_target_type));
+            return ir_function;
+        };
+
+        return template_cast_instruction;
+    }
+
     std::shared_ptr<TemplateStruct> createIntTypeTemplate() {
         auto template_int = Template::create();
 
@@ -1030,43 +1102,37 @@ class StatementLoweringVisitor {
             return ir::IntType::create(ir_constant_bit_size->value, true);
         };
 
-        auto ir_i64_type = ir::IntType::create(64, true);
-
-        /// TODO, Just for testing
-        auto lowering_cast_template = Template::create();
-        lowering_cast_template->generator = [symbol_table = this->ir_builder->symbol_table,
-                                             logger = this->logger, ir_i64_type, this](
-                                                std::list<Symbol> symbol_template_arguments,
-                                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
-
-            auto ir_target_type = symbolGet<ir::Type>(symbol_template_arguments.front());
-            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
-            auto ir_function_type =
-                ir::FunctionType::create({ir::PointerType::create(ir_i64_type)}, ir_target_type);
-            auto ir_function = ir_tmp_builder->createFunction(
-                "cast<" + ir_target_type->fullname + ">", ir_function_type);
-            ir_tmp_builder->createTopBlockForFunction(ir_function);
-
-            if (auto ir_float_type = cast<ir::FloatType>(ir_target_type)) {
-                ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CastInstruction>(
-                    ir::CastInstruction::Operation::SIToFP,
-                    ir_tmp_builder->create<ir::DeferencePointer>(ir_function->parameters.front()),
-                    ir_float_type));
-            } else {
-                PRAJNA_TODO;
-            }
-
-            return ir_function;
-        };
-
-        ir_i64_type->templates["_cast"] = lowering_cast_template;
-
         auto template_struct_int = TemplateStruct::create();
         template_struct_int->template_struct_impl = template_int;
 
         return template_struct_int;
+    }
+
+    std::shared_ptr<Template> createBitCastTemplate() {
+        auto lowering_template = Template::create();
+
+        lowering_template->generator = [symbol_table = this->ir_builder->symbol_table,
+                                        logger = this->logger,
+                                        this](std::list<Symbol> symbol_template_arguments,
+                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 2);
+
+            auto ir_source_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            auto ir_target_type = symbolGet<ir::Type>(symbol_template_arguments.back());
+            PRAJNA_ASSERT(ir_source_type->bytes == ir_target_type->bytes);
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__bit_cast<" + ir_source_type->fullname + ", " + ir_target_type->fullname + ">",
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BitCast>(
+                ir_function->parameters.front(), ir_target_type));
+            return ir_function;
+        };
+
+        return lowering_template;
     }
 
     Symbol operator()(ast::Pragma ast_pragma) {
@@ -1092,10 +1158,13 @@ class StatementLoweringVisitor {
                 expression_lowering_visitor->createRawptrToI64Template(), "rawptr_to_i64");
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                expression_lowering_visitor->createBitCastTemplate(), "bit_cast");
+                this->createBitCastTemplate(), "__bit_cast");
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 this->createIntTypeTemplate(), "int");
+
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createCastInstructionTemplate(), "__cast");
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 expression_lowering_visitor->createDynamicTemplate(), "dynamic");

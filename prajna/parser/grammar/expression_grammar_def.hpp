@@ -92,7 +92,7 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_success(access_call_index_expr, success_handler_function);
 
     member_access.name("member access");
-    member_access = tok.period > identifier;
+    member_access = tok.period > identifier_path;
     on_error<fail>(member_access, error_handler_function);
     on_success(member_access, success_handler_function);
 

@@ -597,10 +597,16 @@ class StatementLoweringVisitor {
             ir_builder->this_pointer_type = ir::PointerType::create(ir_type);
 
             for (auto ast_statement : ast_implement.statements) {
-                std::shared_ptr<ir::Function> ir_function = nullptr;
                 auto symbol_function = (*this)(ast_statement);
-                ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
-                ir_type->functions[ir_function->name] = ir_function;
+                if (auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function))) {
+                    ir_type->functions[ir_function->name] = ir_function;
+                    continue;
+                }
+                if (auto lowering_template = symbolGet<Template>(symbol_function)) {
+                    ir_type->templates[lowering_template->name] = lowering_template;
+                    continue;
+                }
+                PRAJNA_TODO;
             }
 
             ir_builder->popSymbolTable();
@@ -937,9 +943,43 @@ class StatementLoweringVisitor {
                     return template_;
                 },
                 [=](ast::Function ast_function) -> Symbol {
+                    auto ast_template_paramters = ast_template_statement.template_parameters;
                     auto template_ = this->getOrCreateTemplate(ast_function.declaration.name);
-                    template_->generator = this->createTemplateGenerator(
-                        ast_template_statement.template_parameters, ast_function);
+
+                    if (ir_builder->isInsideImplement()) {
+                        auto template_parameter_identifier_list =
+                            this->getTemplateParametersIdentifiers(ast_template_paramters);
+                        template_->generator =
+                            [=, symbol_table = ir_builder->symbol_table, logger = this->logger,
+                             this_pointer_type = ir_builder->this_pointer_type](
+                                std::list<Symbol> symbol_template_arguments,
+                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+                            // 包裹一层名字空间, 避免被污染
+                            auto templates_symbol_table = SymbolTable::create(symbol_table);
+
+                            for (auto [identifier, symbol] :
+                                 boost::combine(template_parameter_identifier_list,
+                                                symbol_template_arguments)) {
+                                templates_symbol_table->set(symbol, identifier);
+                            }
+
+                            auto statement_lowering_visitor = StatementLoweringVisitor::create(
+                                templates_symbol_table, logger, ir_module, nullptr);
+                            try {
+                                statement_lowering_visitor->ir_builder->this_pointer_type =
+                                    this_pointer_type;
+                                auto symbol = (*statement_lowering_visitor)(ast_function);
+                                statement_lowering_visitor->ir_builder->this_pointer_type = nullptr;
+                                return symbol;
+                            } catch (CompileError compile_error) {
+                                logger->note(ast_template_paramters);
+                                throw compile_error;
+                            }
+                        };
+                    } else {
+                        template_->generator = this->createTemplateGenerator(
+                            ast_template_statement.template_parameters, ast_function);
+                    }
                     return template_;
                 }},
             ast_template_statement.statement);
@@ -989,6 +1029,39 @@ class StatementLoweringVisitor {
 
             return ir::IntType::create(ir_constant_bit_size->value, true);
         };
+
+        auto ir_i64_type = ir::IntType::create(64, true);
+
+        /// TODO, Just for testing
+        auto lowering_cast_template = Template::create();
+        lowering_cast_template->generator = [symbol_table = this->ir_builder->symbol_table,
+                                             logger = this->logger, ir_i64_type, this](
+                                                std::list<Symbol> symbol_template_arguments,
+                                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+
+            auto ir_target_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type =
+                ir::FunctionType::create({ir::PointerType::create(ir_i64_type)}, ir_target_type);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "cast<" + ir_target_type->fullname + ">", ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+
+            if (auto ir_float_type = cast<ir::FloatType>(ir_target_type)) {
+                ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CastInstruction>(
+                    ir::CastInstruction::Operation::SIToFP,
+                    ir_tmp_builder->create<ir::DeferencePointer>(ir_function->parameters.front()),
+                    ir_float_type));
+            } else {
+                PRAJNA_TODO;
+            }
+
+            return ir_function;
+        };
+
+        ir_i64_type->templates["_cast"] = lowering_cast_template;
 
         return lowering_template;
     }

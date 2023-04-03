@@ -4,10 +4,38 @@ func print(value: T) {
     value.tostr().print();
 }
 
+struct Tmp{
+    a: i64;
+};
+
+implement Tmp {
+
+    template <T>
+    func create()->T {
+        var tmp: T;
+        return tmp;
+    }
+
+    template <T>
+    @static
+    func create2()->T {
+        var tmp: T;
+        return tmp;
+    }
+
+
+};
+
+
 @test
 func testMain() {
     print(3.1415);
     "\n".print();
     print(3);
     print<i64>(4);
+
+    var tmp: Tmp;
+    tmp.create<f32>();
+    Tmp::create2<f32>();
+    // Tmp::create<f32>();
 }

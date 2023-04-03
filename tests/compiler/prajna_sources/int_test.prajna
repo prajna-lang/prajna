@@ -1,0 +1,5 @@
+@test
+func testMain(){
+    var a  = 3;
+    var b = a._cast<f32>();
+}

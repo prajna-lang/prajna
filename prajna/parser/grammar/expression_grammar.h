@@ -66,7 +66,6 @@ struct ExpressionGrammer
     rule<ast::BinaryOperation> call;
     rule<ast::BinaryOperation> index;
     rule<ast::Expression> access_call_index_expr;
-    rule<ast::Cast> cast;
     rule<ast::Operand> primary_expr;
     rule<ast::Operand> literal;
     rule<ast::SizeOf> sizeof_;

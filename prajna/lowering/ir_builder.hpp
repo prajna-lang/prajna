@@ -406,6 +406,8 @@ class IrBuilder {
 
     bool isBuildingMemberfunction() { return this_pointer_type && !is_static_function; }
 
+    bool isInsideImplement() { return this_pointer_type != nullptr; }
+
    public:
     std::shared_ptr<SymbolTable> symbol_table = nullptr;
     std::shared_ptr<ir::Module> module = nullptr;

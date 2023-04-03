@@ -237,12 +237,34 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> applyBinaryOperationAccessMember(
         std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
-        if (ast_binary_operation.operand.type() != typeid(ast::Identifier)) {
+        if (ast_binary_operation.operand.type() != typeid(ast::IdentifierPath)) {
             PRAJNA_UNREACHABLE;
-            logger->error("access operand must be a identifier", ast_binary_operation);
+            logger->error("access operand must be a identifier path", ast_binary_operation);
         }
 
-        std::string member_name = boost::get<ast::Identifier>(ast_binary_operation.operand);
+        auto identifier_path = boost::get<ast::IdentifierPath>(ast_binary_operation.operand);
+        PRAJNA_ASSERT(identifier_path.identifiers.size() == 1);
+        std::string member_name = identifier_path.identifiers.front().identifier;
+
+        // 模板函数
+        if (identifier_path.identifiers.front().template_arguments) {
+            auto lowering_member_function_template =
+                std::any_cast<std::shared_ptr<Template>>(ir_lhs->type->templates[member_name]);
+
+            auto symbol_template_arguments = this->applyTemplateArguments(
+                *identifier_path.identifiers.front().template_arguments);
+
+            auto ir_member_function = cast<ir::Function>(
+                symbolGet<ir::Value>(lowering_member_function_template->instantiate(
+                    symbol_template_arguments, ir_builder->module)));
+            PRAJNA_ASSERT(ir_member_function);
+
+            auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_lhs);
+            auto ir_this_pointer =
+                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+            return ir::MemberFunctionWithThisPointer::create(ir_this_pointer, ir_member_function);
+        }
+
         if (auto ir_member = ir_builder->accessMember(ir_lhs, member_name)) {
             return ir_member;
         }
@@ -738,6 +760,19 @@ class ExpressionLoweringVisitor {
                     },
                     [=](std::shared_ptr<ir::Type> ir_type) -> Symbol {
                         auto static_function_identifier = iter_ast_identifier->identifier;
+                        if (iter_ast_identifier->template_arguments) {
+                            auto lowering_member_function_template =
+                                std::any_cast<std::shared_ptr<Template>>(
+                                    ir_type->templates[static_function_identifier]);
+                            auto symbol_template_argumen_list = this->applyTemplateArguments(
+                                *iter_ast_identifier->template_arguments);
+                            auto ir_function = cast<ir::Function>(
+                                symbolGet<ir::Value>(lowering_member_function_template->instantiate(
+                                    symbol_template_argumen_list, ir_builder->module)));
+                            PRAJNA_ASSERT(ir_function);
+                            return ir_function;
+                        }
+
                         auto ir_static_fun = ir_type->functions[static_function_identifier];
                         if (ir_static_fun == nullptr) {
                             logger->error(

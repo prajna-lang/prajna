@@ -91,9 +91,8 @@ CodeLexer<Lexer>::CodeLexer() {
 
     var = "var";
     this_ = "this";
-    cast = "cast";
     sizeof_ = "sizeof";
-    this->self += var | this_ | cast | sizeof_;
+    this->self += var | this_ | sizeof_;
 
     dynamic_cast_ = "dynamic_cast";
     this->self += dynamic_cast_;

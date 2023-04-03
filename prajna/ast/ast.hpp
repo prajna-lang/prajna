@@ -24,7 +24,6 @@ struct Unary;
 struct PostfixUnary;
 struct Expression;
 struct Expressions;
-struct Cast;
 struct KernelFunctionCall;
 struct PrefixCall;
 struct Array;
@@ -166,9 +165,8 @@ typedef boost::variant<
     Blank, Null, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral, Identifier,
     IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
     boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
-    boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Cast>,
-    boost::recursive_wrapper<Array>, SizeOf, boost::recursive_wrapper<KernelFunctionCall>,
-    boost::recursive_wrapper<DynamicCast>>
+    boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Array>, SizeOf,
+    boost::recursive_wrapper<KernelFunctionCall>, boost::recursive_wrapper<DynamicCast>>
     Operand;
 
 struct Unary : SourceLocation {
@@ -189,11 +187,6 @@ struct BinaryOperation : SourceLocation {
 struct Expression : SourceLocation {
     Operand first;
     std::list<BinaryOperation> rest;
-};
-
-struct Cast : SourceLocation {
-    Type type;
-    Expression value;
 };
 
 struct Expressions : SourceLocation, std::list<Expression> {};
@@ -409,7 +402,6 @@ struct DynamicCast : SourceLocation {
 
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Module, name, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Block, statements)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Cast, type, value)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Unary, operator_, operand)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixUnary, operand, operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::BinaryOperation, operator_, operand)

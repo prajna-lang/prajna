@@ -68,7 +68,6 @@ struct CodeLexer : lex::lexer<Lexer> {
 
     lex::token_def<lex::omit> var;
     lex::token_def<ast::Identifier> this_;
-    lex::token_def<lex::omit> cast;
     lex::token_def<lex::omit> sizeof_;
 
     lex::token_def<ast::Identifier> identifier;

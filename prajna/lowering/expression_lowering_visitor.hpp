@@ -495,18 +495,6 @@ class ExpressionLoweringVisitor {
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
     }
 
-    std::shared_ptr<ir::Value> operator()(ast::Cast ast_cast) {
-        auto ir_type = this->applyType(ast_cast.type);
-        if (not is<ir::PointerType>(ir_type)) {
-            logger->error("the target type of the cast must be a pointer type", ast_cast.type);
-        }
-        auto ir_value = this->apply(ast_cast.value);
-        if (not is<ir::PointerType>(ir_value->type)) {
-            logger->error("the type of the cast operand must be pointer type", ast_cast.value);
-        }
-        return ir_builder->create<ir::BitCast>(ir_value, ir_type);
-    }
-
     std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
         auto ir_type = boost::apply_visitor(
             overloaded{[](auto x) -> std::shared_ptr<ir::Type> {

@@ -73,7 +73,7 @@ class IrBuilder {
         return tmp_symbol_table->get(names.back());
     }
 
-    std::shared_ptr<ir::StructType> getArrayType(std::shared_ptr<ir::Type> ir_type, size_t length) {
+    std::shared_ptr<ir::Type> getArrayType(std::shared_ptr<ir::Type> ir_type, size_t length) {
         PRAJNA_ASSERT(symbol_table);
 
         std::list<Symbol> symbol_template_arguments;
@@ -88,11 +88,11 @@ class IrBuilder {
         return ir_shape3_type;
     }
 
-    std::shared_ptr<ir::StructType> getShape3Type() {
+    std::shared_ptr<ir::Type> getShape3Type() {
         return this->getArrayType(this->getIndexType(), 3);
     }
 
-    std::shared_ptr<ir::StructType> getPtrType(std::shared_ptr<ir::Type> ir_value_type) {
+    std::shared_ptr<ir::Type> getPtrType(std::shared_ptr<ir::Type> ir_value_type) {
         auto symbol_ptr = this->getSymbolByPath(true, {"__ptr", "ptr"});
         auto ptr_template = symbolGet<TemplateStruct>(symbol_ptr);
         PRAJNA_ASSERT(ptr_template);

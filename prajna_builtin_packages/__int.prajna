@@ -1,0 +1,78 @@
+template <Bits>
+implement operator::Equal<int<Bits>> for int<Bits> {
+    @instruction("ICmp", "ICMP_EQ")
+    func Equal(operand: int<Bits>)->bool;
+}
+
+template <Bits>
+implement operator::NotEqual<int<Bits>> for int<Bits> {
+    @instruction("ICmp", "ICMP_NE")
+    func NotEqual(operand: int<Bits>)->bool;
+}
+
+template <Bits>
+implement operator::Add<int<Bits>> for int<Bits> {
+    @instruction("BinaryOperator", "Add")
+    func Add(operand: int<Bits>)->int<Bits>;
+}
+
+template <Bits>
+implement operator::Sub<int<Bits>> for int<Bits> {
+    @instruction("BinaryOperator", "Sub")
+    func Sub(operand: int<Bits>)->int<Bits>;
+}
+
+template <Bits>
+implement operator::Multiply<int<Bits>> for int<Bits> {
+    @instruction("BinaryOperator", "Mul")
+    func Multiply(operand: int<Bits>)->int<Bits>;
+}
+
+template <Bits>
+implement operator::Divide<int<Bits>> for int<Bits> {
+    @instruction("BinaryOperator", "SDiv")
+    func Divide(operand: int<Bits>)->int<Bits>;
+}
+
+
+template <Bits>
+implement operator::Remaind<int<Bits>> for int<Bits> {
+    @instruction("BinaryOperator", "SRem")
+    func Remaind(operand: int<Bits>)->int<Bits>;
+}
+
+template <Bits>
+implement operator::Greater<int<Bits>> for int<Bits> {
+    @instruction("ICmp", "ICMP_SGT")
+    func Greater(operand: int<Bits>)->bool;
+}
+
+template <Bits>
+implement operator::Less<int<Bits>> for int<Bits> {
+    @instruction("ICmp", "ICMP_SLT")
+    func Less(operand: int<Bits>)->bool;
+}
+
+template <Bits>
+implement operator::GreaterOrEqual<int<Bits>> for int<Bits> {
+    @instruction("ICmp", "ICMP_SGE")
+    func GreaterOrEqual(operand: int<Bits>)->bool;
+}
+
+template <Bits>
+implement operator::LessOrEqual<int<Bits>> for int<Bits> {
+    @instruction("ICmp", "ICMP_SLE")
+    func LessOrEqual(operand: int<Bits>)->bool;
+}
+
+template <Bits>
+implement operator::Negative<int<Bits>> for int<Bits> {
+    func Negative()->int<Bits> {
+        var zero = this - this;
+        return zero - this;
+    }
+}
+
+func tmp(){
+    var a: int<64>;
+}

@@ -8,7 +8,7 @@ import bindings;
 import debug;
 import array;
 import __ptr;
-import __i64;
+import __int;
 import __f32;
 import __char;
 import __bool;

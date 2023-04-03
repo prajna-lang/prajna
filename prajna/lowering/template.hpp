@@ -111,14 +111,13 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
         return self;
     }
 
-    std::shared_ptr<ir::StructType> instantiateStructAndImplement(
-        std::list<Symbol> template_arguments, std::shared_ptr<ir::Module> ir_module) {
+    std::shared_ptr<ir::Type> instantiateStructAndImplement(std::list<Symbol> template_arguments,
+                                                            std::shared_ptr<ir::Module> ir_module) {
         if (struct_type_instance_dict.count(template_arguments) == 0) {
             struct_type_instance_dict[template_arguments];
 
-            struct_type_instance_dict[template_arguments] =
-                cast<ir::StructType>(symbolGet<ir::Type>(
-                    template_struct_impl->instantiate(template_arguments, ir_module)));
+            struct_type_instance_dict[template_arguments] = symbolGet<ir::Type>(
+                template_struct_impl->instantiate(template_arguments, ir_module));
             struct_type_instance_dict[template_arguments]->template_struct =
                 this->shared_from_this();
             struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
@@ -141,8 +140,7 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
     std::unordered_map<Symbol, std::shared_ptr<Template>>
         template_implement_interface_for_type_dict;
 
-    std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::StructType>>
-        struct_type_instance_dict;
+    std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::Type>> struct_type_instance_dict;
 };
 
 }  // namespace prajna::lowering

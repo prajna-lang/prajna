@@ -1014,13 +1014,13 @@ class StatementLoweringVisitor {
         return symbol;
     }
 
-    std::shared_ptr<Template> createIntTypeTemplate() {
-        auto lowering_template = Template::create();
+    std::shared_ptr<TemplateStruct> createIntTypeTemplate() {
+        auto template_int = Template::create();
 
-        lowering_template->generator = [symbol_table = this->ir_builder->symbol_table,
-                                        logger = this->logger,
-                                        this](std::list<Symbol> symbol_template_arguments,
-                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
+        template_int->generator = [symbol_table = this->ir_builder->symbol_table,
+                                   logger = this->logger,
+                                   this](std::list<Symbol> symbol_template_arguments,
+                                         std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // TODO
             PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
 
@@ -1063,7 +1063,10 @@ class StatementLoweringVisitor {
 
         ir_i64_type->templates["_cast"] = lowering_cast_template;
 
-        return lowering_template;
+        auto template_struct_int = TemplateStruct::create();
+        template_struct_int->template_struct_impl = template_int;
+
+        return template_struct_int;
     }
 
     Symbol operator()(ast::Pragma ast_pragma) {

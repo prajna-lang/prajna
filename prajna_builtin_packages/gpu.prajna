@@ -10,20 +10,20 @@ func setDevice(id: i64){
 
 func maxThreadPerBlock(device: i64)->i64{
     var count: i32;
-    cuda::cuDeviceGetAttribute(&count, 1i32, device.toi32());
-    return count.toi64();
+    cuda::cuDeviceGetAttribute(&count, 1i32, device.cast<i32>());
+    return count.cast<i64>();
 }
 
 func multiProcessorsCount(device: i64)->i64{
     var count: i32;
-    cuda::cuDeviceGetAttribute(&count, 16i32, device.toi32());
-    return count.toi64();
+    cuda::cuDeviceGetAttribute(&count, 16i32, device.cast<i32>());
+    return count.cast<i64>();
 }
 
 func launchKernel(kernel_function_pointer: i8*, gridShape: Array<i64, 3>, blockShape: Array<i64, 3>, kernel_params: i8**)->i64{
-    var re = cuda::cuLaunchKernel(kernel_function_pointer, gridShape[0].tou32(), gridShape[1].tou32(),
-    gridShape[2].tou32(), blockShape[0].tou32(), blockShape[1].tou32(), blockShape[2].tou32(), 0u32, i64_to_rawptr<i8>(0), kernel_params, i64_to_rawptr<i8*>(0));
-    return re.toi64();
+    var re = cuda::cuLaunchKernel(kernel_function_pointer, gridShape[0].cast<u32>(), gridShape[1].cast<u32>(),
+    gridShape[2].cast<u32>(), blockShape[0].cast<u32>(), blockShape[1].cast<u32>(), blockShape[2].cast<u32>(), 0u32, __cast<i64, i8*>(0), kernel_params, __cast<i64, i8**>(0));
+    return re.cast<i64>();
 }
 
 func launchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
@@ -170,20 +170,20 @@ func __warp_size()->u32;
 
 @target("nvptx")
 func threadIndex()->Array<i64, 3> {
-    return [__thread_idx_x().toi64(), __thread_idx_y().toi64(), __thread_idx_z().toi64()];
+    return [__thread_idx_x().cast<i64>(), __thread_idx_y().cast<i64>(), __thread_idx_z().cast<i64>()];
 }
 
 @target("nvptx")
 func blockShape()->Array<i64, 3> {
-    return [__block_shape_x().toi64(), __block_shape_y().toi64(), __block_shape_z().toi64()];
+    return [__block_shape_x().cast<i64>(), __block_shape_y().cast<i64>(), __block_shape_z().cast<i64>()];
 }
 
 @target("nvptx")
 func blockIndex()->Array<i64, 3> {
-    return [__block_idx_x().toi64(), __block_idx_y().toi64(), __block_idx_z().toi64()];
+    return [__block_idx_x().cast<i64>(), __block_idx_y().cast<i64>(), __block_idx_z().cast<i64>()];
 }
 
 @target("nvptx")
 func gridShape()->Array<i64, 3> {
-    return [__grid_shape_x().toi64(), __grid_shape_y().toi64(), __grid_shape_z().toi64()];
+    return [__grid_shape_x().cast<i64>(), __grid_shape_y().cast<i64>(), __grid_shape_z().cast<i64>()];
 }

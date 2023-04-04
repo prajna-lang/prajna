@@ -8,7 +8,7 @@ struct TestA {
 implement reference_count::ReferenceCountable for TestA {
     func initialize(){
         this.name = "undef";
-        this.data = i64_to_rawptr<undef>(0);
+        this.data = __cast<i64, undef*>(0);
         this.registerReferenceCount();
         // (this.name + " __initialize\n").print();
     }
@@ -26,7 +26,7 @@ implement reference_count::ReferenceCountable for TestA {
         // (this.name + " ref count: " + ref_count.tostr() + "\n").print();
 
         if (ref_count == 0 ){
-            if (rawptr_to_i64(this.data) == 0) {
+            if (__cast<undef*, i64>(this.data) == 0) {
                 bindings::free(this.data);
             }
             "free memory\n".print();

@@ -1,3 +1,11 @@
+implement char {
+    template <TargetType>
+    func cast()->TargetType{
+        return __cast<char, TargetType>(this);
+    }
+}
+
+
 implement operator::Equal<char> for char {
     @instruction("ICmp", "ICMP_EQ")
     func Equal(operand: char)->bool;

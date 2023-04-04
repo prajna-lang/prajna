@@ -13,7 +13,7 @@ implement Serializable for i64{
         ///max bit  is  19(not include sign)
         var inverse_re = "";
         while (temp != 0){
-            inverse_re.append((temp%10 +'0'.toi64()).tochar());
+            inverse_re.append((temp%10 +'0'.cast<i64>()).cast<char>());
             temp = temp / 10;
         }
 
@@ -48,13 +48,13 @@ implement Serializable for bool{
 
 implement Serializable for i32{
     func tostr()->str{
-        return this.toi64().tostr();
+        return this.cast<i64>().tostr();
     }
 }
 
 implement Serializable for u32{
     func tostr()->str{
-        return this.toi64().tostr();
+        return this.cast<i64>().tostr();
     }
 }
 
@@ -73,18 +73,18 @@ func tostr()->str{
         x = 0.0-x;
     }
 
-    var int_part = x.toi64();
+    var int_part = x.cast<i64>();
     re = re  + int_part.tostr();
-    x = x - int_part.tof32();
+    x = x - int_part.cast<f32>();
 
     var j = 0;
     if (x < 1.0){
         re.append('.');
         while (n > 0){
             x = x * 10.0;
-            int_part = x.toi64();
-            re.append((x.toi64() + '0'.toi64()).tochar());
-            x = x - int_part.tof32();
+            int_part = x.cast<i64>();
+            re.append((x.cast<i64>() + '0'.cast<i64>()).cast<char>());
+            x = x - int_part.cast<f32>();
             n = n - 1;
         }
     }

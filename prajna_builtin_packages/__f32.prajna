@@ -69,4 +69,9 @@ implement operator::LessOrEqual<f32> for f32 {
     func LessOrEqual(operand: f32)->bool;
 }
 
+func tmp(){
+    var a0: float<32>;
+    var a1: float<64>;
+}
+
 

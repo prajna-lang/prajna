@@ -24,7 +24,7 @@ implement Array<Type_, Length_>{
     }
 
     func cumprod()->Type_{
-        var re = Type_::one();
+        var re = (1).cast<Type_>();
         for i in 0 to Length_{
             re = re * this[i];
         }
@@ -33,9 +33,10 @@ implement Array<Type_, Length_>{
 
     @static
     func one()->Array<Type_, Length_>{
+        var tmp = (1).cast<Type_>();
         var re_one : Array<Type_, Length_>;
         for i in 0 to re_one.length() {
-            re_one[i] = Type_::one();
+            re_one[i] = tmp;
         }
         return re_one;
     }

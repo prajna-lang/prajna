@@ -15,6 +15,43 @@ implement uint<Bits> {
 }
 
 template <Bits>
+implement operator::Add<int<Bits>> for int<Bits> {
+    func Add(operand: int<Bits>)->int<Bits> {
+        return __add<int<Bits>>(this, operand);
+    }
+}
+
+template <Bits>
+implement operator::Sub<int<Bits>> for int<Bits> {
+    func Sub(operand: int<Bits>)->int<Bits> {
+        return __sub<int<Bits>>(this, operand);
+    }
+}
+
+template <Bits>
+implement operator::Multiply<int<Bits>> for int<Bits> {
+    func Multiply(operand: int<Bits>)->int<Bits>{
+        return __mul<int<Bits>>(this, operand);
+    }
+}
+
+template <Bits>
+implement operator::Divide<int<Bits>> for int<Bits> {
+    func Divide(operand: int<Bits>)->int<Bits>{
+        return __div<int<Bits>>(this, operand);
+    }
+}
+
+
+template <Bits>
+implement operator::Remaind<int<Bits>> for int<Bits> {
+    func Remaind(operand: int<Bits>)->int<Bits>{
+        return __rem<int<Bits>>(this, operand);
+    }
+}
+
+
+template <Bits>
 implement operator::Equal<int<Bits>> for int<Bits> {
     @instruction("ICmp", "ICMP_EQ")
     func Equal(operand: int<Bits>)->bool;
@@ -24,37 +61,6 @@ template <Bits>
 implement operator::NotEqual<int<Bits>> for int<Bits> {
     @instruction("ICmp", "ICMP_NE")
     func NotEqual(operand: int<Bits>)->bool;
-}
-
-template <Bits>
-implement operator::Add<int<Bits>> for int<Bits> {
-    @instruction("BinaryOperator", "Add")
-    func Add(operand: int<Bits>)->int<Bits>;
-}
-
-template <Bits>
-implement operator::Sub<int<Bits>> for int<Bits> {
-    @instruction("BinaryOperator", "Sub")
-    func Sub(operand: int<Bits>)->int<Bits>;
-}
-
-template <Bits>
-implement operator::Multiply<int<Bits>> for int<Bits> {
-    @instruction("BinaryOperator", "Mul")
-    func Multiply(operand: int<Bits>)->int<Bits>;
-}
-
-template <Bits>
-implement operator::Divide<int<Bits>> for int<Bits> {
-    @instruction("BinaryOperator", "SDiv")
-    func Divide(operand: int<Bits>)->int<Bits>;
-}
-
-
-template <Bits>
-implement operator::Remaind<int<Bits>> for int<Bits> {
-    @instruction("BinaryOperator", "SRem")
-    func Remaind(operand: int<Bits>)->int<Bits>;
 }
 
 template <Bits>

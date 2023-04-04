@@ -1169,6 +1169,117 @@ class StatementLoweringVisitor {
         return lowering_template;
     }
 
+    // TODO 类型不对应, 会导致错误.
+    std::shared_ptr<Template> createBinaryOperatorTemplate(std::string binary_operator_name) {
+        auto template_binary_operator = Template::create();
+
+        template_binary_operator->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                               logger = this->logger](
+                                                  std::list<Symbol> symbol_template_arguments,
+                                                  std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+
+            auto binary_operation = ir::BinaryOperator::Operation::None;
+            // arithmatic
+            if (binary_operator_name == "add") {
+                if (is<ir::IntType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::Add;
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::FAdd;
+                }
+            }
+            if (binary_operator_name == "sub") {
+                if (is<ir::IntType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::Sub;
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::FSub;
+                }
+            }
+            if (binary_operator_name == "mul") {
+                if (is<ir::IntType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::Mul;
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::FMul;
+                }
+            }
+            if (binary_operator_name == "div") {
+                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                    if (ir_int_type->is_signed) {
+                        binary_operation = ir::BinaryOperator::Operation::SDiv;
+                    } else {
+                        binary_operation = ir::BinaryOperator::Operation::UDiv;
+                    }
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::FDiv;
+                }
+            }
+            if (binary_operator_name == "rem") {
+                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                    if (ir_int_type->is_signed) {
+                        binary_operation = ir::BinaryOperator::Operation::SRem;
+                    } else {
+                        binary_operation = ir::BinaryOperator::Operation::URem;
+                    }
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::FRem;
+                }
+            }
+            // logical
+            if (binary_operator_name == "and") {
+                if (is<ir::IntType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::And;
+                }
+            }
+            if (binary_operator_name == "or") {
+                if (is<ir::IntType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::Or;
+                }
+            }
+            if (binary_operator_name == "xor") {
+                if (is<ir::IntType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::Xor;
+                }
+            }
+
+            // shift
+            if (binary_operator_name == "shift_left") {
+                if (is<ir::IntType>(ir_type)) {
+                    binary_operation = ir::BinaryOperator::Operation::Shl;
+                }
+            }
+            if (binary_operator_name == "shift_right") {
+                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                    if (ir_int_type->is_signed) {
+                        binary_operation = ir::BinaryOperator::Operation::AShr;
+                    } else {
+                        binary_operation = ir::BinaryOperator::Operation::LShr;
+                    }
+                }
+            }
+
+            PRAJNA_ASSERT(binary_operation != ir::BinaryOperator::Operation::None);
+
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type = ir::FunctionType::create({ir_type, ir_type}, ir_type);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__" + binary_operator_name + getSymbolListFullname(symbol_template_arguments),
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BinaryOperator>(
+                binary_operation, ir_function->parameters.front(), ir_function->parameters.back()));
+            return ir_function;
+        };
+
+        return template_binary_operator;
+    }
+
     Symbol operator()(ast::Pragma ast_pragma) {
         if (ast_pragma.name == "error") {
             std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
@@ -1198,6 +1309,29 @@ class StatementLoweringVisitor {
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 this->createCastInstructionTemplate(), "__cast");
+            // arithematic
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("add"), "__add");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("sub"), "__sub");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("mul"), "__mul");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("div"), "__div");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("rem"), "__rem");
+            // logical
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("and"), "__and");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("or"), "__or");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("xor"), "__xor");
+            // shift
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("shift_left"), "__shift_left");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createBinaryOperatorTemplate("shift_right"), "__shift_right");
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 expression_lowering_visitor->createDynamicTemplate(), "dynamic");

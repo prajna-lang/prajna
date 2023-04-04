@@ -53,38 +53,51 @@ implement operator::Remaind<int<Bits>> for int<Bits> {
 
 template <Bits>
 implement operator::Equal<int<Bits>> for int<Bits> {
-    @instruction("ICmp", "ICMP_EQ")
-    func Equal(operand: int<Bits>)->bool;
+    func Equal(operand: int<Bits>)->bool {
+        return __eq<int<Bits>>(this, operand);
+    }
 }
 
 template <Bits>
 implement operator::NotEqual<int<Bits>> for int<Bits> {
-    @instruction("ICmp", "ICMP_NE")
-    func NotEqual(operand: int<Bits>)->bool;
+    func NotEqual(operand: int<Bits>)->bool{
+        return __ne<int<Bits>>(this, operand);
+    }
 }
 
 template <Bits>
 implement operator::Greater<int<Bits>> for int<Bits> {
-    @instruction("ICmp", "ICMP_SGT")
-    func Greater(operand: int<Bits>)->bool;
+    func Greater(operand: int<Bits>)->bool{
+        return __gt<int<Bits>>(this, operand);
+    }
 }
 
 template <Bits>
 implement operator::Less<int<Bits>> for int<Bits> {
-    @instruction("ICmp", "ICMP_SLT")
-    func Less(operand: int<Bits>)->bool;
+    func Less(operand: int<Bits>)->bool{
+        return __lt<int<Bits>>(this, operand);
+    }
 }
 
 template <Bits>
 implement operator::GreaterOrEqual<int<Bits>> for int<Bits> {
-    @instruction("ICmp", "ICMP_SGE")
-    func GreaterOrEqual(operand: int<Bits>)->bool;
+    func GreaterOrEqual(operand: int<Bits>)->bool {
+        return __ge<int<Bits>>(this, operand);
+    }
 }
 
 template <Bits>
 implement operator::LessOrEqual<int<Bits>> for int<Bits> {
-    @instruction("ICmp", "ICMP_SLE")
-    func LessOrEqual(operand: int<Bits>)->bool;
+    func LessOrEqual(operand: int<Bits>)->bool {
+        return __le<int<Bits>>(this, operand);
+    }
+}
+
+template <Bits>
+implement operator::LessOrEqual<int<Bits>> for int<Bits> {
+    func LessOrEqual(operand: int<Bits>)->bool{
+        return __eq<int<Bits>>(this, operand);
+    }
 }
 
 template <Bits>

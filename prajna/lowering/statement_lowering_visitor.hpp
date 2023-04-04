@@ -1169,6 +1169,100 @@ class StatementLoweringVisitor {
         return lowering_template;
     }
 
+    std::shared_ptr<Template> createCompareInstructionTemplate(std::string compare_operation_name) {
+        auto template_compare = Template::create();
+
+        template_compare->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                       logger = this->logger](
+                                          std::list<Symbol> symbol_template_arguments,
+                                          std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+
+            auto compare_operation = ir::CompareInstruction::Operation::None;
+            // arithmatic
+            if (compare_operation_name == "eq") {
+                if (is<ir::IntType>(ir_type)) {
+                    compare_operation = ir::CompareInstruction::Operation::ICMP_EQ;
+                } else {
+                    compare_operation = ir::CompareInstruction::Operation::FCMP_OEQ;
+                }
+            }
+            if (compare_operation_name == "ne") {
+                if (is<ir::IntType>(ir_type)) {
+                    compare_operation = ir::CompareInstruction::Operation::ICMP_NE;
+                } else {
+                    compare_operation = ir::CompareInstruction::Operation::FCMP_ONE;
+                }
+            }
+            if (compare_operation_name == "gt") {
+                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                    if (ir_int_type->is_signed) {
+                        compare_operation = ir::CompareInstruction::Operation::ICMP_SGT;
+                    } else {
+                        compare_operation = ir::CompareInstruction::Operation::ICMP_UGT;
+                    }
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    compare_operation = ir::CompareInstruction::Operation::FCMP_OGT;
+                }
+            }
+            if (compare_operation_name == "ge") {
+                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                    if (ir_int_type->is_signed) {
+                        compare_operation = ir::CompareInstruction::Operation::ICMP_SGE;
+                    } else {
+                        compare_operation = ir::CompareInstruction::Operation::ICMP_UGE;
+                    }
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    compare_operation = ir::CompareInstruction::Operation::FCMP_OGE;
+                }
+            }
+            if (compare_operation_name == "lt") {
+                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                    if (ir_int_type->is_signed) {
+                        compare_operation = ir::CompareInstruction::Operation::ICMP_SLT;
+                    } else {
+                        compare_operation = ir::CompareInstruction::Operation::ICMP_ULT;
+                    }
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    compare_operation = ir::CompareInstruction::Operation::FCMP_OLT;
+                }
+            }
+            if (compare_operation_name == "le") {
+                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                    if (ir_int_type->is_signed) {
+                        compare_operation = ir::CompareInstruction::Operation::ICMP_SLE;
+                    } else {
+                        compare_operation = ir::CompareInstruction::Operation::ICMP_ULE;
+                    }
+                }
+                if (is<ir::FloatType>(ir_type)) {
+                    compare_operation = ir::CompareInstruction::Operation::FCMP_OLE;
+                }
+            }
+
+            PRAJNA_ASSERT(compare_operation != ir::CompareInstruction::Operation::None);
+
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type =
+                ir::FunctionType::create({ir_type, ir_type}, ir::BoolType::create());
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__" + compare_operation_name + getSymbolListFullname(symbol_template_arguments),
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CompareInstruction>(
+                compare_operation, ir_function->parameters.front(),
+                ir_function->parameters.back()));
+            return ir_function;
+        };
+
+        return template_compare;
+    }
+
     // TODO 类型不对应, 会导致错误.
     std::shared_ptr<Template> createBinaryOperatorTemplate(std::string binary_operator_name) {
         auto template_binary_operator = Template::create();
@@ -1332,6 +1426,19 @@ class StatementLoweringVisitor {
                 this->createBinaryOperatorTemplate("shift_left"), "__shift_left");
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 this->createBinaryOperatorTemplate("shift_right"), "__shift_right");
+
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createCompareInstructionTemplate("eq"), "__eq");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createCompareInstructionTemplate("ne"), "__ne");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createCompareInstructionTemplate("gt"), "__gt");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createCompareInstructionTemplate("ge"), "__ge");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createCompareInstructionTemplate("lt"), "__lt");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createCompareInstructionTemplate("le"), "__le");
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 expression_lowering_visitor->createDynamicTemplate(), "dynamic");

@@ -1,0 +1,3 @@
+func __undef_raw_ptr_to_i64(p: undef*)->i64{
+    return __cast<undef*, i64>(p);
+}

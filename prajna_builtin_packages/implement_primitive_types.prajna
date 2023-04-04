@@ -29,9 +29,6 @@ implement char {
 
     @instruction("ICmp", "ICMP_NE")
     func __not_equal__(rhs : char)->bool;
-
-    @instruction("CastInst", "SExt", "i64")
-    func toi64()->i64;
 }
 
 implement i8 {
@@ -71,16 +68,6 @@ implement i8 {
     func __unary_sub__()->i8{
         return 0i8.__sub__(this);
     }
-
-    @instruction("CastInst", "SExt", "i64")
-    func toi64()->i64;
-
-    @instruction("CastInst", "SIToFP", "f32")
-    func tof32()->f32;
-
-    // func tochar()->char{
-    //     return &this
-    // }
 }
 
 implement i16 {
@@ -120,15 +107,6 @@ implement i16 {
     func __unary_sub__()->i16{
         return 0i16.__sub__(this);
     }
-
-    @instruction("CastInst", "SExt", "i64")
-    func toi64()->i64;
-
-    @instruction("CastInst", "SIToFP", "f32")
-    func tof32()->f32;
-
-    @instruction("CastInst", "Trunc", "char")
-    func tochar()->char;
 }
 
 implement i32 {
@@ -168,15 +146,6 @@ implement i32 {
     func __unary_sub__()->i32{
         return 0i32.__sub__(this);
     }
-
-    @instruction("CastInst", "SExt", "i64")
-    func toi64()->i64;
-
-    @instruction("CastInst", "SIToFP", "f32")
-    func tof32()->f32;
-
-    @instruction("CastInst", "Trunc", "char")
-    func tochar()->char;
 
     // @static one()->i32{
     //     return 132;
@@ -220,18 +189,6 @@ implement i64 {
     func __unary_sub__()->i64{
         return 0i64.__sub__(this);
     }
-
-    @instruction("CastInst", "SIToFP", "f32")
-    func tof32()->f32;
-
-    @instruction("CastInst", "Trunc", "i32")
-    func toi32()->i32;
-
-    @instruction("CastInst", "Trunc", "u32")
-    func tou32()->u32;
-
-    @instruction("CastInst", "Trunc", "char")
-    func tochar()->char;
 
     @static
     func zero()->i64{
@@ -285,15 +242,6 @@ implement u32 {
     func __unary_sub__()->u32{
         return 0u32.__sub__(this);
     }
-
-    @instruction("CastInst", "ZExt", "i64")
-    func toi64()->i64;
-
-    @instruction("CastInst", "UIToFP", "f32")
-    func tof32()->f32;
-
-    @instruction("CastInst", "Trunc", "char")
-    func tochar()->char;
 }
 
 implement f32 {
@@ -333,9 +281,6 @@ implement f32 {
     func __unary_sub__()->f32{
         return 0.0f32.__sub__(this);
     }
-
-    @instruction("CastInst", "FPToSI", "i64")
-    func toi64()->i64;
 
     func sin()->f32{
         return sin_f32(this);

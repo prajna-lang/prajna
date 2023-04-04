@@ -15,6 +15,7 @@ inline std::string concatFullname(std::string base_name, std::string name) {
     return base_name + "::" + name;
 }
 
+// TODO 需要做进一步处理
 inline std::string mangleNvvmName(std::string name) {
     std::string str_re;
     for (auto iter = name.begin(); iter != name.end(); ++iter) {
@@ -28,6 +29,9 @@ inline std::string mangleNvvmName(std::string name) {
             case '>':
                 str_re.append("_");
             case ',':
+                str_re.append("_");
+                continue;
+            case ' ':
                 str_re.append("_");
                 continue;
         }

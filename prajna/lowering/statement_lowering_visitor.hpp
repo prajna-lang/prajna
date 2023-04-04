@@ -956,6 +956,8 @@ class StatementLoweringVisitor {
                                 std::shared_ptr<ir::Module> ir_module) -> Symbol {
                             // 包裹一层名字空间, 避免被污染
                             auto templates_symbol_table = SymbolTable::create(symbol_table);
+                            templates_symbol_table->name =
+                                getSymbolListFullname(symbol_template_arguments);
 
                             for (auto [identifier, symbol] :
                                  boost::combine(template_parameter_identifier_list,
@@ -968,7 +970,15 @@ class StatementLoweringVisitor {
                             try {
                                 statement_lowering_visitor->ir_builder->this_pointer_type =
                                     this_pointer_type;
+                                statement_lowering_visitor->ir_builder
+                                    ->symbol_template_argument_list = symbol_template_arguments;
+
                                 auto symbol = (*statement_lowering_visitor)(ast_function);
+
+                                statement_lowering_visitor->ir_builder->this_pointer_type = nullptr;
+                                statement_lowering_visitor->ir_builder
+                                    ->symbol_template_argument_list.clear();
+
                                 statement_lowering_visitor->ir_builder->this_pointer_type = nullptr;
                                 return symbol;
                             } catch (CompileError compile_error) {
@@ -1027,7 +1037,7 @@ class StatementLoweringVisitor {
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
             auto ir_function = ir_tmp_builder->createFunction(
-                "__cast<" + ir_target_type->fullname + ">", ir_function_type);
+                "__cast" + getSymbolListFullname(symbol_template_arguments), ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
             PRAJNA_ASSERT(ir_source_type != ir_target_type);
@@ -1176,11 +1186,6 @@ class StatementLoweringVisitor {
             return nullptr;
         }
         if (ast_pragma.name == "stage1") {
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                expression_lowering_visitor->createI64ToRawptrTemplate(), "i64_to_rawptr");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                expression_lowering_visitor->createRawptrToI64Template(), "rawptr_to_i64");
-
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 this->createBitCastTemplate(), "__bit_cast");
 

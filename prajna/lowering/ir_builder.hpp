@@ -427,6 +427,9 @@ class IrBuilder {
 
     /// TODO we should not build function inside a function which is builting.
     std::shared_ptr<ir::Type> this_pointer_type = nullptr;
+
+    std::list<Symbol> symbol_template_argument_list;
+
     bool is_static_function = false;
 };
 

@@ -32,8 +32,7 @@ instantiate ArrayTp<i64, 3>;
 
 template ptrTp <Type>{
     implement Type* {
-        @instruction("CastInst", "PtrToInt", "i64")
-        func toi64()->i64;
+        func test(){}
     }
 }
 
@@ -57,7 +56,7 @@ func test(){
     debug::assert(t.length2() == 3);
 
     var tt: i64*;
-    print(tt.toi64().tostr());
+    tt.test();
     root.nextValue();
 
     var tmp: MyArray<i64, 2>;

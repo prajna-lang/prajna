@@ -1,8 +1,0 @@
-@test
-func testMain() {
-    var t: undef* = bindings::malloc(1);
-    var t1 = i64_to_rawptr<char>(0);
-    var tt = i64_to_rawptr<i64>(0);
-    var gg = i64_to_rawptr<f32>(2);
-    debug::assert(rawptr_to_i64(tt) == 0);
-}

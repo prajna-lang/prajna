@@ -176,7 +176,7 @@ class IntType : public RealNumberType {
     bool is_signed;
 };
 
-class CharType : public Type {
+class CharType : public IntType {
    protected:
     CharType() = default;
 
@@ -189,8 +189,11 @@ class CharType : public Type {
         }
 
         std::shared_ptr<CharType> self(new CharType);
-        self->name = "char";
+        self->bits = 8;
+        self->is_signed = false;
         self->bytes = 1;
+
+        self->name = "char";
         self->fullname = "char";
         global_context.created_types.push_back(self);
         return self;

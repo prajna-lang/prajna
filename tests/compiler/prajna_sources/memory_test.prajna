@@ -3,5 +3,5 @@
 func testMain(){
     var t = ptr<i64>::new();
     t.referenceCount().tostr().print();
-    var t0 = t.toi32();
+    // var t0 = t.cast<i32>();
 }

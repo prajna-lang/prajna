@@ -1064,7 +1064,7 @@ class StatementLoweringVisitor {
                                          ? ir::CastInstruction::Operation::FPTrunc
                                          : ir::CastInstruction::Operation::FPExt;
                 }
-                if (auto ir_target_int_type = cast<ir::IntType>(ir_source_type)) {
+                if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
                     cast_operation = ir_target_int_type->is_signed
                                          ? ir::CastInstruction::Operation::FPToSI
                                          : ir::CastInstruction::Operation::FPToUI;
@@ -1086,20 +1086,44 @@ class StatementLoweringVisitor {
         return template_cast_instruction;
     }
 
-    std::shared_ptr<TemplateStruct> createIntTypeTemplate() {
+    std::shared_ptr<TemplateStruct> createIntTypeTemplate(bool is_signed) {
         auto template_int = Template::create();
 
-        template_int->generator = [symbol_table = this->ir_builder->symbol_table,
-                                   logger = this->logger,
-                                   this](std::list<Symbol> symbol_template_arguments,
-                                         std::shared_ptr<ir::Module> ir_module) -> Symbol {
+        template_int->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                   logger = this->logger](
+                                      std::list<Symbol> symbol_template_arguments,
+                                      std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // TODO
             PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
 
             auto ir_constant_bit_size =
                 symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
 
-            return ir::IntType::create(ir_constant_bit_size->value, true);
+            return ir::IntType::create(ir_constant_bit_size->value, is_signed);
+        };
+
+        auto template_struct_int = TemplateStruct::create();
+        template_struct_int->template_struct_impl = template_int;
+
+        return template_struct_int;
+    }
+
+    std::shared_ptr<TemplateStruct> createFloatTypeTemplate() {
+        auto template_int = Template::create();
+
+        template_int->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                   logger = this->logger](
+                                      std::list<Symbol> symbol_template_arguments,
+                                      std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+
+            auto ir_constant_bit_size =
+                symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
+            // TODO, 还需要再处理下, LLVM支持的float类型有限.
+            PRAJNA_ASSERT(ir_constant_bit_size->value % 4 == 0);
+
+            return ir::FloatType::create(ir_constant_bit_size->value);
         };
 
         auto template_struct_int = TemplateStruct::create();
@@ -1161,7 +1185,11 @@ class StatementLoweringVisitor {
                 this->createBitCastTemplate(), "__bit_cast");
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createIntTypeTemplate(), "int");
+                this->createIntTypeTemplate(true), "int");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createIntTypeTemplate(false), "uint");
+            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+                this->createFloatTypeTemplate(), "float");
 
             ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
                 this->createCastInstructionTemplate(), "__cast");

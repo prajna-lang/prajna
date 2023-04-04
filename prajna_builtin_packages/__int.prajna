@@ -7,6 +7,14 @@ implement int<Bits> {
 }
 
 template <Bits>
+implement uint<Bits> {
+    template <TargetType>
+    func cast()->TargetType{
+        return __cast<uint<Bits>, TargetType>(this);
+    }
+}
+
+template <Bits>
 implement operator::Equal<int<Bits>> for int<Bits> {
     @instruction("ICmp", "ICMP_EQ")
     func Equal(operand: int<Bits>)->bool;

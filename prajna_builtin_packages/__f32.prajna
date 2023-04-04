@@ -1,3 +1,11 @@
+template <Bits>
+implement float<Bits> {
+    template <TargetType>
+    func cast()->TargetType{
+        return __cast<float<Bits>, TargetType>(this);
+    }
+}
+
 implement operator::Equal<f32> for f32 {
     @instruction("FCmp", "FCMP_OEQ")
     func Equal(operand: f32)->bool;

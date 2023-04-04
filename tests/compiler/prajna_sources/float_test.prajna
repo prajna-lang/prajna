@@ -1,0 +1,7 @@
+@test
+func testMain(){
+    var a: float<32> = 3024f32;
+    debug::assert(a.cast<i64>() == 3024);
+    // var c = a.cast<f32>();
+}
+

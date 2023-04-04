@@ -3,3 +3,9 @@ func testMain(){
     var a  = 3;
     var c = a.cast<f32>();
 }
+
+@test
+func testMain2() {
+    var a:uint<8>;
+    var b = a.cast<f32>();
+}

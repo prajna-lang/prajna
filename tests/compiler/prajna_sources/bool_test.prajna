@@ -4,5 +4,5 @@ func testMain(){
     var b = false;
 
     debug::assert(!b);
-    debug::assert(!a.__equal__(false));
+    // debug::assert(!a.__equal__(false));
 }

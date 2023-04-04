@@ -1,5 +1,5 @@
 implement operator::Not<bool> for bool {
     func Not()->bool {
-        return this.__not__();
+        return __xor<bool>(this, true);
     }
 }

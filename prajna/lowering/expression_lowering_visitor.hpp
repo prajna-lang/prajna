@@ -996,7 +996,7 @@ class ExpressionLoweringVisitor {
                 ir_builder->accessField(ir_dynamic_object,
                                         ir_interface_implement->functions.front()->name + "/fp"));
             auto ir_condition =
-                ir_builder->callMemberFunction(ir_rawptr_i64_0, "__equal__", {ir_rawptr_i64_1});
+                ir_builder->callBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
             auto ir_if =
                 ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
             ir_if->trueBlock()->parent_function = ir_builder->function_stack.top();

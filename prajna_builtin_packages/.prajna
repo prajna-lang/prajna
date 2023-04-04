@@ -3,7 +3,6 @@
 import __rawptr;
 import operator;
 import reference_count;
-import implement_primitive_types;
 import bindings;
 import debug;
 import array;

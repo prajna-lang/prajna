@@ -92,30 +92,6 @@ class NullType : public Type {
     }
 };
 
-class BoolType : public Type {
-   protected:
-    BoolType() = default;
-
-   public:
-    static std::shared_ptr<BoolType> create() {
-        for (auto ir_type : global_context.created_types) {
-            if (auto ir_bool_type = cast<BoolType>(ir_type)) {
-                return ir_bool_type;
-            }
-        }
-
-        std::shared_ptr<BoolType> self(new BoolType);
-        // i1 默认为一
-        self->bytes = 1;
-        self->name = "bool";
-        self->fullname = "bool";
-        global_context.created_types.push_back(self);
-        return self;
-    }
-
-    // 我们按惯例使用一个字节来表示Bool类型
-};
-
 class RealNumberType : public Type {
    protected:
     RealNumberType() = default;
@@ -174,6 +150,32 @@ class IntType : public RealNumberType {
 
    public:
     bool is_signed;
+};
+
+class BoolType : public IntType {
+   protected:
+    BoolType() = default;
+
+   public:
+    static std::shared_ptr<BoolType> create() {
+        for (auto ir_type : global_context.created_types) {
+            if (auto ir_bool_type = cast<BoolType>(ir_type)) {
+                return ir_bool_type;
+            }
+        }
+
+        std::shared_ptr<BoolType> self(new BoolType);
+        // i1 默认为一
+        self->bits = 8;
+        self->is_signed = false;
+        self->bytes = 1;
+        self->name = "bool";
+        self->fullname = "bool";
+        global_context.created_types.push_back(self);
+        return self;
+    }
+
+    // 我们按惯例使用一个字节来表示Bool类型
 };
 
 class CharType : public IntType {

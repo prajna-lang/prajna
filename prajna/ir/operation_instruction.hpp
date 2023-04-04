@@ -11,6 +11,7 @@ class CompareInstruction : public Instruction {
 
    public:
     enum struct Operation {
+        None,
         FCMP_FALSE,
         FCMP_OEQ,
         FCMP_OGT,
@@ -70,6 +71,7 @@ class BinaryOperator : public Instruction {
 
    public:
     enum struct Operation {
+        None,
         Add,
         Sub,
         Mul,
@@ -122,6 +124,7 @@ class CastInstruction : public Instruction {
 
    public:
     enum struct Operation {
+        None,
         Trunc,
         ZExt,
         SExt,

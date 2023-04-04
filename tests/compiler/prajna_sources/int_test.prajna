@@ -8,4 +8,8 @@ func testMain(){
 func testMain2() {
     var a:uint<8>;
     var b = a.cast<f32>();
+
+    debug::assert(__add<i64>(2, 3) == 5);
+
+    debug::assert(3 + 4 == 7);
 }

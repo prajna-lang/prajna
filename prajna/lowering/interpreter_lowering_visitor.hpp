@@ -29,7 +29,10 @@ class InterpreterLoweringVisitor {
     }
 
     std::shared_ptr<ir::Module> apply(std::shared_ptr<ast::Statements> sp_ast_statements) {
+        // 不能直接调用_statement_lowering_visitor->apply, 需要wrap
         (*this)(*sp_ast_statements);
+        auto ir_module = _statement_lowering_visitor->ir_builder->module;
+        ir_module->symbol_table = _statement_lowering_visitor->ir_builder->symbol_table;
         return _statement_lowering_visitor->ir_builder->module;
     }
 

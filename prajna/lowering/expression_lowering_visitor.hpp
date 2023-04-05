@@ -108,7 +108,7 @@ class ExpressionLoweringVisitor {
         ast_identifier_path.identifiers.front().identifier = "str";
         auto string_type = cast<ir::StructType>(
             symbolGet<ir::Type>(this->applyIdentifierPath(ast_identifier_path)));
-        auto ir_string_from_char_pat = string_type->functions["from_char_ptr"];
+        auto ir_string_from_char_pat = string_type->function_dict["from_char_ptr"];
 
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
         return ir_builder->create<ir::Call>(
@@ -248,11 +248,11 @@ class ExpressionLoweringVisitor {
 
         // 模板函数
         if (identifier_path.identifiers.front().template_arguments) {
-            if (!ir_lhs->type->templates.count(member_name)) {
+            if (!ir_lhs->type->template_any_dict.count(member_name)) {
                 logger->error("has not template", ast_binary_operation.operand);
             }
-            auto lowering_member_function_template =
-                std::any_cast<std::shared_ptr<Template>>(ir_lhs->type->templates[member_name]);
+            auto lowering_member_function_template = std::any_cast<std::shared_ptr<Template>>(
+                ir_lhs->type->template_any_dict[member_name]);
 
             auto symbol_template_arguments = this->applyTemplateArguments(
                 *identifier_path.identifiers.front().template_arguments);
@@ -674,7 +674,7 @@ class ExpressionLoweringVisitor {
                         if (iter_ast_identifier->template_arguments) {
                             auto lowering_member_function_template =
                                 std::any_cast<std::shared_ptr<Template>>(
-                                    ir_type->templates[static_function_identifier]);
+                                    ir_type->template_any_dict[static_function_identifier]);
                             auto symbol_template_argumen_list = this->applyTemplateArguments(
                                 *iter_ast_identifier->template_arguments);
                             auto ir_function = cast<ir::Function>(
@@ -684,7 +684,7 @@ class ExpressionLoweringVisitor {
                             return ir_function;
                         }
 
-                        auto ir_static_fun = ir_type->functions[static_function_identifier];
+                        auto ir_static_fun = ir_type->function_dict[static_function_identifier];
                         if (ir_static_fun == nullptr) {
                             logger->error(
                                 fmt::format("the static function {} is not exit in type {}",
@@ -1005,7 +1005,7 @@ class ExpressionLoweringVisitor {
             ir_builder->pushBlock(ir_if->trueBlock());
             ir_builder->create<ir::WriteVariableLiked>(
                 ir_builder->create<ir::Call>(
-                    ir_target_ptr_type->functions["fromUndef"],
+                    ir_target_ptr_type->function_dict["fromUndef"],
                     std::vector<std::shared_ptr<ir::Value>>{
                         ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
                 ir_ptr);
@@ -1013,7 +1013,7 @@ class ExpressionLoweringVisitor {
 
             ir_builder->pushBlock(ir_if->falseBlock());
             auto ir_nullptr = ir_builder->create<ir::Call>(
-                ir_ptr->type->functions["null"], std::vector<std::shared_ptr<ir::Value>>{});
+                ir_ptr->type->function_dict["null"], std::vector<std::shared_ptr<ir::Value>>{});
             ir_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
             ir_builder->popBlock();
 

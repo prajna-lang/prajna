@@ -205,8 +205,8 @@ class IrBuilder {
 
     std::shared_ptr<ir::Function> getMemberFunction(std::shared_ptr<ir::Type> ir_type,
                                                     std::string member_name) {
-        if (ir_type->functions.count(member_name)) {
-            return ir_type->functions[member_name];
+        if (ir_type->function_dict.count(member_name)) {
+            return ir_type->function_dict[member_name];
         }
 
         for (auto [interface_name, ir_interface] : ir_type->interfaces) {

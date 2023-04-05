@@ -599,11 +599,11 @@ class StatementLoweringVisitor {
             for (auto ast_statement : ast_implement.statements) {
                 auto symbol_function = (*this)(ast_statement);
                 if (auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function))) {
-                    ir_type->functions[ir_function->name] = ir_function;
+                    ir_type->function_dict[ir_function->name] = ir_function;
                     continue;
                 }
                 if (auto lowering_template = symbolGet<Template>(symbol_function)) {
-                    ir_type->templates[lowering_template->name] = lowering_template;
+                    ir_type->template_any_dict[lowering_template->name] = lowering_template;
                     continue;
                 }
                 PRAJNA_TODO;

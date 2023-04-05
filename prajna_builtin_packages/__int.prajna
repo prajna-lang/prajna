@@ -101,17 +101,19 @@ implement operator::Negative<int<Bits>> for int<Bits> {
     }
 }
 
-// walkaround. Increased instantiating is not supported.
-func tmp(){
-    var a0: int<8>;
-    var a1: int<16>;
-    var a2: int<32>;
-    var a3: int<64>;
+
+func __tmp(){
+    {
+        var a0: int<8>;
+        var a1: int<16>;
+        var a2: int<32>;
+        var a3: int<64>;
+    }
+    {
+        var a0: uint<8>;
+        var a1: uint<16>;
+        var a2: uint<32>;
+        var a3: uint<64>;
+    }
 }
 
-func tmp1(){
-    var a0: uint<8>;
-    var a1: uint<16>;
-    var a2: uint<32>;
-    var a3: uint<64>;
-}

@@ -203,8 +203,19 @@ class IrBuilder {
         }
     }
 
+    void instantiateTypeImplements(std::shared_ptr<ir::Type> ir_type) {
+        if (ir_type->template_struct) {
+            auto symbol_template_argument_list =
+                std::any_cast<std::list<Symbol>>(ir_type->template_arguments_any);
+            ir_type->template_struct->instantiateStructAndImplement(symbol_template_argument_list,
+                                                                    this->module);
+        }
+    }
+
     std::shared_ptr<ir::Function> getMemberFunction(std::shared_ptr<ir::Type> ir_type,
                                                     std::string member_name) {
+        this->instantiateTypeImplements(ir_type);
+
         if (ir_type->function_dict.count(member_name)) {
             return ir_type->function_dict[member_name];
         }
@@ -277,6 +288,8 @@ class IrBuilder {
 
     std::shared_ptr<ir::Function> getUnaryOperator(std::shared_ptr<ir::Type> ir_type,
                                                    std::string unary_operator_name) {
+        this->instantiateTypeImplements(ir_type);
+
         std::unordered_map<std::string, std::string> unary_operator_map = {
             {"!", "Not"}, {"+", "Positive"}, {"-", "Negative"}};
         PRAJNA_ASSERT(unary_operator_map.count(unary_operator_name));
@@ -300,6 +313,8 @@ class IrBuilder {
 
     std::shared_ptr<ir::Function> getBinaryOperator(std::shared_ptr<ir::Type> ir_type,
                                                     std::string binary_operator_name) {
+        this->instantiateTypeImplements(ir_type);
+
         std::unordered_map<std::string, std::string> binary_operator_map = {
             {"==", "Equal"},       {"!=", "NotEqual"}, {"<", "Less"},
             {"<=", "LessOrEqual"}, {">", "Greater"},   {">=", "GreaterOrEqual"},

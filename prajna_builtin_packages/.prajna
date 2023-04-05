@@ -1,16 +1,12 @@
 #stage1;
 
-import __rawptr;
 import operator;
 import reference_count;
 import bindings;
 import debug;
 import array;
 import __ptr;
-import __int;
-import __f32;
-import __char;
-import __bool;
+import __type;
 import dynamic_array;
 import __str;
 import tensor;

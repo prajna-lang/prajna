@@ -66,6 +66,30 @@ interface LessOrEqual<T> {
 
 template <T>
 @disable_dynamic_dispatch
+interface And<T> {
+    func And(operand: T)->T;
+}
+
+template <T>
+@disable_dynamic_dispatch
+interface Or<T> {
+    func Or(operand: T)->T;
+}
+
+template <T>
+@disable_dynamic_dispatch
+interface Xor<T> {
+    func Xor(operand: T)->T;
+}
+
+template <T>
+@disable_dynamic_dispatch
+interface Not<T> {
+    func Not()->T;
+}
+
+template <T>
+@disable_dynamic_dispatch
 interface LinearIndex<T> {
     func get(index: i64)->T;
     func set(index: i64, value: T);

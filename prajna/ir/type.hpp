@@ -124,6 +124,9 @@ class FloatType : public RealNumberType {
     }
 };
 
+class CharType;
+class BoolType;
+
 class IntType : public RealNumberType {
    protected:
     IntType() = default;
@@ -132,6 +135,11 @@ class IntType : public RealNumberType {
     static std::shared_ptr<IntType> create(int64_t bits, bool is_signed) {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_int_type = cast<IntType>(ir_type)) {
+                // 不能和char和bool混了
+                if (is<ir::CharType>(ir_type) || is<ir::BoolType>(ir_type)) {
+                    continue;
+                }
+
                 if (ir_int_type->bits == bits && ir_int_type->is_signed == is_signed) {
                     return ir_int_type;
                 }

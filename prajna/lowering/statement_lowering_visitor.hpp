@@ -1339,7 +1339,7 @@ class StatementLoweringVisitor {
         }
         if (ast_pragma.name == "warning") {
             std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-            logger->warning(fmt::format("pragma error: {}", msg), ast_pragma);
+            logger->warning(fmt::format("pragma warning: {}", msg), ast_pragma);
             return nullptr;
         }
         if (ast_pragma.name == "system") {

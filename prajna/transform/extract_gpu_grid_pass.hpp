@@ -23,10 +23,10 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     // todo
     utility::removeFromParent(ir_gpu_for->index());
 
-    std::vector<std::shared_ptr<ir::Type>> ir_argument_types(2);
+    std::list<std::shared_ptr<ir::Type>> ir_argument_types;
     // 加入first和last
-    ir_argument_types[0] = ir_gpu_for->first()->type;
-    ir_argument_types[1] = ir_gpu_for->last()->type;
+    ir_argument_types.push_back(ir_gpu_for->first()->type);
+    ir_argument_types.push_back(ir_gpu_for->last()->type);
     std::transform(RANGE(ir_captured_variables_list), std::back_inserter(ir_argument_types),
                    [=](std::shared_ptr<ir::Value> ir_value) {
                        if (utility::isHostTensorType(ir_value->type, ir_module)) {
@@ -46,8 +46,8 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     ir_kernel_function_type->fullname = ir_kernel_function->fullname;
     ir_kernel_function_type->name = ir_kernel_function->fullname;
     ir_kernel_function->parent_module = ir_nvptx_module;
-    ir_kernel_function->annotations["target"].push_back("nvptx");
-    ir_kernel_function->annotations.insert({"kernel", {}});
+    ir_kernel_function->annotation_dict["target"].push_back("nvptx");
+    ir_kernel_function->annotation_dict.insert({"kernel", {}});
     ir_nvptx_module->functions.push_back(ir_kernel_function);
 
     auto ir_block = ir::Block::create();
@@ -60,16 +60,18 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
 
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> variables_dict;
     auto iter_captured_variable = ir_captured_variables_list.begin();
-    auto ir_first = ir_kernel_function->parameters[0];
+    auto iter_parameter = ir_kernel_function->parameters.begin();
+    auto ir_first = *iter_parameter;
     variables_dict[ir_gpu_for->first()] = ir_first;
-    ir_kernel_function->parameters[0] = ir_first;
-    auto ir_last = ir_kernel_function->parameters[1];
+    ++iter_parameter;
+    auto ir_last = *iter_parameter;
     variables_dict[ir_gpu_for->last()] = ir_last;
-    ir_kernel_function->parameters[1] = ir_last;
-    for (size_t i = 2; i < ir_argument_types.size(); ++i, ++iter_captured_variable) {
-        auto ir_argument = ir_kernel_function->parameters[i];
+    ++iter_parameter;
+    for (; iter_parameter != ir_kernel_function->parameters.end();
+         ++iter_parameter, ++iter_captured_variable) {
         // 需要搞成临时变量, 这样才会原来的变量对应, 以便访问成员函数等
-        variables_dict[*iter_captured_variable] = ir_builder->variableLikedNormalize(ir_argument);
+        variables_dict[*iter_captured_variable] =
+            ir_builder->variableLikedNormalize(*iter_parameter);
     }
 
     // 将捕获的变量置换为参数对应的临时变量
@@ -153,7 +155,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
 inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_module) {
     auto ir_gpu_fors = utility::getValuesInModule<ir::For>(ir_module);
     ir_gpu_fors.remove_if([](std::shared_ptr<ir::For> ir_gpu_for) {
-        return not ir_gpu_for->annotations.count("gpu");
+        return not ir_gpu_for->annotation_dict.count("gpu");
     });
 
     size_t idx = 0;
@@ -181,9 +183,9 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
 
         auto ir_zero = ir_builder->getIndexConstant(0);
         auto ir_max_thread_per_block = ir_builder->create<ir::Call>(
-            ir_max_thread_per_block_function, std::vector<std::shared_ptr<ir::Value>>{ir_zero});
+            ir_max_thread_per_block_function, std::list<std::shared_ptr<ir::Value>>{ir_zero});
         auto ir_multi_process_count = ir_builder->create<ir::Call>(
-            ir_multi_processor_count_function, std::vector<std::shared_ptr<ir::Value>>{ir_zero});
+            ir_multi_processor_count_function, std::list<std::shared_ptr<ir::Value>>{ir_zero});
 
         auto ir_grid_shape = ir_builder->create<ir::LocalVariable>(ir_builder->getShape3Type());
         ir_builder->setDim3(ir_grid_shape, 0, ir_multi_process_count);
@@ -195,7 +197,7 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
         ir_builder->setDim3(ir_block_shape, 1, ir_builder->getIndexConstant(1));
         ir_builder->setDim3(ir_block_shape, 2, ir_builder->getIndexConstant(1));
 
-        std::vector<std::shared_ptr<ir::Value>> ir_arguments;
+        std::list<std::shared_ptr<ir::Value>> ir_arguments;
         ir_arguments.push_back(ir_gpu_for->first());
         ir_arguments.push_back(ir_gpu_for->last());
         std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Variable>>

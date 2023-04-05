@@ -45,7 +45,7 @@ struct StatementGrammer
     rule<ast::Blank> semicolon_statement;
     rule<ast::Pragma> pragma;
     rule<ast::Annotation> annotation;
-    rule<ast::Annotations> annotations;
+    rule<ast::AnnotationDict> annotation_dict;
     rule<ast::VariableDeclaration> variable_declaration;
     rule<ast::Assignment> assignment;
     rule<ast::Return> return_;

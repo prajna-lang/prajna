@@ -87,7 +87,7 @@ class ExpressionLoweringVisitor {
         // 最后需要补零, 以兼容C的字符串
         auto char_string_size = ast_string_literal.value.size() + 1;
         auto ir_char_string_type = ir::ArrayType::create(ir::CharType::create(), char_string_size);
-        std::vector<std::shared_ptr<ir::Constant>> ir_inits(ir_char_string_type->size);
+        std::list<std::shared_ptr<ir::Constant>> ir_inits(ir_char_string_type->size);
         std::transform(RANGE(ast_string_literal.value), ir_inits.begin(),
                        [=](char value) -> std::shared_ptr<ir::Constant> {
                            return ir_builder->create<ir::ConstantChar>(value);
@@ -112,7 +112,7 @@ class ExpressionLoweringVisitor {
 
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
         return ir_builder->create<ir::Call>(
-            ir_string_from_char_pat, std::vector<std::shared_ptr<ir::Value>>{ir_c_string_address});
+            ir_string_from_char_pat, std::list<std::shared_ptr<ir::Value>>{ir_c_string_address});
     }
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteral ast_int_literal) {
@@ -493,8 +493,8 @@ class ExpressionLoweringVisitor {
         }
 
         auto ir_this_pointer = ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-        std::vector<std::shared_ptr<ir::Value>> ir_arguemnts(1);
-        ir_arguemnts[0] = ir_this_pointer;
+        std::list<std::shared_ptr<ir::Value>> ir_arguemnts;
+        ir_arguemnts.push_back(ir_this_pointer);
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
     }
 
@@ -517,7 +517,7 @@ class ExpressionLoweringVisitor {
                        },
                        [=](ast::FunctionType ast_function_type) -> std::shared_ptr<ir::Type> {
                            auto ir_return_type = this->applyType(ast_function_type.return_type);
-                           std::vector<std::shared_ptr<ir::Type>> ir_parameter_types(
+                           std::list<std::shared_ptr<ir::Type>> ir_parameter_types(
                                ast_function_type.paramter_types.size());
                            std::transform(
                                RANGE(ast_function_type.paramter_types), ir_parameter_types.begin(),
@@ -912,13 +912,13 @@ class ExpressionLoweringVisitor {
                 ast_binary_operation.operator_);
         }
         auto ir_this_pointer = ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-        std::vector<std::shared_ptr<ir::Value>> ir_arguemnts(2);
-        ir_arguemnts[0] = ir_this_pointer;
-        ir_arguemnts[1] = this->applyOperand(ast_binary_operation.operand);
-        if (ir_arguemnts[1]->type != ir_function->function_type->parameter_types[1]) {
+        std::list<std::shared_ptr<ir::Value>> ir_arguemnts(2);
+        ir_arguemnts.front() = ir_this_pointer;
+        ir_arguemnts.back() = this->applyOperand(ast_binary_operation.operand);
+        if (ir_arguemnts.back()->type != ir_function->function_type->parameter_types.back()) {
             logger->error(fmt::format("the types {}, {} are not matched",
-                                      ir_function->function_type->parameter_types[1]->fullname,
-                                      ir_arguemnts[1]->type->fullname),
+                                      ir_function->function_type->parameter_types.back()->fullname,
+                                      ir_arguemnts.back()->type->fullname),
                           ast_binary_operation.operand);
         }
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
@@ -944,10 +944,10 @@ class ExpressionLoweringVisitor {
             if (!ir_builder->isPtrType(ir_operand->type)) {
                 logger->error("not a ptr type", ast_dynamic_cast.pointer);
             }
-            auto symbol_template_arguments =
-                std::any_cast<std::list<lowering::Symbol>>(ir_operand->type->template_arguments);
+            auto symbol_template_arguments = std::any_cast<std::list<lowering::Symbol>>(
+                ir_operand->type->template_arguments_any);
             auto ir_value_type = symbolGet<ir::Type>(symbol_template_arguments.front());
-            auto iter_interface = std::find_if(RANGE(ir_value_type->interfaces), [=](auto x) {
+            auto iter_interface = std::find_if(RANGE(ir_value_type->interface_dict), [=](auto x) {
                 if (!x.second) return false;
                 return x.second->prototype == ir_interface_prototype;
             });
@@ -957,7 +957,7 @@ class ExpressionLoweringVisitor {
                                           ir_interface_prototype->fullname),
                               ast_dynamic_cast.pointer);
             }
-            std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_operand};
+            std::list<std::shared_ptr<ir::Value>> ir_arguments = {ir_operand};
 
             return ir_builder->create<ir::Call>(ir_interface->dynamic_type_creator, ir_arguments);
         }
@@ -966,10 +966,10 @@ class ExpressionLoweringVisitor {
             // auto ir_interface_prototype
             auto ir_dynamic_object = (*this)(ast_dynamic_cast.pointer);
             auto iter_interface_implement =
-                std::find_if(RANGE(ir_target_type->interfaces), [=](auto x) {
+                std::find_if(RANGE(ir_target_type->interface_dict), [=](auto x) {
                     return x.second->prototype->dynamic_type == ir_dynamic_object->type;
                 });
-            if (iter_interface_implement == ir_target_type->interfaces.end()) {
+            if (iter_interface_implement == ir_target_type->interface_dict.end()) {
                 logger->error("invalid dynamic cast, operand is not a interface dynamic type",
                               ast_dynamic_cast.pointer);
             }
@@ -1006,14 +1006,14 @@ class ExpressionLoweringVisitor {
             ir_builder->create<ir::WriteVariableLiked>(
                 ir_builder->create<ir::Call>(
                     ir_target_ptr_type->function_dict["fromUndef"],
-                    std::vector<std::shared_ptr<ir::Value>>{
+                    std::list<std::shared_ptr<ir::Value>>{
                         ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
                 ir_ptr);
             ir_builder->popBlock();
 
             ir_builder->pushBlock(ir_if->falseBlock());
-            auto ir_nullptr = ir_builder->create<ir::Call>(
-                ir_ptr->type->function_dict["null"], std::vector<std::shared_ptr<ir::Value>>{});
+            auto ir_nullptr = ir_builder->create<ir::Call>(ir_ptr->type->function_dict["null"],
+                                                           std::list<std::shared_ptr<ir::Value>>{});
             ir_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
             ir_builder->popBlock();
 

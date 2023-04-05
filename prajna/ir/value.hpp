@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "boost/noncopyable.hpp"
+#include "boost/range/combine.hpp"
 #include "prajna/ast/ast.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/cloner.hpp"
@@ -85,7 +86,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
 
     Value(const Value& other) {
         this->type = other.type;
-        this->annotations = other.annotations;
+        this->annotation_dict = other.annotation_dict;
         this->tag = other.tag;
 
         this->name = other.name;
@@ -139,8 +140,8 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
    public:
     std::shared_ptr<Type> type = nullptr;
 
-    // std::set<std::string> annotations;
-    std::map<std::string, std::vector<std::string>> annotations;
+    // std::set<std::string> annotation_dict;
+    std::unordered_map<std::string, std::list<std::string>> annotation_dict;
 
     // 最后需要释放以解除智能指针的引用计数
     std::shared_ptr<Block> parent_block = nullptr;
@@ -316,7 +317,7 @@ class ConstantArray : public Constant {
    public:
     static std::shared_ptr<ConstantArray> create(
         std::shared_ptr<ArrayType> ir_array_type,
-        std::vector<std::shared_ptr<Constant>> ir_init_constants) {
+        std::list<std::shared_ptr<Constant>> ir_init_constants) {
         std::shared_ptr<ConstantArray> self(new ConstantArray);
         self->tag = "ConstantArray";
         self->type = ir_array_type;
@@ -326,17 +327,13 @@ class ConstantArray : public Constant {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<ConstantArray> ir_new(new ConstantArray(*this));
-        ;
-
-        for (size_t i = 0; i < initialize_constants.size(); ++i) {
-            ir_new->initialize_constants.push_back(
-                cast<Constant>(initialize_constants[i]->clone(function_cloner)));
-        }
-
+        std::transform(
+            RANGE(initialize_constants), std::back_inserter(ir_new->initialize_constants),
+            [=](auto ir_constant) { return cast<Constant>(ir_constant->clone(function_cloner)); });
         return ir_new;
     }
 
-    std::vector<std::shared_ptr<Constant>> initialize_constants;
+    std::list<std::shared_ptr<Constant>> initialize_constants;
 };
 
 class ConstantStruct : public Constant {
@@ -345,7 +342,8 @@ class ConstantStruct : public Constant {
 
    public:
     static std::shared_ptr<ConstantStruct> create(
-        std::shared_ptr<Type> type, std::map<std::string, std::shared_ptr<Constant>> fields) {
+        std::shared_ptr<Type> type,
+        std::unordered_map<std::string, std::shared_ptr<Constant>> fields) {
         std::shared_ptr<ConstantStruct> self(new ConstantStruct);
         self->type = type;
         self->fileds = fields;
@@ -360,7 +358,7 @@ class ConstantStruct : public Constant {
     }
 
    public:
-    std::map<std::string, std::shared_ptr<Constant>> fileds;
+    std::unordered_map<std::string, std::shared_ptr<Constant>> fileds;
 };
 
 class Block : public Value {
@@ -455,12 +453,13 @@ class Function : public Value {
     }
 
     bool isIntrinsicOrInstructoin() {
-        return (this->annotations.count("intrinsic")) || (this->annotations.count("instruction"));
+        return (this->annotation_dict.count("intrinsic")) ||
+               (this->annotation_dict.count("instruction"));
     }
 
-    bool isIntrinsic() { return this->annotations.count("intrinsic"); }
+    bool isIntrinsic() { return this->annotation_dict.count("intrinsic"); }
 
-    bool isInstruction() { return this->annotations.count("instruction"); }
+    bool isInstruction() { return this->annotation_dict.count("instruction"); }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Function> ir_new(new Function(*this));
@@ -468,11 +467,12 @@ class Function : public Value {
 
         ir_new->parent_module = function_cloner->module;
         ir_new->parameters.clear();
-        for (size_t i = 0; i < parameters.size(); ++i) {
-            auto ir_new_argument = parameters[i]->clone(function_cloner);
-            function_cloner->value_dict[parameters[i]] = ir_new_argument;
-            ir_new->parameters.push_back(ir_new_argument);
-        }
+        std::transform(RANGE(parameters), std::back_inserter(ir_new->parameters),
+                       [=](auto ir_parameter) {
+                           auto ir_new_parameter = ir_parameter->clone(function_cloner);
+                           function_cloner->value_dict[ir_parameter] = ir_new_parameter;
+                           return ir_new_parameter;
+                       });
 
         // 需要再开头, 因为函数有可能存在递归
         ir_new->blocks.clear();
@@ -492,7 +492,7 @@ class Function : public Value {
    public:
     bool is_declaration = false;
     std::shared_ptr<FunctionType> function_type;
-    std::vector<std::shared_ptr<Value>> parameters;
+    std::list<std::shared_ptr<Value>> parameters;
     std::list<std::shared_ptr<Block>> blocks;
     std::shared_ptr<Module> parent_module;
 };
@@ -1139,16 +1139,19 @@ class Call : public Instruction {
 
    public:
     static std::shared_ptr<Call> create(std::shared_ptr<Value> ir_value,
-                                        std::vector<std::shared_ptr<Value>> arguments) {
+                                        std::list<std::shared_ptr<Value>> arguments) {
         std::shared_ptr<Call> self(new Call);
         self->operandResize(1 + arguments.size());
         self->function(ir_value);
         auto ir_function_type = ir_value->getFunctionType();
         PRAJNA_ASSERT(ir_function_type);
         PRAJNA_ASSERT(ir_function_type->parameter_types.size() == arguments.size());
-        for (size_t i = 0; i < arguments.size(); ++i) {
-            PRAJNA_ASSERT(ir_function_type->parameter_types[i] == arguments[i]->type);
-            self->argument(i, arguments[i]);
+        size_t i = 0;
+        for (auto [ir_argument, ir_parameter_type] :
+             boost::combine(arguments, ir_function_type->parameter_types)) {
+            PRAJNA_ASSERT(ir_argument->type == ir_parameter_type);
+            self->argument(i, ir_argument);
+            ++i;
         }
 
         self->type = ir_function_type->return_type;
@@ -1158,11 +1161,11 @@ class Call : public Instruction {
 
     static std::shared_ptr<Call> create(std::shared_ptr<Value> ir_value,
                                         std::shared_ptr<Value> ir_argument) {
-        return create(ir_value, std::vector<std::shared_ptr<Value>>{ir_argument});
+        return create(ir_value, std::list<std::shared_ptr<Value>>{ir_argument});
     }
 
     static std::shared_ptr<Call> create(std::shared_ptr<Value> ir_value) {
-        return create(ir_value, std::vector<std::shared_ptr<Value>>{});
+        return create(ir_value, std::list<std::shared_ptr<Value>>{});
     }
 
     std::shared_ptr<Value> function() { return this->operand(0); }
@@ -1273,7 +1276,7 @@ class Label : public Block {
 };
 
 /// @brief 用于返回函数参数, 由多个Value构成的
-class ValueCollection : public Value, public std::vector<std::shared_ptr<Value>> {};
+class ValueCollection : public Value, public std::list<std::shared_ptr<Value>> {};
 
 class If : public Instruction {
    protected:
@@ -1456,17 +1459,19 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
     std::shared_ptr<Value> thisPointer() { return this->operand(0); }
     void thisPointer(std::shared_ptr<Value> ir_this_pointer) { this->operand(0, ir_this_pointer); }
 
-    void arguments(std::vector<std::shared_ptr<Value>> ir_arguments) {
+    void arguments(std::list<std::shared_ptr<Value>> ir_arguments) {
         this->operandResize(1 + ir_arguments.size());
-        for (size_t i = 0; i < ir_arguments.size(); ++i) {
-            this->operand(i + 1, ir_arguments[i]);
+        size_t i = 1;
+        for (auto ir_argument : ir_arguments) {
+            this->operand(i, ir_argument);
+            ++i;
         }
     }
 
-    std::vector<std::shared_ptr<Value>> arguments() {
-        std::vector<std::shared_ptr<Value>> ir_arguments(this->operandSize() - 1);
-        for (size_t i = 0; i < ir_arguments.size(); ++i) {
-            ir_arguments[i] = this->operand(1 + i);
+    std::list<std::shared_ptr<Value>> arguments() {
+        std::list<std::shared_ptr<Value>> ir_arguments;
+        for (size_t i = 1; i < this->operandSize(); ++i) {
+            ir_arguments.push_back(this->operand(i));
         }
 
         return ir_arguments;
@@ -1540,7 +1545,7 @@ class Module : public Named, public std::enable_shared_from_this<Module> {
 
     std::shared_ptr<Module> parent_module = nullptr;
 
-    std::map<Target, std::shared_ptr<Module>> modules;
+    std::unordered_map<Target, std::shared_ptr<Module>> modules;
 
     llvm::Module* llvm_module = nullptr;
 };
@@ -1564,9 +1569,10 @@ class KernelFunctionCall : public Instruction {
     KernelFunctionCall() = default;
 
    public:
-    static std::shared_ptr<KernelFunctionCall> create(
-        std::shared_ptr<Value> ir_function_value, std::shared_ptr<Value> ir_grid_shape,
-        std::shared_ptr<Value> ir_block_shape, std::vector<std::shared_ptr<Value>> arguments) {
+    static std::shared_ptr<KernelFunctionCall> create(std::shared_ptr<Value> ir_function_value,
+                                                      std::shared_ptr<Value> ir_grid_shape,
+                                                      std::shared_ptr<Value> ir_block_shape,
+                                                      std::list<std::shared_ptr<Value>> arguments) {
         std::shared_ptr<KernelFunctionCall> self(new KernelFunctionCall);
         self->operandResize(3 + arguments.size());
         self->function(ir_function_value);
@@ -1575,9 +1581,13 @@ class KernelFunctionCall : public Instruction {
         // TODO 后期需要坐下处理, 需要是kernel函数合法, 禁止在host函数里对device函数进行赋值等操作.
         self->gridShape(ir_grid_shape);
         self->blockShape(ir_block_shape);
-        for (size_t i = 0; i < arguments.size(); ++i) {
-            PRAJNA_ASSERT(ir_function_type->parameter_types[i] == arguments[i]->type);
-            self->argument(i, arguments[i]);
+
+        auto iter_parameter_type = ir_function_type->parameter_types.begin();
+        size_t i = 0;
+        for (auto iter_argument = arguments.begin(); iter_argument != arguments.end();
+             ++iter_argument, ++iter_parameter_type, ++i) {
+            PRAJNA_ASSERT(*iter_parameter_type == (*iter_argument)->type);
+            self->argument(i, *iter_argument);
         }
 
         self->type = ir_function_type->return_type;
@@ -1601,8 +1611,8 @@ class KernelFunctionCall : public Instruction {
         this->operand(i + 3, ir_argument);
     }
 
-    std::vector<std::shared_ptr<Value>> arguments() {
-        std::vector<std::shared_ptr<Value>> arguments_re;
+    std::list<std::shared_ptr<Value>> arguments() {
+        std::list<std::shared_ptr<Value>> arguments_re;
         for (size_t i = 0; i < this->operandSize(); ++i) {
             arguments_re.push_back(this->argument(i));
         }
@@ -1674,7 +1684,7 @@ inline std::string getKernelFunctionAddressName(std::shared_ptr<Function> ir_ker
 }
 
 inline std::shared_ptr<Function> Type::getMemberFunction(std::string member_function_name) {
-    for (auto [interface_name, ir_interface] : this->interfaces) {
+    for (auto [interface_name, ir_interface] : this->interface_dict) {
         for (auto ir_function : ir_interface->functions) {
             if (ir_function->name == member_function_name) {
                 return ir_function;

@@ -107,7 +107,7 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             flatternBlockImpl(ir_for->loopBlock());
 
             // 标注gpu的则在后面抽离,
-            if (ir_for->annotations.count("gpu")) {
+            if (ir_for->annotation_dict.count("gpu")) {
                 // ir_for会被转换为核函数的调用, 不在存在分支了, 故需要移除While后面的afterLabel,
                 // beforeLabel无需处理, 因为其是加在conditionBlock里的,
                 utility::removeFromParent(ir_for->afterLabel());

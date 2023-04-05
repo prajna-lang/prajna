@@ -125,17 +125,17 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
                     ir_module->symbol_table->rootSymbolTable()->get("gpu"))
                     ->get("launchKernel"));
             PRAJNA_ASSERT(ir_launch_function);
-            std::vector<std::shared_ptr<ir::Value>> ir_arguments(4);
-            ir_arguments[0] = ir_builder->create<ir::BitCast>(
-                ir_kernel_function, ir::PointerType::create(ir::IntType::create(8, true)));
-            ir_arguments[1] = ir_grid_shape;
-            ir_arguments[2] = ir_block_shape;
+            std::list<std::shared_ptr<ir::Value>> ir_arguments;
+            ir_arguments.push_back(ir_builder->create<ir::BitCast>(
+                ir_kernel_function, ir::PointerType::create(ir::IntType::create(8, true))));
+            ir_arguments.push_back(ir_grid_shape);
+            ir_arguments.push_back(ir_block_shape);
             auto ir_array_index0 = ir_builder->create<ir::IndexArray>(
                 ir_kernel_arguments_address_array_i8ptr, ir_builder->getIndexConstant(0));
             auto ir_array_address = ir_builder->create<ir::BitCast>(
                 ir_builder->create<ir::GetAddressOfVariableLiked>(ir_array_index0),
                 ir::PointerType::create(ir::PointerType::create(ir::IntType::create(8, true))));
-            ir_arguments[3] = ir_array_address;
+            ir_arguments.push_back(ir_array_address);
             ir_builder->create<ir::Call>(ir_launch_function, ir_arguments);
 
             utility::removeFromParent(ir_kernel_function_call);
@@ -154,7 +154,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
         for (auto ir_instruction : ir_instructions) {
             for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
                 if (auto ir_function = cast<ir::Function>(ir_instruction->operand(i))) {
-                    if (ir_function->annotations.count("kernel")) {
+                    if (ir_function->annotation_dict.count("kernel")) {
                         auto global_variable_fullname = getKernelFunctionAddressName(ir_function);
 
                         sp<ir::GlobalVariable> ir_global_variable = nullptr;
@@ -245,7 +245,7 @@ inline std::shared_ptr<ir::Module> cloneExternalNvptxValue(std::shared_ptr<ir::M
     std::list<std::shared_ptr<ir::Function>> ir_kernel_functions_list;
     std::copy_if(RANGE(ir_nvptx_module->functions), std::back_inserter(ir_kernel_functions_list),
                  [](std::shared_ptr<ir::Function> ir_function) {
-                     return ir_function->annotations.count("kernel");
+                     return ir_function->annotation_dict.count("kernel");
                  });
 
     PRAJNA_ASSERT(ir_kernel_functions_list.size() <= 1,
@@ -270,7 +270,7 @@ inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
 
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
     for (auto ir_function : ir_nvptx_module->functions) {
-        if (ir_function->annotations.count("kernel")) {
+        if (ir_function->annotation_dict.count("kernel")) {
             auto global_variable_fullname = getKernelFunctionAddressName(ir_function);
             auto iter_global_variable = std::find_if(
                 RANGE(ir_module->global_variables),
@@ -346,14 +346,14 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         auto ir_array_last = ir_for->last();
         auto ir_array_type = ir_array_last->type;
         auto ir_array_template_arguments =
-            std::any_cast<std::list<lowering::Symbol>>(ir_array_type->template_arguments);
+            std::any_cast<std::list<lowering::Symbol>>(ir_array_type->template_arguments_any);
         auto ir_rank = lowering::symbolGet<ir::ConstantInt>(ir_array_template_arguments.back());
         std::list<lowering::Symbol> template_arguments = {ir_rank};
         auto ir_layout_type =
             ir_layout_template_struct->instantiateStructAndImplement(template_arguments, ir_module);
         auto ir_layout =
             ir_builder->create<ir::Call>(ir_layout_type->function_dict["create"],
-                                         std::vector<std::shared_ptr<ir::Value>>{ir_for->last()});
+                                         std::list<std::shared_ptr<ir::Value>>{ir_for->last()});
         auto ir_linear_first = ir_builder->getIndexConstant(0);
 
         auto ir_array_one = ir_builder->create<ir::Call>(ir_array_type->function_dict["one"]);

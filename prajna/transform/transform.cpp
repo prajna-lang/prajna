@@ -26,7 +26,7 @@ std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module)
     for (auto iter_function = ir_module->functions.begin();
          iter_function != ir_module->functions.end();) {
         auto ir_function = *iter_function;
-        if (std::count(RANGE(ir_function->annotations["target"]), "nvptx")) {
+        if (std::count(RANGE(ir_function->annotation_dict["target"]), "nvptx")) {
             auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
             ir_function->parent_module = ir_nvptx_module;
             ir_nvptx_module->functions.push_back(ir_function);

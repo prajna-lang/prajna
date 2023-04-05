@@ -109,7 +109,7 @@ void Compiler::executeCodeInRelp(std::string script_code) {
 
         // @note 会有一次输入多个句子的情况
         for (auto ir_function : ir_module->functions) {
-            if (ir_function->annotations.count("\\command")) {
+            if (ir_function->annotation_dict.count("\\command")) {
                 auto fun_fullname = ir_function->fullname;
                 auto fun_ptr = reinterpret_cast<void (*)(void)>(getSymbolValue(fun_fullname));
                 fun_ptr();
@@ -126,7 +126,7 @@ void Compiler::executeProgram(std::filesystem::path program_path) {
     auto ir_module = compileProgram(program_path, is_script);
     if (is_script) {
         for (auto ir_function : ir_module->functions) {
-            if (ir_function->annotations.count("\\command")) {
+            if (ir_function->annotation_dict.count("\\command")) {
                 auto fun_fullname = ir_function->fullname;
                 auto fun_ptr = reinterpret_cast<void (*)(void)>(getSymbolValue(fun_fullname));
                 fun_ptr();
@@ -147,7 +147,7 @@ void Compiler::executateTestFunctions() {
                 }
 
                 function_tested_set.insert(ir_function);
-                if (ir_function->annotations.count("test")) {
+                if (ir_function->annotation_dict.count("test")) {
                     auto function_pointer = getSymbolValue(ir_function->fullname);
                     jit_engine->catchRuntimeError();
                     reinterpret_cast<void (*)(void)>(function_pointer)();

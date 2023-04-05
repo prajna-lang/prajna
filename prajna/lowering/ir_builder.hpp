@@ -102,11 +102,11 @@ class IrBuilder {
 
     std::shared_ptr<ir::Property> getProperty(std::shared_ptr<ir::Type> ir_type, std::string name) {
         auto iter_property_interface =
-            std::find_if(RANGE(ir_type->interfaces), [=](auto key_value) {
+            std::find_if(RANGE(ir_type->interface_dict), [=](auto key_value) {
                 if (!key_value.second) return false;
                 return key_value.second->name == name + "Property";
             });
-        if (iter_property_interface != ir_type->interfaces.end()) {
+        if (iter_property_interface != ir_type->interface_dict.end()) {
             auto ir_property_interface = iter_property_interface->second;
             auto ir_property = ir::Property::create();
             ir_property->get_function =
@@ -121,13 +121,13 @@ class IrBuilder {
 
     std::shared_ptr<ir::Property> getLinearIndexProperty(std::shared_ptr<ir::Type> ir_type) {
         auto iter_linear_index_interface =
-            std::find_if(RANGE(ir_type->interfaces), [](auto key_value) {
+            std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
                 if (!key_value.second) return false;
 
                 return key_value.second->name.size() > 12 &&
                        key_value.second->name.substr(0, 12) == "LinearIndex<";
             });
-        if (iter_linear_index_interface != ir_type->interfaces.end()) {
+        if (iter_linear_index_interface != ir_type->interface_dict.end()) {
             auto ir_linear_index_interface = iter_linear_index_interface->second;
             auto ir_index_property = ir::Property::create();
             ir_index_property->get_function =
@@ -142,13 +142,13 @@ class IrBuilder {
 
     std::shared_ptr<ir::Property> getArrayIndexProperty(std::shared_ptr<ir::Type> ir_type) {
         auto iter_array_index_interface =
-            std::find_if(RANGE(ir_type->interfaces), [](auto key_value) {
+            std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
                 if (!key_value.second) return false;
 
                 return key_value.second->name.size() > 11 &&
                        key_value.second->name.substr(0, 11) == "ArrayIndex<";
             });
-        if (iter_array_index_interface != ir_type->interfaces.end()) {
+        if (iter_array_index_interface != ir_type->interface_dict.end()) {
             auto ir_array_index_interface = iter_array_index_interface->second;
             auto ir_index_property = ir::Property::create();
             ir_index_property->get_function =
@@ -209,7 +209,7 @@ class IrBuilder {
             return ir_type->function_dict[member_name];
         }
 
-        for (auto [interface_name, ir_interface] : ir_type->interfaces) {
+        for (auto [interface_name, ir_interface] : ir_type->interface_dict) {
             if (!ir_interface) continue;
 
             for (auto ir_function : ir_interface->functions) {
@@ -260,7 +260,7 @@ class IrBuilder {
 
     std::shared_ptr<ir::Call> callMemberFunction(
         std::shared_ptr<ir::Value> ir_object, std::string member_function,
-        std::vector<std::shared_ptr<ir::Value>> ir_arguments) {
+        std::list<std::shared_ptr<ir::Value>> ir_arguments) {
         auto ir_member_function = this->getMemberFunction(ir_object->type, member_function);
         PRAJNA_ASSERT(ir_member_function);
         return this->callMemberFunction(ir_object, ir_member_function, ir_arguments);
@@ -268,7 +268,7 @@ class IrBuilder {
 
     std::shared_ptr<ir::Call> callMemberFunction(
         std::shared_ptr<ir::Value> ir_object, std::shared_ptr<ir::Function> ir_member_function,
-        std::vector<std::shared_ptr<ir::Value>> ir_arguments) {
+        std::list<std::shared_ptr<ir::Value>> ir_arguments) {
         auto ir_variable_liked = this->variableLikedNormalize(ir_object);
         auto ir_this_pointer = this->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         ir_arguments.insert(ir_arguments.begin(), ir_this_pointer);
@@ -284,7 +284,7 @@ class IrBuilder {
         // TODO binary_operator_name的前缀有问题
         auto unary_operator_interface_name =
             unary_operator_map[unary_operator_name] + "<" + ir_type->fullname + ">";
-        if (auto ir_interface_implement = ir_type->interfaces[unary_operator_interface_name]) {
+        if (auto ir_interface_implement = ir_type->interface_dict[unary_operator_interface_name]) {
             auto iter_function = std::find_if(
                 RANGE(ir_interface_implement->functions),
                 [=](std::shared_ptr<ir::Function> ir_function) -> bool {
@@ -309,8 +309,8 @@ class IrBuilder {
 
         // TODO binary_operator_name的前缀有问题
         if (auto ir_interface_implement =
-                ir_type->interfaces[binary_operator_map[binary_operator_name] + "<" +
-                                    ir_type->fullname + ">"]) {
+                ir_type->interface_dict[binary_operator_map[binary_operator_name] + "<" +
+                                        ir_type->fullname + ">"]) {
             auto iter_function = std::find_if(
                 RANGE(ir_interface_implement->functions),
                 [=](std::shared_ptr<ir::Function> ir_function) -> bool {
@@ -328,7 +328,7 @@ class IrBuilder {
     std::shared_ptr<ir::Call> callBinaryOperator(std::shared_ptr<ir::Value> ir_object,
                                                  std::string binary_operator_name,
                                                  std::shared_ptr<ir::Value> ir_operand) {
-        std::vector<std::shared_ptr<ir::Value>> ir_arguments = {ir_operand};
+        std::list<std::shared_ptr<ir::Value>> ir_arguments = {ir_operand};
         auto ir_variable_liked = this->variableLikedNormalize(ir_object);
         auto ir_this_pointer = this->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         ir_arguments.insert(ir_arguments.begin(), ir_this_pointer);

@@ -179,9 +179,8 @@ class StatementLoweringVisitor {
         return nullptr;
     }
 
-    std::vector<std::shared_ptr<ir::Type>> applyParameters(
-        std::list<ast::Parameter> ast_parameters) {
-        std::vector<std::shared_ptr<ir::Type>> types(ast_parameters.size());
+    std::list<std::shared_ptr<ir::Type>> applyParameters(std::list<ast::Parameter> ast_parameters) {
+        std::list<std::shared_ptr<ir::Type>> types(ast_parameters.size());
         std::transform(RANGE(ast_parameters), types.begin(), [=](ast::Parameter ast_parameter) {
             return this->applyType(ast_parameter.type);
         });
@@ -189,15 +188,15 @@ class StatementLoweringVisitor {
         return types;
     }
 
-    auto applyAnnotations(ast::Annotations ast_annotations) {
-        std::map<std::string, std::vector<std::string>> annotations;
+    auto applyAnnotations(ast::AnnotationDict ast_annotations) {
+        std::unordered_map<std::string, std::list<std::string>> annotation_dict;
         for (auto ast_annotation : ast_annotations) {
-            std::vector<std::string> values;
+            std::list<std::string> values;
             std::transform(RANGE(ast_annotation.values), std::back_inserter(values),
                            [](ast::StringLiteral string_literal) { return string_literal.value; });
-            annotations.insert({ast_annotation.name, values});
+            annotation_dict.insert({ast_annotation.name, values});
         }
-        return annotations;
+        return annotation_dict;
     }
 
     bool allBranchIsTerminated(std::shared_ptr<ir::Block> ir_block,
@@ -255,15 +254,15 @@ class StatementLoweringVisitor {
                 }
 
                 ir_function_declaration->blocks.clear();
-                ir_function_declaration->annotations =
-                    this->applyAnnotations(ast_function_header.annotations);
+                ir_function_declaration->annotation_dict =
+                    this->applyAnnotations(ast_function_header.annotation_dict);
 
                 return ir_function_declaration;
             }
         }
 
         auto ir_function = ir_builder->createFunction(ast_function_header.name, ir_function_type);
-        ir_function->annotations = this->applyAnnotations(ast_function_header.annotations);
+        ir_function->annotation_dict = this->applyAnnotations(ast_function_header.annotation_dict);
 
         return ir_function;
     }
@@ -271,7 +270,7 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::Function ast_function) {
         try {
             ir_builder->is_static_function =
-                std::any_of(RANGE(ast_function.declaration.annotations),
+                std::any_of(RANGE(ast_function.declaration.annotation_dict),
                             [](auto x) { return x.name == "static"; });
 
             auto ir_function = applyFunctionHeader(ast_function.declaration);
@@ -286,7 +285,7 @@ class StatementLoweringVisitor {
                 auto iter_argument = ir_function->parameters.begin();
                 if (ir_builder->isBuildingMemberfunction()) {
                     // Argument也不会插入的block里
-                    ir_builder->symbol_table->setWithAssigningName(ir_function->parameters[0],
+                    ir_builder->symbol_table->setWithAssigningName(ir_function->parameters.front(),
                                                                    "this-pointer");
                     ++iter_argument;
                 }
@@ -439,11 +438,11 @@ class StatementLoweringVisitor {
 
         ir_builder->popSymbolTable();
 
-        for (auto ast_annotation : ast_for.annotations) {
-            std::vector<std::string> values;
+        for (auto ast_annotation : ast_for.annotation_dict) {
+            std::list<std::string> values;
             std::transform(RANGE(ast_annotation.values), std::back_inserter(values),
                            [](ast::StringLiteral string_literal) { return string_literal.value; });
-            ir_for->annotations.insert({ast_annotation.name, values});
+            ir_for->annotation_dict.insert({ast_annotation.name, values});
         }
 
         PRAJNA_ASSERT(not ir_for->loopBlock()->parent_block);
@@ -482,7 +481,7 @@ class StatementLoweringVisitor {
 
     void createStructConstructor(std::shared_ptr<ir::StructType> ir_struct_type) {
         auto ir_fields = ir_struct_type->fields;
-        std::vector<std::shared_ptr<ir::Type>> ir_constructor_arg_types(ir_fields.size());
+        std::list<std::shared_ptr<ir::Type>> ir_constructor_arg_types(ir_fields.size());
         std::transform(RANGE(ir_fields), ir_constructor_arg_types.begin(),
                        [](auto ir_field) { return ir_field->type; });
         auto ir_constructor_type =
@@ -498,10 +497,10 @@ class StatementLoweringVisitor {
         ir_builder->createTopBlockForFunction(ir_constructor);
 
         auto ir_variable = ir_builder->create<ir::LocalVariable>(ir_struct_type);
-        for (size_t i = 0; i < ir_fields.size(); ++i) {
-            auto ir_access_field = ir_builder->create<ir::AccessField>(ir_variable, ir_fields[i]);
-            ir_builder->create<ir::WriteVariableLiked>(ir_constructor->parameters[i],
-                                                       ir_access_field);
+        for (auto [ir_field, ir_parameter] :
+             boost::combine(ir_fields, ir_constructor->parameters)) {
+            auto ir_access_field = ir_builder->create<ir::AccessField>(ir_variable, ir_field);
+            ir_builder->create<ir::WriteVariableLiked>(ir_parameter, ir_access_field);
         }
         ir_builder->create<ir::Return>(ir_variable);
         ir_builder->popBlock();
@@ -521,7 +520,7 @@ class StatementLoweringVisitor {
             ir_struct_type,
             expression_lowering_visitor->getNameOfTemplateIdentfier(ast_struct.name));
 
-        std::vector<std::shared_ptr<ir::Field>> ir_fields;
+        std::list<std::shared_ptr<ir::Field>> ir_fields;
         std::transform(
             RANGE(ast_struct.fields), std::back_inserter(ir_fields), [=](ast::Field ast_field) {
                 return ir::Field::create(ast_field.name, this->applyType(ast_field.type));
@@ -542,9 +541,9 @@ class StatementLoweringVisitor {
         std::set<std::string> copy_destroy_callback_names = {"initialize", "copy", "destroy"};
         if (not copy_destroy_callback_names.count(ir_function->name)) return;
 
-        if (ir_function->annotations.count("static") != 0) {
+        if (ir_function->annotation_dict.count("static") != 0) {
             auto iter_static_annotation = std::find_if(
-                RANGE(ast_function.declaration.annotations),
+                RANGE(ast_function.declaration.annotation_dict),
                 [](ast::Annotation ast_annotation) { return ast_annotation.name == "static"; });
             logger->error(fmt::format("the {} function can not be static", ir_function->name),
                           *iter_static_annotation);
@@ -561,29 +560,6 @@ class StatementLoweringVisitor {
                 fmt::format("the {} function should has no parameters", ir_function->name),
                 ast_function.declaration.parameters);
         }
-    }
-
-    bool isPropertyGetterSetterFunctionTypeMatched(
-        std::shared_ptr<ir::FunctionType> ir_getter_function_type,
-        std::shared_ptr<ir::FunctionType> ir_setter_function_type) {
-        if (ir_getter_function_type->parameter_types.size() + 1 !=
-            ir_setter_function_type->parameter_types.size()) {
-            return false;
-        }
-
-        for (size_t i = 0; i < ir_getter_function_type->parameter_types.size(); ++i) {
-            if (ir_getter_function_type->parameter_types[i] !=
-                ir_setter_function_type->parameter_types[i]) {
-                return false;
-            }
-        }
-
-        if (ir_getter_function_type->return_type !=
-            ir_setter_function_type->parameter_types.back()) {
-            return false;
-        }
-
-        return true;
     }
 
     Symbol operator()(ast::ImplementType ast_implement) {
@@ -637,17 +613,17 @@ class StatementLoweringVisitor {
             ir_interface->name = ir_interface_prototype->name;
             ir_interface->prototype = ir_interface_prototype;
             ir_interface->fullname = concatFullname(ir_type->fullname, ir_interface->name);
-            if (ir_type->interfaces[ir_interface->name]) {
+            if (ir_type->interface_dict[ir_interface->name]) {
                 logger->error("interface has implemented", ast_implement.interface);
             }
-            ir_type->interfaces[ir_interface->name] = ir_interface;
+            ir_type->interface_dict[ir_interface->name] = ir_interface;
 
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_interface->name;
 
             // 声明成员函数
             for (auto ast_function : ast_implement.functions) {
-                for (auto ast_annotation : ast_function.declaration.annotations) {
+                for (auto ast_annotation : ast_function.declaration.annotation_dict) {
                     if (ast_annotation.name == "static") {
                         logger->error("static function is invalid", ast_annotation);
                     }
@@ -682,10 +658,9 @@ class StatementLoweringVisitor {
 
             // 包装一个undef this pointer的函数
             for (auto ir_function : ir_interface->functions) {
-                std::vector<std::shared_ptr<ir::Type>>
-                    ir_undef_this_pointer_function_argument_types =
-                        ir_function->function_type->parameter_types;
-                ir_undef_this_pointer_function_argument_types[0] =
+                std::list<std::shared_ptr<ir::Type>> ir_undef_this_pointer_function_argument_types =
+                    ir_function->function_type->parameter_types;
+                ir_undef_this_pointer_function_argument_types.front() =
                     ir::PointerType::create(ir::UndefType::create());
 
                 auto ir_undef_this_pointer_function_type =
@@ -702,11 +677,11 @@ class StatementLoweringVisitor {
                     ir_undef_this_pointer_function;
                 ir_builder->pushBlock(ir_undef_this_pointer_function->blocks.back());
                 // 将undef *的this pointer转为本身的指针类型
-                auto ir_this_pointer =
-                    ir_builder->create<ir::BitCast>(ir_undef_this_pointer_function->parameters[0],
-                                                    ir_function->parameters[0]->type);
+                auto ir_this_pointer = ir_builder->create<ir::BitCast>(
+                    ir_undef_this_pointer_function->parameters.front(),
+                    ir_function->parameters.front()->type);
                 auto ir_arguments = ir_undef_this_pointer_function->parameters;
-                ir_arguments[0] = ir_this_pointer;
+                ir_arguments.front() = ir_this_pointer;
                 ir_builder->create<ir::Return>(
                     ir_builder->create<ir::Call>(ir_function, ir_arguments));
                 ir_builder->popBlock();
@@ -721,8 +696,8 @@ class StatementLoweringVisitor {
                 ir_builder->create<ir::LocalVariable>(ir_interface->prototype->dynamic_type);
 
             ir_builder->create<ir::WriteVariableLiked>(
-                ir_builder->callMemberFunction(ir_interface->dynamic_type_creator->parameters[0],
-                                               "toUndef", {}),
+                ir_builder->callMemberFunction(
+                    ir_interface->dynamic_type_creator->parameters.front(), "toUndef", {}),
                 ir_builder->accessField(ir_self, "object_pointer"));
             for (auto ir_function : ir_interface->functions) {
                 auto iter_field = std::find_if(
@@ -1456,7 +1431,7 @@ class StatementLoweringVisitor {
                                                        ir_interface_prototype_name);
 
         ir_interface_prototype->disable_dynamic_dispatch = std::any_of(
-            RANGE(ast_interface_prototype.annotations),
+            RANGE(ast_interface_prototype.annotation_dict),
             [](auto ast_annotation) { return ast_annotation.name == "disable_dynamic_dispatch"; });
 
         if (!ir_interface_prototype->disable_dynamic_dispatch) {
@@ -1528,13 +1503,13 @@ class StatementLoweringVisitor {
             ir_builder->pushBlock(ir_member_function->blocks.back());
             ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
 
-            auto ir_this_pointer = ir_member_function->parameters[0];
+            auto ir_this_pointer = ir_member_function->parameters.front();
             // 这里叫函数指针, 函数的类型就是函数指针
             auto ir_function_pointer = ir_builder->create<ir::AccessField>(
                 ir_builder->create<ir::DeferencePointer>(ir_this_pointer), field_function_pointer);
             // 直接将外层函数的参数转发进去, 除了第一个参数需要调整一下
             auto ir_arguments = ir_member_function->parameters;
-            ir_arguments[0] = ir_builder->accessField(
+            ir_arguments.front() = ir_builder->accessField(
                 ir_builder->create<ir::AccessField>(
                     ir_builder->create<ir::DeferencePointer>(ir_this_pointer),
                     field_object_pointer),
@@ -1547,7 +1522,7 @@ class StatementLoweringVisitor {
 
         ir_builder->this_pointer_type = nullptr;
 
-        ir_interface_struct->interfaces["Self"] = ir_interface;
+        ir_interface_struct->interface_dict["Self"] = ir_interface;
     }
 
     Symbol operator()(ast::Blank) { return nullptr; }

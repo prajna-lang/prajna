@@ -856,24 +856,7 @@ class StatementLoweringVisitor {
                                       ast_identifier_path);
                     }
 
-                    // 清楚结尾的模板
-                    auto identifier_path_without_template_arguments =
-                        ast_implement_type_for_interface.interface;
-                    identifier_path_without_template_arguments.identifiers.back()
-                        .template_arguments.reset();
-                    // 也有可能是一个模板接口
-                    auto symbol_interface = expression_lowering_visitor->applyIdentifierPath(
-                        identifier_path_without_template_arguments);
-                    if (!template_struct->template_implement_interface_for_type_dict.count(
-                            symbol_interface)) {
-                        template_struct
-                            ->template_implement_interface_for_type_dict[symbol_interface] =
-                            Template::create();
-                    }
-                    auto template_ =
-                        template_struct
-                            ->template_implement_interface_for_type_dict[symbol_interface];
-
+                    auto template_ = Template::create();
                     template_->generator =
                         this->createTemplateGenerator(ast_template_statement.template_parameters,
                                                       ast_implement_type_for_interface);

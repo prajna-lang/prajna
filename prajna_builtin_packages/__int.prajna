@@ -94,13 +94,6 @@ implement operator::LessOrEqual<int<Bits>> for int<Bits> {
 }
 
 template <Bits>
-implement operator::LessOrEqual<int<Bits>> for int<Bits> {
-    func LessOrEqual(operand: int<Bits>)->bool{
-        return __eq<int<Bits>>(this, operand);
-    }
-}
-
-template <Bits>
 implement operator::Negative<int<Bits>> for int<Bits> {
     func Negative()->int<Bits> {
         var zero = this - this;

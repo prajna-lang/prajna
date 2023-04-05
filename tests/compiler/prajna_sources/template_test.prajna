@@ -11,14 +11,14 @@ implement Node<T>{
     }
 }
 
+instantiate Node<f32>;
+
 template <T>
 implement Node<T>{
     func nextValue2()->T{
         return this.nextValue();
     }
 }
-
-
 
 template ArrayTp <T, Rank>{
     implement T[Rank]{
@@ -50,6 +50,7 @@ func test(){
     var next_node: Node<f32>;
     next_node.value = 2.0;
     root.next = &next_node;
+    root.nextValue2();
 
     var t: i64[3];
     t.length2();

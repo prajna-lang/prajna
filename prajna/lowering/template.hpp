@@ -113,33 +113,38 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
 
     std::shared_ptr<ir::Type> instantiateStructAndImplement(std::list<Symbol> template_arguments,
                                                             std::shared_ptr<ir::Module> ir_module) {
-        if (struct_type_instance_dict.count(template_arguments) == 0) {
-            struct_type_instance_dict[template_arguments];
+        // imlement_is_processing会确保 struct 实例化, implement实例化顺序执行, 而不产生递归
+        if (implement_is_processing.count(template_arguments) == 0) {
+            implement_is_processing[template_arguments] = false;
+        }
 
+        if (!implement_is_processing[template_arguments]) {
+            implement_is_processing[template_arguments] = true;
             struct_type_instance_dict[template_arguments] = symbolGet<ir::Type>(
                 template_struct_impl->instantiate(template_arguments, ir_module));
             struct_type_instance_dict[template_arguments]->template_struct =
                 this->shared_from_this();
             struct_type_instance_dict[template_arguments]->template_arguments_any =
                 template_arguments;
+            implement_is_processing[template_arguments] = false;
+        }
 
+        if (!implement_is_processing[template_arguments]) {
             for (auto template_implement : template_implement_type_vec) {
+                implement_is_processing[template_arguments] = true;
                 template_implement->instantiate(template_arguments, ir_module);
-            }
-
-            for (auto [ir_interface_prototype, template_implement_interface_for_type] :
-                 template_implement_interface_for_type_dict) {
-                template_implement_interface_for_type->instantiate(template_arguments, ir_module);
+                implement_is_processing[template_arguments] = false;
             }
         }
 
+        // 当返回nullptr时, 会使用ir_builder->instantiating_type_stack.top()去获取类型
         return struct_type_instance_dict[template_arguments];
     }
 
     std::shared_ptr<Template> template_struct_impl = nullptr;
     std::vector<std::shared_ptr<Template>> template_implement_type_vec;
-    std::unordered_map<Symbol, std::shared_ptr<Template>>
-        template_implement_interface_for_type_dict;
+
+    std::unordered_map<std::list<Symbol>, bool> implement_is_processing;
 
     std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::Type>> struct_type_instance_dict;
 };

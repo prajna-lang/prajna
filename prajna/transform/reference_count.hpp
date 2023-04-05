@@ -23,7 +23,7 @@ namespace prajna::transform {
 namespace {
 
 bool isReferenceCount(std::shared_ptr<ir::Type> ir_type) {
-    auto ir_interface_implement = ir_type->interfaces["ReferenceCountable"];
+    auto ir_interface_implement = ir_type->interface_dict["ReferenceCountable"];
     return ir_interface_implement != nullptr;
 }
 
@@ -48,7 +48,7 @@ const std::string INSERTED_FLAG = "INSERTED_FLAG";
 std::shared_ptr<lowering::IrBuilder> makeIRbuilder() {
     auto ir_builder = lowering::IrBuilder::create();
     ir_builder->create_callback = [](std::shared_ptr<ir::Value> ir_value) {
-        ir_value->annotations[INSERTED_FLAG].push_back("none");
+        ir_value->annotation_dict[INSERTED_FLAG].push_back("none");
     };
     return ir_builder;
 }
@@ -69,7 +69,7 @@ inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
 
         if (isReferenceCount(ir_type)) {
             auto ir_function = ir::getFunctionByName(
-                ir_type->interfaces["ReferenceCountable"]->functions, "initialize");
+                ir_type->interface_dict["ReferenceCountable"]->functions, "initialize");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         };
     }
@@ -91,8 +91,9 @@ inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
         }
 
         if (isReferenceCount(ir_type)) {
-            auto ir_function = ir::getFunctionByName(
-                ir_type->interfaces["ReferenceCountable"]->functions, "decrementReferenceCount");
+            auto ir_function =
+                ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
+                                      "decrementReferenceCount");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         };
     }
@@ -118,8 +119,9 @@ inline void copyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
         }
 
         if (isReferenceCount(ir_type)) {
-            auto ir_function = ir::getFunctionByName(
-                ir_type->interfaces["ReferenceCountable"]->functions, "incrementReferenceCount");
+            auto ir_function =
+                ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
+                                      "incrementReferenceCount");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         }
     }
@@ -178,7 +180,7 @@ inline void insertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_blo
     }
 
     ir_local_variable_list.remove_if([](std::shared_ptr<ir::LocalVariable> ir_local_variable) {
-        return ir_local_variable->annotations.count(INSERTED_FLAG);
+        return ir_local_variable->annotation_dict.count(INSERTED_FLAG);
     });
     while (not ir_local_variable_list.empty()) {
         auto ir_local_variable = ir_local_variable_list.front();
@@ -209,7 +211,7 @@ inline std::shared_ptr<ir::Module> insertVariableIncrementReferenceCount(
 
         ir_write_variable_likes.remove_if(
             [](std::shared_ptr<ir::WriteVariableLiked> ir_variable_liked) {
-                return ir_variable_liked->annotations.count(INSERTED_FLAG);
+                return ir_variable_liked->annotation_dict.count(INSERTED_FLAG);
             });
         for (auto ir_write_variable_liked : ir_write_variable_likes) {
             auto ir_builder = makeIRbuilder();

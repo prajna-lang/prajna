@@ -116,7 +116,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(while_, success_handler_function);
 
     for_.name("for");
-    for_ = annotations >> tok.for_ > identifier > tok.in > expr > tok.to > expr > block;
+    for_ = annotation_dict >> tok.for_ > identifier > tok.in > expr > tok.to > expr > block;
     on_error<fail>(for_, error_handler_function);
     on_success(for_, success_handler_function);
 
@@ -136,13 +136,13 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(field, success_handler_function);
 
     interface.name("interface");
-    interface = annotations >> tok.interface > expr.template_identifier > functions;
+    interface = annotation_dict >> tok.interface > expr.template_identifier > functions;
     on_error<fail>(interface, error_handler_function);
     on_success(interface, success_handler_function);
 
     implement_interface.name("implement interface");
     implement_interface =
-        annotations >> tok.implement >> expr.identifier_path >> tok.for_ >> type >> functions;
+        annotation_dict >> tok.implement >> expr.identifier_path >> tok.for_ >> type >> functions;
     on_error<fail>(implement_interface, error_handler_function);
     on_success(implement_interface, success_handler_function);
 
@@ -168,7 +168,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(template_parameter, success_handler_function);
 
     function_header.name("function header");
-    function_header = annotations >> tok.func > identifier > parameters > -(tok.arrow > type);
+    function_header = annotation_dict >> tok.func > identifier > parameters > -(tok.arrow > type);
     on_error<fail>(function_header, error_handler_function);
     on_success(function_header, success_handler_function);
 
@@ -220,10 +220,10 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     // on_error<fail>(templateable_statement, error_handler_function);
     // on_success(templateable_statement, success_handler_function);
 
-    annotations.name("annotations");
-    annotations = *annotation;
-    on_error<fail>(annotations, error_handler_function);
-    on_success(annotations, success_handler_function);
+    annotation_dict.name("annotation_dict");
+    annotation_dict = *annotation;
+    on_error<fail>(annotation_dict, error_handler_function);
+    on_success(annotation_dict, success_handler_function);
 
     annotation.name("annotation");
     annotation = tok.at > identifier >

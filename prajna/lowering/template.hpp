@@ -120,7 +120,8 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
                 template_struct_impl->instantiate(template_arguments, ir_module));
             struct_type_instance_dict[template_arguments]->template_struct =
                 this->shared_from_this();
-            struct_type_instance_dict[template_arguments]->template_arguments = template_arguments;
+            struct_type_instance_dict[template_arguments]->template_arguments_any =
+                template_arguments;
 
             for (auto template_implement : template_implement_type_vec) {
                 template_implement->instantiate(template_arguments, ir_module);

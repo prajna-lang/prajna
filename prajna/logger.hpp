@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/algorithm/string.hpp>
-#include <map>
+#include <unordered_map>
 
 #include "fmt/color.h"
 #include "fmt/format.h"

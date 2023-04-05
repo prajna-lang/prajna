@@ -243,11 +243,11 @@ struct Annotation : SourceLocation {
     std::list<StringLiteral> values;
 };
 
-struct Annotations : SourceLocation, std::list<Annotation> {};
+struct AnnotationDict : SourceLocation, std::list<Annotation> {};
 
 template <typename _T>
 struct Annotated {
-    Annotations annoations;
+    AnnotationDict annoations;
     _T statement;
 };
 
@@ -288,7 +288,7 @@ struct While : SourceLocation {
 };
 
 struct For : SourceLocation {
-    Annotations annotations;
+    AnnotationDict annotation_dict;
     Identifier index;
     Expression first;
     Expression last;
@@ -307,7 +307,7 @@ struct Parameter : SourceLocation {
 struct Parameters : SourceLocation, std::list<Parameter> {};
 
 struct FunctionHeader : SourceLocation {
-    Annotations annotations;
+    AnnotationDict annotation_dict;
     Identifier name;
     Parameters parameters;
     boost::optional<Type> return_type;
@@ -336,7 +336,7 @@ struct Struct : SourceLocation {
 };
 
 struct InterfacePrototype : SourceLocation {
-    Annotations annotations;
+    AnnotationDict annotation_dict;
     TemplateIdentifier name;
     // 函数声明也采用Function, 但其没有实现
     std::list<Function> functions;
@@ -348,7 +348,7 @@ struct ImplementType : SourceLocation {
 };
 
 struct ImplementInterfaceForType : SourceLocation {
-    Annotations annotations;
+    AnnotationDict annotation_dict;
     IdentifierPath interface;
     Type type;
     std::list<Function> functions;
@@ -410,13 +410,13 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Expression, first, rest)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::VariableDeclaration, name, type, initialize)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::If, condition, then, else_)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::While, condition, body)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::For, annotations, index, first, last, body)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::For, annotation_dict, index, first, last, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Return, expr)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Field, name, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateIdentifier, identifier, template_arguments)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Struct, name, fields)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Parameter, name, type)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotations, name, parameters, return_type)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotation_dict, name, parameters, return_type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Pragma, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body)
@@ -425,9 +425,9 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateStatement, template_parameters, s
 // BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Special, identifier_path)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SpecialStatement, statement)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, annotations, name, functions)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, annotation_dict, name, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, statements)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotations, interface, type,
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotation_dict, interface, type,
                           functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
@@ -444,4 +444,4 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Array, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::DynamicCast, identifier_path, pointer)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateParameter, name, concept_)
 
-BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotations, statement)
+BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotation_dict, statement)

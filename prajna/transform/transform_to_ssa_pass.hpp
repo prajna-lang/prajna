@@ -1,8 +1,8 @@
 #pragma once
 
 #include <list>
-#include <map>
 #include <set>
+#include <unordered_map>
 
 #include "prajna/ir/ir.hpp"
 #include "prajna/logger.hpp"

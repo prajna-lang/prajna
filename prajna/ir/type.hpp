@@ -2,10 +2,10 @@
 
 #include <any>
 #include <list>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "prajna/assert.hpp"
@@ -43,7 +43,7 @@ struct Property {
     static std::shared_ptr<Property> create() { return std::shared_ptr<Property>(new Property); }
 };
 
-using Annotations = std::map<std::string, std::vector<std::string>>;
+using AnnotationDict = std::unordered_map<std::string, std::list<std::string>>;
 
 class Type : public Named {
    protected:
@@ -59,14 +59,14 @@ class Type : public Named {
     size_t bytes = 0;
     std::shared_ptr<Function> constructor = nullptr;
 
-    std::map<std::string, std::shared_ptr<Function>> function_dict;
-    std::map<std::string, std::any> template_any_dict;
-    std::map<std::string, std::shared_ptr<InterfaceImplement>> interfaces;
+    std::unordered_map<std::string, std::shared_ptr<Function>> function_dict;
+    std::unordered_map<std::string, std::any> template_any_dict;
+    std::unordered_map<std::string, std::shared_ptr<InterfaceImplement>> interface_dict;
     // fields必须有顺序关系, 故没有使用map
-    std::vector<std::shared_ptr<Field>> fields;
+    std::list<std::shared_ptr<Field>> fields;
     // 用于追溯类型是被什么模板实例化的
     std::shared_ptr<lowering::TemplateStruct> template_struct = nullptr;
-    std::any template_arguments;
+    std::any template_arguments_any;
     llvm::Type* llvm_type = nullptr;
 };
 
@@ -250,8 +250,8 @@ class FunctionType : public Type {
 
    public:
     /// @note 考虑函数指针的情况, 同一个函数类型指向不同函数地址是存在且必须的(分发的实现)
-    static std::shared_ptr<FunctionType> create(
-        std::vector<std::shared_ptr<Type>> ir_parameter_types, std::shared_ptr<Type> return_type) {
+    static std::shared_ptr<FunctionType> create(std::list<std::shared_ptr<Type>> ir_parameter_types,
+                                                std::shared_ptr<Type> return_type) {
         // @note 不同函数的, 函数类型不应该是用一个指针, 下面的代码更适合判断动态分发的时候使用
         for (auto ir_type : global_context.created_types) {
             if (auto ir_fun_type = cast<FunctionType>(ir_type)) {
@@ -268,24 +268,26 @@ class FunctionType : public Type {
         self->parameter_types = ir_parameter_types;
 
         self->name = "(";
-        for (size_t i = 0; i < self->parameter_types.size(); ++i) {
-            self->name += self->parameter_types[i]->fullname;
-            if (i != self->parameter_types.size() - 1) {
-                self->name += ",";
+        auto iter = self->parameter_types.begin();
+        while (iter != self->parameter_types.end()) {
+            self->name += (*iter)->fullname;
+            ++iter;
+            if (iter == self->parameter_types.end()) {
+                self->name += ")";
+                break;
             }
+            self->name += ", ";
         }
-        self->name += ")";
         self->name += "->";
         self->name += self->return_type->fullname;
         self->fullname = self->name;
-
         global_context.created_types.push_back(self);
         return self;
     }
 
    public:
     std::shared_ptr<Type> return_type = nullptr;
-    std::vector<std::shared_ptr<Type>> parameter_types;
+    std::list<std::shared_ptr<Type>> parameter_types;
 
     std::shared_ptr<Function> function = nullptr;
 };
@@ -372,7 +374,7 @@ class StructType : public Type {
 
    public:
     // StructType应该直接用name获取, 其是否相等的判断取决于是否是相同的struct,而不是类型相等
-    static std::shared_ptr<StructType> create(std::vector<std::shared_ptr<Field>> fields) {
+    static std::shared_ptr<StructType> create(std::list<std::shared_ptr<Field>> fields) {
         // 每次取得都不是同一个类型
         std::shared_ptr<StructType> self(new StructType);
         self->fields = fields;
@@ -388,9 +390,11 @@ class StructType : public Type {
 
     void update() {
         this->bytes = 0;
-        for (size_t i = 0; i < this->fields.size(); ++i) {
-            this->fields[i]->index = i;
-            this->bytes += this->fields[i]->type->bytes;
+        int64_t i = 0;
+        for (auto& ir_field : this->fields) {
+            ir_field->index = i;
+            this->bytes += ir_field->type->bytes;
+            ++i;
         }
     }
 
@@ -439,7 +443,8 @@ class InterfaceImplement : public Named {
    public:
     std::list<std::shared_ptr<Function>> functions;
     // 将第一个参数包装为undef指针, 以便用于动态分发
-    std::map<std::shared_ptr<Function>, std::shared_ptr<Function>> undef_this_pointer_functions;
+    std::unordered_map<std::shared_ptr<Function>, std::shared_ptr<Function>>
+        undef_this_pointer_functions;
     std::shared_ptr<InterfacePrototype> prototype = nullptr;
     std::shared_ptr<Function> dynamic_type_creator = nullptr;
 };

@@ -13,7 +13,7 @@
 #include <atomic>
 #include <filesystem>
 #include <fstream>
-#include <map>
+#include <unordered_map>
 
 #include "llvm/ExecutionEngine/JITLink/JITLinkMemoryManager.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
@@ -27,7 +27,7 @@
 
 namespace prajna {
 
-std::map<void *, std::atomic<int64_t>> ptr_count_dict;
+std::unordered_map<void *, std::atomic<int64_t>> ptr_count_dict;
 
 }  // namespace prajna
 
@@ -98,7 +98,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
         // 这个步骤会消耗显卡内存, 后期优化尽量释放,
         if (std::none_of(RANGE(ir_sub_module->functions),
                          [](std::shared_ptr<ir::Function> ir_function) {
-                             return ir_function->annotations.count("kernel");
+                             return ir_function->annotation_dict.count("kernel");
                          })) {
             continue;
         }
@@ -181,7 +181,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
         PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
 
         for (auto ir_function : ir_sub_module->functions) {
-            if (ir_function->annotations.count("kernel")) {
+            if (ir_function->annotation_dict.count("kernel")) {
                 auto kernel_fun_address_name = getKernelFunctionAddressName(ir_function);
                 auto test_kernel_fun =
                     reinterpret_cast<CUfunction *>(this->getValue(kernel_fun_address_name));

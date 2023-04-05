@@ -149,7 +149,7 @@ class LlvmCodegen {
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
             this->emitFunctionDeclaration(ir_function, ir_target);
-            if (ir_function->annotations.count("kernel")) {
+            if (ir_function->annotation_dict.count("kernel")) {
                 auto md_node = llvm::MDNode::get(
                     static_llvm_context, {llvm::ValueAsMetadata::get(ir_function->llvm_value),
                                           llvm::MDString::get(static_llvm_context, "kernel"),
@@ -170,11 +170,11 @@ class LlvmCodegen {
     }
 
     void emitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
-        if (ir_function->annotations.count("instruction")) {
+        if (ir_function->annotation_dict.count("instruction")) {
             return;
-        } else if (ir_function->annotations.count("intrinsic")) {
-            PRAJNA_ASSERT(!ir_function->annotations["intrinsic"].empty());
-            auto function_name = ir_function->annotations["intrinsic"].front();
+        } else if (ir_function->annotation_dict.count("intrinsic")) {
+            PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
+            auto function_name = ir_function->annotation_dict["intrinsic"].front();
             PRAJNA_ASSERT(ir_function->function_type->llvm_type);
             llvm::FunctionType *llvm_fun_type =
                 static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
@@ -202,9 +202,10 @@ class LlvmCodegen {
         PRAJNA_ASSERT(llvm_fun);
         PRAJNA_ASSERT(ir_function->parameters.size() == llvm_fun->arg_size());
         size_t i = 0;
+        auto iter_parameter = ir_function->parameters.begin();
         for (auto llvm_arg = llvm_fun->arg_begin(); llvm_arg != llvm_fun->arg_end();
-             ++llvm_arg, ++i) {
-            ir_function->parameters[i]->llvm_value = llvm_arg;
+             ++llvm_arg, ++iter_parameter) {
+            (*iter_parameter)->llvm_value = llvm_arg;
         }
 
         for (auto block : ir_function->blocks) {
@@ -467,21 +468,22 @@ class LlvmCodegen {
         }
 
         if (auto ir_cast_instruction = cast<ir::CastInstruction>(ir_instruction)) {
-            std::map<ir::CastInstruction::Operation, llvm::CastInst::CastOps> cast_operator_dict = {
-                {ir::CastInstruction::Operation::Trunc, llvm::CastInst::Trunc},
-                {ir::CastInstruction::Operation::ZExt, llvm::CastInst::ZExt},
-                {ir::CastInstruction::Operation::SExt, llvm::CastInst::SExt},
-                {ir::CastInstruction::Operation::FPToUI, llvm::CastInst::FPToUI},
-                {ir::CastInstruction::Operation::FPToSI, llvm::CastInst::FPToSI},
-                {ir::CastInstruction::Operation::UIToFP, llvm::CastInst::UIToFP},
-                {ir::CastInstruction::Operation::SIToFP, llvm::CastInst::SIToFP},
-                {ir::CastInstruction::Operation::FPTrunc, llvm::CastInst::FPTrunc},
-                {ir::CastInstruction::Operation::FPExt, llvm::CastInst::FPExt},
-                {ir::CastInstruction::Operation::PtrToInt, llvm::CastInst::PtrToInt},
-                {ir::CastInstruction::Operation::IntToPtr, llvm::CastInst::IntToPtr},
-                {ir::CastInstruction::Operation::BitCast, llvm::CastInst::BitCast},
-                {ir::CastInstruction::Operation::AddrSpaceCast, llvm::CastInst::AddrSpaceCast},
-            };
+            std::unordered_map<ir::CastInstruction::Operation, llvm::CastInst::CastOps>
+                cast_operator_dict = {
+                    {ir::CastInstruction::Operation::Trunc, llvm::CastInst::Trunc},
+                    {ir::CastInstruction::Operation::ZExt, llvm::CastInst::ZExt},
+                    {ir::CastInstruction::Operation::SExt, llvm::CastInst::SExt},
+                    {ir::CastInstruction::Operation::FPToUI, llvm::CastInst::FPToUI},
+                    {ir::CastInstruction::Operation::FPToSI, llvm::CastInst::FPToSI},
+                    {ir::CastInstruction::Operation::UIToFP, llvm::CastInst::UIToFP},
+                    {ir::CastInstruction::Operation::SIToFP, llvm::CastInst::SIToFP},
+                    {ir::CastInstruction::Operation::FPTrunc, llvm::CastInst::FPTrunc},
+                    {ir::CastInstruction::Operation::FPExt, llvm::CastInst::FPExt},
+                    {ir::CastInstruction::Operation::PtrToInt, llvm::CastInst::PtrToInt},
+                    {ir::CastInstruction::Operation::IntToPtr, llvm::CastInst::IntToPtr},
+                    {ir::CastInstruction::Operation::BitCast, llvm::CastInst::BitCast},
+                    {ir::CastInstruction::Operation::AddrSpaceCast, llvm::CastInst::AddrSpaceCast},
+                };
             PRAJNA_ASSERT(cast_operator_dict.count(ir_cast_instruction->operation));
             auto cast_op = cast_operator_dict[ir_cast_instruction->operation];
             ir_cast_instruction->llvm_value =
@@ -491,10 +493,10 @@ class LlvmCodegen {
         }
 
         if (auto ir_compare_instruction = cast<ir::CompareInstruction>(ir_instruction)) {
-            std::map<std::string, llvm::CmpInst::OtherOps> cmp_inst_other_ops = {
+            std::unordered_map<std::string, llvm::CmpInst::OtherOps> cmp_inst_other_ops = {
                 {"ICmp", llvm::CmpInst::OtherOps::ICmp}, {"FCmp", llvm::CmpInst::OtherOps::FCmp}};
 
-            std::map<ir::CompareInstruction::Operation, llvm::CmpInst::OtherOps>
+            std::unordered_map<ir::CompareInstruction::Operation, llvm::CmpInst::OtherOps>
                 llvm_compare_other_ops_dict = {
                     {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::OtherOps::FCmp},
                     {ir::CompareInstruction::Operation::FCMP_OEQ, llvm::CmpInst::OtherOps::FCmp},
@@ -525,7 +527,7 @@ class LlvmCodegen {
                 };
 
             // clang-format off
-            std::map<ir::CompareInstruction::Operation, llvm::ICmpInst::Predicate>
+            std::unordered_map<ir::CompareInstruction::Operation, llvm::ICmpInst::Predicate>
                 llvm_compare_predicator_dict = {
                     {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::Predicate::FCMP_FALSE},
                     {ir::CompareInstruction::Operation::FCMP_OEQ, llvm::CmpInst::Predicate::FCMP_OEQ},
@@ -569,7 +571,7 @@ class LlvmCodegen {
         }
 
         if (auto ir_binary_operator = cast<ir::BinaryOperator>(ir_instruction)) {
-            std::map<ir::BinaryOperator::Operation, llvm::BinaryOperator::BinaryOps>
+            std::unordered_map<ir::BinaryOperator::Operation, llvm::BinaryOperator::BinaryOps>
                 binary_operator_dict = {
                     {ir::BinaryOperator::Operation::Add, llvm::BinaryOperator::BinaryOps::Add},
                     {ir::BinaryOperator::Operation::Sub, llvm::BinaryOperator::BinaryOps::Sub},
@@ -634,7 +636,7 @@ std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
         // 如果没有核函数, 则不生成. 因为不会被使用, gpu会把所用的的ir都拷贝过去
         if (std::none_of(RANGE(ir_sub_module->functions),
                          [](std::shared_ptr<ir::Function> ir_function) {
-                             return ir_function->annotations.count("kernel");
+                             return ir_function->annotation_dict.count("kernel");
                          })) {
             continue;
         }

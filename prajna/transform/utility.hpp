@@ -171,7 +171,7 @@ inline bool isReferedTo(std::shared_ptr<ir::LocalVariable> ir_refered_variable,
 }
 
 inline std::list<ir::Target> getTargets(std::shared_ptr<ir::Function> ir_function) {
-    auto target_string_vector = ir_function->annotations["target"];
+    auto target_string_vector = ir_function->annotation_dict["target"];
     std::list<std::string> target_string_list(target_string_vector.begin(),
                                               target_string_vector.end());
 
@@ -212,7 +212,7 @@ inline std::shared_ptr<ir::Type> getGpuTensorTypeOfHostTensorType(
     PRAJNA_ASSERT(gpu_tensor_template_struct);
     PRAJNA_ASSERT(ir_type->template_struct);
     return gpu_tensor_template_struct->instantiateStructAndImplement(
-        std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments), ir_module);
+        std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments_any), ir_module);
 }
 
 }  // namespace prajna::transform::utility

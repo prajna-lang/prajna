@@ -1,0 +1,102 @@
+template <KeyType, ValueType>
+struct HashMap {
+    keys: DynamicArray<KeyType>;
+    values: DynamicArray<ValueType>;
+    size: i64;
+    capacity: i64;
+}
+
+
+template <KeyType, ValueType>
+implement HashMap<KeyType, ValueType> {
+    @static
+    func create(capacity: i64) -> HashMap<KeyType, ValueType> {
+        var self: HashMap<KeyType, ValueType>;
+        self.keys = DynamicArray<KeyType>::create(capacity);
+        self.values = DynamicArray<ValueType>::create(capacity);
+        self.capacity = capacity;
+        self.size = 0;
+        return self;
+    }
+
+
+    func resize(new_capacity: i64) {
+        var new_keys = DynamicArray<KeyType>::create(new_capacity);
+        var new_values = DynamicArray<ValueType>::create(new_capacity);
+
+        for i in 0 to this.capacity {
+            if (this.keys[i] != 0) {
+                var h = this.hash(this.keys[i]);
+                var j = 0;
+                while (j < new_capacity) {
+                    var idx = this.probe(h, j);
+                    if (new_keys[idx] == 0) {
+                        new_keys[idx] = this.keys[i];
+                        new_values[idx] = this.values[i];
+                        break;
+                    }
+                    j = j + 1;
+                }
+            }
+        }
+
+        this.keys = new_keys;
+        this.values = new_values;
+        this.capacity = new_capacity;
+    }
+
+    func hash(key: KeyType) -> i64 {
+        // TODO: Implement a suitable hash function for your key type.
+        var h = 17;
+        // Assuming KeyType can be safely cast to i64
+        //h = h * 31 + key;
+        return h;
+    }
+
+    func probe(hash: i64, i: i64) -> i64 {
+        return (hash + i * i) % this.capacity;
+    }
+    func getsize() -> i64 {
+        return this.size;
+    }
+    func insert(key: KeyType, value: ValueType) {
+        if (this.size * 2 >= this.capacity) {
+            // TODO: Implement resizing logic.
+            this.resize(this.capacity * 2);
+        }
+
+        var h = this.hash(key);
+        var i = 0;
+        while (i < this.capacity) {
+            var idx = this.probe(h, i);
+            if (this.keys[idx] == 0) {
+                this.keys[idx] = key;
+                this.values[idx] = value;
+                this.size = this.size + 1;
+                return;
+            } else{
+                if (this.keys[idx] == key) {
+                this.values[idx] = value;
+                return;
+                }
+            }
+            i = i + 1;
+        }
+    }
+
+    func find(key: KeyType) -> ValueType {
+        var h = this.hash(key);
+        var i = 0;
+        while (i < this.capacity) {
+            var idx = this.probe(h, i);
+            if (this.keys[idx] == key) {
+                return this.values[idx];
+            }
+            i = i + 1;
+        }
+
+        return -1;
+    }
+}
+
+export HashMap;

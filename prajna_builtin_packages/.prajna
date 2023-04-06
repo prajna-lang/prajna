@@ -19,6 +19,7 @@ import serializable;
 import serialize;
 import list;
 import io;
-
+import dict;
+import dict::HashMap;
 
 import array::Array;

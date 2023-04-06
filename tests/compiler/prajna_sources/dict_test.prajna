@@ -1,0 +1,15 @@
+@test
+func testMain(){
+
+    var hello_dict =  "Hello HashMap!\n";
+    hello_dict.print();
+
+    var map = HashMap<i64, i64>::create(100);
+
+    map.insert(0, 10);
+    map.insert(1, 20);
+
+    var value = map.find(1);
+    value.tostr().print();
+    debug::assert(value == 20);
+}

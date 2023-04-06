@@ -17,5 +17,3 @@ import serialize;
 import tensor;
 import list;
 import io;
-
-export array::Array;

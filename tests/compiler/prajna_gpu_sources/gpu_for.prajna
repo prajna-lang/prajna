@@ -1,4 +1,4 @@
-import ::gpu;
+import gpu;
 
 @test
 func testGpuFor2d(){

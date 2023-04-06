@@ -2,12 +2,32 @@
 
 #include <filesystem>
 #include <fstream>
+#include <optional>
 
 #include "prajna/compiler/compiler.h"
 
 namespace prajna::lowering {
 
 using std::filesystem::path;
+
+std::optional<path> getPackagePath(path directory_path, std::string identifier) {
+    if (std::filesystem::exists(directory_path / path(identifier + ".prajna"))) {
+        return directory_path / path(identifier + ".prajna");
+    } else {
+        // 存在xxx目录
+        if (std::filesystem::is_directory(directory_path / path(identifier))) {
+            // xxx/.prajna存在
+            if (std::filesystem::exists(directory_path / path(identifier) / ".prajna")) {
+                return directory_path / path(identifier) / ".prajna";
+            } else {  // xxx/.prajna不存在
+                // 无需编译代码, 直接返回
+                return directory_path / path(identifier);
+            }
+        } else {
+            return std::nullopt;
+        }
+    }
+}
 
 Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
     try {
@@ -19,12 +39,13 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
         }
         PRAJNA_ASSERT(symbol.which() != 0);
 
+        bool is_first_module = true;
+
         path directory_path;
         for (auto iter_ast_identifier = ast_import.identifier_path.identifiers.begin();
              iter_ast_identifier != ast_import.identifier_path.identifiers.end();
              ++iter_ast_identifier) {
-            std::string current_identifer = iter_ast_identifier->identifier;
-
+            std::string identifier = iter_ast_identifier->identifier;
             if (symbol.type() != typeid(std::shared_ptr<SymbolTable>)) {
                 break;
             }
@@ -35,59 +56,81 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
                         PRAJNA_UNREACHABLE;
                         return nullptr;
                     },
-                    [=](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
-                        auto symbol = symbol_table->get(current_identifer);
+                    [=, &is_first_module](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
+                        auto symbol = symbol_table->get(identifier);
                         if (symbol.which() != 0) {
                             return symbol;
                         } else {
                             auto new_symbol_table = lowering::SymbolTable::create(symbol_table);
-                            symbol_table->set(new_symbol_table, current_identifer);
+                            symbol_table->set(new_symbol_table, identifier);
                             new_symbol_table->directory_path =
-                                symbol_table->directory_path / path(current_identifer);
-                            new_symbol_table->name = current_identifer;
+                                symbol_table->directory_path / path(identifier);
+                            new_symbol_table->name = identifier;
 
-                            path source_path;
-                            // 存在xxx.prajna文件
-                            if (std::filesystem::exists(symbol_table->directory_path /
-                                                        path(current_identifer + ".prajna"))) {
-                                source_path = symbol_table->directory_path /
-                                              path(current_identifer + ".prajna");
-                            } else {
-                                // 存在xxx目录
-                                if (std::filesystem::is_directory(symbol_table->directory_path /
-                                                                  path(current_identifer))) {
-                                    // xxx/.prajna存在
-                                    if (std::filesystem::exists(symbol_table->directory_path /
-                                                                path(current_identifer) /
-                                                                ".prajna")) {
-                                        source_path = symbol_table->directory_path /
-                                                      path(current_identifer) / ".prajna";
-                                    } else {  // xxx/.prajna不存在
-                                        // 无需编译代码, 直接返回
-                                        return new_symbol_table;
-                                    }
-                                } else {
-                                    logger->error("module is not found",
-                                                  iter_ast_identifier->identifier);
+                            auto package_path_optional =
+                                getPackagePath(symbol_table->directory_path, identifier);
+
+                            if (package_path_optional) {
+                                auto new_symbol_table = lowering::SymbolTable::create(symbol_table);
+                                symbol_table->set(new_symbol_table, identifier);
+                                new_symbol_table->directory_path =
+                                    symbol_table->directory_path / path(identifier);
+                                new_symbol_table->name = identifier;
+                                auto package_path = *package_path_optional;
+                                if (!std::filesystem::is_directory(package_path)) {
+                                    std::ifstream ifs(package_path.string());
+                                    PRAJNA_ASSERT(ifs.good());
+                                    std::string code((std::istreambuf_iterator<char>(ifs)),
+                                                     std::istreambuf_iterator<char>());
+                                    this->compiler->compileCode(code, new_symbol_table,
+                                                                package_path.string(), false);
                                 }
+                                return new_symbol_table;
+                            } else {
+                                // 可以在搜索路径搜索
+                                if (is_first_module) {
+                                    for (auto package_directory : compiler->package_directories) {
+                                        auto global_package_path_option =
+                                            getPackagePath(package_directory, identifier);
+                                        if (global_package_path_option) {
+                                            auto new_symbol_table = lowering::SymbolTable::create(
+                                                compiler->_symbol_table);
+                                            compiler->_symbol_table->set(new_symbol_table,
+                                                                         identifier);
+                                            symbol_table->set(new_symbol_table, identifier);
+                                            new_symbol_table->directory_path =
+                                                package_directory / path(identifier);
+                                            new_symbol_table->name = identifier;
+                                            auto package_path = *global_package_path_option;
+                                            if (!std::filesystem::is_directory(package_path)) {
+                                                std::ifstream ifs(package_path.string());
+                                                PRAJNA_ASSERT(ifs.good());
+                                                std::string code(
+                                                    (std::istreambuf_iterator<char>(ifs)),
+                                                    std::istreambuf_iterator<char>());
+                                                this->compiler->compileCode(code, new_symbol_table,
+                                                                            package_path.string(),
+                                                                            false);
+                                            }
+                                            return new_symbol_table;
+                                        }
+                                    }
+                                }
+
+                                logger->error("module is not found",
+                                              iter_ast_identifier->identifier);
+                                return nullptr;
                             }
-
-                            std::ifstream ifs(source_path.string());
-                            PRAJNA_ASSERT(ifs.good());
-                            std::string code((std::istreambuf_iterator<char>(ifs)),
-                                             std::istreambuf_iterator<char>());
-                            this->compiler->compileCode(code, new_symbol_table,
-                                                        source_path.string(), false);
-
-                            return new_symbol_table;
                         }
                     }},
                 symbol);
 
+            is_first_module = false;
             PRAJNA_ASSERT(symbol.which() != 0);
         }
 
-        // symbol = expression_lowering_visitor->applyIdentifierPath(ast_import.identifier_path);
+        // symbol =
+        // expression_lowering_visitor->applyIdentifierPath(ast_import.identifier_path);
 
         ir_builder->symbol_table->set(symbol,
                                       ast_import.identifier_path.identifiers.back().identifier);

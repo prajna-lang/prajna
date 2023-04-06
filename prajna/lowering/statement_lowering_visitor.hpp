@@ -489,7 +489,7 @@ class StatementLoweringVisitor {
         auto ir_constructor = ir::Function::create(ir_constructor_type);
         ir_constructor_type->function = ir_constructor;
         ir_struct_type->constructor = ir_constructor;
-        ir_constructor->name = concatFullname(ir_struct_type->name, "constructor");
+        ir_constructor->name = concatFullname(ir_struct_type->fullname, "constructor");
         ir_constructor->fullname = ir_constructor->name;
         ir_constructor->parent_module = ir_builder->module;
         ir_builder->module->functions.push_back(ir_constructor);
@@ -515,10 +515,7 @@ class StatementLoweringVisitor {
         auto ir_struct_type = ir::StructType::create();
         ir_builder->instantiating_type_stack.push(ir_struct_type);
 
-        // TODO 名字重命名错误, 需要处理
-        ir_builder->symbol_table->setWithAssigningName(
-            ir_struct_type,
-            expression_lowering_visitor->getNameOfTemplateIdentfier(ast_struct.name));
+        ir_builder->symbol_table->setWithAssigningName(ir_struct_type, ast_struct.name);
 
         std::list<std::shared_ptr<ir::Field>> ir_fields;
         std::transform(
@@ -791,6 +788,7 @@ class StatementLoweringVisitor {
                    std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // 包裹一层名字空间, 避免被污染
             auto templates_symbol_table = SymbolTable::create(symbol_table);
+            templates_symbol_table->name = getTemplateAgumentsFullname(symbol_template_arguments);
 
             for (auto [identifier, symbol] :
                  boost::combine(template_parameter_identifier_list, symbol_template_arguments)) {
@@ -816,14 +814,13 @@ class StatementLoweringVisitor {
             overloaded{
                 [=](ast::Struct ast_struct) -> Symbol {
                     std::shared_ptr<TemplateStruct> template_struct;
-                    if (ir_builder->symbol_table->currentTableHas(ast_struct.name.identifier)) {
+                    if (ir_builder->symbol_table->currentTableHas(ast_struct.name)) {
                         template_struct = symbolGet<TemplateStruct>(
-                            ir_builder->symbol_table->get(ast_struct.name.identifier));
+                            ir_builder->symbol_table->get(ast_struct.name));
                         PRAJNA_ASSERT(template_struct);
                     } else {
                         template_struct = TemplateStruct::create();
-                        ir_builder->setSymbolWithAssigningName(template_struct,
-                                                               ast_struct.name.identifier);
+                        ir_builder->setSymbolWithAssigningName(template_struct, ast_struct.name);
                     }
 
                     template_struct->template_struct_impl->generator =
@@ -917,7 +914,7 @@ class StatementLoweringVisitor {
                             // 包裹一层名字空间, 避免被污染
                             auto templates_symbol_table = SymbolTable::create(symbol_table);
                             templates_symbol_table->name =
-                                getSymbolListFullname(symbol_template_arguments);
+                                getTemplateAgumentsFullname(symbol_template_arguments);
 
                             for (auto [identifier, symbol] :
                                  boost::combine(template_parameter_identifier_list,
@@ -953,11 +950,6 @@ class StatementLoweringVisitor {
                     return template_;
                 }},
             ast_template_statement.statement);
-    }
-
-    Symbol operator()(ast::SpecialStatement ast_special_statement) {
-        PRAJNA_TODO;
-        return nullptr;
     }
 
     Symbol operator()(ast::Expression ast_expression) {
@@ -997,7 +989,8 @@ class StatementLoweringVisitor {
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
             auto ir_function = ir_tmp_builder->createFunction(
-                "__cast" + getSymbolListFullname(symbol_template_arguments), ir_function_type);
+                "__cast" + getTemplateAgumentsFullname(symbol_template_arguments),
+                ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
             if (ir_source_type == ir_target_type) {
@@ -1215,7 +1208,8 @@ class StatementLoweringVisitor {
             auto ir_function_type =
                 ir::FunctionType::create({ir_type, ir_type}, ir::BoolType::create());
             auto ir_function = ir_tmp_builder->createFunction(
-                "__" + compare_operation_name + getSymbolListFullname(symbol_template_arguments),
+                "__" + compare_operation_name +
+                    getTemplateAgumentsFullname(symbol_template_arguments),
                 ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CompareInstruction>(
@@ -1327,7 +1321,8 @@ class StatementLoweringVisitor {
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({ir_type, ir_type}, ir_type);
             auto ir_function = ir_tmp_builder->createFunction(
-                "__" + binary_operator_name + getSymbolListFullname(symbol_template_arguments),
+                "__" + binary_operator_name +
+                    getTemplateAgumentsFullname(symbol_template_arguments),
                 ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BinaryOperator>(

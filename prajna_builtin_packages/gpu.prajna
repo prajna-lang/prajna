@@ -31,7 +31,7 @@ func launchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
 }
 
 template <Type_, Dim_>
-struct Tensor<Type_, Dim_> {
+struct Tensor {
     data : Type_*;
     layout: Layout<Dim_>;
 }

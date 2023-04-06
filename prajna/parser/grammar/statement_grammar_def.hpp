@@ -35,8 +35,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     statement.name("statement");
     statement = module_ | block | if_ | struct_ | interface | implement_interface | implement_type |
-                template_instance | template_ | template_statement | special_statement | function |
-                while_ | for_ | single_statement | semicolon_statement;
+                template_instance | template_ | template_statement | function | while_ | for_ |
+                single_statement | semicolon_statement;
     on_error<fail>(statement, error_handler_function);
     on_success(statement, success_handler_function);
 
@@ -121,7 +121,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(for_, success_handler_function);
 
     struct_.name("struct");
-    struct_ = tok.struct_ > expr.template_identifier > fields;
+    struct_ = tok.struct_ > identifier > fields;
     on_error<fail>(struct_, error_handler_function);
     on_success(struct_, success_handler_function);
 
@@ -208,11 +208,6 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
                          omit[tok.greater] > templateable_statement;
     on_error<fail>(template_statement, error_handler_function);
     on_success(template_statement, success_handler_function);
-
-    special_statement.name("special statement");
-    special_statement = tok.special > templateable_statement;
-    on_error<fail>(special_statement, error_handler_function);
-    on_success(special_statement, success_handler_function);
 
     templateable_statement.name("templateable statement");
     templateable_statement = struct_ | function | implement_interface | implement_type | interface;

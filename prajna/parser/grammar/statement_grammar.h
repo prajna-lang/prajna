@@ -75,8 +75,6 @@ struct StatementGrammer
     rule<ast::TemplateAbleStatement> templateable_statement;
     rule<ast::Template> template_;
     rule<ast::TemplateStatement> template_statement;
-    rule<ast::Special> special;
-    rule<ast::SpecialStatement> special_statement;
     rule<ast::TemplateInstance> template_instance;
 };
 

@@ -1,6 +1,6 @@
 
 template <Type_>
-struct ptr<Type_>{
+struct ptr{
     raw_ptr: Type_*;
 }
 

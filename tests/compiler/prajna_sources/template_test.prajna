@@ -1,5 +1,5 @@
 template <T>
-struct Node<T>{
+struct Node {
     value: T;
     next: Node<T> *;
 }
@@ -39,7 +39,7 @@ template ptrTp <Type>{
 instantiate ptrTp<i64>;
 
 template <Type, Length>
-struct MyArray<Type, Length>{
+struct MyArray {
     data: Type[Length];
 }
 

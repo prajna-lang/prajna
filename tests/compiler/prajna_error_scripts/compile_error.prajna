@@ -48,8 +48,6 @@ for i in 3.14 to 10{}
 for i in 10 to 3.14{}
 // 4 = 6; 需要修复
 
-struct Tmp<t, t:template>{}
-
 Tensor<i64, 1, 2>::create([10]);
 
 func get(a: i64, b: f32){}

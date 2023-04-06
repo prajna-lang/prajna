@@ -1,7 +1,7 @@
 
 
 template <Type_, Length_>
-struct Array<Type_, Length_>{
+struct Array{
     data: Type_[Length_];
 }
 

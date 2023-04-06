@@ -29,8 +29,6 @@ struct PrefixCall;
 struct Array;
 struct Template;
 struct TemplateStatement;
-struct Special;
-struct SpecialStatement;
 struct TemplateInstance;
 struct DynamicCast;
 struct Module;
@@ -261,7 +259,7 @@ typedef boost::variant<
     boost::recursive_wrapper<Struct>, boost::recursive_wrapper<InterfacePrototype>,
     boost::recursive_wrapper<ImplementType>, boost::recursive_wrapper<ImplementInterfaceForType>,
     boost::recursive_wrapper<Template>, boost::recursive_wrapper<TemplateStatement>,
-    boost::recursive_wrapper<SpecialStatement>, boost::recursive_wrapper<TemplateInstance>, Pragma>
+    boost::recursive_wrapper<TemplateInstance>, Pragma>
     Statement;
 
 // @note需要声明为class, 因为之前才能在其他模块使用前置声明.
@@ -331,7 +329,7 @@ struct TemplateParameter : SourceLocation {
 struct TemplateParameters : SourceLocation, std::list<TemplateParameter> {};
 
 struct Struct : SourceLocation {
-    TemplateIdentifier name;
+    Identifier name;
     std::list<Field> fields;
 };
 
@@ -371,10 +369,6 @@ struct TemplateStatement : SourceLocation {
 
 struct Specical : SourceLocation {
     // Identifier name
-};
-
-struct SpecialStatement : SourceLocation {
-    boost::recursive_wrapper<TemplateAbleStatement> statement;
 };
 
 struct TemplateInstance : SourceLocation {
@@ -424,8 +418,6 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Template, name, template_parameters, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateStatement, template_parameters, statement)
-// BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Special, identifier_path)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SpecialStatement, statement)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateInstance, identifier_path)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, annotation_dict, name, functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, statements)

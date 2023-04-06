@@ -1,4 +1,4 @@
-import ::gpu;
+import gpu;
 
 @kernel
 @target("nvptx")
@@ -21,7 +21,7 @@ func testKernel(){
     parameters[1] = __bit_cast<i64* ,i8*>(&value);
     var parameters_ptr = &parameters[0];
 
-    var re = ::gpu::launchKernel(__bit_cast<func{(gpu::Tensor<i64, 1>, i64)->void}* ,i8*>(myKernel), gridShape, blockShape, parameters_ptr);
+    var re = gpu::launchKernel(__bit_cast<func{(gpu::Tensor<i64, 1>, i64)->void}* ,i8*>(myKernel), gridShape, blockShape, parameters_ptr);
     debug::assert(re == 0);
 
     host_tensor = gpu_tensor.toHost();

@@ -1,0 +1,6 @@
+import io;
+
+@test
+func testMain(){
+    var t = io::input;
+}

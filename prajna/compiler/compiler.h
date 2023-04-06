@@ -70,10 +70,8 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
     std::shared_ptr<ir::Module> compileProgram(std::filesystem::path prajna_source_file,
                                                bool is_interpreter);
 
-   private:
-    std::shared_ptr<lowering::SymbolTable> _symbol_table;
-
    public:
+    std::shared_ptr<lowering::SymbolTable> _symbol_table;
     std::shared_ptr<jit::ExecutionEngine> jit_engine;
     std::vector<std::filesystem::path> package_directories;
 

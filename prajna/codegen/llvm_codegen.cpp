@@ -701,7 +701,8 @@ std::shared_ptr<ir::Module> llvmPass(std::shared_ptr<ir::Module> ir_module) {
     for (llvm::Module::iterator I = llvm_module->begin(), E = llvm_module->end(); I != E;)
         llvm::UpgradeCallsToIntrinsic(&*I++);  // must be post-increment, as we remove
 
-    MPM.run(*llvm_module, MAM);
+    // TODO 存在bug
+    // MPM.run(*llvm_module, MAM);
 
     // llvm_module->dump();
 

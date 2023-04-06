@@ -131,7 +131,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(field, success_handler_function);
 
     interface.name("interface");
-    interface = annotation_dict >> tok.interface > expr.template_identifier > functions;
+    interface = annotation_dict >> tok.interface > identifier > functions;
     on_error<fail>(interface, error_handler_function);
     on_success(interface, success_handler_function);
 

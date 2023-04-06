@@ -578,22 +578,6 @@ class ExpressionLoweringVisitor {
             ast_template_argument);
     }
 
-    std::string getNameOfTemplateIdentfier(ast::TemplateIdentifier ast_template_identifier) {
-        std::string re = ast_template_identifier.identifier;
-        if (ast_template_identifier.template_arguments_optional) {
-            re.push_back('<');
-            for (auto ast_template_argument :
-                 *ast_template_identifier.template_arguments_optional) {
-                re.append(
-                    symbolGetFullname(this->getTemplateArgumentSymbol(ast_template_argument)));
-                re.push_back(',');
-            }
-            re.pop_back();
-            re.push_back('>');
-        }
-        return re;
-    }
-
     std::shared_ptr<Template> createDynamicTemplate() {
         auto dynamic_template = Template::create();
 

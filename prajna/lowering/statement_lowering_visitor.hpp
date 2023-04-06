@@ -51,7 +51,7 @@ class StatementLoweringVisitor {
         for (auto ast_template_identifier : ast_module.name.identifiers) {
             if (ast_template_identifier.template_arguments_optional) {
                 logger->error("the invalid module name",
-                              *ast_template_identifier.template_arguments_optional);
+                              ast_template_identifier.template_arguments_optional.get());
             }
             auto ast_module_name = ast_template_identifier.identifier;
             if (!symbol_table->currentTableHas(ast_module_name)) {
@@ -106,12 +106,12 @@ class StatementLoweringVisitor {
         std::shared_ptr<ir::Type> ir_type = nullptr;
         std::shared_ptr<ir::Value> ir_initial_value = nullptr;
         if (ast_variable_declaration.type_optional) {
-            ir_type = this->applyType(*ast_variable_declaration.type_optional);
+            ir_type = this->applyType(ast_variable_declaration.type_optional.get());
         }
         //确定变量的type
         if (ast_variable_declaration.initialize_optional) {
-            ir_initial_value =
-                expression_lowering_visitor->apply(*ast_variable_declaration.initialize_optional);
+            ir_initial_value = expression_lowering_visitor->apply(
+                ast_variable_declaration.initialize_optional.get());
 
             if (!ir_type) {
                 ir_type = ir_initial_value->type;
@@ -120,7 +120,7 @@ class StatementLoweringVisitor {
                     logger->error(fmt::format("the declaration type is \"{}\", but the initialize "
                                               "value's type is \"{}\"",
                                               ir_type->name, ir_initial_value->type->name),
-                                  *ast_variable_declaration.initialize_optional);
+                                  ast_variable_declaration.initialize_optional.get());
                 }
             }
         }
@@ -231,7 +231,7 @@ class StatementLoweringVisitor {
     std::shared_ptr<ir::Function> applyFunctionHeader(ast::FunctionHeader ast_function_header) {
         std::shared_ptr<ir::Type> return_type;
         if (ast_function_header.return_type_optional) {
-            return_type = applyType(*ast_function_header.return_type_optional);
+            return_type = applyType(ast_function_header.return_type_optional.get());
         } else {
             return_type = ir::VoidType::create();
         }
@@ -303,7 +303,7 @@ class StatementLoweringVisitor {
                     ir_builder->symbol_table->setWithAssigningName(ir_this, "this");
                 }
 
-                (*this)(*ast_function.body_optional);
+                (*this)(ast_function.body_optional.get());
 
                 // TODO 返回型需要进一步处理
                 // void返回类型直接补一个Return即可, 让后端去优化冗余的指令
@@ -337,7 +337,8 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::Return ast_return) {
         std::shared_ptr<ir::Return> ir_return;
         if (ast_return.expr_optional) {
-            auto ir_return_value = expression_lowering_visitor->apply(*ast_return.expr_optional);
+            auto ir_return_value =
+                expression_lowering_visitor->apply(ast_return.expr_optional.get());
             ir_return = ir_builder->create<ir::Return>(ir_return_value);
         } else {
             auto ir_void_value = ir_builder->create<ir::VoidValue>();
@@ -367,7 +368,7 @@ class StatementLoweringVisitor {
 
         ir_builder->pushBlock(ir_if->falseBlock());
         if (ast_if.else_optional) {
-            (*this)(*ast_if.else_optional);
+            (*this)(ast_if.else_optional.get());
         }
         ir_builder->popBlock();
 
@@ -515,7 +516,8 @@ class StatementLoweringVisitor {
         auto ir_struct_type = ir::StructType::create();
         ir_builder->instantiating_type_stack.push(ir_struct_type);
 
-        ir_builder->symbol_table->setWithAssigningName(ir_struct_type, ast_struct.name);
+        ir_builder->symbol_table->setWithAssigningName(
+            ir_struct_type, ast_struct.name + ir_builder->getCurrentTemplateArgumentsPostify());
 
         std::list<std::shared_ptr<ir::Field>> ir_fields;
         std::transform(
@@ -549,7 +551,7 @@ class StatementLoweringVisitor {
         if (not is<ir::VoidType>(ir_function->function_type->return_type)) {
             logger->error(
                 fmt::format("the {} function return type must be void", ir_function->name),
-                *ast_function.declaration.return_type_optional);
+                ast_function.declaration.return_type_optional.get());
         }
         // this pointer argument
         if (ir_function->function_type->parameter_types.size() != 1) {
@@ -727,7 +729,7 @@ class StatementLoweringVisitor {
                        [=](ast::TemplateParameter ast_template_parameter) -> Symbol {
                            if (ast_template_parameter.concept_optional) {
                                return expression_lowering_visitor->applyIdentifierPath(
-                                   *ast_template_parameter.concept_optional);
+                                   ast_template_parameter.concept_optional.get());
                            } else {
                                return nullptr;
                            }
@@ -750,7 +752,7 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::Template ast_template) {
         auto template_ = this->getOrCreateTemplate(ast_template.name);
         template_->generator = this->createTemplateGenerator(ast_template.template_parameters,
-                                                             ast_template.statements);
+                                                             ast_template.statements, false);
         return template_;
     }
 
@@ -770,15 +772,16 @@ class StatementLoweringVisitor {
     }
 
     Template::Generator createTemplateGenerator(ast::TemplateParameters ast_template_paramters,
-                                                ast::Statement ast_statement) {
+                                                ast::Statement ast_statement, bool has_identifier) {
         auto template_parameter_identifier_list =
             this->getTemplateParametersIdentifiers(ast_template_paramters);
-        return [=, symbol_table = ir_builder->symbol_table, logger = this->logger](
+        return [=, symbol_table = ir_builder->symbol_table, logger = this->logger,
+                this_pointer_type = ir_builder->this_pointer_type](
                    std::list<Symbol> symbol_template_arguments,
                    std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // 包裹一层名字空间, 避免被污染
             auto templates_symbol_table = SymbolTable::create(symbol_table);
-            templates_symbol_table->name = getTemplateAgumentsFullname(symbol_template_arguments);
+            templates_symbol_table->name = getTemplateArgumentsPostify(symbol_template_arguments);
 
             for (auto [identifier, symbol] :
                  boost::combine(template_parameter_identifier_list, symbol_template_arguments)) {
@@ -788,7 +791,17 @@ class StatementLoweringVisitor {
             auto statement_lowering_visitor = StatementLoweringVisitor::create(
                 templates_symbol_table, logger, ir_module, nullptr);
             try {
+                statement_lowering_visitor->ir_builder->this_pointer_type = this_pointer_type;
+                if (has_identifier) {
+                    statement_lowering_visitor->ir_builder->symbol_template_argument_list_optional =
+                        symbol_template_arguments;
+                }
+
                 return (*statement_lowering_visitor)(ast_statement);
+
+                statement_lowering_visitor->ir_builder->this_pointer_type = nullptr;
+                statement_lowering_visitor->ir_builder->symbol_template_argument_list_optional
+                    .reset();
             } catch (CompileError compile_error) {
                 logger->note(ast_template_paramters);
                 throw compile_error;
@@ -815,7 +828,7 @@ class StatementLoweringVisitor {
 
                     template_struct->template_struct_impl->generator =
                         this->createTemplateGenerator(ast_template_statement.template_parameters,
-                                                      ast_struct);
+                                                      ast_struct, true);
 
                     return template_struct;
                 },
@@ -847,7 +860,7 @@ class StatementLoweringVisitor {
                     auto template_ = Template::create();
                     template_->generator =
                         this->createTemplateGenerator(ast_template_statement.template_parameters,
-                                                      ast_implement_type_for_interface);
+                                                      ast_implement_type_for_interface, false);
                     template_struct->template_implement_type_vec.push_back(template_);
 
                     return template_;
@@ -878,65 +891,21 @@ class StatementLoweringVisitor {
 
                     auto template_ = Template::create();
                     template_->generator = this->createTemplateGenerator(
-                        ast_template_statement.template_parameters, ast_implement_type);
+                        ast_template_statement.template_parameters, ast_implement_type, false);
                     template_struct->template_implement_type_vec.push_back(template_);
                     return template_;
                 },
                 [=](ast::InterfacePrototype ast_interface_prototype) -> Symbol {
-                    auto template_ =
-                        this->getOrCreateTemplate(ast_interface_prototype.name.identifier);
+                    auto template_ = this->getOrCreateTemplate(ast_interface_prototype.name);
                     template_->generator = this->createTemplateGenerator(
-                        ast_template_statement.template_parameters, ast_interface_prototype);
+                        ast_template_statement.template_parameters, ast_interface_prototype, true);
                     return template_;
                 },
                 [=](ast::Function ast_function) -> Symbol {
                     auto ast_template_paramters = ast_template_statement.template_parameters;
                     auto template_ = this->getOrCreateTemplate(ast_function.declaration.name);
-
-                    if (ir_builder->isInsideImplement()) {
-                        auto template_parameter_identifier_list =
-                            this->getTemplateParametersIdentifiers(ast_template_paramters);
-                        template_->generator =
-                            [=, symbol_table = ir_builder->symbol_table, logger = this->logger,
-                             this_pointer_type = ir_builder->this_pointer_type](
-                                std::list<Symbol> symbol_template_arguments,
-                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
-                            // 包裹一层名字空间, 避免被污染
-                            auto templates_symbol_table = SymbolTable::create(symbol_table);
-                            templates_symbol_table->name =
-                                getTemplateAgumentsFullname(symbol_template_arguments);
-
-                            for (auto [identifier, symbol] :
-                                 boost::combine(template_parameter_identifier_list,
-                                                symbol_template_arguments)) {
-                                templates_symbol_table->set(symbol, identifier);
-                            }
-
-                            auto statement_lowering_visitor = StatementLoweringVisitor::create(
-                                templates_symbol_table, logger, ir_module, nullptr);
-                            try {
-                                statement_lowering_visitor->ir_builder->this_pointer_type =
-                                    this_pointer_type;
-                                statement_lowering_visitor->ir_builder
-                                    ->symbol_template_argument_list = symbol_template_arguments;
-
-                                auto symbol = (*statement_lowering_visitor)(ast_function);
-
-                                statement_lowering_visitor->ir_builder->this_pointer_type = nullptr;
-                                statement_lowering_visitor->ir_builder
-                                    ->symbol_template_argument_list.clear();
-
-                                statement_lowering_visitor->ir_builder->this_pointer_type = nullptr;
-                                return symbol;
-                            } catch (CompileError compile_error) {
-                                logger->note(ast_template_paramters);
-                                throw compile_error;
-                            }
-                        };
-                    } else {
-                        template_->generator = this->createTemplateGenerator(
-                            ast_template_statement.template_parameters, ast_function);
-                    }
+                    template_->generator = this->createTemplateGenerator(
+                        ast_template_statement.template_parameters, ast_function, true);
                     return template_;
                 }},
             ast_template_statement.statement);
@@ -961,7 +930,7 @@ class StatementLoweringVisitor {
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
             auto ir_function = ir_tmp_builder->createFunction(
-                "__cast" + getTemplateAgumentsFullname(symbol_template_arguments),
+                "__cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
@@ -1181,7 +1150,7 @@ class StatementLoweringVisitor {
                 ir::FunctionType::create({ir_type, ir_type}, ir::BoolType::create());
             auto ir_function = ir_tmp_builder->createFunction(
                 "__" + compare_operation_name +
-                    getTemplateAgumentsFullname(symbol_template_arguments),
+                    getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CompareInstruction>(
@@ -1294,7 +1263,7 @@ class StatementLoweringVisitor {
             auto ir_function_type = ir::FunctionType::create({ir_type, ir_type}, ir_type);
             auto ir_function = ir_tmp_builder->createFunction(
                 "__" + binary_operator_name +
-                    getTemplateAgumentsFullname(symbol_template_arguments),
+                    getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BinaryOperator>(
@@ -1382,10 +1351,9 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::InterfacePrototype ast_interface_prototype) {
         auto ir_interface_prototype = ir::InterfacePrototype::create();
-        auto ir_interface_prototype_name =
-            expression_lowering_visitor->getNameOfTemplateIdentfier(ast_interface_prototype.name);
-        ir_builder->symbol_table->setWithAssigningName(ir_interface_prototype,
-                                                       ir_interface_prototype_name);
+        ir_builder->symbol_table->setWithAssigningName(
+            ir_interface_prototype,
+            ast_interface_prototype.name + ir_builder->getCurrentTemplateArgumentsPostify());
 
         ir_interface_prototype->disable_dynamic_dispatch = std::any_of(
             RANGE(ast_interface_prototype.annotation_dict),
@@ -1398,7 +1366,7 @@ class StatementLoweringVisitor {
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ///  TODO function_type and name , 下面的代码会导致函数重复
             ir_builder->pushSymbolTable();
-            ir_builder->symbol_table->name = ir_interface_prototype_name;
+            ir_builder->symbol_table->name = ir_interface_prototype->name;
             auto symbol_function = (*this)(ast_function_declaration);
             auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
             ir_builder->popSymbolTable();

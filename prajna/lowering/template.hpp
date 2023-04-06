@@ -147,7 +147,7 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
     std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::Type>> struct_type_instance_dict;
 };
 
-inline std::string getTemplateAgumentsFullname(std::list<Symbol> symbol_list) {
+inline std::string getTemplateArgumentsPostify(std::list<Symbol> symbol_list) {
     std::string re = "<";
     for (auto iter = symbol_list.begin(); iter != symbol_list.end(); ++iter) {
         re.append(symbolGetFullname(*iter));

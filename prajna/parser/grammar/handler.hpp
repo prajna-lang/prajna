@@ -114,7 +114,7 @@ struct SuccessHandler {
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     boost::optional<_T>& ast_optional) const {
         if (ast_optional) {
-            (*this)(first_iter, input_last_iter, last_iter, *ast_optional);
+            (*this)(first_iter, input_last_iter, last_iter, ast_optional.get());
         }
     }
 

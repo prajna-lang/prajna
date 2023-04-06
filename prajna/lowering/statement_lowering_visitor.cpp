@@ -136,7 +136,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         if (ast_import.identifier_path.identifiers.back().template_arguments_optional) {
             auto symbol_template_arguments =
                 this->expression_lowering_visitor->applyTemplateArguments(
-                    *ast_import.identifier_path.identifiers.back().template_arguments_optional);
+                    ast_import.identifier_path.identifiers.back()
+                        .template_arguments_optional.get());
             if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
                 // 如果获取到nullptr则说明实例化正在进行中,
                 // 使用instantiating_type来获取相应类型
@@ -154,7 +155,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         }
 
         if (ast_import.as_optional) {
-            ir_builder->symbol_table->set(symbol, *ast_import.as_optional);
+            ir_builder->symbol_table->set(symbol, ast_import.as_optional.get());
         }
 
         return symbol;

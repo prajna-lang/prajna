@@ -1,103 +1,103 @@
 template <T>
 @disable_dynamic_dispatch
-interface Add<T> {
+interface Add {
     func Add(operand: T)->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Sub<T> {
+interface Sub {
     func Sub(operand: T)->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Multiply<T> {
+interface Multiply {
     func Multiply(operand: T)->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Divide<T> {
+interface Divide {
     func Divide(operand: T)->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Remaind<T> {
+interface Remaind {
     func Remaind(operand: T)->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Equal<T> {
+interface Equal {
     func Equal(operand: T)->bool;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface NotEqual<T> {
+interface NotEqual {
     func NotEqual(operand: T)->bool;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Greater<T> {
+interface Greater {
     func Greater(operand: T)->bool;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Less<T> {
+interface Less {
     func Less(operand: T)->bool;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface GreaterOrEqual<T> {
+interface GreaterOrEqual {
     func GreaterOrEqual(operand: T)->bool;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface LessOrEqual<T> {
+interface LessOrEqual {
     func LessOrEqual(operand: T)->bool;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface And<T> {
+interface And {
     func And(operand: T)->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Or<T> {
+interface Or {
     func Or(operand: T)->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Xor<T> {
+interface Xor {
     func Xor(operand: T)->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Not<T> {
+interface Not {
     func Not()->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface LinearIndex<T> {
+interface LinearIndex {
     func get(index: i64)->T;
     func set(index: i64, value: T);
 }
 
 template <ValueType, Dim>
 @disable_dynamic_dispatch
-interface ArrayIndex<ValueType, Dim> {
+interface ArrayIndex {
     func get(index: Array<i64, Dim>)->ValueType;
     func set(index: Array<i64, Dim>, value: ValueType);
 }
@@ -105,12 +105,12 @@ interface ArrayIndex<ValueType, Dim> {
 
 template <T>
 @disable_dynamic_dispatch
-interface Negative<T> {
+interface Negative {
     func Negative()->T;
 }
 
 template <T>
 @disable_dynamic_dispatch
-interface Not<T> {
+interface Not {
     func Not()->T;
 }

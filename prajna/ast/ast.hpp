@@ -329,7 +329,7 @@ struct Struct : SourceLocation {
 
 struct InterfacePrototype : SourceLocation {
     AnnotationDict annotation_dict;
-    TemplateIdentifier name;
+    Identifier name;
     // 函数声明也采用Function, 但其没有实现
     std::list<Function> functions;
 };

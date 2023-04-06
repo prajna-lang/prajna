@@ -104,7 +104,9 @@ class IrBuilder {
         auto iter_property_interface =
             std::find_if(RANGE(ir_type->interface_dict), [=](auto key_value) {
                 if (!key_value.second) return false;
-                return key_value.second->name == name + "Property";
+                auto name_prefix = name + "Property";
+                return key_value.second->name.size() >= name_prefix.size() &&
+                       key_value.second->name.substr(0, name_prefix.size()) == name_prefix;
             });
         if (iter_property_interface != ir_type->interface_dict.end()) {
             auto ir_property_interface = iter_property_interface->second;
@@ -144,7 +146,6 @@ class IrBuilder {
         auto iter_array_index_interface =
             std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
                 if (!key_value.second) return false;
-
                 return key_value.second->name.size() > 11 &&
                        key_value.second->name.substr(0, 11) == "ArrayIndex<";
             });
@@ -402,7 +403,8 @@ class IrBuilder {
     std::shared_ptr<ir::Function> createFunction(
         std::string name, std::shared_ptr<ir::FunctionType> ir_function_type) {
         auto ir_function = ir::Function::create(ir_function_type);
-        this->symbol_table->setWithAssigningName(ir_function, name);
+        this->symbol_table->setWithAssigningName(ir_function,
+                                                 name + this->getCurrentTemplateArgumentsPostify());
         ir_function->parent_module = this->module;
         this->module->functions.push_back(ir_function);
         return ir_function;
@@ -419,6 +421,18 @@ class IrBuilder {
         return ir_block;
     }
 
+    std::string getCurrentTemplateArgumentsPostify() {
+        if (this->symbol_template_argument_list_optional) {
+            auto re =
+                getTemplateArgumentsPostify(this->symbol_template_argument_list_optional.get());
+            // 用完之后清空, 否则会影响的下面的函数
+            this->symbol_template_argument_list_optional.reset();
+            return re;
+        } else {
+            return "";
+        }
+    }
+
     bool isBuildingMemberfunction() { return this_pointer_type && !is_static_function; }
 
     bool isInsideImplement() { return this_pointer_type != nullptr; }
@@ -431,20 +445,17 @@ class IrBuilder {
 
     std::stack<std::shared_ptr<ir::Label>> loop_after_label_stack;
     std::stack<std::shared_ptr<ir::Label>> loop_before_label_stack;
+    std::stack<std::shared_ptr<ir::Block>> block_stack;
 
     ir::Block::iterator inserter_iterator;
     std::function<void(std::shared_ptr<ir::Value>)> create_callback;
+
     std::shared_ptr<Logger> logger = nullptr;
 
-    std::stack<std::shared_ptr<ir::Block>> block_stack;
-
     std::stack<std::shared_ptr<ir::Type>> instantiating_type_stack;
-
     /// TODO we should not build function inside a function which is builting.
     std::shared_ptr<ir::Type> this_pointer_type = nullptr;
-
-    std::list<Symbol> symbol_template_argument_list;
-
+    boost::optional<std::list<Symbol>> symbol_template_argument_list_optional;
     bool is_static_function = false;
 };
 

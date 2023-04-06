@@ -4,18 +4,23 @@ struct HashMap {
     values: DynamicArray<ValueType>;
     size: i64;
     capacity: i64;
+    has_empty_slot: bool;
+    empty_slot_index: i64;
 }
-
 
 template <KeyType, ValueType>
 implement HashMap<KeyType, ValueType> {
     @static
     func create(capacity: i64) -> HashMap<KeyType, ValueType> {
+
+        debug::assert(capacity > 0);
         var self: HashMap<KeyType, ValueType>;
         self.keys = DynamicArray<KeyType>::create(capacity);
         self.values = DynamicArray<ValueType>::create(capacity);
         self.capacity = capacity;
         self.size = 0;
+        self.has_empty_slot = false;
+        self.empty_slot_index = -1;
         return self;
     }
 
@@ -24,7 +29,7 @@ implement HashMap<KeyType, ValueType> {
         var new_keys = DynamicArray<KeyType>::create(new_capacity);
         var new_values = DynamicArray<ValueType>::create(new_capacity);
 
-        for i in 0 to this.capacity {
+        for i in 0 to this.capacity-1 {
             if (this.keys[i] != 0) {
                 var h = this.hash(this.keys[i]);
                 var j = 0;
@@ -43,41 +48,76 @@ implement HashMap<KeyType, ValueType> {
         this.keys = new_keys;
         this.values = new_values;
         this.capacity = new_capacity;
+        this.has_empty_slot = false;
+        this.empty_slot_index = -1;
     }
+
 
     func hash(key: KeyType) -> i64 {
         // TODO: Implement a suitable hash function for your key type.
-        var h = 17;
-        // Assuming KeyType can be safely cast to i64
-        //h = h * 31 + key;
-        return h;
+        var hash_value: i64;
+        var new_str = key.tostr();
+        //for i in 0 to new_str.size()-1 {
+
+        //hash_value = hash_value * 31 + new_str.toi64();
+
+        //return hash_value;
+        return key;
     }
 
     func probe(hash: i64, i: i64) -> i64 {
-        return (hash + i * i) % this.capacity;
+        var idx = (hash + i) % this.capacity;
+        if (idx < 0) {
+            idx = idx + this.capacity;
+        }
+        return idx;
+
     }
+
+    func find_empty_slot() -> i64 {
+        debug::assert(this.has_empty_slot);
+        return this.empty_slot_index;
+    }
+
     func getsize() -> i64 {
         return this.size;
     }
+
+    func getcapacity() -> i64 {
+        return this.capacity;
+    }
+
     func insert(key: KeyType, value: ValueType) {
-        if (this.size * 2 >= this.capacity) {
-            // TODO: Implement resizing logic.
+        if (this.size * 2 >= this.capacity ) {
+
             this.resize(this.capacity * 2);
         }
-
+        //if( this.size +1 > this.capacity){
+           // this.resize(this.capacity * 2);
+       // }
         var h = this.hash(key);
         var i = 0;
         while (i < this.capacity) {
             var idx = this.probe(h, i);
             if (this.keys[idx] == 0) {
-                this.keys[idx] = key;
-                this.values[idx] = value;
-                this.size = this.size + 1;
-                return;
-            } else{
+                if (!this.has_empty_slot) {
+                    this.keys[idx] = key;
+                    this.values[idx] = value;
+                    this.size = this.size + 1;
+                    this.has_empty_slot = true;
+                    this.empty_slot_index = idx;
+                } else {
+                    this.keys[this.empty_slot_index] = key;
+                    this.values[this.empty_slot_index] = value;
+                    this.size = this.size + 1;
+                    this.has_empty_slot = false;
+                    this.empty_slot_index = -1;
+                }
+                return ;
+            } else {
                 if (this.keys[idx] == key) {
-                this.values[idx] = value;
-                return;
+                    this.values[idx] = value;
+                    return ;
                 }
             }
             i = i + 1;
@@ -97,6 +137,9 @@ implement HashMap<KeyType, ValueType> {
 
         return -1;
     }
+
+
 }
+
 
 export HashMap;

@@ -121,17 +121,17 @@ struct TemplateIdentifier : SourceLocation {
     Identifier identifier;
     // @note boost::optional是不可以省略的, 会有未知错误,
     // 可能和boost::recursive_wrapper混合使用有关, 目前就不省略了
-    boost::optional<TemplateArguments> template_arguments;
+    boost::optional<TemplateArguments> template_arguments_optional;
 };
 
 struct IdentifierPath : SourceLocation {
-    boost::optional<Operator> is_root;
+    boost::optional<Operator> root_optional;
     std::list<TemplateIdentifier> identifiers;
 };
 
 struct Import : SourceLocation {
     IdentifierPath identifier_path;
-    boost::optional<Identifier> as;
+    boost::optional<Identifier> as_optional;
 };
 
 struct Export : SourceLocation {
@@ -197,8 +197,8 @@ struct Array : SourceLocation {
 
 struct VariableDeclaration : SourceLocation {
     Identifier name;
-    boost::optional<Type> type;
-    boost::optional<Expression> initialize;
+    boost::optional<Type> type_optional;
+    boost::optional<Expression> initialize_optional;
 };
 
 struct Assignment : SourceLocation {
@@ -279,7 +279,7 @@ struct Block : SourceLocation {
 struct If : SourceLocation {
     Expression condition;
     Block then;
-    boost::optional<Block> else_;
+    boost::optional<Block> else_optional;
 };
 
 struct While : SourceLocation {
@@ -296,7 +296,7 @@ struct For : SourceLocation {
 };
 
 struct Return : SourceLocation {
-    boost::optional<Expression> expr;
+    boost::optional<Expression> expr_optional;
 };
 
 struct Parameter : SourceLocation {
@@ -310,12 +310,12 @@ struct FunctionHeader : SourceLocation {
     AnnotationDict annotation_dict;
     Identifier name;
     Parameters parameters;
-    boost::optional<Type> return_type;
+    boost::optional<Type> return_type_optional;
 };
 
 struct Function : SourceLocation {
     FunctionHeader declaration;
-    boost::optional<Block> body;
+    boost::optional<Block> body_optional;
 };
 
 struct Field : SourceLocation {
@@ -325,7 +325,7 @@ struct Field : SourceLocation {
 
 struct TemplateParameter : SourceLocation {
     Identifier name;
-    boost::optional<IdentifierPath> concept_;
+    boost::optional<IdentifierPath> concept_optional;
 };
 
 struct TemplateParameters : SourceLocation, std::list<TemplateParameter> {};
@@ -407,19 +407,21 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixUnary, operand, operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::BinaryOperation, operator_, operand)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Assignment, left, right)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Expression, first, rest)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::VariableDeclaration, name, type, initialize)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::If, condition, then, else_)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::VariableDeclaration, name, type_optional,
+                          initialize_optional)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::If, condition, then, else_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::While, condition, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::For, annotation_dict, index, first, last, body)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Return, expr)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Return, expr_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Field, name, type)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateIdentifier, identifier, template_arguments)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateIdentifier, identifier, template_arguments_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Struct, name, fields)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Parameter, name, type)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotation_dict, name, parameters, return_type)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotation_dict, name, parameters,
+                          return_type_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Pragma, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Template, name, template_parameters, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateStatement, template_parameters, statement)
 // BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Special, identifier_path)
@@ -429,10 +431,10 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, annotation_dict, name
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotation_dict, interface, type,
                           functions)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, is_root, identifiers)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, root_optional, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifier_path, as)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifier_path, as_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Export, identifier)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IntLiteralPostfix, int_literal, postfix)
@@ -442,6 +444,6 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, 
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCall, kernel_function, operation)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Array, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::DynamicCast, identifier_path, pointer)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateParameter, name, concept_)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateParameter, name, concept_optional)
 
 BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotation_dict, statement)

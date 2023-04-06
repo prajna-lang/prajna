@@ -12,7 +12,7 @@ using std::filesystem::path;
 Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
     try {
         Symbol symbol;
-        if (ast_import.identifier_path.is_root) {
+        if (ast_import.identifier_path.root_optional) {
             symbol = ir_builder->symbol_table->rootSymbolTable();
         } else {
             symbol = ir_builder->symbol_table;
@@ -92,8 +92,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
         ir_builder->symbol_table->set(symbol,
                                       ast_import.identifier_path.identifiers.back().identifier);
 
-        if (ast_import.as) {
-            ir_builder->symbol_table->set(symbol, *ast_import.as);
+        if (ast_import.as_optional) {
+            ir_builder->symbol_table->set(symbol, *ast_import.as_optional);
         }
 
         return symbol;

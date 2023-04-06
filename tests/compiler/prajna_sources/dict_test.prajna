@@ -3,13 +3,26 @@ func testMain(){
 
     var hello_dict =  "Hello HashMap!\n";
     hello_dict.print();
+    "\n".print();
 
-    var map = HashMap<i64, i64>::create(100);
+
+    var map = HashMap<i64, i64>::create(10);
+    map.getcapacity().tostr().print();
 
     map.insert(0, 10);
     map.insert(1, 20);
+    "\n".print();
+    map.getsize().tostr().print();
+    ":".print();
+    map.getcapacity().tostr().print();
+    map.insert(3, 30);
+    //map.insert(4, 40);
+    //map.getsize().tostr().print();
+    //for i
 
+    "\n".print();
     var value = map.find(1);
     value.tostr().print();
     debug::assert(value == 20);
+
 }

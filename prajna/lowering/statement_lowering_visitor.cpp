@@ -29,7 +29,7 @@ std::optional<path> getPackagePath(path directory_path, std::string identifier) 
     }
 }
 
-Symbol StatementLoweringVisitor::operator()(ast::Import ast_import) {
+Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
     try {
         Symbol symbol;
         if (ast_import.identifier_path.root_optional) {

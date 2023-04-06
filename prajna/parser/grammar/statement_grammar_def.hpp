@@ -56,7 +56,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(block, success_handler_function);
 
     single_statement.name("single_statement");
-    single_statement = (return_ | import | export_ | break_ | continue_ | variable_declaration |
+    single_statement = (return_ | use | export_ | break_ | continue_ | variable_declaration |
                         assignment | pragma | expr) > tok.semicolon;
     on_error<fail>(single_statement, error_handler_function);
     on_success(single_statement, success_handler_function);
@@ -67,10 +67,10 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_error<fail>(pragma, error_handler_function);
     on_success(pragma, success_handler_function);
 
-    import.name("import");
-    import = tok.import > identifier_path >> -(tok.as > identifier);
-    on_error<fail>(import, error_handler_function);
-    on_success(import, success_handler_function);
+    use.name("use");
+    use = tok.use > identifier_path >> -(tok.as > identifier);
+    on_error<fail>(use, error_handler_function);
+    on_success(use, success_handler_function);
 
     export_.name("export");
     export_ = tok.export_ > identifier;

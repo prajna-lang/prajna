@@ -129,7 +129,7 @@ struct IdentifierPath : SourceLocation {
     std::list<TemplateIdentifier> identifiers;
 };
 
-struct Import : SourceLocation {
+struct Use : SourceLocation {
     IdentifierPath identifier_path;
     boost::optional<Identifier> as_optional;
 };
@@ -255,7 +255,7 @@ struct Statements;
 
 typedef boost::variant<
     Blank, boost::recursive_wrapper<Statements>, boost::recursive_wrapper<Module>,
-    boost::recursive_wrapper<Block>, Import, Export, VariableDeclaration, Assignment, Expression,
+    boost::recursive_wrapper<Block>, Use, Export, VariableDeclaration, Assignment, Expression,
     boost::recursive_wrapper<If>, boost::recursive_wrapper<While>, boost::recursive_wrapper<For>,
     Break, Continue, boost::recursive_wrapper<Function>, boost::recursive_wrapper<Return>,
     boost::recursive_wrapper<Struct>, boost::recursive_wrapper<InterfacePrototype>,
@@ -434,7 +434,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotation_dic
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, root_optional, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Import, identifier_path, as_optional)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Use, identifier_path, as_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Export, identifier)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IntLiteralPostfix, int_literal, postfix)

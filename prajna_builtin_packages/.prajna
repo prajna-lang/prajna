@@ -1,20 +1,20 @@
 #stage1;
 
-import operator;
-import reference_count;
-import bindings;
-import debug;
-import array;
-import __ptr;
-import __type;
+use operator;
+use reference_count;
+use bindings;
+use debug;
+use array;
+use __ptr;
+use __type;
 
-import dynamic_array;
+use dynamic_array;
 
-import __str;
-import serializable;
-import serialize;
+use __str;
+use serializable;
+use serialize;
 
-import tensor;
-import list;
+use tensor;
+use list;
 
-// import io;
+// use io;

@@ -1,4 +1,4 @@
-import tests::compiler::prajna_sources::hello_world_test;
+use tests::compiler::prajna_sources::hello_world_test;
 
 @test
 func testMain(){

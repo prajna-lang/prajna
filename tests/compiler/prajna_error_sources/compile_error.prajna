@@ -20,7 +20,7 @@ implement Tmp2{
 
 // implement str<i>{}
 
-// import core::tt;
+// use core::tt;
 
 // export tt;
 

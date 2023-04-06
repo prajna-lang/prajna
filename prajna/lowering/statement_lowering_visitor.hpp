@@ -964,7 +964,7 @@ class StatementLoweringVisitor {
         return this->applyExpression(ast_expression);
     }
 
-    Symbol operator()(ast::Import ast_import);
+    Symbol operator()(ast::Use ast_import);
 
     Symbol operator()(ast::Export ast_export) {
         auto symbol = ir_builder->symbol_table->get(ast_export.identifier);

@@ -1,4 +1,4 @@
-// import mod_b;
+// use mod_b;
 
 module mod_local {
     func test_local(){
@@ -10,9 +10,9 @@ func test() {
     "test".printLine();
 }
 
-import package_test::mod_b;
-import mod_a::mod_aa;
-import mod_c;
+use package_test::mod_b;
+use mod_a::mod_aa;
+use mod_c;
 
 func main() {
     tests::package_test::test(); //父mod依赖于该文件是怎么被依赖的

@@ -1,4 +1,4 @@
-import io;
+use io;
 
 @test
 func testMain(){

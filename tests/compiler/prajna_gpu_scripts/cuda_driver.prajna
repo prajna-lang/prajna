@@ -1,4 +1,4 @@
-import gpu;
+use gpu;
 
 debug::assert(cuda::cuInit(0i32) == 0i32);
 var count: i32;

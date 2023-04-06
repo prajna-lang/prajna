@@ -35,7 +35,7 @@ struct StatementGrammer
     rule<ast::PostfixType> type;
     rule<ast::Identifier> identifier;
     rule<ast::IdentifierPath> identifier_path;
-    rule<ast::Import> import;
+    rule<ast::Use> use;
     rule<ast::Export> export_;
     rule<ast::Module> module_;
     rule<ast::Statements> statements;

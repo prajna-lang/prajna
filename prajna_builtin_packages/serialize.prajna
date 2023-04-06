@@ -1,20 +1,18 @@
-implement Serializable for i64{
-
+template <Bits>
+implement Serializable for uint<Bits>{
     func tostr()->str{
-        if (this == 0){
+        var zero = 0i64.cast<uint<Bits>>();
+        var one = 1i64.cast<uint<Bits>>();
+        var ten = 10i64.cast<uint<Bits>>();
+        if (this == zero){
             return "0";
         }
 
         var temp = this;
-        if (this < 0){
-            temp = - this;
-        }
-
-        ///max bit  is  19(not include sign)
         var inverse_re = "";
-        while (temp != 0){
-            inverse_re.append((temp%10 +'0'.cast<i64>()).cast<char>());
-            temp = temp / 10;
+        while (temp != zero){
+            inverse_re.append((temp % ten +'0'.cast<uint<Bits>>()).cast<char>());
+            temp = temp / ten;
         }
 
         var re = str::create(inverse_re.size);
@@ -24,15 +22,25 @@ implement Serializable for i64{
             j = j + 1;
         }
 
-        if (this > 0){
+        if (this > zero){
             return re;
         } else {
             return "-" + re;
         }
     }
-
 }
 
+template <Bits>
+implement Serializable for int<Bits>{
+    func tostr()->str{
+        var zero = 0i64.cast<int<Bits>>();
+        if (this >= zero) {
+            return this.cast<uint<Bits>>().tostr();
+        } else {
+            return "-" + (-this).tostr();
+        }
+    }
+}
 
 implement Serializable for bool{
     func tostr()->str{
@@ -45,53 +53,43 @@ implement Serializable for bool{
 }
 
 
-
-implement Serializable for i32{
+/// TODO 输出位数, 需要重构
+template <Bits>
+implement Serializable for float<Bits>{
     func tostr()->str{
-        return this.cast<i64>().tostr();
-    }
-}
+        var x = this;
+        var n = 4;
+        var rounder = 0.00005f32.cast<float<Bits>>();
+        var zero = 0i64.cast<float<Bits>>();
+        var one = 1i64.cast<float<Bits>>();
+        var ten = 10i64.cast<float<Bits>>();
+        x = x + rounder;
+        // TODO
+        // var re = "";
+        var re = str::create(0);
 
-implement Serializable for u32{
-    func tostr()->str{
-        return this.cast<i64>().tostr();
-    }
-}
-
-
-implement Serializable for f32{
-
-func tostr()->str{
-    var x = this;
-    var n = 4;
-    var rounder = 0.00005;
-    x = x + rounder;
-    var re = str::create(0);
-
-    if (x < 0.0){
-        re.append('-');
-        x = 0.0-x;
-    }
-
-    var int_part = x.cast<i64>();
-    re = re  + int_part.tostr();
-    x = x - int_part.cast<f32>();
-
-    var j = 0;
-    if (x < 1.0){
-        re.append('.');
-        while (n > 0){
-            x = x * 10.0;
-            int_part = x.cast<i64>();
-            re.append((x.cast<i64>() + '0'.cast<i64>()).cast<char>());
-            x = x - int_part.cast<f32>();
-            n = n - 1;
+        if (x < zero){
+            re.append('-');
+            x = zero-x;
         }
+
+        var int_part = x.cast<int<64>>();
+        re = re  + int_part.tostr();
+        x = x - int_part.cast<float<Bits>>();
+
+        if (x < one){
+            re.append('.');
+            while (n > 0){
+                x = x * ten;
+                int_part = x.cast<int<64>>();
+                re.append((x.cast<int<64>>() + '0'.cast<int<64>>()).cast<char>());
+                x = x - int_part.cast<float<Bits>>();
+                n = n - 1;
+            }
+        }
+
+        return re;
     }
-
-    return re;
-}
-
 }
 
 template <Type_, Dim_>

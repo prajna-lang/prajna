@@ -754,16 +754,6 @@ class StatementLoweringVisitor {
         return template_;
     }
 
-    Symbol operator()(ast::TemplateInstance ast_template_instance) {
-        try {
-            expression_lowering_visitor->applyIdentifierPath(ast_template_instance.identifier_path);
-            return nullptr;
-        } catch (CompileError compile_error) {
-            logger->note(ast_template_instance);
-            throw compile_error;
-        }
-    }
-
     std::list<std::string> getTemplateParametersIdentifiers(
         std::list<ast::TemplateParameter> template_parameters) {
         std::set<ast::Identifier> template_parameter_identifier_set;

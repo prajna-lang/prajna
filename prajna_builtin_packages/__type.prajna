@@ -229,31 +229,31 @@ template LogicalableTemplate2 <T> {
     }
 }
 
-instantiate CastableTemplate<int>
-instantiate ArithmeticTemplate<int>;
-instantiate ComparableTemplate<int>;
+use CastableTemplate<int>;
+use ArithmeticTemplate<int>;
+use ComparableTemplate<int>;
 
-instantiate CastableTemplate<uint>
-instantiate ArithmeticTemplate<uint>;
-instantiate ComparableTemplate<uint>;
+use CastableTemplate<uint>;
+use ArithmeticTemplate<uint>;
+use ComparableTemplate<uint>;
 
-instantiate CastableTemplate<float>
-instantiate ArithmeticTemplate<float>;
-instantiate ComparableTemplate<float>;
+use CastableTemplate<float>;
+use ArithmeticTemplate<float>;
+use ComparableTemplate<float>;
 
 func __tmp0() {
     var a: int<64>;
 }
 
-instantiate CastableTemplate2<char>
-instantiate ArithmeticTemplate2<char>;
-instantiate ComparableTemplate2<char>;
-instantiate LogicalableTemplate2<char>;
+use CastableTemplate2<char>;
+use ArithmeticTemplate2<char>;
+use ComparableTemplate2<char>;
+use LogicalableTemplate2<char>;
 
-// instantiate CastableTemplate2<bool>
-// instantiate ArithmeticTemplate2<bool>;
-// instantiate ComparableTemplate2<bool>;
-instantiate LogicalableTemplate2<bool>;
+// use CastableTemplate2<bool>
+// use ArithmeticTemplate2<bool>;
+// use ComparableTemplate2<bool>;
+use LogicalableTemplate2<bool>;
 
 template <Bits>
 implement operator::Negative<int<Bits>> for int<Bits> {

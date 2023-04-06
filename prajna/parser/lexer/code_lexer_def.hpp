@@ -70,11 +70,9 @@ CodeLexer<Lexer>::CodeLexer() {
     implement = "implement";
     interface = "interface";
     template_ = "template";
-    instantiate = "instantiate";
     use = "use";
     as = "as";
-    this->self +=
-        module_ | func | struct_ | implement | interface | template_ | instantiate | use | as;
+    this->self += module_ | func | struct_ | implement | interface | template_ | use | as;
 
     if_ = "if";
     else_ = "else";

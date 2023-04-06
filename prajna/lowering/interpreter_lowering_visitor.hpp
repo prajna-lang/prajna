@@ -88,7 +88,6 @@ class InterpreterLoweringVisitor {
     void operator()(const ast::Struct x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::InterfacePrototype x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::Template x) { (*_statement_lowering_visitor)(x); }
-    void operator()(const ast::TemplateInstance x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::Use x) { (*_statement_lowering_visitor)(x); }
     void operator()(const ast::ImplementType x) { (*_statement_lowering_visitor)(x); }
 

@@ -35,8 +35,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     statement.name("statement");
     statement = module_ | block | if_ | struct_ | interface | implement_interface | implement_type |
-                template_instance | template_ | template_statement | function | while_ | for_ |
-                single_statement | semicolon_statement;
+                template_ | template_statement | function | while_ | for_ | single_statement |
+                semicolon_statement;
     on_error<fail>(statement, error_handler_function);
     on_success(statement, success_handler_function);
 
@@ -192,11 +192,6 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
                 omit[tok.greater] > block;
     on_error<fail>(template_, error_handler_function);
     on_success(template_, success_handler_function);
-
-    template_instance.name("template instance");
-    template_instance = tok.instantiate > identifier_path;
-    on_error<fail>(template_instance, error_handler_function);
-    on_success(template_instance, success_handler_function);
 
     template_statement.name("template statement");
     template_statement = tok.template_ > omit[tok.less] > (template_parameter % tok.comma) >

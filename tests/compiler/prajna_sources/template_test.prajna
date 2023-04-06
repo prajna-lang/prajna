@@ -11,7 +11,7 @@ implement Node<T>{
     }
 }
 
-instantiate Node<f32>;
+use Node<f32>;
 
 template <T>
 implement Node<T>{
@@ -28,7 +28,7 @@ template ArrayTp <T, Rank>{
     }
 }
 
-instantiate ArrayTp<i64, 3>;
+use ArrayTp<i64, 3>;
 
 template ptrTp <Type>{
     implement Type* {
@@ -36,7 +36,7 @@ template ptrTp <Type>{
     }
 }
 
-instantiate ptrTp<i64>;
+use ptrTp<i64>;
 
 template <Type, Length>
 struct MyArray {

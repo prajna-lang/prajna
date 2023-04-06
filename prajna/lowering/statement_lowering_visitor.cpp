@@ -129,11 +129,29 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
             PRAJNA_ASSERT(symbol.which() != 0);
         }
 
-        // symbol =
-        // expression_lowering_visitor->applyIdentifierPath(ast_import.identifier_path);
-
+        /// TODO 并不清晰, 后面再处理
         ir_builder->symbol_table->set(symbol,
                                       ast_import.identifier_path.identifiers.back().identifier);
+
+        if (ast_import.identifier_path.identifiers.back().template_arguments_optional) {
+            auto symbol_template_arguments =
+                this->expression_lowering_visitor->applyTemplateArguments(
+                    *ast_import.identifier_path.identifiers.back().template_arguments_optional);
+            if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
+                // 如果获取到nullptr则说明实例化正在进行中,
+                // 使用instantiating_type来获取相应类型
+                if (auto ir_type = template_struct->instantiateStructAndImplement(
+                        symbol_template_arguments, ir_builder->module)) {
+                    symbol = ir_type;
+                } else {
+                    PRAJNA_ASSERT(ir_builder->instantiating_type_stack.size());
+                    symbol = ir_builder->instantiating_type_stack.top();
+                }
+            }
+            if (auto tempate_ = symbolGet<Template>(symbol)) {
+                symbol = tempate_->instantiate(symbol_template_arguments, ir_builder->module);
+            }
+        }
 
         if (ast_import.as_optional) {
             ir_builder->symbol_table->set(symbol, *ast_import.as_optional);

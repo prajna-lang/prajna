@@ -93,17 +93,6 @@ implement Tensor<Type_, Dim_> {
 }
 
 template <Type_, Dim_>
-implement operator::ArrayIndex<Type_, Dim_> for Tensor<Type_, Dim_> {
-    func get(idx: Array<i64, Dim_>)->Type_{
-        return this.at(idx);
-    }
-
-    func set(idx: Array<i64, Dim_>, value: Type_){
-        this.at(idx) = value;
-    }
-}
-
-template <Type_, Dim_>
 implement ::Tensor<Type_, Dim_> {
     func toGpu()->Tensor<Type_, Dim_>{
         var cuda_tensor = Tensor<Type_, Dim_>::create(this.layout.shape);

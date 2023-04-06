@@ -40,7 +40,7 @@ class ExpressionLoweringVisitor {
 
    public:
     bool isIdentifier(ast::IdentifierPath ast_identifier_path) {
-        if (ast_identifier_path.is_root) {
+        if (ast_identifier_path.root_optional) {
             return false;
         }
 
@@ -49,7 +49,7 @@ class ExpressionLoweringVisitor {
         }
 
         auto identifier_with_template_parameters = ast_identifier_path.identifiers.front();
-        return !identifier_with_template_parameters.template_arguments;
+        return !identifier_with_template_parameters.template_arguments_optional;
     }
 
     bool isIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
@@ -103,7 +103,7 @@ class ExpressionLoweringVisitor {
         auto ir_c_string_address =
             ir_builder->create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
         ast::IdentifierPath ast_identifier_path;
-        ast_identifier_path.is_root = ast::Operator("::");
+        ast_identifier_path.root_optional = ast::Operator("::");
         ast_identifier_path.identifiers.resize(1);
         ast_identifier_path.identifiers.front().identifier = "str";
         auto string_type = cast<ir::StructType>(
@@ -247,7 +247,7 @@ class ExpressionLoweringVisitor {
         std::string member_name = identifier_path.identifiers.front().identifier;
 
         // 模板函数
-        if (identifier_path.identifiers.front().template_arguments) {
+        if (identifier_path.identifiers.front().template_arguments_optional) {
             if (!ir_lhs->type->template_any_dict.count(member_name)) {
                 logger->error("has not template", ast_binary_operation.operand);
             }
@@ -255,7 +255,7 @@ class ExpressionLoweringVisitor {
                 ir_lhs->type->template_any_dict[member_name]);
 
             auto symbol_template_arguments = this->applyTemplateArguments(
-                *identifier_path.identifiers.front().template_arguments);
+                *identifier_path.identifiers.front().template_arguments_optional);
 
             auto ir_member_function = cast<ir::Function>(
                 symbolGet<ir::Value>(lowering_member_function_template->instantiate(
@@ -580,9 +580,10 @@ class ExpressionLoweringVisitor {
 
     std::string getNameOfTemplateIdentfier(ast::TemplateIdentifier ast_template_identifier) {
         std::string re = ast_template_identifier.identifier;
-        if (ast_template_identifier.template_arguments) {
+        if (ast_template_identifier.template_arguments_optional) {
             re.push_back('<');
-            for (auto ast_template_argument : *ast_template_identifier.template_arguments) {
+            for (auto ast_template_argument :
+                 *ast_template_identifier.template_arguments_optional) {
                 re.append(
                     symbolGetFullname(this->getTemplateArgumentSymbol(ast_template_argument)));
                 re.push_back(',');
@@ -645,7 +646,7 @@ class ExpressionLoweringVisitor {
 
     Symbol applyIdentifierPath(ast::IdentifierPath ast_identifier_path) {
         Symbol symbol;
-        if (ast_identifier_path.is_root) {
+        if (ast_identifier_path.root_optional) {
             symbol = ir_builder->symbol_table->rootSymbolTable();
         } else {
             symbol = ir_builder->symbol_table;
@@ -671,12 +672,12 @@ class ExpressionLoweringVisitor {
                     },
                     [=](std::shared_ptr<ir::Type> ir_type) -> Symbol {
                         auto static_function_identifier = iter_ast_identifier->identifier;
-                        if (iter_ast_identifier->template_arguments) {
+                        if (iter_ast_identifier->template_arguments_optional) {
                             auto lowering_member_function_template =
                                 std::any_cast<std::shared_ptr<Template>>(
                                     ir_type->template_any_dict[static_function_identifier]);
                             auto symbol_template_argumen_list = this->applyTemplateArguments(
-                                *iter_ast_identifier->template_arguments);
+                                *iter_ast_identifier->template_arguments_optional);
                             auto ir_function = cast<ir::Function>(
                                 symbolGet<ir::Value>(lowering_member_function_template->instantiate(
                                     symbol_template_argumen_list, ir_builder->module)));
@@ -692,7 +693,7 @@ class ExpressionLoweringVisitor {
                                 static_function_identifier);
                         }
 
-                        if (iter_ast_identifier->template_arguments) {
+                        if (iter_ast_identifier->template_arguments_optional) {
                             logger->error("the template arguments is invalid",
                                           *iter_ast_identifier);
                         }
@@ -709,11 +710,11 @@ class ExpressionLoweringVisitor {
                                           iter_ast_identifier->identifier);
                         }
 
-                        if (!iter_ast_identifier->template_arguments) {
+                        if (!iter_ast_identifier->template_arguments_optional) {
                             return symbol;
                         } else {
                             auto symbol_template_arguments = this->applyTemplateArguments(
-                                *iter_ast_identifier->template_arguments);
+                                *iter_ast_identifier->template_arguments_optional);
 
                             if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
                                 // 如果获取到nullptr则说明实例化正在进行中,

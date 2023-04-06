@@ -60,10 +60,10 @@ class IrBuilder {
         return ir_type->template_struct == ptr_template_struct;
     }
 
-    Symbol getSymbolByPath(bool is_root, std::vector<std::string> names) {
+    Symbol getSymbolByPath(bool root_optional, std::vector<std::string> names) {
         PRAJNA_ASSERT(this->symbol_table);
         auto tmp_symbol_table =
-            is_root ? this->symbol_table->rootSymbolTable() : this->symbol_table;
+            root_optional ? this->symbol_table->rootSymbolTable() : this->symbol_table;
         for (size_t i = 0; i < names.size() - 1; ++i) {
             tmp_symbol_table = symbolGet<SymbolTable>(tmp_symbol_table->get(names[i]));
             if (!tmp_symbol_table) {

@@ -49,9 +49,9 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::Module ast_module) {
         auto symbol_table = ir_builder->symbol_table;
         for (auto ast_template_identifier : ast_module.name.identifiers) {
-            if (ast_template_identifier.template_arguments) {
+            if (ast_template_identifier.template_arguments_optional) {
                 logger->error("the invalid module name",
-                              *ast_template_identifier.template_arguments);
+                              *ast_template_identifier.template_arguments_optional);
             }
             auto ast_module_name = ast_template_identifier.identifier;
             if (!symbol_table->currentTableHas(ast_module_name)) {
@@ -105,13 +105,13 @@ class StatementLoweringVisitor {
                       bool use_global_variable = false) {
         std::shared_ptr<ir::Type> ir_type = nullptr;
         std::shared_ptr<ir::Value> ir_initial_value = nullptr;
-        if (ast_variable_declaration.type) {
-            ir_type = this->applyType(*ast_variable_declaration.type);
+        if (ast_variable_declaration.type_optional) {
+            ir_type = this->applyType(*ast_variable_declaration.type_optional);
         }
         //确定变量的type
-        if (ast_variable_declaration.initialize) {
+        if (ast_variable_declaration.initialize_optional) {
             ir_initial_value =
-                expression_lowering_visitor->apply(*ast_variable_declaration.initialize);
+                expression_lowering_visitor->apply(*ast_variable_declaration.initialize_optional);
 
             if (!ir_type) {
                 ir_type = ir_initial_value->type;
@@ -120,7 +120,7 @@ class StatementLoweringVisitor {
                     logger->error(fmt::format("the declaration type is \"{}\", but the initialize "
                                               "value's type is \"{}\"",
                                               ir_type->name, ir_initial_value->type->name),
-                                  *ast_variable_declaration.initialize);
+                                  *ast_variable_declaration.initialize_optional);
                 }
             }
         }
@@ -230,8 +230,8 @@ class StatementLoweringVisitor {
 
     std::shared_ptr<ir::Function> applyFunctionHeader(ast::FunctionHeader ast_function_header) {
         std::shared_ptr<ir::Type> return_type;
-        if (ast_function_header.return_type) {
-            return_type = applyType(*ast_function_header.return_type);
+        if (ast_function_header.return_type_optional) {
+            return_type = applyType(*ast_function_header.return_type_optional);
         } else {
             return_type = ir::VoidType::create();
         }
@@ -278,7 +278,7 @@ class StatementLoweringVisitor {
             // 进入参数域,
 
             // @note 将function的第一个block作为最上层的block
-            if (ast_function.body) {
+            if (ast_function.body_optional) {
                 ir_builder->pushSymbolTable();
                 ir_builder->createTopBlockForFunction(ir_function);
 
@@ -303,7 +303,7 @@ class StatementLoweringVisitor {
                     ir_builder->symbol_table->setWithAssigningName(ir_this, "this");
                 }
 
-                (*this)(*ast_function.body);
+                (*this)(*ast_function.body_optional);
 
                 // TODO 返回型需要进一步处理
                 // void返回类型直接补一个Return即可, 让后端去优化冗余的指令
@@ -336,8 +336,8 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::Return ast_return) {
         std::shared_ptr<ir::Return> ir_return;
-        if (ast_return.expr) {
-            auto ir_return_value = expression_lowering_visitor->apply(*ast_return.expr);
+        if (ast_return.expr_optional) {
+            auto ir_return_value = expression_lowering_visitor->apply(*ast_return.expr_optional);
             ir_return = ir_builder->create<ir::Return>(ir_return_value);
         } else {
             auto ir_void_value = ir_builder->create<ir::VoidValue>();
@@ -366,8 +366,8 @@ class StatementLoweringVisitor {
         ir_builder->popBlock();
 
         ir_builder->pushBlock(ir_if->falseBlock());
-        if (ast_if.else_) {
-            (*this)(*ast_if.else_);
+        if (ast_if.else_optional) {
+            (*this)(*ast_if.else_optional);
         }
         ir_builder->popBlock();
 
@@ -552,7 +552,7 @@ class StatementLoweringVisitor {
         if (not is<ir::VoidType>(ir_function->function_type->return_type)) {
             logger->error(
                 fmt::format("the {} function return type must be void", ir_function->name),
-                *ast_function.declaration.return_type);
+                *ast_function.declaration.return_type_optional);
         }
         // this pointer argument
         if (ir_function->function_type->parameter_types.size() != 1) {
@@ -728,9 +728,9 @@ class StatementLoweringVisitor {
         std::transform(RANGE(ast_template_parameter_list),
                        std::back_inserter(symbol_template_concepts),
                        [=](ast::TemplateParameter ast_template_parameter) -> Symbol {
-                           if (ast_template_parameter.concept_) {
+                           if (ast_template_parameter.concept_optional) {
                                return expression_lowering_visitor->applyIdentifierPath(
-                                   *ast_template_parameter.concept_);
+                                   *ast_template_parameter.concept_optional);
                            } else {
                                return nullptr;
                            }
@@ -847,7 +847,8 @@ class StatementLoweringVisitor {
                         ast_implement_type_for_interface.type.base_type);
                     // 只获取模板类, 不能带模板参数
                     auto ast_template_struct = ast_identifier_path;
-                    ast_template_struct.identifiers.back().template_arguments = boost::none;
+                    ast_template_struct.identifiers.back().template_arguments_optional =
+                        boost::none;
                     auto ir_symbol =
                         expression_lowering_visitor->applyIdentifierPath(ast_template_struct);
                     auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
@@ -878,7 +879,8 @@ class StatementLoweringVisitor {
                         boost::get<ast::IdentifierPath>(ast_implement_type.type.base_type);
                     // 只获取模板类, 不能带模板参数
                     auto ast_template_struct = ast_identifier_path;
-                    ast_template_struct.identifiers.back().template_arguments = boost::none;
+                    ast_template_struct.identifiers.back().template_arguments_optional =
+                        boost::none;
                     auto ir_symbol =
                         expression_lowering_visitor->applyIdentifierPath(ast_template_struct);
                     auto template_struct = symbolGet<TemplateStruct>(ir_symbol);

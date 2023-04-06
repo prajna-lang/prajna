@@ -1,6 +1,6 @@
 @test
 func testMain() {
-    var root = ptr<Node<i64>>::new();
+    var root = ptr<list::Node<i64>>::new();
     root.value = 3;
     // TODO 引用计数存在bug
     // root.next = ptr<Node<i64>>::new();

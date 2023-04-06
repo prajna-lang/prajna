@@ -958,24 +958,6 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::Use ast_import);
 
-    Symbol operator()(ast::Export ast_export) {
-        auto symbol = ir_builder->symbol_table->get(ast_export.identifier);
-        if (symbol.which() == 0) {
-            logger->error("the symbol is not found", ast_export.identifier);
-        }
-
-        auto parent_symbol_table = ir_builder->symbol_table->parent_symbol_table;
-        PRAJNA_ASSERT(parent_symbol_table, "不可能为nullptr, 因为文件名本身也是一层名字空间");
-
-        if (parent_symbol_table->currentTableHas(ast_export.identifier)) {
-            logger->error("the identifier is exist already", ast_export.identifier);
-        }
-
-        parent_symbol_table->set(symbol, ast_export.identifier);
-
-        return symbol;
-    }
-
     std::shared_ptr<Template> createCastInstructionTemplate() {
         auto template_cast_instruction = Template::create();
         template_cast_instruction->generator =

@@ -7,5 +7,3 @@ struct Node {
     // pre: ptr<Node>;
     value: ValueType;
 }
-
-export Node;

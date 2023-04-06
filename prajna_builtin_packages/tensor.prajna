@@ -95,6 +95,3 @@ implement operator::ArrayIndex<Type_, Dim_> for Tensor<Type_, Dim_> {
         this.at(idx) = value;
     }
 }
-
-export Tensor;
-export Layout;

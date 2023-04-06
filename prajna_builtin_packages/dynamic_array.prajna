@@ -51,5 +51,3 @@ implement DynamicArray<ValueType> {
         this[this.length-1] = value;
     }
 }
-
-export DynamicArray;

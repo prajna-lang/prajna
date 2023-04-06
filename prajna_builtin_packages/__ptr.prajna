@@ -9,7 +9,7 @@ implement ptr<Type_>{
     @static
     func allocate(size: i64)->ptr<Type_>{
         var self: ptr<Type_>;
-        self.raw_ptr =  __bit_cast<undef* ,Type_ *>(malloc(__mul<i64>(size, sizeof(Type_))));
+        self.raw_ptr =  __bit_cast<undef* ,Type_ *>(bindings::malloc(__mul<i64>(size, sizeof(Type_))));
         bindings::registerReferenceCount(__bit_cast<Type_* ,undef*>(self.raw_ptr));
         bindings::incrementReferenceCount(__bit_cast<Type_* ,undef*>(self.raw_ptr));
         return self;
@@ -92,5 +92,3 @@ implement reference_count::ReferenceCountable for ptr<Type_> {
         }
     }
 }
-
-export ptr;

@@ -66,6 +66,3 @@ implement operator::Sub<Array<Type_, Length_>> for Array<Type_, Length_> {
     }
 }
 
-
-export Array;
-

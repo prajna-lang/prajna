@@ -13,8 +13,3 @@ func registerReferenceCount(pointer: undef*);
 func getReferenceCount(pointer: undef*)->i64;
 func incrementReferenceCount(pointer: undef*);
 func decrementReferenceCount(pointer: undef*);
-
-export print_c;
-export assert;
-export malloc;
-export free;

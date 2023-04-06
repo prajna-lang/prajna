@@ -1,20 +1,39 @@
 #stage1;
 
 use operator;
+
 use reference_count;
+use reference_count::ReferenceCountable;
+
 use bindings;
 use debug;
+
 use array;
+use array::Array;
+
 use __ptr;
+use __ptr::ptr;
+
 use __type;
 
 use dynamic_array;
+use dynamic_array::DynamicArray;
 
 use __str;
+use __str::str;
+use __str::print;
+use __str::printLine;
+
+
 use serializable;
+use serializable::Serializable;
+
 use serialize;
 
 use tensor;
+use tensor::Tensor;
+use tensor::Layout;
+
 use list;
 
 // use io;

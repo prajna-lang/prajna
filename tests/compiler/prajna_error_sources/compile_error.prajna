@@ -22,8 +22,6 @@ implement Tmp2{
 
 // use core::tt;
 
-// export tt;
-
 implement Tensor<T:template, RANK:template, G:template>{
 
 }

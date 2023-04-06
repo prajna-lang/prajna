@@ -5,5 +5,3 @@ interface ReferenceCountable {
     func decrementReferenceCount();
     func initialize();
 }
-
-export ReferenceCountable;

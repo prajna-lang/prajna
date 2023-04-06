@@ -72,10 +72,9 @@ CodeLexer<Lexer>::CodeLexer() {
     template_ = "template";
     instantiate = "instantiate";
     use = "use";
-    export_ = "export";
     as = "as";
-    this->self += module_ | func | struct_ | implement | interface | template_ | instantiate | use |
-                  as | export_;
+    this->self +=
+        module_ | func | struct_ | implement | interface | template_ | instantiate | use | as;
 
     if_ = "if";
     else_ = "else";

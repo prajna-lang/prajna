@@ -38,7 +38,7 @@ implement str{
 
     func print(){
         this.darray[this.size] = '\0';
-        print_c(this.darray.data.raw_ptr);
+        bindings::print_c(this.darray.data.raw_ptr);
     }
 
     func append(v: char){
@@ -134,6 +134,3 @@ func printLine(ss: str) {
     ss.printLine();
 }
 
-export str;
-export print;
-export printLine;

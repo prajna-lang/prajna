@@ -733,6 +733,8 @@ class ExpressionLoweringVisitor {
                                                              ir_builder->module);
                             }
 
+                            auto v = symbolGet<ir::Value>(symbol);
+
                             logger->error(
                                 "it's not a template [struct] but with template arguments",
                                 *iter_ast_identifier);

@@ -1000,53 +1000,58 @@ class StatementLoweringVisitor {
 
             if (ir_source_type == ir_target_type) {
                 ir_tmp_builder->create<ir::Return>(ir_function->parameters.front());
-            } else {
-                auto cast_operation = ir::CastInstruction::Operation::BitCast;
-
-                if (auto ir_source_int_type = cast<ir::IntType>(ir_source_type)) {
-                    if (is<ir::FloatType>(ir_target_type)) {
-                        cast_operation = ir_source_int_type->is_signed
-                                             ? ir::CastInstruction::Operation::SIToFP
-                                             : ir::CastInstruction::Operation::UIToFP;
-                    }
-                    if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
-                        if (ir_source_int_type->bits > ir_target_int_type->bits) {
-                            cast_operation = ir::CastInstruction::Operation::Trunc;
-                        }
-                        if (ir_source_int_type->bits < ir_target_int_type->bits) {
-                            cast_operation = ir_target_int_type->is_signed
-                                                 ? ir::CastInstruction::Operation::SExt
-                                                 : ir::CastInstruction::Operation::ZExt;
-                        }
-                    }
-                    if (is<ir::PointerType>(ir_target_type)) {
-                        cast_operation = ir::CastInstruction::Operation::IntToPtr;
-                    }
-                }
-
-                if (auto ir_source_float_type = cast<ir::FloatType>(ir_source_type)) {
-                    if (auto ir_target_float_type = cast<ir::FloatType>(ir_target_type)) {
-                        cast_operation = ir_source_float_type->bits > ir_target_float_type->bits
-                                             ? ir::CastInstruction::Operation::FPTrunc
-                                             : ir::CastInstruction::Operation::FPExt;
-                    }
-                    if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
-                        cast_operation = ir_target_int_type->is_signed
-                                             ? ir::CastInstruction::Operation::FPToSI
-                                             : ir::CastInstruction::Operation::FPToUI;
-                    }
-                }
-
-                if (is<ir::PointerType>(ir_source_type)) {
-                    if (is<ir::IntType>(ir_target_type)) {
-                        cast_operation = ir::CastInstruction::Operation::PtrToInt;
-                    }
-                }
-
-                PRAJNA_ASSERT(cast_operation != ir::CastInstruction::Operation::BitCast);
-                ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CastInstruction>(
-                    cast_operation, ir_function->parameters.front(), ir_target_type));
+                return ir_function;
             }
+
+            auto cast_operation = ir::CastInstruction::Operation::BitCast;
+
+            if (auto ir_source_int_type = cast<ir::IntType>(ir_source_type)) {
+                if (is<ir::FloatType>(ir_target_type)) {
+                    cast_operation = ir_source_int_type->is_signed
+                                         ? ir::CastInstruction::Operation::SIToFP
+                                         : ir::CastInstruction::Operation::UIToFP;
+                }
+                if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
+                    if (ir_source_int_type->bits == ir_target_int_type->bits) {
+                        ir_tmp_builder->create<ir::Return>(ir_function->parameters.front());
+                        return ir_function;
+                    }
+                    if (ir_source_int_type->bits > ir_target_int_type->bits) {
+                        cast_operation = ir::CastInstruction::Operation::Trunc;
+                    }
+                    if (ir_source_int_type->bits < ir_target_int_type->bits) {
+                        cast_operation = ir_target_int_type->is_signed
+                                             ? ir::CastInstruction::Operation::SExt
+                                             : ir::CastInstruction::Operation::ZExt;
+                    }
+                }
+                if (is<ir::PointerType>(ir_target_type)) {
+                    cast_operation = ir::CastInstruction::Operation::IntToPtr;
+                }
+            }
+
+            if (auto ir_source_float_type = cast<ir::FloatType>(ir_source_type)) {
+                if (auto ir_target_float_type = cast<ir::FloatType>(ir_target_type)) {
+                    cast_operation = ir_source_float_type->bits > ir_target_float_type->bits
+                                         ? ir::CastInstruction::Operation::FPTrunc
+                                         : ir::CastInstruction::Operation::FPExt;
+                }
+                if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
+                    cast_operation = ir_target_int_type->is_signed
+                                         ? ir::CastInstruction::Operation::FPToSI
+                                         : ir::CastInstruction::Operation::FPToUI;
+                }
+            }
+
+            if (is<ir::PointerType>(ir_source_type)) {
+                if (is<ir::IntType>(ir_target_type)) {
+                    cast_operation = ir::CastInstruction::Operation::PtrToInt;
+                }
+            }
+
+            PRAJNA_ASSERT(cast_operation != ir::CastInstruction::Operation::BitCast);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CastInstruction>(
+                cast_operation, ir_function->parameters.front(), ir_target_type));
             return ir_function;
         };
 

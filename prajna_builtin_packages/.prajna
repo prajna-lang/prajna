@@ -7,12 +7,15 @@ import debug;
 import array;
 import __ptr;
 import __type;
+
 import dynamic_array;
+
 import __str;
-import tensor;
 import serializable;
 import serialize;
+
+import tensor;
 import list;
 import io;
 
-import array::Array;
+export array::Array;

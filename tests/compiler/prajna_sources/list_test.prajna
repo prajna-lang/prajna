@@ -3,9 +3,9 @@ func testMain() {
     var root = ptr<list::Node<i64>>::new();
     root.value = 3;
     // TODO 引用计数存在bug
-    // root.next = ptr<Node<i64>>::new();
-    // root.next.pre = root;
-    // root.next.value = 4;
+    root.next = ptr<list::Node<i64>>::new();
+    root.next.pre = root;
+    root.next.value = 4;
 
-    // debug::assert(root.next.pre.value == 3);
+    debug::assert(root.next.pre.value == 3);
 }

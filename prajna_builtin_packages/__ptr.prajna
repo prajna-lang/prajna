@@ -1,7 +1,7 @@
 
 template <Type_>
 struct ptr{
-    raw_ptr: Type_*;
+    raw_ptr: Type_ *;
 }
 
 template <Type_>
@@ -56,6 +56,7 @@ implement ptr<Type_>{
     }
 }
 
+// TODO 有bug需要处理一下
 // template <Type_>
 // implement operator::LinearIndex<Type_> for ptr<Type_> {
 //     func gets(index: i64)->Type_ {

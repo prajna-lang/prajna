@@ -3,7 +3,7 @@ use __ptr::ptr;
 template <ValueType>
 struct Node {
     // TODO(zhangzhimin) nested struct 内存释放规则存在问题, 需要修复
-    // next: ptr<Node>;
-    // pre: ptr<Node>;
+    next: ptr<Node<ValueType>>;
+    pre: ptr<Node<ValueType>>;
     value: ValueType;
 }

@@ -411,8 +411,28 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = convertVariableToPointer(ir_module);
+    // ssa
+    bool changed = true;
+    while (changed) {
+        changed = insertValueToBlock(ir_module);
+        PRAJNA_ASSERT(verifyTree(ir_module));
+        changed = convertThisWrapperToDeferencePointer(ir_module) || changed;
+        PRAJNA_ASSERT(verifyTree(ir_module));
+        changed = convertVariableToDeferencePointer(ir_module) || changed;
+        PRAJNA_ASSERT(verifyTree(ir_module));
+        changed = convertAccessFieldToGetStructElementPointer(ir_module) || changed;
+        PRAJNA_ASSERT(verifyTree(ir_module));
+        changed = convertIndexArrayToGetArrayElementPointer(ir_module) || changed;
+        PRAJNA_ASSERT(verifyTree(ir_module));
+        changed = convertIndexPointerToGetPointerElementPointer(ir_module) || changed;
+        PRAJNA_ASSERT(verifyTree(ir_module));
+        changed = convertGetAddressOfVaraibleLikedToPointer(ir_module) || changed;
+        PRAJNA_ASSERT(verifyTree(ir_module));
+    }
+    // 需要全部转为Deference才能进行, 因为上面的转换是围绕其进行的
+    changed = convertDeferencePointerToStoreAndLoadPointer(ir_module) || changed;
     PRAJNA_ASSERT(verifyTree(ir_module));
+    //
     ir_module = sperateModule(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = cloneExternalNvptxValue(ir_module);

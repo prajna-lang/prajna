@@ -56,27 +56,26 @@ implement ptr<Type_>{
     }
 }
 
-// TODO 有bug需要处理一下
-// template <Type_>
-// implement operator::LinearIndex<Type_> for ptr<Type_> {
-//     func gets(index: i64)->Type_ {
-//         return  this.raw_ptr[index];
-//     }
-//     func sets(index: i64, value: Type_) {
-//         this.raw_ptr[index] = value;
-//     }
-// }
+template <Type_>
+implement operator::LinearIndex<Type_> for ptr<Type_> {
+    func get(index: i64)->Type_ {
+        return  this.raw_ptr[index];
+    }
+    func set(index: i64, value: Type_) {
+        this.raw_ptr[index] = value;
+    }
+}
 
 template <Type_>
 @disable_dynamic_dispatch
 implement reference_count::ReferenceCountable for ptr<Type_> {
+    func registerReferenceCount() {
+        bindings::registerReferenceCount(__bit_cast<Type_* ,undef*>(this.raw_ptr));
+    }
+
     func initialize() {
         this.raw_ptr = __cast<i64, Type_*>(0);
         this.registerReferenceCount();
-    }
-
-    func registerReferenceCount() {
-        bindings::registerReferenceCount(__bit_cast<Type_* ,undef*>(this.raw_ptr));
     }
 
     func incrementReferenceCount() {

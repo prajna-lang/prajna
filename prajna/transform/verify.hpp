@@ -17,12 +17,17 @@ inline bool verifyTree(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_block : ir_blocks) {
         for (auto ir_value : ir_block->values) {
             PRAJNA_ASSERT(ir_value->parent_block == ir_block);
+            PRAJNA_ASSERT(!ir_value->isFinalized());
         }
     }
 
     for (auto ir_function : ir_module->functions) {
         auto ir_instructions = utility::getValuesInFunction<ir::Instruction>(ir_function);
         for (auto ir_instruction : ir_instructions) {
+            if (is<ir::For>(ir_instruction)) {
+                continue;
+            }
+
             for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
                 auto ir_operand = ir_instruction->operand(i);
 

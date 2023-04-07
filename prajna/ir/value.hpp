@@ -116,6 +116,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     }
 
     virtual void finalize();
+    bool isFinalized() { return is_finalized; }
 
     virtual std::shared_ptr<Function> getParentFunction();
 
@@ -137,6 +138,9 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         PRAJNA_UNIMPLEMENT;
         return nullptr;
     }
+
+   private:
+    bool is_finalized = false;
 
    public:
     std::shared_ptr<Type> type = nullptr;
@@ -1700,6 +1704,8 @@ inline void Value::finalize() {
         ir_instruction->operand(idx, nullptr);
     }
     this->detach();
+
+    is_finalized = true;
 }
 
 inline std::shared_ptr<Value> Block::clone(std::shared_ptr<FunctionCloner> function_cloner) {

@@ -115,6 +115,8 @@ class IrBuilder {
                 ir::getFunctionByName(ir_property_interface->functions, "get");
             ir_property->set_function =
                 ir::getFunctionByName(ir_property_interface->functions, "set");
+            PRAJNA_ASSERT(ir_property->get_function);
+            PRAJNA_ASSERT(ir_property->set_function);
             return ir_property;
         } else {
             return nullptr;

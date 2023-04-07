@@ -31,8 +31,8 @@ func testLocal() {
 @test
 func testIndex() {
     var p = ptr<i64>::allocate(10);
-    // p[9] = 10;
-    // debug::assert(p[9] == 10);
+    p[9] = 10;
+    debug::assert(p[9] == 10);
 }
 
 

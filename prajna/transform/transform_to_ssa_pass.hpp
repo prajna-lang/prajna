@@ -13,14 +13,9 @@
 
 namespace prajna::transform {
 
-/// @note 删除的节点需要调用finilize函数, 以避免循环依赖导致的内存泄露
-/// @note 当遍历某个操作时, 先拷贝一下, 除非确定没有插入删除操作
-
-/// @brief 将变量转换为指针的存取
-class ConvertVariableToPointerPass : public FunctionPass {
-   public:
-    bool insertValueToBlock(std::shared_ptr<ir::Function> ir_function) {
-        bool changed = false;
+inline bool insertValueToBlock(std::shared_ptr<ir::Module> ir_module) {
+    bool changed = false;
+    for (auto ir_function : ir_module->functions) {
         std::set<std::shared_ptr<ir::Value>> ir_values;
         for (auto ir_block : ir_function->blocks) {
             for (auto iter_ir_value = ir_block->values.begin();
@@ -34,26 +29,36 @@ class ConvertVariableToPointerPass : public FunctionPass {
                         if (ir_values.count(ir_operand) == 0) {
                             // 模板实例化时会产生非Block的Constant,并且会被使用
                             if (is<ir::ConstantInt>(ir_operand)) {
+                                changed = true;
                                 ir_block->insert(iter_ir_value, ir_operand);
                                 ir_values.insert(ir_operand);
-                                changed = true;
                             }
                         }
                     }
                 }
             }
         }
-
-        return changed;
     }
 
-    bool convertThisWrapperToDeferencePointer(std::shared_ptr<ir::Function> ir_function) {
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+        changed = insertValueToBlock(ir_sub_module) || changed;
+    }
+
+    return changed;
+}
+
+inline bool convertThisWrapperToDeferencePointer(std::shared_ptr<ir::Module> ir_module) {
+    bool changed = false;
+    for (auto ir_function : ir_module->functions) {
+        //
         auto ir_this_wrappers = utility::getValuesInFunction<ir::ThisWrapper>(ir_function);
 
         // 可能需要重构, 应为"this;"这样的代码无意义, 也许应该取个右值.
         PRAJNA_ASSERT(ir_this_wrappers.size() <= 1, "只可能成员函数开头加入一个");
         for (auto ir_this_wrapper : ir_this_wrappers) {
             // 改变使用它的
+            changed = true;
             auto instructions_with_index_copy = ir_this_wrapper->instruction_with_index_list;
             for (auto instruction_with_index_list : instructions_with_index_copy) {
                 auto ir_inst = instruction_with_index_list.instruction;
@@ -69,15 +74,25 @@ class ConvertVariableToPointerPass : public FunctionPass {
             ir_this_wrapper->parent_block->remove(ir_this_wrapper);
             ir_this_wrapper->finalize();
         }
-
-        return !ir_this_wrappers.empty();
     }
 
-    bool convertVariableToDeferencePointer(std::shared_ptr<ir::Function> ir_function) {
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+        changed = convertThisWrapperToDeferencePointer(ir_sub_module) || changed;
+    }
+    return changed;
+}
+
+inline bool convertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_module) {
+    bool changed = false;
+
+    for (auto ir_function : ir_module->functions) {
+        //
         auto ir_variables = utility::getValuesInFunction<ir::LocalVariable>(ir_function);
 
         for (auto ir_variable : ir_variables) {
             //改变它自己
+            changed = true;
             std::shared_ptr<ir::Value> ir_alloca = ir::Alloca::create(ir_variable->type);
             ir_alloca->name = ir_variable->name;
             ir_alloca->fullname = ir_alloca->name;
@@ -101,16 +116,27 @@ class ConvertVariableToPointerPass : public FunctionPass {
 
             ir_variable->finalize();
         }
-
-        return !ir_variables.empty();
     }
 
-    bool convertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Function> ir_function) {
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+        changed = convertVariableToDeferencePointer(ir_sub_module) || changed;
+    }
+    return changed;
+}
+
+inline bool convertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Module> ir_module) {
+    bool changed = false;
+    for (auto ir_function : ir_module->functions) {
         auto ir_access_fields = utility::getValuesInFunction<ir::AccessField>(ir_function);
 
         for (auto ir_access_field : ir_access_fields) {
-            auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_access_field->object());
-            PRAJNA_ASSERT(ir_object_deference_ptr);
+            changed = true;
+
+            auto ir_object_deference_ptr0 = (ir_access_field->object());
+            auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_object_deference_ptr0);
+            if (!ir_object_deference_ptr) continue;
+
             auto ir_struct_get_element_ptr = ir::GetStructElementPointer::create(
                 ir_object_deference_ptr->pointer(), ir_access_field->field);
             PRAJNA_ASSERT(ir_object_deference_ptr->parent_block,
@@ -132,16 +158,28 @@ class ConvertVariableToPointerPass : public FunctionPass {
             utility::replaceInBlock(ir_access_field, ir_struct_get_element_ptr);
             ir_access_field->finalize();
         }
-
-        return !ir_access_fields.empty();
     }
 
-    bool convertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Function> ir_function) {
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+        changed = convertAccessFieldToGetStructElementPointer(ir_sub_module) || changed;
+    }
+    return changed;
+}
+
+inline bool convertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Module> ir_module) {
+    bool changed = false;
+
+    for (auto ir_function : ir_module->functions) {
+        //
         auto ir_index_arrays = utility::getValuesInFunction<ir::IndexArray>(ir_function);
 
         for (auto ir_index_array : ir_index_arrays) {
+            changed = true;
+
             auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_index_array->object());
-            PRAJNA_ASSERT(ir_object_deference_ptr);
+            if (!ir_object_deference_ptr) continue;
+
             auto ir_array_get_element_ptr = ir::GetArrayElementPointer::create(
                 ir_object_deference_ptr->pointer(), ir_index_array->index());
             ir_object_deference_ptr->parent_block->remove(ir_object_deference_ptr);
@@ -161,16 +199,28 @@ class ConvertVariableToPointerPass : public FunctionPass {
             utility::replaceInBlock(ir_index_array, ir_array_get_element_ptr);
             ir_index_array->finalize();
         }
-
-        return !ir_index_arrays.empty();
     }
 
-    bool convertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Function> ir_function) {
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+        changed = convertIndexArrayToGetArrayElementPointer(ir_sub_module) || changed;
+    }
+    return changed;
+}
+
+inline bool convertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Module> ir_module) {
+    bool changed = false;
+
+    for (auto ir_function : ir_module->functions) {
+        //
         auto ir_index_pointers = utility::getValuesInFunction<ir::IndexPointer>(ir_function);
 
         for (auto ir_index_pointer : ir_index_pointers) {
+            changed = true;
+
             auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_index_pointer->object());
-            PRAJNA_ASSERT(ir_object_deference_ptr);
+            if (!ir_object_deference_ptr) continue;
+
             auto ir_pointer_get_element_ptr = ir::GetPointerElementPointer::create(
                 ir_object_deference_ptr->pointer(), ir_index_pointer->index());
             ir_object_deference_ptr->parent_block->remove(ir_object_deference_ptr);
@@ -191,39 +241,60 @@ class ConvertVariableToPointerPass : public FunctionPass {
             utility::replaceInBlock(ir_index_pointer, ir_pointer_get_element_ptr);
             ir_index_pointer->finalize();
         }
-
-        return !ir_index_pointers.empty();
     }
 
-    bool convertGetAddressOfVaraibleLikedToPointer(std::shared_ptr<ir::Function> ir_function) {
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+        changed = convertIndexPointerToGetPointerElementPointer(ir_sub_module) || changed;
+    }
+    return changed;
+}
+
+inline bool convertGetAddressOfVaraibleLikedToPointer(std::shared_ptr<ir::Module> ir_module) {
+    bool changed = false;
+
+    for (auto ir_function : ir_module->functions) {
+        //
         auto ir_get_addresses =
             utility::getValuesInFunction<ir::GetAddressOfVariableLiked>(ir_function);
 
         for (auto ir_get_address : ir_get_addresses) {
+            changed = true;
             auto instructions_with_index_copy = ir_get_address->instruction_with_index_list;
+            auto ir_deference_pointer = cast<ir::DeferencePointer>(ir_get_address->variable());
+            if (!ir_deference_pointer) continue;
+
             for (auto instruction_with_index_list : instructions_with_index_copy) {
                 auto ir_inst = instruction_with_index_list.instruction;
                 size_t op_idx = instruction_with_index_list.operand_index;
 
-                auto ir_deference_pointer = cast<ir::DeferencePointer>(ir_get_address->variable());
-                PRAJNA_ASSERT(ir_deference_pointer,
-                              "需要将VariableLiked都转换为DeferencePoitner后再执行该操作");
                 ir_deference_pointer->pointer();
+                PRAJNA_ASSERT(ir_deference_pointer->pointer());
                 ir_inst->operand(op_idx, ir_deference_pointer->pointer());
             }
 
             ir_get_address->parent_block->remove(ir_get_address);
             ir_get_address->finalize();
         }
-
-        return !ir_get_addresses.empty();
     }
 
-    bool convertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Function> ir_function) {
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+        changed = convertGetAddressOfVaraibleLikedToPointer(ir_sub_module) || changed;
+    }
+    return changed;
+}
+
+inline bool convertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Module> ir_module) {
+    bool changed = false;
+
+    for (auto ir_function : ir_module->functions) {
+        //
         auto ir_deference_pointers =
             utility::getValuesInFunction<ir::DeferencePointer>(ir_function);
 
         for (auto ir_deference_pointer : ir_deference_pointers) {
+            changed = true;
             auto ir_pointer = ir_deference_pointer->pointer();
             auto iter_deference_pointer =
                 ir_deference_pointer->parent_block->find(ir_deference_pointer);
@@ -246,24 +317,13 @@ class ConvertVariableToPointerPass : public FunctionPass {
             ir_deference_pointer->parent_block->erase(iter_deference_pointer);
             ir_deference_pointer->finalize();
         }
-
-        return !ir_deference_pointers.empty();
     }
 
-    bool runOnFunction(std::shared_ptr<ir::Function> ir_function) override {
-        bool changed = false;
-        changed = this->insertValueToBlock(ir_function) || changed;
-        changed = this->convertThisWrapperToDeferencePointer(ir_function) || changed;
-        changed = this->convertVariableToDeferencePointer(ir_function) || changed;
-        changed = this->convertAccessFieldToGetStructElementPointer(ir_function) || changed;
-        changed = this->convertIndexArrayToGetArrayElementPointer(ir_function) || changed;
-        changed = this->convertIndexPointerToGetPointerElementPointer(ir_function) || changed;
-        // 需要把VariableLiked都转换完了后再执行
-        changed = this->convertGetAddressOfVaraibleLikedToPointer(ir_function) || changed;
-        changed = this->convertDeferencePointerToStoreAndLoadPointer(ir_function) || changed;
-
-        return changed;
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+        changed = convertDeferencePointerToStoreAndLoadPointer(ir_sub_module) || changed;
     }
-};
+    return changed;
+}
 
 }  // namespace prajna::transform

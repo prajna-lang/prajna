@@ -243,24 +243,6 @@ class StatementLoweringVisitor {
 
         auto ir_function_type = ir::FunctionType::create(ir_argument_types, return_type);
 
-        // 如果已经声明过该函数
-        if (ir_builder->symbol_table->currentTableHas(ast_function_header.name)) {
-            auto ir_function_declaration = cast<ir::Function>(
-                symbolGet<ir::Value>(ir_builder->symbol_table->get(ast_function_header.name)));
-            if (ir_function_declaration->is_declaration) {
-                if (ir_function_type != ir_function_declaration->function_type) {
-                    logger->error("the declarated function type is not matched",
-                                  ast_function_header.name);
-                }
-
-                ir_function_declaration->blocks.clear();
-                ir_function_declaration->annotation_dict =
-                    this->applyAnnotations(ast_function_header.annotation_dict);
-
-                return ir_function_declaration;
-            }
-        }
-
         auto ir_function = ir_builder->createFunction(ast_function_header.name, ir_function_type);
         ir_function->annotation_dict = this->applyAnnotations(ast_function_header.annotation_dict);
 
@@ -620,19 +602,6 @@ class StatementLoweringVisitor {
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_interface->name;
 
-            // 声明成员函数
-            for (auto ast_function : ast_implement.functions) {
-                for (auto ast_annotation : ast_function.declaration.annotation_dict) {
-                    if (ast_annotation.name == "static") {
-                        logger->error("static function is invalid", ast_annotation);
-                    }
-                }
-
-                auto ir_function = this->applyFunctionHeader(ast_function.declaration);
-                ir_interface->functions.push_back(ir_function);
-                ir_function->is_declaration = true;
-            }
-
             // 需要前置, 因为函数会用的接口类型本身
             if (!ir_interface_prototype->disable_dynamic_dispatch) {
                 // 创建接口动态类型生成函数
@@ -646,6 +615,7 @@ class StatementLoweringVisitor {
                 std::shared_ptr<ir::Function> ir_function = nullptr;
                 auto symbol_function = (*this)(ast_function);
                 ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
+                ir_interface->functions.push_back(ir_function);
             }
 
             if (ir_interface_prototype->disable_dynamic_dispatch) {

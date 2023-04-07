@@ -12,4 +12,21 @@ func testMain() {
     debug::assert(tmp.size == 4);
 
     ("Hello" + " World!\n").print();
+
+    var str1 = str::create(2);
+    str1 = "苹果";
+    var str2 = str::create(2);
+    str2 = "华为";
+    //*str1.tostr().print();
+    if (str1 != str2){
+        ("NotEqual is true!\n").print();
+    }else{
+        ("NotEqual is false!\n").print();
+    }
+    if (str1 == str2){
+        ("Equal is true!\n").print();
+    }else{
+        ("Equal is false!\n").print();
+    }
+
 }

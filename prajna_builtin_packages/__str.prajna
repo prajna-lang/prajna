@@ -97,28 +97,27 @@ implement operator::Add<str> for str {
         return new_str;
     }
 }
+
 implement operator::Equal<str> for str{
-    func Equal(new_str: str) -> bool{
-        if(this.size!=new_str.size) {return false;}
+    func Equal(rhs_str: str) -> bool{
+        if(this.size!=rhs_str.size) {
+            return false;
+        }
         var i=0;
         while(i<this.size){
-            if(new_str.darray[i]!=this.darray[i]) {return false;}
+            if(rhs_str.darray[i]!=this.darray[i]) {
+                return false;
+            }
             i = i + 1;
         }
         return true;
     }
 }
-implement operator::NotEqual<str> for str{
-     func NotEqual(new_str: str) -> bool{
-        if(this.size!=new_str.size) {return true;}
-        var i=0;
-        while(i<this.size){
-            if(new_str.darray[i]!=this.darray[i]) {return true;}
-            i = i + 1;
-        }
-        return false;
-    }
 
+implement operator::NotEqual<str> for str{
+     func NotEqual(rhs_str: str) -> bool{
+         return !(this == rhs_str);
+    }
 }
 
 func print(ss: str){

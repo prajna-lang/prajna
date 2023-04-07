@@ -194,6 +194,7 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::VariableLiked> variableLikedNormalize(std::shared_ptr<ir::Value> ir_value) {
+        PRAJNA_ASSERT(ir_value);
         auto ir_variable_liked = cast<ir::VariableLiked>(ir_value);
         if (ir_variable_liked) {
             return ir_variable_liked;

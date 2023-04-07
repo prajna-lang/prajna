@@ -99,6 +99,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
 
    public:
     static std::shared_ptr<Value> create(std::shared_ptr<Type> ir_type) {
+        PRAJNA_ASSERT(ir_type);
         std::shared_ptr<Value> self(new Value);
         self->type = ir_type;
         self->tag = "Value";
@@ -181,6 +182,7 @@ class Parameter : public Value {
 
    public:
     static std::shared_ptr<Parameter> create(std::shared_ptr<Type> ir_type) {
+        PRAJNA_ASSERT(ir_type);
         std::shared_ptr<Parameter> self(new Parameter);
         self->type = ir_type;
         self->tag = "Parameter";
@@ -233,9 +235,10 @@ class ConstantInt : public ConstantRealNumber {
     ConstantInt() = default;
 
    public:
-    static std::shared_ptr<ConstantInt> create(std::shared_ptr<Type> type, int64_t value) {
+    static std::shared_ptr<ConstantInt> create(std::shared_ptr<Type> ir_type, int64_t value) {
+        PRAJNA_ASSERT(ir_type);
         std::shared_ptr<ConstantInt> self(new ConstantInt);
-        self->type = type;
+        self->type = ir_type;
         self->value = value;
         self->tag = "ConstantInt";
         return self;
@@ -257,6 +260,7 @@ class ConstantFloat : public Constant {
 
    public:
     static std::shared_ptr<ConstantFloat> create(std::shared_ptr<Type> type, double value) {
+        PRAJNA_ASSERT(type);
         std::shared_ptr<ConstantFloat> self(new ConstantFloat);
         self->type = type;
         self->value = value;
@@ -318,6 +322,7 @@ class ConstantArray : public Constant {
     static std::shared_ptr<ConstantArray> create(
         std::shared_ptr<ArrayType> ir_array_type,
         std::list<std::shared_ptr<Constant>> ir_init_constants) {
+        PRAJNA_ASSERT(ir_array_type);
         std::shared_ptr<ConstantArray> self(new ConstantArray);
         self->tag = "ConstantArray";
         self->type = ir_array_type;
@@ -344,6 +349,7 @@ class ConstantStruct : public Constant {
     static std::shared_ptr<ConstantStruct> create(
         std::shared_ptr<Type> type,
         std::unordered_map<std::string, std::shared_ptr<Constant>> fields) {
+        PRAJNA_ASSERT(type);
         std::shared_ptr<ConstantStruct> self(new ConstantStruct);
         self->type = type;
         self->fileds = fields;
@@ -439,6 +445,7 @@ class Function : public Value {
 
    public:
     static std::shared_ptr<Function> create(std::shared_ptr<FunctionType> function_type) {
+        PRAJNA_ASSERT(function_type);
         std::shared_ptr<Function> self(new Function);
         self->function_type = function_type;
         // @warning 事实上llvm::Function是一个指针类型
@@ -505,6 +512,8 @@ class MemberFunctionWithThisPointer : public Value {
    public:
     static std::shared_ptr<MemberFunctionWithThisPointer> create(
         std::shared_ptr<Value> ir_this_pointer, std::shared_ptr<Function> ir_global_function) {
+        PRAJNA_ASSERT(ir_this_pointer);
+        PRAJNA_ASSERT(ir_global_function);
         std::shared_ptr<MemberFunctionWithThisPointer> self(new MemberFunctionWithThisPointer);
         self->this_pointer = ir_this_pointer;
         self->function_prototype = ir_global_function;
@@ -630,6 +639,7 @@ class ThisWrapper : virtual public VariableLiked, virtual public Instruction {
 
    public:
     static std::shared_ptr<ThisWrapper> create(std::shared_ptr<Value> ir_this_pointer) {
+        PRAJNA_ASSERT(ir_this_pointer);
         std::shared_ptr<ThisWrapper> self(new ThisWrapper);
         self->operandResize(1);
         self->thisPointer(ir_this_pointer);
@@ -660,6 +670,7 @@ class AccessField : virtual public VariableLiked, virtual public Instruction {
     static std::shared_ptr<AccessField> create(std::shared_ptr<Value> ir_object,
                                                std::shared_ptr<Field> field) {
         PRAJNA_ASSERT(is<VariableLiked>(ir_object));
+        PRAJNA_ASSERT(field);
 
         std::shared_ptr<AccessField> self(new AccessField);
         self->operandResize(1);
@@ -692,6 +703,7 @@ class IndexArray : virtual public VariableLiked, virtual public Instruction {
     static std::shared_ptr<IndexArray> create(std::shared_ptr<Value> ir_object,
                                               std::shared_ptr<Value> ir_index) {
         PRAJNA_ASSERT(is<VariableLiked>(ir_object));
+        PRAJNA_ASSERT(ir_index);
 
         std::shared_ptr<IndexArray> self(new IndexArray);
         self->operandResize(2);
@@ -726,6 +738,7 @@ class IndexPointer : virtual public VariableLiked, virtual public Instruction {
     static std::shared_ptr<IndexPointer> create(std::shared_ptr<Value> ir_object,
                                                 std::shared_ptr<Value> ir_index) {
         PRAJNA_ASSERT(is<VariableLiked>(ir_object));
+        PRAJNA_ASSERT(ir_index);
 
         std::shared_ptr<IndexPointer> self(new IndexPointer);
         self->operandResize(2);
@@ -767,6 +780,8 @@ class GetStructElementPointer : public Instruction {
     /// @param index 指针偏移下标, 对于结构体来说相当于字段的号数
     static std::shared_ptr<GetStructElementPointer> create(std::shared_ptr<Value> ir_pointer,
                                                            std::shared_ptr<Field> ir_field) {
+        PRAJNA_ASSERT(ir_pointer);
+        PRAJNA_ASSERT(ir_field);
         std::shared_ptr<GetStructElementPointer> self(new GetStructElementPointer);
         self->operandResize(1);
         self->pointer(ir_pointer);
@@ -802,6 +817,8 @@ class GetArrayElementPointer : public Instruction {
     /// @param index 指针偏移下标, 对于结构体来说相当于字段的号数
     static std::shared_ptr<GetArrayElementPointer> create(std::shared_ptr<Value> ir_pointer,
                                                           std::shared_ptr<Value> ir_index) {
+        PRAJNA_ASSERT(ir_pointer);
+        PRAJNA_ASSERT(ir_index);
         std::shared_ptr<GetArrayElementPointer> self(new GetArrayElementPointer);
         self->operandResize(2);
         self->pointer(ir_pointer);
@@ -838,6 +855,8 @@ class GetPointerElementPointer : public Instruction {
     /// @param index 指针偏移下标, 对于结构体来说相当于字段的号数
     static std::shared_ptr<GetPointerElementPointer> create(std::shared_ptr<Value> ir_pointer,
                                                             std::shared_ptr<Value> ir_index) {
+        PRAJNA_ASSERT(ir_pointer);
+        PRAJNA_ASSERT(ir_index);
         std::shared_ptr<GetPointerElementPointer> self(new GetPointerElementPointer);
         self->operandResize(2);
         self->pointer(ir_pointer);
@@ -913,10 +932,14 @@ class WriteVariableLiked : public Instruction {
     }
 
     std::shared_ptr<Value> value() { return this->operand(0); }
-    void value(std::shared_ptr<Value> ir_value) { return this->operand(0, ir_value); }
+    void value(std::shared_ptr<Value> ir_value) {
+        PRAJNA_ASSERT(ir_value);
+        return this->operand(0, ir_value);
+    }
 
     std::shared_ptr<VariableLiked> variable() { return cast<VariableLiked>(this->operand(1)); }
     void variable(std::shared_ptr<VariableLiked> ir_variable) {
+        PRAJNA_ASSERT(ir_variable);
         return this->operand(1, ir_variable);
     }
 
@@ -963,6 +986,7 @@ class Alloca : public Instruction {
 
    public:
     static std::shared_ptr<Alloca> create(std::shared_ptr<Type> type) {
+        PRAJNA_ASSERT(type);
         auto self =
             cast<Alloca>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Alloca)));
         self->operandResize(0);
@@ -990,6 +1014,7 @@ class GlobalAlloca : public Instruction {
 
    public:
     static std::shared_ptr<GlobalAlloca> create(std::shared_ptr<Type> type) {
+        PRAJNA_ASSERT(type);
         std::shared_ptr<GlobalAlloca> self(new GlobalAlloca);
         self->operandResize(0);
         self->type = PointerType::create(type);
@@ -1018,6 +1043,7 @@ class LoadPointer : public Instruction {
     // 讲_type设置为VoidType而不是nullptr,
     // 因为设置为nullptr的话,后续对type()的使用都得先判断是否为nullptr,并不方便
     static std::shared_ptr<LoadPointer> create(std::shared_ptr<Value> pointer) {
+        PRAJNA_ASSERT(pointer);
         std::shared_ptr<LoadPointer> self(new LoadPointer);
         self->operandResize(1);
         self->pointer(pointer);
@@ -1046,6 +1072,8 @@ class StorePointer : public Instruction {
    public:
     static std::shared_ptr<StorePointer> create(std::shared_ptr<Value> value,
                                                 std::shared_ptr<Value> pointer) {
+        PRAJNA_ASSERT(value);
+        PRAJNA_ASSERT(pointer);
         auto ir_pointer_type = cast<PointerType>(pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
         PRAJNA_ASSERT(ir_pointer_type->value_type == value->type);
@@ -1113,6 +1141,8 @@ class BitCast : public Instruction {
    public:
     static std::shared_ptr<BitCast> create(std::shared_ptr<Value> ir_value,
                                            std::shared_ptr<Type> ir_type) {
+        PRAJNA_ASSERT(ir_value);
+        PRAJNA_ASSERT(ir_type);
         auto self =
             cast<BitCast>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new BitCast)));
         self->operandResize(1);
@@ -1140,6 +1170,7 @@ class Call : public Instruction {
    public:
     static std::shared_ptr<Call> create(std::shared_ptr<Value> ir_value,
                                         std::list<std::shared_ptr<Value>> arguments) {
+        PRAJNA_ASSERT(ir_value);
         std::shared_ptr<Call> self(new Call);
         self->operandResize(1 + arguments.size());
         self->function(ir_value);
@@ -1194,6 +1225,9 @@ class ConditionBranch : public Instruction {
     static std::shared_ptr<ConditionBranch> create(std::shared_ptr<Value> condition,
                                                    std::shared_ptr<Block> ir_true_block,
                                                    std::shared_ptr<Block> ir_false_block) {
+        PRAJNA_ASSERT(condition);
+        PRAJNA_ASSERT(ir_true_block);
+        PRAJNA_ASSERT(ir_false_block);
         std::shared_ptr<ConditionBranch> self(new ConditionBranch);
         self->operandResize(3);
         self->condition(condition);
@@ -1233,6 +1267,7 @@ class JumpBranch : public Instruction {
 
    public:
     static std::shared_ptr<JumpBranch> create(std::shared_ptr<Block> ir_next) {
+        PRAJNA_ASSERT(ir_next);
         std::shared_ptr<JumpBranch> self(new JumpBranch);
         self->operandResize(1);
         self->nextBlock(ir_next);
@@ -1286,6 +1321,9 @@ class If : public Instruction {
     static std::shared_ptr<If> create(std::shared_ptr<Value> ir_condition,
                                       std::shared_ptr<Block> ir_true_block,
                                       std::shared_ptr<Block> ir_false_block) {
+        PRAJNA_ASSERT(ir_condition);
+        PRAJNA_ASSERT(ir_true_block);
+        PRAJNA_ASSERT(ir_false_block);
         std::shared_ptr<If> self(new If);
         self->operandResize(3);
         self->condition(ir_condition);
@@ -1422,6 +1460,7 @@ class GlobalVariable : public Variable {
 
    public:
     static std::shared_ptr<GlobalVariable> create(std::shared_ptr<Type> ir_type) {
+        PRAJNA_ASSERT(ir_type);
         std::shared_ptr<GlobalVariable> self(new GlobalVariable);
         self->type = ir_type;
         self->tag = "GlobalVariable";
@@ -1441,6 +1480,8 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
    public:
     static std::shared_ptr<AccessProperty> create(std::shared_ptr<Value> ir_this_pointer,
                                                   std::shared_ptr<ir::Property> ir_property) {
+        PRAJNA_ASSERT(ir_this_pointer);
+        PRAJNA_ASSERT(ir_property);
         std::shared_ptr<AccessProperty> self(new AccessProperty);
         PRAJNA_ASSERT(ir_property->get_function);
         self->type = ir_property->get_function->function_type->return_type;
@@ -1573,6 +1614,9 @@ class KernelFunctionCall : public Instruction {
                                                       std::shared_ptr<Value> ir_grid_shape,
                                                       std::shared_ptr<Value> ir_block_shape,
                                                       std::list<std::shared_ptr<Value>> arguments) {
+        PRAJNA_ASSERT(ir_function_value);
+        PRAJNA_ASSERT(ir_grid_shape);
+        PRAJNA_ASSERT(ir_block_shape);
         std::shared_ptr<KernelFunctionCall> self(new KernelFunctionCall);
         self->operandResize(3 + arguments.size());
         self->function(ir_function_value);

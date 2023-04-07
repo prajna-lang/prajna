@@ -26,6 +26,8 @@ inline bool verifyTree(std::shared_ptr<ir::Module> ir_module) {
             for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
                 auto ir_operand = ir_instruction->operand(i);
 
+                PRAJNA_ASSERT(ir_operand);
+
                 if (ir_operand) {
                     if (is<ir::Function>(ir_operand) or is<ir::GlobalVariable>(ir_operand) or
                         is<ir::GlobalAlloca>(ir_operand) or is<ir::Parameter>(ir_operand)) {

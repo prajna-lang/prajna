@@ -12,4 +12,19 @@ func testMain() {
     debug::assert(tmp.size == 4);
 
     ("Hello" + " World!\n").print();
+
+    var str1 = str::create(2);
+    var str2 = str::create(2);
+    str1 = "こんにちは世界";
+    str2 = "こんにちは世界";
+    //str1.tostr().print();
+    debug::assert(str1 == str2);
+
+    str1 = "hello world";
+    str2 = "a@#$%^&*()_-+=[]{}|;:',.<>/?b";
+    debug::assert(str1 != str2);
+
+    str1 = "";
+    str2 = "";
+    debug::assert(str1 == str2);
 }

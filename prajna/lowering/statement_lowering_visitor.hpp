@@ -1021,10 +1021,46 @@ class StatementLoweringVisitor {
             return ir::FloatType::create(ir_constant_bit_size->value);
         };
 
-        auto template_struct_int = TemplateStruct::create();
-        template_struct_int->template_struct_impl = template_int;
+        auto template_struct_float = TemplateStruct::create();
+        template_struct_float->template_struct_impl = template_int;
+        return template_struct_float;
+    }
 
-        return template_struct_int;
+    std::shared_ptr<Template> createFloatTypeIntrinsicFunctionTemplate(std::string intrinsic_name,
+                                                                       size_t argument_size = 1) {
+        auto template_intrinsic = Template::create();
+
+        template_intrinsic->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                         logger = this->logger](
+                                            std::list<Symbol> symbol_template_arguments,
+                                            std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            // TODO
+            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+
+            auto ir_float_type =
+                cast<ir::FloatType>(symbolGet<ir::Type>(symbol_template_arguments.front()));
+            PRAJNA_ASSERT(ir_float_type);
+
+            std::list<std::shared_ptr<ir::Type>> ir_argument_list(argument_size, ir_float_type);
+            auto ir_function_type = ir::FunctionType::create(ir_argument_list, ir_float_type);
+            // 声明所需intrinsic
+            auto ir_intrinsic_function = ir::Function::create(ir_function_type);
+            ir_intrinsic_function->fullname = "llvm." + intrinsic_name + "." + ir_float_type->name;
+            ir_intrinsic_function->parent_module = ir_module;
+            ir_module->functions.push_back(ir_intrinsic_function);
+
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__" + intrinsic_name + getTemplateArgumentsPostify(symbol_template_arguments),
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+
+            ir_tmp_builder->create<ir::Return>(
+                ir_tmp_builder->create<ir::Call>(ir_intrinsic_function, ir_function->parameters));
+            return ir_function;
+        };
+
+        return template_intrinsic;
     }
 
     std::shared_ptr<Template> createBitCastTemplate() {
@@ -1321,6 +1357,39 @@ class StatementLoweringVisitor {
             this->createCompareInstructionTemplate("lt"), "__lt");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createCompareInstructionTemplate("le"), "__le");
+        //
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("sin"), "__sin");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("cos"), "__cos");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("pow"), "__pow");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("exp"), "__exp");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("exp2"), "__exp2");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("log"), "__log");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("log10"), "__log10");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("log2"), "__log2");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("fabs"), "__fabs");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("floor"), "__floor");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("ceil"), "__ceil");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("trunc"), "__trunc");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("rint"), "__rint");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("nearby"), "__nearby");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("round"), "__round");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeIntrinsicFunctionTemplate("roundeven"), "__roundeven");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             expression_lowering_visitor->createDynamicTemplate(), "dynamic");

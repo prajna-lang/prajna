@@ -83,8 +83,7 @@ class IrBuilder {
         auto symbol_array = this->getSymbolByPath(true, {"array", "Array"});
         auto array_template = symbolGet<TemplateStruct>(symbol_array);
         PRAJNA_ASSERT(array_template);
-        auto ir_shape3_type =
-            array_template->instantiateStructAndImplement(symbol_template_arguments, this->module);
+        auto ir_shape3_type = array_template->instantiate(symbol_template_arguments, this->module);
         return ir_shape3_type;
     }
 
@@ -97,7 +96,7 @@ class IrBuilder {
         auto ptr_template = symbolGet<TemplateStruct>(symbol_ptr);
         PRAJNA_ASSERT(ptr_template);
         std::list<Symbol> symbol_template_arguments = {ir_value_type};
-        return ptr_template->instantiateStructAndImplement(symbol_template_arguments, this->module);
+        return ptr_template->instantiate(symbol_template_arguments, this->module);
     }
 
     std::shared_ptr<ir::Property> getProperty(std::shared_ptr<ir::Type> ir_type, std::string name) {
@@ -211,8 +210,7 @@ class IrBuilder {
         if (ir_type->template_struct) {
             auto symbol_template_argument_list =
                 std::any_cast<std::list<Symbol>>(ir_type->template_arguments_any);
-            ir_type->template_struct->instantiateStructAndImplement(symbol_template_argument_list,
-                                                                    this->module);
+            ir_type->template_struct->instantiate(symbol_template_argument_list, this->module);
         }
     }
 

@@ -1,11 +1,25 @@
-@test
-func testMain(){
-    var a: float<32> = 3024f32;
-    debug::assert(a.cast<i64>() == 3024);
-
-    var b: float<16>;
-    var c: float<64>;
-    // var d: float<128>; // 特殊平台可以自行拓展
-    // var c = a.cast<f32>();
+template <T>
+func assertNear(value0: T, value1: f32, eps: f32){
+    debug::assert((value0 - value1.cast<T>()).abs() < eps.cast<T>());
 }
 
+
+// 需要补全更多的测试, 用例.
+template FloatTest <Bits> {
+    @test
+    func testFloatIUnaryFunction(){
+        {
+            var value = (-1.0).cast<float<Bits>>();
+            var expect = 1.0.cast<float<Bits>>();
+            test::assert(value.abs() == expect);
+        }
+        {
+            var pi = (3.1415).cast<float<Bits>>();
+            assertNear<float<Bits>>(pi.sin(), 0.0, 0.001);
+        }
+    }
+}
+
+use FloatTest<16>;
+use FloatTest<32>;
+use FloatTest<64>;

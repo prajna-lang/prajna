@@ -52,7 +52,7 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
 
     size_t getSymbolValue(std::string symbol_name);
 
-    void executateTestFunctions();
+    void runTests(std::filesystem::path prajna_source_package_path);
 
     void executeProgram(std::filesystem::path program_path);
 

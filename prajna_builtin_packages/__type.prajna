@@ -1,109 +1,109 @@
-template CastableTemplate <RealNumerTypeTemplate> {
+template CastableTemplate <RealNumberType> {
     template <Bits>
-    implement RealNumerTypeTemplate<Bits> {
+    implement RealNumberType<Bits> {
         template <TargetType>
         func cast()->TargetType{
-            return __cast<RealNumerTypeTemplate<Bits>, TargetType>(this);
+            return __cast<RealNumberType<Bits>, TargetType>(this);
         }
     }
 }
 
-template ArithmeticTemplate <RealNumerTypeTemplate> {
+template ArithmeticTemplate <RealNumberType> {
     template <Bits>
-    implement operator::Add<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Add(operand: RealNumerTypeTemplate<Bits>)->RealNumerTypeTemplate<Bits> {
-            return __add<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::Add<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Add(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
+            return __add<RealNumberType<Bits>>(this, operand);
         }
     }
 
     template <Bits>
-    implement operator::Sub<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Sub(operand: RealNumerTypeTemplate<Bits>)->RealNumerTypeTemplate<Bits> {
-            return __sub<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::Sub<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Sub(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
+            return __sub<RealNumberType<Bits>>(this, operand);
         }
     }
 
     template <Bits>
-    implement operator::Multiply<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Multiply(operand: RealNumerTypeTemplate<Bits>)->RealNumerTypeTemplate<Bits>{
-            return __mul<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::Multiply<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Multiply(operand: RealNumberType<Bits>)->RealNumberType<Bits>{
+            return __mul<RealNumberType<Bits>>(this, operand);
         }
     }
 
     template <Bits>
-    implement operator::Divide<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Divide(operand: RealNumerTypeTemplate<Bits>)->RealNumerTypeTemplate<Bits>{
-            return __div<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::Divide<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Divide(operand: RealNumberType<Bits>)->RealNumberType<Bits>{
+            return __div<RealNumberType<Bits>>(this, operand);
         }
     }
 
 
     template <Bits>
-    implement operator::Remaind<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Remaind(operand: RealNumerTypeTemplate<Bits>)->RealNumerTypeTemplate<Bits>{
-            return __rem<RealNumerTypeTemplate<Bits>>(this, operand);
-        }
-    }
-}
-
-
-template EqualableTemplate <RealNumerTypeTemplate> {
-    template <Bits>
-    implement operator::Equal<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Equal(operand: RealNumerTypeTemplate<Bits>)->bool {
-            return __eq<RealNumerTypeTemplate<Bits>>(this, operand);
-        }
-    }
-
-    template <Bits>
-    implement operator::NotEqual<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func NotEqual(operand: RealNumerTypeTemplate<Bits>)->bool{
-            return __ne<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::Remaind<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Remaind(operand: RealNumberType<Bits>)->RealNumberType<Bits>{
+            return __rem<RealNumberType<Bits>>(this, operand);
         }
     }
 }
 
 
-template ComparableTemplate <RealNumerTypeTemplate> {
+template EqualableTemplate <RealNumberType> {
     template <Bits>
-    implement operator::Equal<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Equal(operand: RealNumerTypeTemplate<Bits>)->bool {
-            return __eq<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::Equal<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Equal(operand: RealNumberType<Bits>)->bool {
+            return __eq<RealNumberType<Bits>>(this, operand);
         }
     }
 
     template <Bits>
-    implement operator::NotEqual<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func NotEqual(operand: RealNumerTypeTemplate<Bits>)->bool{
-            return __ne<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::NotEqual<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func NotEqual(operand: RealNumberType<Bits>)->bool{
+            return __ne<RealNumberType<Bits>>(this, operand);
+        }
+    }
+}
+
+
+template ComparableTemplate <RealNumberType> {
+    template <Bits>
+    implement operator::Equal<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Equal(operand: RealNumberType<Bits>)->bool {
+            return __eq<RealNumberType<Bits>>(this, operand);
         }
     }
 
     template <Bits>
-    implement operator::Greater<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Greater(operand: RealNumerTypeTemplate<Bits>)->bool{
-            return __gt<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::NotEqual<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func NotEqual(operand: RealNumberType<Bits>)->bool{
+            return __ne<RealNumberType<Bits>>(this, operand);
         }
     }
 
     template <Bits>
-    implement operator::Less<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func Less(operand: RealNumerTypeTemplate<Bits>)->bool{
-            return __lt<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::Greater<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Greater(operand: RealNumberType<Bits>)->bool{
+            return __gt<RealNumberType<Bits>>(this, operand);
         }
     }
 
     template <Bits>
-    implement operator::GreaterOrEqual<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func GreaterOrEqual(operand: RealNumerTypeTemplate<Bits>)->bool {
-            return __ge<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::Less<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Less(operand: RealNumberType<Bits>)->bool{
+            return __lt<RealNumberType<Bits>>(this, operand);
         }
     }
 
     template <Bits>
-    implement operator::LessOrEqual<RealNumerTypeTemplate<Bits>> for RealNumerTypeTemplate<Bits> {
-        func LessOrEqual(operand: RealNumerTypeTemplate<Bits>)->bool {
-            return __le<RealNumerTypeTemplate<Bits>>(this, operand);
+    implement operator::GreaterOrEqual<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func GreaterOrEqual(operand: RealNumberType<Bits>)->bool {
+            return __ge<RealNumberType<Bits>>(this, operand);
+        }
+    }
+
+    template <Bits>
+    implement operator::LessOrEqual<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func LessOrEqual(operand: RealNumberType<Bits>)->bool {
+            return __le<RealNumberType<Bits>>(this, operand);
         }
     }
 }
@@ -229,57 +229,64 @@ template LogicalableTemplate2 <T> {
     }
 }
 
+template NegativeAndPositiveTemplate <RealNumberType> {
+    template <Bits>
+    implement operator::Negative<RealNumberType<Bits>> for RealNumberType<Bits>{
+        func Negative()->RealNumberType<Bits> {
+            var zero = (0).cast<RealNumberType<Bits>>();
+            return zero - this;
+        }
+    }
+
+    template <Bits>
+    implement operator::Positive<RealNumberType<Bits>> for RealNumberType<Bits>{
+        func Positive()->RealNumberType<Bits> {
+            return this;
+        }
+    }
+}
+
+
+template NegativeAndPositiveTemplate2 <Type> {
+    implement operator::Negative<Type> for Type{
+        func Negative()->Type {
+            var zero = (0).cast<Type>();
+            return zero - this;
+        }
+    }
+
+    implement operator::Positive<Type> for Type{
+        func Positive()->Type {
+            return this;
+        }
+    }
+}
+
 use CastableTemplate<int>;
 use ArithmeticTemplate<int>;
 use ComparableTemplate<int>;
+use NegativeAndPositiveTemplate<int>;
 
 use CastableTemplate<uint>;
 use ArithmeticTemplate<uint>;
 use ComparableTemplate<uint>;
+use NegativeAndPositiveTemplate<uint>;
 
 use CastableTemplate<float>;
 use ArithmeticTemplate<float>;
 use ComparableTemplate<float>;
-
-func __tmp0() {
-    var a: int<64>;
-}
+use NegativeAndPositiveTemplate<float>;
 
 use CastableTemplate2<char>;
 use ArithmeticTemplate2<char>;
 use ComparableTemplate2<char>;
 use LogicalableTemplate2<char>;
+// NegativeAndPositiveTemplate2<char>;
 
 // use CastableTemplate2<bool>
 // use ArithmeticTemplate2<bool>;
 // use ComparableTemplate2<bool>;
 use LogicalableTemplate2<bool>;
 
-template <Bits>
-implement operator::Negative<int<Bits>> for int<Bits> {
-    func Negative()->int<Bits> {
-        var zero = this - this;
-        return zero - this;
-    }
-}
 
-func __tmp(){
-    {
-        var a0: int<8>;
-        var a1: int<16>;
-        var a2: int<32>;
-        var a3: int<64>;
-    }
-    {
-        var a0: uint<8>;
-        var a1: uint<16>;
-        var a2: uint<32>;
-        var a3: uint<64>;
-    }
-    {
-        // var a0: float<16>;
-        var a1: float<32>;
-        var a2: float<64>;
-    }
-}
 

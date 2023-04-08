@@ -111,6 +111,12 @@ interface Negative {
 
 template <T>
 @disable_dynamic_dispatch
+interface Positive {
+    func Positive()->T;
+}
+
+template <T>
+@disable_dynamic_dispatch
 interface Not {
     func Not()->T;
 }

@@ -136,26 +136,6 @@ void Compiler::executeProgram(std::filesystem::path program_path) {
     }
 }
 
-void Compiler::executateTestFunctions() {
-    std::set<std::shared_ptr<ir::Function>> function_tested_set;
-    this->_symbol_table->each([=, &function_tested_set](lowering::Symbol symbol) {
-        if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
-            if (auto ir_function = cast<ir::Function>(ir_value)) {
-                if (function_tested_set.count(ir_function)) {
-                    return;
-                }
-
-                function_tested_set.insert(ir_function);
-                if (ir_function->annotation_dict.count("test")) {
-                    auto function_pointer = getSymbolValue(ir_function->fullname);
-                    jit_engine->catchRuntimeError();
-                    reinterpret_cast<void (*)(void)>(function_pointer)();
-                }
-            }
-        }
-    });
-}
-
 void Compiler::executateMainFunction() {
     std::set<std::shared_ptr<ir::Function>> main_functions;
 
@@ -200,6 +180,17 @@ void Compiler::addPackageDirectoryPath(std::string package_directory) {
         throw std::runtime_error(error_message);
     }
     package_directories.push_back(std::filesystem::path(package_directory));
+}
+
+void Compiler::runTests(std::filesystem::path prajna_source_package_path) {
+    auto ir_module = this->compileProgram(prajna_source_package_path, false);
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->annotation_dict.count("test")) {
+            auto function_pointer = getSymbolValue(ir_function->fullname);
+            jit_engine->catchRuntimeError();
+            reinterpret_cast<void (*)(void)>(function_pointer)();
+        }
+    }
 }
 
 std::shared_ptr<ir::Module> Compiler::compileProgram(

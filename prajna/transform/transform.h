@@ -349,8 +349,7 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
             std::any_cast<std::list<lowering::Symbol>>(ir_array_type->template_arguments_any);
         auto ir_rank = lowering::symbolGet<ir::ConstantInt>(ir_array_template_arguments.back());
         std::list<lowering::Symbol> template_arguments = {ir_rank};
-        auto ir_layout_type =
-            ir_layout_template_struct->instantiateStructAndImplement(template_arguments, ir_module);
+        auto ir_layout_type = ir_layout_template_struct->instantiate(template_arguments, ir_module);
         auto ir_layout =
             ir_builder->create<ir::Call>(ir_layout_type->function_dict["create"],
                                          std::list<std::shared_ptr<ir::Value>>{ir_for->last()});

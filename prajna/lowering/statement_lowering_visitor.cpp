@@ -141,8 +141,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
             if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
                 // 如果获取到nullptr则说明实例化正在进行中,
                 // 使用instantiating_type来获取相应类型
-                if (auto ir_type = template_struct->instantiateStructAndImplement(
-                        symbol_template_arguments, ir_builder->module)) {
+                if (auto ir_type = template_struct->instantiate(symbol_template_arguments,
+                                                                ir_builder->module)) {
                     symbol = ir_type;
                 } else {
                     PRAJNA_ASSERT(ir_builder->instantiating_type_stack.size());

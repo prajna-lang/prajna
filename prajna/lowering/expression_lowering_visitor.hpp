@@ -703,7 +703,7 @@ class ExpressionLoweringVisitor {
                             if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
                                 // 如果获取到nullptr则说明实例化正在进行中,
                                 // 使用instantiating_type来获取相应类型
-                                if (auto ir_type = template_struct->instantiateStructAndImplement(
+                                if (auto ir_type = template_struct->instantiate(
                                         symbol_template_arguments, ir_builder->module)) {
                                     return ir_type;
                                 } else {
@@ -797,8 +797,8 @@ class ExpressionLoweringVisitor {
         PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
                       "system libs is bad");
         auto array_template = symbolGet<TemplateStruct>(symbol_array);
-        auto ir_array_type = array_template->instantiateStructAndImplement(
-            symbol_template_arguments, ir_builder->module);
+        auto ir_array_type =
+            array_template->instantiate(symbol_template_arguments, ir_builder->module);
 
         auto ir_array_tmp = ir_builder->create<ir::LocalVariable>(ir_array_type);
         auto ir_index_property = ir_builder->getLinearIndexProperty(ir_array_type);

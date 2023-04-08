@@ -211,7 +211,7 @@ inline std::shared_ptr<ir::Type> getGpuTensorTypeOfHostTensorType(
         ir_builder->getSymbolByPath(true, {"gpu", "Tensor"}));
     PRAJNA_ASSERT(gpu_tensor_template_struct);
     PRAJNA_ASSERT(ir_type->template_struct);
-    return gpu_tensor_template_struct->instantiateStructAndImplement(
+    return gpu_tensor_template_struct->instantiate(
         std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments_any), ir_module);
 }
 

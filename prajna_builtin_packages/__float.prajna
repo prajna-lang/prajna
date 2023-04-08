@@ -1,0 +1,14 @@
+template <Bits>
+implement float<Bits> {
+    func abs()->float<Bits> {
+        return __fabs<float<Bits>>(this);
+    }
+
+    func sin()->float<Bits> {
+        return __sin<float<Bits>>(this);
+    }
+
+    func cos()->float<Bits> {
+        return __cos<float<Bits>>(this);
+    }
+}

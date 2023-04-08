@@ -22,6 +22,7 @@ use reference_count::ReferenceCountable;
 
 use bindings;
 use debug;
+use test;
 
 use array;
 use array::Array;
@@ -30,6 +31,8 @@ use __ptr;
 use __ptr::ptr;
 
 use __type;
+use __float;
+use __int;
 
 use dynamic_array;
 use dynamic_array::DynamicArray;

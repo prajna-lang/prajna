@@ -361,9 +361,6 @@ struct TemplateStatement : SourceLocation {
     TemplateAbleStatement statement;
 };
 
-struct Specical : SourceLocation {
-    // Identifier name
-};
 struct KernelFunctionCallOperation {
     Expression grid_shape;
     Expression block_shape;

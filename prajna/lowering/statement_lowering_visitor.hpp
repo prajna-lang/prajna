@@ -238,13 +238,22 @@ class StatementLoweringVisitor {
         auto ir_argument_types = applyParameters(ast_function_header.parameters);
         // 插入this-pointer type
         if (ir_builder->isBuildingMemberfunction()) {
-            ir_argument_types.insert(ir_argument_types.begin(), ir_builder->this_pointer_type);
+            ir_argument_types.insert(ir_argument_types.begin(),
+                                     ir::PointerType::create(ir_builder->current_implement_type));
         }
 
         auto ir_function_type = ir::FunctionType::create(ir_argument_types, return_type);
 
         auto ir_function = ir_builder->createFunction(ast_function_header.name, ir_function_type);
         ir_function->annotation_dict = this->applyAnnotations(ast_function_header.annotation_dict);
+
+        if (ir_builder->current_implement_interface) {
+            ir_builder->current_implement_interface->functions.push_back(ir_function);
+        } else {
+            if (ir_builder->current_implement_type) {
+                ir_builder->current_implement_type->function_dict[ir_function->name] = ir_function;
+            }
+        }
 
         return ir_function;
     }
@@ -550,13 +559,14 @@ class StatementLoweringVisitor {
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_type->name;
 
-            PRAJNA_ASSERT(!ir_builder->this_pointer_type);
-            ir_builder->this_pointer_type = ir::PointerType::create(ir_type);
+            PRAJNA_ASSERT(!ir_builder->current_implement_type);
+            ir_builder->current_implement_type = ir_type;
 
             for (auto ast_statement : ast_implement.statements) {
                 auto symbol_function = (*this)(ast_statement);
                 if (auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function))) {
-                    ir_type->function_dict[ir_function->name] = ir_function;
+                    // 已经提前加入, 不然无法调用自身
+                    // ir_type->function_dict[ir_function->name] = ir_function;
                     continue;
                 }
                 if (auto lowering_template = symbolGet<Template>(symbol_function)) {
@@ -567,7 +577,7 @@ class StatementLoweringVisitor {
             }
 
             ir_builder->popSymbolTable();
-            ir_builder->this_pointer_type = nullptr;
+            ir_builder->current_implement_type = nullptr;
         } catch (CompileError compile_error) {
             logger->note(ast_implement.type);
             throw compile_error;
@@ -582,8 +592,8 @@ class StatementLoweringVisitor {
 
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_type->name;
-            PRAJNA_ASSERT(!ir_builder->this_pointer_type);
-            ir_builder->this_pointer_type = ir::PointerType::create(ir_type);
+            PRAJNA_ASSERT(!ir_builder->current_implement_type);
+            ir_builder->current_implement_type = ir_type;
 
             auto ir_interface = ir::InterfaceImplement::create();
             auto ir_interface_prototype = symbolGet<ir::InterfacePrototype>(
@@ -602,6 +612,8 @@ class StatementLoweringVisitor {
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_interface->name;
 
+            ir_builder->current_implement_interface = ir_interface;
+
             // 需要前置, 因为函数会用的接口类型本身
             if (!ir_interface_prototype->disable_dynamic_dispatch) {
                 // 创建接口动态类型生成函数
@@ -615,13 +627,15 @@ class StatementLoweringVisitor {
                 std::shared_ptr<ir::Function> ir_function = nullptr;
                 auto symbol_function = (*this)(ast_function);
                 ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
-                ir_interface->functions.push_back(ir_function);
+                // 已经提前加入
+                // ir_interface->functions.push_back(ir_function);
             }
 
             if (ir_interface_prototype->disable_dynamic_dispatch) {
                 ir_builder->popSymbolTable();
-                ir_builder->this_pointer_type = nullptr;
+                ir_builder->current_implement_type = nullptr;
                 ir_builder->popSymbolTable();
+                ir_builder->current_implement_interface = nullptr;
                 return nullptr;
             }
 
@@ -682,7 +696,8 @@ class StatementLoweringVisitor {
             ir_builder->popBlock();
 
             ir_builder->popSymbolTable();
-            ir_builder->this_pointer_type = nullptr;
+            ir_builder->current_implement_type = nullptr;
+            ir_builder->current_implement_interface = nullptr;
             ir_builder->popSymbolTable();
         } catch (CompileError compile_error) {
             logger->note(ast_implement.type);
@@ -746,7 +761,7 @@ class StatementLoweringVisitor {
         auto template_parameter_identifier_list =
             this->getTemplateParametersIdentifiers(ast_template_paramters);
         return [=, symbol_table = ir_builder->symbol_table, logger = this->logger,
-                this_pointer_type = ir_builder->this_pointer_type](
+                this_pointer_type = ir_builder->current_implement_type](
                    std::list<Symbol> symbol_template_arguments,
                    std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // 包裹一层名字空间, 避免被污染
@@ -761,7 +776,7 @@ class StatementLoweringVisitor {
             auto statement_lowering_visitor = StatementLoweringVisitor::create(
                 templates_symbol_table, logger, ir_module, nullptr);
             try {
-                statement_lowering_visitor->ir_builder->this_pointer_type = this_pointer_type;
+                statement_lowering_visitor->ir_builder->current_implement_type = this_pointer_type;
                 if (has_identifier) {
                     statement_lowering_visitor->ir_builder->symbol_template_argument_list_optional =
                         symbol_template_arguments;
@@ -769,7 +784,7 @@ class StatementLoweringVisitor {
 
                 return (*statement_lowering_visitor)(ast_statement);
 
-                statement_lowering_visitor->ir_builder->this_pointer_type = nullptr;
+                statement_lowering_visitor->ir_builder->current_implement_type = nullptr;
                 statement_lowering_visitor->ir_builder->symbol_template_argument_list_optional
                     .reset();
             } catch (CompileError compile_error) {
@@ -1363,8 +1378,8 @@ class StatementLoweringVisitor {
         ir_interface_struct->name = ir_interface_prototype->name;
         ir_interface_struct->fullname = ir_interface_prototype->fullname;
 
-        PRAJNA_ASSERT(!ir_builder->this_pointer_type);
-        ir_builder->this_pointer_type = ir::PointerType::create(ir_interface_struct);
+        PRAJNA_ASSERT(!ir_builder->current_implement_type);
+        ir_builder->current_implement_type = ir_interface_struct;
 
         auto ir_interface = ir::InterfaceImplement::create();
         for (auto ir_function : ir_interface_prototype->functions) {
@@ -1383,8 +1398,9 @@ class StatementLoweringVisitor {
             // 必然有一个this pointer参数
             // PRAJNA_ASSERT(ir_member_function_argument_types.size() >= 1);
             // 第一个参数应该是this pointer的类型, 修改一下
-            ir_member_function_argument_types.insert(ir_member_function_argument_types.begin(),
-                                                     ir_builder->this_pointer_type);
+            ir_member_function_argument_types.insert(
+                ir_member_function_argument_types.begin(),
+                ir::PointerType::create(ir_builder->current_implement_type));
             auto ir_member_function_type = ir::FunctionType::create(
                 ir_member_function_argument_types, ir_function->function_type->return_type);
             auto ir_member_function =
@@ -1415,7 +1431,7 @@ class StatementLoweringVisitor {
             ir_interface->functions.push_back(ir_member_function);
         }
 
-        ir_builder->this_pointer_type = nullptr;
+        ir_builder->current_implement_type = nullptr;
 
         ir_interface_struct->interface_dict["Self"] = ir_interface;
     }

@@ -436,9 +436,9 @@ class IrBuilder {
         }
     }
 
-    bool isBuildingMemberfunction() { return this_pointer_type && !is_static_function; }
+    bool isBuildingMemberfunction() { return current_implement_type && !is_static_function; }
 
-    bool isInsideImplement() { return this_pointer_type != nullptr; }
+    bool isInsideImplement() { return current_implement_type != nullptr; }
 
    public:
     std::shared_ptr<SymbolTable> symbol_table = nullptr;
@@ -457,7 +457,8 @@ class IrBuilder {
 
     std::stack<std::shared_ptr<ir::Type>> instantiating_type_stack;
     /// TODO we should not build function inside a function which is builting.
-    std::shared_ptr<ir::Type> this_pointer_type = nullptr;
+    std::shared_ptr<ir::Type> current_implement_type = nullptr;
+    std::shared_ptr<ir::InterfaceImplement> current_implement_interface = nullptr;
     boost::optional<std::list<Symbol>> symbol_template_argument_list_optional;
     bool is_static_function = false;
 };

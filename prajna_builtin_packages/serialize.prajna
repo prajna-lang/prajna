@@ -37,10 +37,8 @@ implement Serializable for int<Bits>{
         if (this >= zero) {
             return this.cast<uint<Bits>>().tostr();
         } else {
-            // return "-" + (-this).tostr();
+            return "-" + (-this).tostr();
         }
-
-        return "error";
     }
 }
 

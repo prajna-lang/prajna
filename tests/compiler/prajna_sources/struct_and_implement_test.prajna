@@ -21,6 +21,14 @@ implement People{
     }
 }
 
+struct NestedMemberFunction {}
+
+implement NestedMemberFunction {
+    func test() {
+        this.test();
+    }
+}
+
 @test
 func testStructAndImplement(){
     var mike = People("Mike", 18);

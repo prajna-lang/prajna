@@ -27,8 +27,6 @@ namespace jit {
 class ExecutionEngine;
 }
 
-std::shared_ptr<lowering::SymbolTable> createPrimitiveTypes();
-
 // @brief 负责将般若编译器的各个模块整合到一块, 以及和外界的交互
 class Compiler : public std::enable_shared_from_this<Compiler> {
    public:

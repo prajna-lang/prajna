@@ -1,4 +1,5 @@
-#stage1;
+#stage0; // 加入bool, char, void, undef类型
+#stage1; // 加入int, float, __add等模板和操作
 
 use int<8> as i8;
 use int<16> as i16;

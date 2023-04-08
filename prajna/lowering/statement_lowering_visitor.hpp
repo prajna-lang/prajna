@@ -1261,6 +1261,71 @@ class StatementLoweringVisitor {
         return template_binary_operator;
     }
 
+    void stage0() {
+        auto bool_type = ir::BoolType::create();
+        auto char_type = ir::CharType::create();
+        auto void_type = ir::VoidType::create();
+        auto undef_type = ir::UndefType::create();
+        ir_builder->symbol_table->set(bool_type, bool_type->name);
+        ir_builder->symbol_table->set(char_type, char_type->name);
+        ir_builder->symbol_table->set(void_type, void_type->name);
+        ir_builder->symbol_table->set(undef_type, undef_type->name);
+    }
+
+    void stage1() {
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBitCastTemplate(), "__bit_cast");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createIntTypeTemplate(true), "int");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createIntTypeTemplate(false), "uint");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatTypeTemplate(), "float");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createCastInstructionTemplate(), "__cast");
+        // arithematic
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("add"), "__add");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("sub"), "__sub");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("mul"), "__mul");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("div"), "__div");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("rem"), "__rem");
+        // logical
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("and"), "__and");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("or"), "__or");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("xor"), "__xor");
+        // shift
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("shift_left"), "__shift_left");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createBinaryOperatorTemplate("shift_right"), "__shift_right");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createCompareInstructionTemplate("eq"), "__eq");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createCompareInstructionTemplate("ne"), "__ne");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createCompareInstructionTemplate("gt"), "__gt");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createCompareInstructionTemplate("ge"), "__ge");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createCompareInstructionTemplate("lt"), "__lt");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createCompareInstructionTemplate("le"), "__le");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            expression_lowering_visitor->createDynamicTemplate(), "dynamic");
+    }
+
     Symbol operator()(ast::Pragma ast_pragma) {
         if (ast_pragma.name == "error") {
             std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
@@ -1277,58 +1342,12 @@ class StatementLoweringVisitor {
             std::system(command.c_str());
             return nullptr;
         }
+        if (ast_pragma.name == "stage0") {
+            this->stage0();
+            return nullptr;
+        }
         if (ast_pragma.name == "stage1") {
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBitCastTemplate(), "__bit_cast");
-
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createIntTypeTemplate(true), "int");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createIntTypeTemplate(false), "uint");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createFloatTypeTemplate(), "float");
-
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createCastInstructionTemplate(), "__cast");
-            // arithematic
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("add"), "__add");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("sub"), "__sub");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("mul"), "__mul");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("div"), "__div");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("rem"), "__rem");
-            // logical
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("and"), "__and");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("or"), "__or");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("xor"), "__xor");
-            // shift
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("shift_left"), "__shift_left");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createBinaryOperatorTemplate("shift_right"), "__shift_right");
-
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createCompareInstructionTemplate("eq"), "__eq");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createCompareInstructionTemplate("ne"), "__ne");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createCompareInstructionTemplate("gt"), "__gt");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createCompareInstructionTemplate("ge"), "__ge");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createCompareInstructionTemplate("lt"), "__lt");
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                this->createCompareInstructionTemplate("le"), "__le");
-
-            ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-                expression_lowering_visitor->createDynamicTemplate(), "dynamic");
+            this->stage1();
             return nullptr;
         }
 

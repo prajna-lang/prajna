@@ -9,7 +9,6 @@
 #include "prajna/exception.hpp"
 #include "prajna/jit/execution_engine.h"
 #include "prajna/logger.hpp"
-#include "prajna/lowering/create_primitive_env.hpp"
 #include "prajna/lowering/lower.h"
 #include "prajna/parser/parse.h"
 #include "prajna/transform/transform.h"
@@ -60,7 +59,7 @@ inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
 std::shared_ptr<Compiler> Compiler::create() {
     ir::global_context = ir::GlobalContext(64);
     std::shared_ptr<Compiler> self(new Compiler);
-    self->_symbol_table = lowering::createPrimitiveTypes();
+    self->_symbol_table = lowering::SymbolTable::create(nullptr);
     self->jit_engine = std::make_shared<jit::ExecutionEngine>();
     self->jit_engine->bindBuiltinFunction();
     return self;

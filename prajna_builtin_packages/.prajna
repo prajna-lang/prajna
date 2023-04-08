@@ -1,5 +1,19 @@
 #stage1;
 
+use int<8> as i8;
+use int<16> as i16;
+use int<32> as i32;
+use int<64> as i64;
+
+use uint<8> as u8;
+use uint<16> as u16;
+use uint<32> as u32;
+use uint<64> as u64;
+
+use float<16> as f16;
+use float<32> as f32;
+use float<64> as f64;
+
 use operator;
 
 use reference_count;

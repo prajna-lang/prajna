@@ -2,6 +2,10 @@
 func testMain(){
     var a: float<32> = 3024f32;
     debug::assert(a.cast<i64>() == 3024);
+
+    var b: float<16>;
+    var c: float<64>;
+    // var d: float<128>; // 特殊平台可以自行拓展
     // var c = a.cast<f32>();
 }
 

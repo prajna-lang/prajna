@@ -68,14 +68,20 @@ class LlvmCodegen {
         }
         if (auto ir_float_type = cast<ir::FloatType>(ir_type)) {
             switch (ir_float_type->bits) {
+                case 16:
+                    ir_float_type->llvm_type = llvm::Type::getHalfTy(static_llvm_context);
+                    return;
                 case 32:
                     ir_float_type->llvm_type = llvm::Type::getFloatTy(static_llvm_context);
                     return;
                 case 64:
                     ir_float_type->llvm_type = llvm::Type::getDoubleTy(static_llvm_context);
                     return;
+                case 128:
+                    ir_float_type->llvm_type = llvm::Type::getFP128Ty(static_llvm_context);
+                    return;
                 default:
-                    PRAJNA_TODO;
+                    PRAJNA_UNREACHABLE;
             }
 
             return;

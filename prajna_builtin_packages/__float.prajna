@@ -11,4 +11,14 @@ implement float<Bits> {
     func cos()->float<Bits> {
         return __cos<float<Bits>>(this);
     }
+
+    @static
+    func largest()->float<Bits> {
+        return __largest<float<Bits>>();
+    }
+
+    @static
+    func smallest()->float<Bits> {
+        return __smallest<float<Bits>>();
+    }
 }

@@ -246,10 +246,12 @@ class ExpressionLoweringVisitor {
         PRAJNA_ASSERT(identifier_path.identifiers.size() == 1);
         std::string member_name = identifier_path.identifiers.front().identifier;
 
+        ir_builder->instantiateTypeImplements(ir_lhs->type);
+
         // 模板函数
         if (identifier_path.identifiers.front().template_arguments_optional) {
             if (!ir_lhs->type->template_any_dict.count(member_name)) {
-                logger->error("has not template", ast_binary_operation.operand);
+                logger->error("invalid template", ast_binary_operation.operand);
             }
             auto lowering_member_function_template = std::any_cast<std::shared_ptr<Template>>(
                 ir_lhs->type->template_any_dict[member_name]);
@@ -669,6 +671,7 @@ class ExpressionLoweringVisitor {
                             return ir_function;
                         }
 
+                        this->ir_builder->instantiateTypeImplements(ir_type);
                         auto ir_static_fun = ir_type->function_dict[static_function_identifier];
                         if (ir_static_fun == nullptr) {
                             logger->error(

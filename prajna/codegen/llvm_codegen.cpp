@@ -286,9 +286,44 @@ class LlvmCodegen {
         }
         if (auto ir_constant_float = cast<ir::ConstantFloat>(ir_constant)) {
             PRAJNA_ASSERT(ir_constant_float->type->llvm_type);
-            ir_constant_float->llvm_value =
-                llvm::ConstantFP::get(ir_constant_float->type->llvm_type, ir_constant_float->value);
-            return;
+            // 提前返回float的最大数或最小数
+            if (ir_constant_float->is_smallest || ir_constant_float->is_largest) {
+                llvm::APFloat::Semantics semantics;
+                switch (ir_constant_float->type->bytes) {
+                    case 2:
+                        semantics = llvm::APFloat::Semantics::S_IEEEhalf;
+                        break;
+                    case 4:
+                        semantics = llvm::APFloat::Semantics::S_IEEEsingle;
+                        break;
+                    case 8:
+                        semantics = llvm::APFloat::Semantics::S_IEEEdouble;
+                        break;
+                    case 16:
+                        semantics = llvm::APFloat::Semantics::S_IEEEquad;
+                        break;
+                    default:
+                        PRAJNA_UNREACHABLE;
+                }
+                if (ir_constant_float->is_smallest) {
+                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                        ir_constant_float->type->llvm_type,
+                        llvm::APFloat::getSmallest(llvm::APFloat::EnumToSemantics(semantics),
+                                                   ir_constant_float->is_negative));
+                    return;
+                }
+                if (ir_constant_float->is_largest) {
+                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                        ir_constant_float->type->llvm_type,
+                        llvm::APFloat::getLargest(llvm::APFloat::EnumToSemantics(semantics),
+                                                  ir_constant_float->is_negative));
+                    return;
+                }
+            } else {
+                ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                    ir_constant_float->type->llvm_type, ir_constant_float->value);
+                return;
+            }
         }
         if (auto ir_constant_array = cast<ir::ConstantArray>(ir_constant)) {
             std::vector<llvm::Constant *> llvm_contants(

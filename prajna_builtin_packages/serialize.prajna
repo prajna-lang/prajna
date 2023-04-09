@@ -53,13 +53,13 @@ implement Serializable for bool{
 }
 
 
-/// TODO 输出位数, 需要重构
+/// TODO 输出位数, 需要重构,
 template <Bits>
 implement Serializable for float<Bits>{
     func tostr()->str{
         var x = this;
         var n = 4;
-        var rounder = 0.00005f32.cast<float<Bits>>();
+        var rounder = (0.00005f32).cast<float<Bits>>();
         var zero = 0i64.cast<float<Bits>>();
         var one = 1i64.cast<float<Bits>>();
         var ten = 10i64.cast<float<Bits>>();
@@ -73,7 +73,7 @@ implement Serializable for float<Bits>{
             x = zero-x;
         }
 
-        var int_part = x.cast<int<64>>();
+        var int_part = x.cast<int<64>>(); // 越界了需要处理
         re = re  + int_part.tostr();
         x = x - int_part.cast<float<Bits>>();
 

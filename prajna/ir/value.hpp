@@ -280,6 +280,9 @@ class ConstantFloat : public Constant {
 
    public:
     double value;
+    bool is_smallest = false;
+    bool is_largest = false;
+    bool is_negative = false;
 };
 
 class ConstantChar : public Constant {

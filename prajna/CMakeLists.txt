@@ -42,8 +42,10 @@ if (PRAJNA_ENABLE_SANITIZE)
         INTERFACE -static-libsan)
 endif()
 
-
-target_compile_options(prajna_config_target INTERFACE "$<$<CONFIG:RELEASE>:-O1>")
+# clang10 it works well
+# Not work, it's overrided by -O3
+# if wo use -O0 for parse, it works well on mac m1
+# target_compile_options(prajna_config_target INTERFACE "$<$<CONFIG:RELEASE>:-O1>")
 
 add_subdirectory(ast)
 add_subdirectory(ir)

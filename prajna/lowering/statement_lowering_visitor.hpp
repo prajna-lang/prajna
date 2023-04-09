@@ -1016,7 +1016,7 @@ class StatementLoweringVisitor {
             // TODO, 还需要再处理下, LLVM支持的float类型有限.
             auto bits = ir_constant_bit_size->value;
             // LLVM只支持float16/32/16, 128在特定平台可以打开,  bfloat需要另外的函数去实现
-            PRAJNA_ASSERT(bits == 16 || bits == 32 || bits == 64 /*|| bits == 128*/);
+            PRAJNA_ASSERT(bits == 16 || bits == 32 || bits == 64 || bits == 128);
 
             return ir::FloatType::create(ir_constant_bit_size->value);
         };

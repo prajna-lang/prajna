@@ -25,6 +25,13 @@ target_link_libraries(prajna_jit
     PRIVATE LLVMCore
 )
 
+# 对于mac平台
+# https://github.com/fxcoudert/gfortran-for-macOS/releases
+# 下载安转gfortran, jigt运行时float128会依赖下面的动态库, 需要使用dylib, 因为是jit依赖他
+if (APPLE)
+    target_link_libraries(prajna_jit PRIVATE /usr/local/gfortran/lib/libgfortran.dylib)
+endif()
+
 target_include_directories(prajna_jit PRIVATE /usr/local/cuda/include)
 
 if (PRAJNA_WITH_GPU)

@@ -20,8 +20,14 @@ endif()
 target_compile_options(prajna_config_target
     INTERFACE -Wno-unused-parameter
     INTERFACE -Wno-deprecated-declarations
-    # INTERFACE -Werror
 )
+
+if (NOT PRAJNA_WITH_JUPYTER)
+    target_compile_options(prajna_config_target
+        INTERFACE -Werror
+    )
+endif()
+
 
 # 需要禁止一些函数才能很好工作, mac下不支持detect-leaks
 # 对于内存泄露来说, valgrind可能更加友好一点

@@ -263,6 +263,8 @@ class ConstantFloat : public Constant {
     ConstantFloat() = default;
 
    public:
+    enum SpecialValue { None, Smallest, Largest, NaN, Inf };
+
     static std::shared_ptr<ConstantFloat> create(std::shared_ptr<Type> type, double value) {
         PRAJNA_ASSERT(type);
         std::shared_ptr<ConstantFloat> self(new ConstantFloat);
@@ -280,8 +282,7 @@ class ConstantFloat : public Constant {
 
    public:
     double value;
-    bool is_smallest = false;
-    bool is_largest = false;
+    SpecialValue special_value = SpecialValue::None;
     bool is_negative = false;
 };
 

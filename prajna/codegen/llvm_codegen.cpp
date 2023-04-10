@@ -287,44 +287,56 @@ class LlvmCodegen {
         if (auto ir_constant_float = cast<ir::ConstantFloat>(ir_constant)) {
             PRAJNA_ASSERT(ir_constant_float->type->llvm_type);
             // 提前返回float的最大数或最小数
-            if (ir_constant_float->is_smallest || ir_constant_float->is_largest) {
-                llvm::APFloat::Semantics semantics;
-                switch (ir_constant_float->type->bytes) {
-                    case 2:
-                        semantics = llvm::APFloat::Semantics::S_IEEEhalf;
-                        break;
-                    case 4:
-                        semantics = llvm::APFloat::Semantics::S_IEEEsingle;
-                        break;
-                    case 8:
-                        semantics = llvm::APFloat::Semantics::S_IEEEdouble;
-                        break;
-                    case 16:
-                        semantics = llvm::APFloat::Semantics::S_IEEEquad;
-                        break;
-                    default:
-                        PRAJNA_UNREACHABLE;
-                }
-                if (ir_constant_float->is_smallest) {
+            llvm::APFloat::Semantics semantics;
+            switch (ir_constant_float->type->bytes) {
+                case 2:
+                    semantics = llvm::APFloat::Semantics::S_IEEEhalf;
+                    break;
+                case 4:
+                    semantics = llvm::APFloat::Semantics::S_IEEEsingle;
+                    break;
+                case 8:
+                    semantics = llvm::APFloat::Semantics::S_IEEEdouble;
+                    break;
+                case 16:
+                    semantics = llvm::APFloat::Semantics::S_IEEEquad;
+                    break;
+                default:
+                    PRAJNA_UNREACHABLE;
+            }
+
+            switch (ir_constant_float->special_value) {
+                case ir::ConstantFloat::None:
+                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                        ir_constant_float->type->llvm_type, ir_constant_float->value);
+                    return;
+                case ir::ConstantFloat::Smallest:
                     ir_constant_float->llvm_value = llvm::ConstantFP::get(
                         ir_constant_float->type->llvm_type,
                         llvm::APFloat::getSmallest(llvm::APFloat::EnumToSemantics(semantics),
                                                    ir_constant_float->is_negative));
                     return;
-                }
-                if (ir_constant_float->is_largest) {
+                case ir::ConstantFloat::Largest:
                     ir_constant_float->llvm_value = llvm::ConstantFP::get(
                         ir_constant_float->type->llvm_type,
                         llvm::APFloat::getLargest(llvm::APFloat::EnumToSemantics(semantics),
                                                   ir_constant_float->is_negative));
                     return;
-                }
-            } else {
-                ir_constant_float->llvm_value = llvm::ConstantFP::get(
-                    ir_constant_float->type->llvm_type, ir_constant_float->value);
-                return;
+                case ir::ConstantFloat::NaN:
+                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                        ir_constant_float->type->llvm_type,
+                        llvm::APFloat::getNaN(llvm::APFloat::EnumToSemantics(semantics),
+                                              ir_constant_float->is_negative));
+                    return;
+                case ir::ConstantFloat::Inf:
+                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                        ir_constant_float->type->llvm_type,
+                        llvm::APFloat::getInf(llvm::APFloat::EnumToSemantics(semantics),
+                                              ir_constant_float->is_negative));
+                    return;
             }
         }
+
         if (auto ir_constant_array = cast<ir::ConstantArray>(ir_constant)) {
             std::vector<llvm::Constant *> llvm_contants(
                 ir_constant_array->initialize_constants.size());

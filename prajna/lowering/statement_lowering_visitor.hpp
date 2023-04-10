@@ -1297,7 +1297,8 @@ class StatementLoweringVisitor {
         return template_binary_operator;
     }
 
-    std::shared_ptr<Template> createFloatSmallestOrLargest(bool is_smallest, bool is_negative) {
+    std::shared_ptr<Template> createFloatSmallestOrLargest(
+        ir::ConstantFloat::SpecialValue special_value, bool is_negative) {
         auto template_binary_operator = Template::create();
 
         template_binary_operator->generator = [=, symbol_table = this->ir_builder->symbol_table,
@@ -1310,7 +1311,24 @@ class StatementLoweringVisitor {
 
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({}, ir_float_type);
-            auto ir_function_name_prefix = is_smallest ? "__smallest" : "__largest";
+            std::string ir_function_name_prefix;
+            switch (special_value) {
+                case ir::ConstantFloat::SpecialValue::Smallest:
+                    ir_function_name_prefix = "__smallest";
+                    break;
+                case ir::ConstantFloat::SpecialValue::Largest:
+                    ir_function_name_prefix = "__largest";
+                    break;
+                case ir::ConstantFloat::SpecialValue::NaN:
+                    ir_function_name_prefix = "__nan";
+                    break;
+                case ir::ConstantFloat::SpecialValue::Inf:
+                    ir_function_name_prefix = "__inf";
+                    break;
+                default:
+                    PRAJNA_UNREACHABLE;
+                    break;
+            }
             auto is_neg_name = is_negative ? std::string("_negative") : "";
             auto ir_function = ir_tmp_builder->createFunction(
                 ir_function_name_prefix + is_neg_name +
@@ -1318,8 +1336,7 @@ class StatementLoweringVisitor {
                 ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             auto ir_constant_float = ir_tmp_builder->create<ir::ConstantFloat>(ir_float_type, 0.0);
-            ir_constant_float->is_smallest = is_smallest;
-            ir_constant_float->is_largest = !is_smallest;
+            ir_constant_float->special_value = special_value;
             ir_constant_float->is_negative = is_negative;
             ir_tmp_builder->create<ir::Return>(ir_constant_float);
             return ir_function;
@@ -1423,13 +1440,30 @@ class StatementLoweringVisitor {
             this->createFloatTypeIntrinsicFunctionTemplate("roundeven"), "__roundeven");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatSmallestOrLargest(true, false), "__smallest");
+            this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::Smallest, false),
+            "__smallest");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatSmallestOrLargest(true, true), "__smallest_negative");
+            this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::Smallest, true),
+            "__smallest_negative");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatSmallestOrLargest(false, false), "__largest");
+            this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::Largest, false),
+            "__largest");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatSmallestOrLargest(false, true), "__largest_negative");
+            this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::Largest, true),
+            "__largest_negative");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::NaN, false),
+            "__nan");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::NaN, true),
+            "__nan_negative");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::Inf, false),
+            "__inf");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::Inf, true),
+            "__inf_negative");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             expression_lowering_visitor->createDynamicTemplate(), "dynamic");

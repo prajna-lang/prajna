@@ -3,19 +3,158 @@ func assertNear(value0: T, value1: f32, eps: f32){
     debug::assert((value0 - value1.cast<T>()).abs() < eps.cast<T>());
 }
 
-
-// 需要补全更多的测试, 用例.
 template FloatTest <Bits> {
     @test
+    func testFloatStaticFunction() {
+        float<Bits>::largest();
+        float<Bits>::smallest();
+        float<Bits>::nan();
+        float<Bits>::inf();
+    }
+
+    @test
     func testFloatIUnaryFunction(){
+        {
+            var value = (0.0).cast<float<Bits>>();
+            var expect = (0.0).cast<float<Bits>>();
+            test::assert(value == expect);
+            value = (-0.0).cast<float<Bits>>();
+            expect = (0.0).cast<float<Bits>>();
+            test::assert(value == expect);
+        }
         {
             var value = (-1.0).cast<float<Bits>>();
             var expect = 1.0.cast<float<Bits>>();
             test::assert(value.abs() == expect);
         }
         {
-            var pi = (3.1415).cast<float<Bits>>();
+            var pi = (3.1415926).cast<float<Bits>>();
             assertNear<float<Bits>>(pi.sin(), 0.0, 0.001);
+            pi = (3.1415926/2.0).cast<float<Bits>>();
+            assertNear<float<Bits>>(pi.sin(), 1.0, 0.001);
+            pi = (2.0*3.1415926).cast<float<Bits>>();
+            assertNear<float<Bits>>(pi.sin(), 0.0, 0.01);
+            var value = (0.5).cast<float<Bits>>();
+            assertNear<float<Bits>>(value.sin(), 0.47943, 0.001);
+        }
+        {
+            var pi = (3.1415926).cast<float<Bits>>();
+            assertNear<float<Bits>>(pi.cos(), -1.0, 0.001);
+            pi = (3.1415926/2.0).cast<float<Bits>>();
+            assertNear<float<Bits>>(pi.cos(), 0.0, 0.001);
+            pi = (2.0*3.1415926).cast<float<Bits>>();
+            assertNear<float<Bits>>(pi.cos(), 1.0, 0.001);
+            var value = (0.5).cast<float<Bits>>();
+            assertNear<float<Bits>>(value.cos(), 0.87758, 0.001);
+        }
+        {
+            var value = (1.3).cast<float<Bits>>();
+            var expect = (1.0).cast<float<Bits>>();
+            test::assert(value.floor() == expect);
+            value = (5.99).cast<float<Bits>>();
+            expect = (5.0).cast<float<Bits>>();
+            test::assert(value.floor() == expect);
+
+            value = (-0.0001).cast<float<Bits>>();
+            expect = (-1.0).cast<float<Bits>>();
+            test::assert(value.floor() == expect);
+            value = (-5.999).cast<float<Bits>>();
+            expect = (-6.0).cast<float<Bits>>();
+            test::assert(value.floor() == expect);
+            value = (-1234.5678).cast<float<Bits>>();
+            expect = (-1235.0).cast<float<Bits>>();
+            test::assert(value.floor() == expect);
+        }
+        {
+            var value = (1.3).cast<float<Bits>>();
+            var expect = (2.0).cast<float<Bits>>();
+            test::assert(value.ceil() == expect);
+            value = (5.999).cast<float<Bits>>();
+            expect = (6.0).cast<float<Bits>>();
+            test::assert(value.ceil() == expect);
+            value = (-5.99).cast<float<Bits>>();
+            expect = (-5.0).cast<float<Bits>>();
+            test::assert(value.ceil() == expect);
+
+            value = (-0.0001).cast<float<Bits>>();
+            expect = (0.0).cast<float<Bits>>();
+            test::assert(value.ceil() == expect);
+            // 存在精度问题, float16的精度没那么高
+            // value = (-1234.5678).cast<float<Bits>>();
+            // expect = (-1234).cast<float<Bits>>();
+            // test::assert(value.ceil() == expect);
+        }
+        {
+            var value = (1.23456789).cast<float<Bits>>();
+            var expect = (1.0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+            value = (123456789.0).cast<float<Bits>>();
+            expect = (123456789.0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+            value = (1.5).cast<float<Bits>>();
+            expect = (2.0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+            value = (-2.4).cast<float<Bits>>();
+            expect = (-2.0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+            value = (-3.5).cast<float<Bits>>();
+            expect = (-4.0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+            value = (-0.0).cast<float<Bits>>();
+            expect = (-0.0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+        }
+        {
+            var value = (0.12345678901234567890).cast<float<Bits>>();
+            var expect = (0.0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+            value = (12345678901234567890.0).cast<float<Bits>>();
+            expect = (12345678901234567890.0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+            value = (12345678901234567890.12345678901234567890).cast<float<Bits>>();
+            expect = (12345678901234567890.12345678901234567890).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+            value = (-0.12345678901234567890).cast<float<Bits>>();
+            expect = (0).cast<float<Bits>>();
+            test::assert(value.round() == expect);
+        }
+        {
+            var value = (2.4).cast<float<Bits>>();
+            var expect = (2.0).cast<float<Bits>>();
+            test::assert(value.roundeven() == expect);
+            value = (-2.4).cast<float<Bits>>();
+            expect = (-2.0).cast<float<Bits>>();
+            test::assert(value.roundeven() == expect);
+            value = (2.5).cast<float<Bits>>();
+            expect = (2.0).cast<float<Bits>>();
+            test::assert(value.roundeven() == expect);
+            value = (-2.5).cast<float<Bits>>();
+            expect = (-2.0).cast<float<Bits>>();
+            test::assert(value.roundeven() == expect);
+            value = (2.6).cast<float<Bits>>();
+            expect = (3.0).cast<float<Bits>>();
+            test::assert(value.roundeven() == expect);
+            value = (3.5).cast<float<Bits>>();
+            expect = (4.0).cast<float<Bits>>();
+            test::assert(value.roundeven() == expect);
+            value = (-3.5).cast<float<Bits>>();
+            expect = (-4.0).cast<float<Bits>>();
+            test::assert(value.roundeven() == expect);
+            value = (-0.0).cast<float<Bits>>();
+            expect = (-0.0).cast<float<Bits>>();
+            test::assert(value.roundeven() == expect);
+        }
+        {
+            var value = (3.14159).cast<float<Bits>>();
+            var expect = (3.0).cast<float<Bits>>();
+            test::assert(value.trunc() == expect);
+            value = (-6.789).cast<float<Bits>>();
+            expect = (-6.0).cast<float<Bits>>();
+            test::assert(value.trunc() == expect);
+
+            value = (-2.99).cast<float<Bits>>();
+            expect = (-2.0).cast<float<Bits>>();
+            test::assert(value.trunc() == expect);
         }
     }
 }

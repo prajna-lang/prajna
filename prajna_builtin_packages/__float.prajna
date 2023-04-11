@@ -12,6 +12,26 @@ implement float<Bits> {
         return __cos<float<Bits>>(this);
     }
 
+    func floor()->float<Bits> {
+        return __floor<float<Bits>>(this);
+    }
+
+    func ceil()->float<Bits> {
+        return __ceil<float<Bits>>(this);
+    }
+
+    func round()->float<Bits> {
+        return __round<float<Bits>>(this);
+    }
+
+    func roundeven()->float<Bits> {
+        return __roundeven<float<Bits>>(this);
+    }
+
+    func trunc()->float<Bits> {
+        return __trunc<float<Bits>>(this);
+    }
+
     @static
     func largest()->float<Bits> {
         return __largest<float<Bits>>();
@@ -20,5 +40,16 @@ implement float<Bits> {
     @static
     func smallest()->float<Bits> {
         return __smallest<float<Bits>>();
+    }
+
+    @static
+    func nan()->float<Bits> {
+        return __nan<float<Bits>>();
+
+    }
+
+    @static
+    func inf()->float<Bits>{
+        return __inf<float<Bits>>();
     }
 }

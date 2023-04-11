@@ -102,8 +102,9 @@ CodeLexer<Lexer>::CodeLexer() {
     string_literal = "\\\"([^\"]|\\\\\\\")*\\\"";
     this->self += string_literal;
 
-    int_literal = "(([1-9][0-9]*)|0)";
-    float_literal = "(([1-9][0-9]*)|0)\\.[0-9]*";
+    int_literal = "[0-9]+";
+    float_literal = "[0-9]*\\.?[0-9]+(e[-+]?[0-9]+)?";
+
     this->self += int_literal | float_literal;
 
     true_literal = "true";

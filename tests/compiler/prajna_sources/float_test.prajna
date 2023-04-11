@@ -159,6 +159,19 @@ template FloatTest <Bits> {
     }
 }
 
+@test
+func testFloatParse() {
+    1.0e10f32;
+    10.0e-2f32;
+    .24e0f64;
+    1.00;
+    2.010;
+    02.1;
+    .24;
+    +.24;
+    -2.12;
+}
+
 use FloatTest<16>;
 use FloatTest<32>;
 use FloatTest<64>;

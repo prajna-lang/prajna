@@ -58,3 +58,14 @@ use IntTest<uint<16>>;
 use IntTest<uint<32>>;
 use IntTest<uint<64>>;
 use IntTest<uint<128>>;
+
+@test
+func testParseInt(){
+    10;
+    0001;
+    0;
+    -10;
+    -0;
+    +10;
+    +001;
+}

@@ -281,7 +281,8 @@ class LlvmCodegen {
         if (auto ir_constant_int = cast<ir::ConstantInt>(ir_constant)) {
             PRAJNA_ASSERT(ir_constant_int->type->llvm_type);
             ir_constant_int->llvm_value =
-                llvm::ConstantInt::get(ir_constant_int->type->llvm_type, ir_constant_int->value);
+                llvm::ConstantInt::get(ir_constant_int->type->llvm_type, ir_constant_int->value,
+                                       cast<ir::IntType>(ir_constant_int->type)->is_signed);
             return;
         }
         if (auto ir_constant_float = cast<ir::ConstantFloat>(ir_constant)) {

@@ -115,7 +115,7 @@ template FloatTest <Bits> {
             expect = (12345678901234567890.12345678901234567890).cast<float<Bits>>();
             test::assert(value.round() == expect);
             value = (-0.12345678901234567890).cast<float<Bits>>();
-            expect = (0).cast<float<Bits>>();
+            expect = 0i64.cast<float<Bits>>();
             test::assert(value.round() == expect);
         }
         {

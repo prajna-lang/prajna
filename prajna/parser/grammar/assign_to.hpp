@@ -190,7 +190,11 @@ struct assign_to_attribute_from_iterators<prajna::ast::IntLiteral, Iterator> {
         attr.first_position = get_source_position(first);
         attr.last_position = get_source_position(last);
 
-        qi::parse(first, last, int_type(), attr.value);
+        auto str = std::string(first, last);
+        attr.value = std::stoull(str);
+
+        // has bug, generator error value;
+        // qi::parse(first, last, int_type(), attr.value);
         // qi::parse(first, last, int_type(), attr.mp_int_value);
     }
 };

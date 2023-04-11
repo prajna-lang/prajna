@@ -37,7 +37,9 @@ implement Serializable for int<Bits>{
         if (this >= zero) {
             return this.cast<uint<Bits>>().tostr();
         } else {
-            return "-" + (-this).tostr();
+            return "-" + ((!this).cast<uint<Bits>>() + (1).cast<uint<Bits>>()).tostr();
+            // -128i8 无法转为128i8, 因为越界了, 会直接崩溃.
+            // return "-" + (-this).tostr();
         }
     }
 }

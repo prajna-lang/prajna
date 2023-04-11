@@ -108,6 +108,37 @@ template ComparableTemplate <RealNumberType> {
     }
 }
 
+template LogicalableTemplate <RealNumberType> {
+    template <Bits>
+    implement operator::And<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func And(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
+            return __and<RealNumberType<Bits>>(this, operand);
+        }
+    }
+
+    template <Bits>
+    implement operator::Or<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Or(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
+            return __or<RealNumberType<Bits>>(this, operand);
+        }
+    }
+
+    template <Bits>
+    implement operator::Xor<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Xor(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
+            return __xor<RealNumberType<Bits>>(this, operand);
+        }
+    }
+
+    template <Bits>
+    implement operator::Not<RealNumberType<Bits>> for RealNumberType<Bits> {
+        func Not()->RealNumberType<Bits> {
+            var _true = (-1).cast<RealNumberType<Bits>>();
+            return __xor<RealNumberType<Bits>>(this, _true);
+        }
+    }
+}
+
 template CastableTemplate2 <Type> {
     implement Type {
         template <TargetType>
@@ -223,7 +254,7 @@ template LogicalableTemplate2 <T> {
 
     implement operator::Not<T> for T {
         func Not()->T {
-            var _true = __cast<i64, T>((0-1));
+            var _true = (-1).cast<T>();
             return __xor<T>(this, _true);
         }
     }
@@ -233,7 +264,7 @@ template NegativeAndPositiveTemplate <RealNumberType> {
     template <Bits>
     implement operator::Negative<RealNumberType<Bits>> for RealNumberType<Bits>{
         func Negative()->RealNumberType<Bits> {
-            var zero = (0).cast<RealNumberType<Bits>>();
+            var zero = 0i64.cast<RealNumberType<Bits>>();
             return zero - this;
         }
     }
@@ -250,7 +281,7 @@ template NegativeAndPositiveTemplate <RealNumberType> {
 template NegativeAndPositiveTemplate2 <Type> {
     implement operator::Negative<Type> for Type{
         func Negative()->Type {
-            var zero = (0).cast<Type>();
+            var zero = 0i64.cast<Type>();
             return zero - this;
         }
     }
@@ -266,11 +297,13 @@ use CastableTemplate<int>;
 use ArithmeticTemplate<int>;
 use ComparableTemplate<int>;
 use NegativeAndPositiveTemplate<int>;
+use LogicalableTemplate<int>;
 
 use CastableTemplate<uint>;
 use ArithmeticTemplate<uint>;
 use ComparableTemplate<uint>;
 use NegativeAndPositiveTemplate<uint>;
+use LogicalableTemplate<uint>;
 
 use CastableTemplate<float>;
 use ArithmeticTemplate<float>;

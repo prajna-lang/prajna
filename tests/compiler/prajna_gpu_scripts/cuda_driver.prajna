@@ -13,6 +13,6 @@ debug::assert(cuda::cuDeviceGetAttribute(&max_thread_per_block, 1i32, 0i32) == 0
 
 gpu::init();
 
-"max thread per block: " + gpu::maxThreadPerBlock(0).tostr() + "\n";
-"multi processors count: " +  gpu::multiProcessorsCount(0).tostr() + "\n";
+"max thread per block: " + gpu::maxThreadPerBlock0i64.tostr() + "\n";
+"multi processors count: " +  gpu::multiProcessorsCount0i64.tostr() + "\n";
 gpu::init();

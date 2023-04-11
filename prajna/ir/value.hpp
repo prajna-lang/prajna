@@ -255,7 +255,7 @@ class ConstantInt : public ConstantRealNumber {
     }
 
    public:
-    int64_t value;
+    uint64_t value;
 };
 
 class ConstantFloat : public Constant {

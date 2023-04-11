@@ -1,15 +1,60 @@
-@test
-func testMain(){
-    var a  = 3;
-    var c = a.cast<f32>();
-}
+
 
 @test
-func testMain2() {
-    var a:uint<8>;
-    var b = a.cast<f32>();
+func testExtremum() {
+  // unsigned int
+  debug::assert(uint<8>::max()   == 255u8);
+  debug::assert(uint<16>::max()  == 65535u16);
+  debug::assert(uint<32>::max()  == 4294967295u32);
+  debug::assert(uint<64>::max()  == 18446744073709551615u64);
 
-    debug::assert(__add<i64>(2, 3) == 5);
+  debug::assert(uint<8>::min()   == 0u8);
+  debug::assert(uint<16>::min()  == 0u16);
+  debug::assert(uint<32>::min()  == 0u32);
+  debug::assert(uint<64>::min()  == 0u64);
 
-    debug::assert(3 + 4 == 7);
+  // signed int
+  debug::assert(int<8>::max()   == 127i8);
+  debug::assert(int<16>::max()  == 32767i16);
+  debug::assert(int<32>::max()  == 2147483647i32);
+  debug::assert(int<64>::max()  == 9223372036854775807i64);
+
+  debug::assert(int<8>::min()   == -128i8);
+  debug::assert(int<16>::min()  == -32768i16);
+  debug::assert(int<32>::min()  == -2147483648i32);
+  debug::assert(int<64>::min()  == -9223372036854775808i64);
 }
+
+
+template IntTest <Type> {
+    @test
+    func testFloatStaticFunction() {
+        Type::max();
+        Type::min();
+    }
+
+    @test
+    func testFloatIUnaryFunction(){
+        {
+          var value = (0).cast<Type>();
+        }
+        {
+           0i64.cast<Type>().tostr();
+        }
+    }
+}
+
+
+use IntTest<int<4>>;
+use IntTest<int<8>>;
+use IntTest<int<16>>;
+use IntTest<int<32>>;
+use IntTest<int<64>>;
+use IntTest<int<128>>;
+
+use IntTest<uint<4>>;
+use IntTest<uint<8>>;
+use IntTest<uint<16>>;
+use IntTest<uint<32>>;
+use IntTest<uint<64>>;
+use IntTest<uint<128>>;

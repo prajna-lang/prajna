@@ -1,0 +1,29 @@
+
+
+template <Bits>
+implement uint<Bits> {
+    @static
+    func min()->uint<Bits>{
+        return 0i64.cast<uint<Bits>>();
+    }
+
+    @static
+    func max()->uint<Bits>{
+        return !uint<Bits>::min();
+    }
+}
+
+
+template <Bits>
+implement int<Bits> {
+    @static
+    func max()->int<Bits>{
+        var re = __shift_right<uint<Bits>>(uint<Bits>::max(), 1i64.cast<uint<Bits>>());
+        return re.cast<int<Bits>>();
+    }
+
+    @static
+    func min()->int<Bits>{
+        return !int<Bits>::max();
+    }
+}

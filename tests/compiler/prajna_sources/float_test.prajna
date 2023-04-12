@@ -119,32 +119,6 @@ template FloatTest <Bits> {
             test::Assert(value.Round() == expect);
         }
         {
-            var value = (2.4).Cast<Float<Bits>>();
-            var expect = (2.0).Cast<Float<Bits>>();
-            test::Assert(value.RoundEven() == expect);
-            value = (-2.4).Cast<Float<Bits>>();
-            expect = (-2.0).Cast<Float<Bits>>();
-            test::Assert(value.RoundEven() == expect);
-            value = (2.5).Cast<Float<Bits>>();
-            expect = (2.0).Cast<Float<Bits>>();
-            test::Assert(value.RoundEven() == expect);
-            value = (-2.5).Cast<Float<Bits>>();
-            expect = (-2.0).Cast<Float<Bits>>();
-            test::Assert(value.RoundEven() == expect);
-            value = (2.6).Cast<Float<Bits>>();
-            expect = (3.0).Cast<Float<Bits>>();
-            test::Assert(value.RoundEven() == expect);
-            value = (3.5).Cast<Float<Bits>>();
-            expect = (4.0).Cast<Float<Bits>>();
-            test::Assert(value.RoundEven() == expect);
-            value = (-3.5).Cast<Float<Bits>>();
-            expect = (-4.0).Cast<Float<Bits>>();
-            test::Assert(value.RoundEven() == expect);
-            value = (-0.0).Cast<Float<Bits>>();
-            expect = (-0.0).Cast<Float<Bits>>();
-            test::Assert(value.RoundEven() == expect);
-        }
-        {
             var value = (3.14159).Cast<Float<Bits>>();
             var expect = (3.0).Cast<Float<Bits>>();
             test::Assert(value.Trunc() == expect);

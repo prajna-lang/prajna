@@ -133,7 +133,8 @@ template LogicalableTemplate <RealNumberType> {
     template <Bits>
     implement operator::Not<RealNumberType<Bits>> for RealNumberType<Bits> {
         func Not()->RealNumberType<Bits> {
-            var _true = (-1).Cast<RealNumberType<Bits>>();
+            // var _true = (-1).Cast<RealNumberType<Bits>>(); 不能这样转, 意味-1是64位的, 转128位就出错了
+            var _true = 0i64.Cast<RealNumberType<Bits>>() - (1i64).Cast<RealNumberType<Bits>>();
             return __xor<RealNumberType<Bits>>(this, _true);
         }
     }
@@ -308,7 +309,7 @@ use NegativeAndPositiveTemplate<Uint>;
 use CastableTemplate<Float>;
 use ArithmeticTemplate<Float>;
 use ComparableTemplate<Float>;
-use LogicalableTemplate<Float>;
+// use LogicalableTemplate<Float>;
 use NegativeAndPositiveTemplate<Float>;
 
 use CastableTemplate2<char>;

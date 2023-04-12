@@ -35,24 +35,21 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
         boost::phoenix::function<SuccessHandler<Iterator>>(success_handler)(_1, _2, _3, _val);
 
     expr.name("expression");
-    expr = logical_expr.alias();
+    expr = equality_expr.alias();
     on_error<fail>(expr, error_handler_function);
     on_success(expr, success_handler_function);
 
-    logical_op = tok.and_ | tok.or_ | tok.xor_;
-    logical_expr.name("expression");
-    logical_expr = equality_expr >> *(logical_op > equality_expr);
-    on_error<fail>(logical_expr, error_handler_function);
-    on_success(logical_expr, success_handler_function);
-
-    // 类型局部的规则写法会导致位置错误和潜在的内存泄露, 故不这样使用
-    // auto logical_expr = equality_expr >> *(logical_op > equality_expr);
-
     equality_op = tok.equal | tok.not_equal;
     equality_expr.name("expression");
-    equality_expr = relational_expr >> *(equality_op > relational_expr);
+    equality_expr = logical_expr >> *(equality_op > logical_expr);
     on_error<fail>(equality_expr, error_handler_function);
     on_success(equality_expr, success_handler_function);
+
+    logical_op = tok.and_ | tok.or_ | tok.xor_;
+    logical_expr.name("expression");
+    logical_expr = relational_expr >> *(logical_op > relational_expr);
+    on_error<fail>(logical_expr, error_handler_function);
+    on_success(logical_expr, success_handler_function);
 
     relational_op = tok.less | tok.less_or_equal | tok.greater | tok.greater_or_equal;
     relational_expr.name("expression");

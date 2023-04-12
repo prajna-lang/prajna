@@ -1,3 +1,11 @@
+implement Serializable for char {
+    func ToString()->String{
+        var re = String::Create(1);
+        re.darray[0] = this;
+        return re;
+    }
+}
+
 template <Bits>
 implement Serializable for Uint<Bits>{
     func ToString()->String{
@@ -8,10 +16,15 @@ implement Serializable for Uint<Bits>{
             return "0";
         }
 
+        // 只有十进制只有一位, 直接返回
+        if (Bits <= 3) {
+            return (this.Cast<char>() + '0').ToString();
+        }
+
         var temp = this;
         var inverse_re = "";
         while (temp != zero){
-            inverse_re.Append((temp % ten +'0'.Cast<Uint<Bits>>()).Cast<char>());
+            inverse_re.Append((temp % ten).Cast<char>() + '0');
             temp = temp / ten;
         }
 
@@ -22,11 +35,7 @@ implement Serializable for Uint<Bits>{
             j = j + 1;
         }
 
-        if (this > zero){
-            return re;
-        } else {
-            return "-" + re;
-        }
+        return re;
     }
 }
 
@@ -107,10 +116,3 @@ implement Serializable for Array<Type, Dim>{
     }
 }
 
-implement Serializable for char {
-    func ToString()->String{
-        var re = String::Create(1);
-        re.darray[0] = this;
-        return re;
-    }
-}

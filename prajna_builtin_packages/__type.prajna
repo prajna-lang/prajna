@@ -302,19 +302,20 @@ use LogicalableTemplate<Int>;
 use CastableTemplate<Uint>;
 use ArithmeticTemplate<Uint>;
 use ComparableTemplate<Uint>;
-use NegativeAndPositiveTemplate<Uint>;
 use LogicalableTemplate<Uint>;
+use NegativeAndPositiveTemplate<Uint>;
 
 use CastableTemplate<Float>;
 use ArithmeticTemplate<Float>;
 use ComparableTemplate<Float>;
+use LogicalableTemplate<Float>;
 use NegativeAndPositiveTemplate<Float>;
 
 use CastableTemplate2<char>;
 use ArithmeticTemplate2<char>;
 use ComparableTemplate2<char>;
 use LogicalableTemplate2<char>;
-// NegativeAndPositiveTemplate2<char>;
+use NegativeAndPositiveTemplate2<char>;
 
 // use CastableTemplate2<bool>
 // use ArithmeticTemplate2<bool>;

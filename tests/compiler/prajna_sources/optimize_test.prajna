@@ -1,10 +1,10 @@
 
-func add(a:i64, b:i64)->i64{
+func Add(a:i64, b:i64)->i64{
     return a + b;
 }
 
 @test
 func TestMain(){
-    var a = add(11, 22);
+    var a = Add(11, 22);
     a.ToString().Print();
 }

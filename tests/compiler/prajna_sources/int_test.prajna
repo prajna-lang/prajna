@@ -1,4 +1,4 @@
-
+use prajna_sources::type_test::TypeTest;
 
 @test
 func TestExtremum() {
@@ -69,3 +69,4 @@ func TestParseInt(){
     +10;
     +001;
 }
+

@@ -12,8 +12,8 @@ template RealNumberTypeTest <Type> {
        test::Assert(1i64.Cast<Type>() + 2i64.Cast<Type>() == 3i64.Cast<Type>());
        test::Assert(3i64.Cast<Type>() - 1i64.Cast<Type>() == 2i64.Cast<Type>());
        test::Assert(1i64.Cast<Type>() * 2i64.Cast<Type>() == 2i64.Cast<Type>());
-       test::Assert(12i64.Cast<Type>() / 3i64.Cast<Type>() == 4i64.Cast<Type>());
-       test::Assert(12i64.Cast<Type>() % 7i64.Cast<Type>() == 5i64.Cast<Type>());
+       test::Assert(6i64.Cast<Type>() / 3i64.Cast<Type>() == 2i64.Cast<Type>());
+       test::Assert(5i64.Cast<Type>() % 2i64.Cast<Type>() == 1i64.Cast<Type>());
     }
 
     @test
@@ -44,17 +44,20 @@ template LogicalTypeTest <Type>{
     }
 }
 
+use RealNumberTypeTest<Int<4>>;
 use RealNumberTypeTest<Int<8>>;
 use RealNumberTypeTest<Int<16>>;
 use RealNumberTypeTest<Int<32>>;
 use RealNumberTypeTest<Int<64>>;
 use RealNumberTypeTest<Int<128>>;
+use RealNumberTypeTest<Uint<4>>;
 use RealNumberTypeTest<Uint<8>>;
 use RealNumberTypeTest<Uint<16>>;
 use RealNumberTypeTest<Uint<32>>;
 use RealNumberTypeTest<Uint<64>>;
 use RealNumberTypeTest<Uint<128>>;
 
+use LogicalTypeTest<Int<4>>;
 use LogicalTypeTest<Int<8>>;
 use LogicalTypeTest<Int<16>>;
 use LogicalTypeTest<Int<32>>;
@@ -71,4 +74,3 @@ use RealNumberTypeTest<Float<32>>;
 use RealNumberTypeTest<Float<64>>;
 // TODO 存在bug , 需要修复
 // use RealNumberTypeTest<Float<128>>; // %存在问题,
-

@@ -185,8 +185,6 @@ Pytorch/Tensorflow项目代码过于庞大混乱, 基础架构和框架耦合在
 
 ![image](docs/images/%E7%8E%84%E9%9D%92%E7%9F%A9%E9%98%B5%E5%85%AC%E4%BC%97%E5%8F%B7.jpg)
 
-作者联系方式
-
 加微信入交流群: zhangzhimin-tju
 
 邮箱: zhangzhimin@matazure.com

@@ -55,7 +55,7 @@ class IrBuilder {
 
     bool isPtrType(std::shared_ptr<ir::Type> ir_type) {
         auto ptr_template_struct =
-            symbolGet<TemplateStruct>(this->getSymbolByPath(true, {"__ptr", "ptr"}));
+            symbolGet<TemplateStruct>(this->getSymbolByPath(true, {"__ptr", "Pointer"}));
         PRAJNA_ASSERT(ptr_template_struct);
         return ir_type->template_struct == ptr_template_struct;
     }
@@ -92,7 +92,7 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::Type> getPtrType(std::shared_ptr<ir::Type> ir_value_type) {
-        auto symbol_ptr = this->getSymbolByPath(true, {"__ptr", "ptr"});
+        auto symbol_ptr = this->getSymbolByPath(true, {"__ptr", "Pointer"});
         auto ptr_template = symbolGet<TemplateStruct>(symbol_ptr);
         PRAJNA_ASSERT(ptr_template);
         std::list<Symbol> symbol_template_arguments = {ir_value_type};
@@ -111,9 +111,9 @@ class IrBuilder {
             auto ir_property_interface = iter_property_interface->second;
             auto ir_property = ir::Property::create();
             ir_property->get_function =
-                ir::getFunctionByName(ir_property_interface->functions, "get");
+                ir::getFunctionByName(ir_property_interface->functions, "Get");
             ir_property->set_function =
-                ir::getFunctionByName(ir_property_interface->functions, "set");
+                ir::getFunctionByName(ir_property_interface->functions, "Set");
             PRAJNA_ASSERT(ir_property->get_function);
             PRAJNA_ASSERT(ir_property->set_function);
             return ir_property;
@@ -134,9 +134,9 @@ class IrBuilder {
             auto ir_linear_index_interface = iter_linear_index_interface->second;
             auto ir_index_property = ir::Property::create();
             ir_index_property->get_function =
-                ir::getFunctionByName(ir_linear_index_interface->functions, "get");
+                ir::getFunctionByName(ir_linear_index_interface->functions, "Get");
             ir_index_property->set_function =
-                ir::getFunctionByName(ir_linear_index_interface->functions, "set");
+                ir::getFunctionByName(ir_linear_index_interface->functions, "Set");
             return ir_index_property;
         } else {
             return nullptr;
@@ -154,9 +154,9 @@ class IrBuilder {
             auto ir_array_index_interface = iter_array_index_interface->second;
             auto ir_index_property = ir::Property::create();
             ir_index_property->get_function =
-                ir::getFunctionByName(ir_array_index_interface->functions, "get");
+                ir::getFunctionByName(ir_array_index_interface->functions, "Get");
             ir_index_property->set_function =
-                ir::getFunctionByName(ir_array_index_interface->functions, "set");
+                ir::getFunctionByName(ir_array_index_interface->functions, "Set");
             return ir_index_property;
         } else {
             return nullptr;
@@ -372,7 +372,7 @@ class IrBuilder {
     void createAndPushBlock() {
         auto ir_block = ir::Block::create();
         if (!block_stack.empty()) {
-            block_stack.top()->pushBack(ir_block);
+            block_stack.top()->PushBack(ir_block);
         }
         block_stack.push(ir_block);
         inserter_iterator = ir_block->values.end();

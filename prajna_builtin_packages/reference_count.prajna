@@ -1,7 +1,7 @@
 @disable_dynamic_dispatch
 interface ReferenceCountable {
-    func registerReferenceCount();
-    func incrementReferenceCount();
-    func decrementReferenceCount();
-    func initialize();
+    func RegisterReferenceCount();
+    func IncrementReferenceCount();
+    func DecrementReferenceCount();
+    func Initialize();
 }

@@ -2,41 +2,41 @@
 
 @test
 func testMain(){
-    var p: ptr<i64>;
-    p.toi64();
+    var p: Pointer<i64>;
+    p._ToInt64();
 
-    debug::assert(p.toi64() == 0i64);
-    // debug::assert(p == ptr<i64>::null());
-    debug::assert(p.isNull());
+    debug::Assert(p._ToInt64() == 0i64);
+    // debug::Assert(p == Pointer<i64>::Null());
+    debug::Assert(p.IsNull());
 
-    p = ptr<i64>::new();
-    debug::assert(!p.isNull());
+    p = Pointer<i64>::New();
+    debug::Assert(!p.IsNull());
 }
 
 @test
 func testLocal() {
-    var p: ptr<i64>;
-    p.toi64();
+    var p: Pointer<i64>;
+    p._ToInt64();
 
-    debug::assert(p.toi64() == 0i64);
-    debug::assert(p.isNull());
+    debug::Assert(p._ToInt64() == 0i64);
+    debug::Assert(p.IsNull());
     {
-       var p1 = ptr<i64>::new();
-       debug::assert(!p1.isNull());
+       var p1 = Pointer<i64>::New();
+       debug::Assert(!p1.IsNull());
        p = p1;
     }
-    debug::assert(!p.isNull());
+    debug::Assert(!p.IsNull());
 }
 
 @test
 func testIndex() {
-    var p = ptr<i64>::allocate(10);
+    var p = Pointer<i64>::Allocate(10);
     p[9] = 10;
-    debug::assert(p[9] == 10);
+    debug::Assert(p[9] == 10);
 }
 
 
 @test
 func testNested() {
-    var p = ptr<ptr<i64>>::new();
+    var p = Pointer<Pointer<i64>>::New();
 }

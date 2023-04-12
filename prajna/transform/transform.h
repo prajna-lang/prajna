@@ -94,8 +94,8 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             utility::getValuesInFunction<ir::KernelFunctionCall>(ir_function);
         for (auto ir_kernel_function_call : ir_kernel_function_calls) {
             auto ir_kernel_function = ir_kernel_function_call->function();
-            auto ir_grid_shape = ir_kernel_function_call->gridShape();
-            auto ir_block_shape = ir_kernel_function_call->blockShape();
+            auto ir_grid_shape = ir_kernel_function_call->GridShape();
+            auto ir_block_shape = ir_kernel_function_call->BlockShape();
             // auto ir_arguments = ir_kernel_function_call->parameters();
             auto ir_block = ir_kernel_function_call->parent_block;
 
@@ -123,7 +123,7 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             auto ir_launch_function = lowering::symbolGet<ir::Value>(
                 lowering::symbolGet<lowering::SymbolTable>(
                     ir_module->symbol_table->rootSymbolTable()->get("gpu"))
-                    ->get("launchKernel"));
+                    ->get("LaunchKernel"));
             PRAJNA_ASSERT(ir_launch_function);
             std::list<std::shared_ptr<ir::Value>> ir_arguments;
             ir_arguments.push_back(ir_builder->create<ir::BitCast>(
@@ -351,15 +351,15 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         std::list<lowering::Symbol> template_arguments = {ir_rank};
         auto ir_layout_type = ir_layout_template_struct->instantiate(template_arguments, ir_module);
         auto ir_layout =
-            ir_builder->create<ir::Call>(ir_layout_type->function_dict["create"],
+            ir_builder->create<ir::Call>(ir_layout_type->function_dict["Create"],
                                          std::list<std::shared_ptr<ir::Value>>{ir_for->last()});
         auto ir_linear_first = ir_builder->getIndexConstant(0);
 
-        auto ir_array_one = ir_builder->create<ir::Call>(ir_array_type->function_dict["one"]);
+        auto ir_array_one = ir_builder->create<ir::Call>(ir_array_type->function_dict["One"]);
         auto ir_array_range = ir_builder->callBinaryOperator(
             ir_builder->callBinaryOperator(ir_array_last, "-", ir_array_first), "-", ir_array_one);
         auto ir_linear_last = ir_builder->callBinaryOperator(
-            ir_builder->callMemberFunction(ir_layout, "arrayIndexToLinearIndex", {ir_array_range}),
+            ir_builder->callMemberFunction(ir_layout, "ArrayIndexToLinearIndex", {ir_array_range}),
             "+", ir_builder->getIndexConstant(1));
 
         ir_for->first(ir_linear_first);
@@ -376,7 +376,7 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         ir_builder->insert(ir_array_index);
         ir_builder->create<ir::WriteVariableLiked>(
             ir_builder->callBinaryOperator(
-                ir_builder->callMemberFunction(ir_layout_variable, "linearIndexToArrayIndex",
+                ir_builder->callMemberFunction(ir_layout_variable, "LinearIndexToArrayIndex",
                                                {ir_linear_index}),
                 "+", ir_array_first_variable),
             ir_array_index);

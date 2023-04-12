@@ -2,12 +2,12 @@
 
 module mod_local {
     func test_local(){
-        "mod_local::test_local".printLine();
+        "mod_local::test_local".PrintLine();
     }
 }
 
 func test() {
-    "test".printLine();
+    "test".PrintLine();
 }
 
 use package_test::mod_b;
@@ -20,5 +20,5 @@ func main() {
     mod_local::test_local();
     mod_a::mod_aa::test();
     mod_c::mod_ca::test();
-    "Hi".print();
+    "Hi".Print();
 }

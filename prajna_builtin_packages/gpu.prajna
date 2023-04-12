@@ -1,106 +1,106 @@
 use ::cuda;
 
-func init(){
+func Init(){
     cuda::cuInit(0i32);
 }
 
-func setDevice(id: i64){
-    cuda::cudaSetDevice(id).tostr();
+func SetDevice(id: i64){
+    cuda::cudaSetDevice(id).ToString();
 }
 
-func maxThreadPerBlock(device: i64)->i64{
+func MaxThreadPerBlock(device: i64)->i64{
     var count: i32;
-    cuda::cuDeviceGetAttribute(&count, 1i32, device.cast<i32>());
-    return count.cast<i64>();
+    cuda::cuDeviceGetAttribute(&count, 1i32, device.Cast<i32>());
+    return count.Cast<i64>();
 }
 
-func multiProcessorsCount(device: i64)->i64{
+func MultiProcessorsCount(device: i64)->i64{
     var count: i32;
-    cuda::cuDeviceGetAttribute(&count, 16i32, device.cast<i32>());
-    return count.cast<i64>();
+    cuda::cuDeviceGetAttribute(&count, 16i32, device.Cast<i32>());
+    return count.Cast<i64>();
 }
 
-func launchKernel(kernel_function_pointer: i8*, gridShape: Array<i64, 3>, blockShape: Array<i64, 3>, kernel_params: i8**)->i64{
-    var re = cuda::cuLaunchKernel(kernel_function_pointer, gridShape[0].cast<u32>(), gridShape[1].cast<u32>(),
-    gridShape[2].cast<u32>(), blockShape[0].cast<u32>(), blockShape[1].cast<u32>(), blockShape[2].cast<u32>(), 0u32, __cast<i64, i8*>(0), kernel_params, __cast<i64, i8**>(0));
-    return re.cast<i64>();
+func LaunchKernel(kernel_function_pointer: i8*, GridShape: Array<i64, 3>, BlockShape: Array<i64, 3>, kernel_params: i8**)->i64{
+    var re = cuda::cuLaunchKernel(kernel_function_pointer, GridShape[0].Cast<u32>(), GridShape[1].Cast<u32>(),
+    GridShape[2].Cast<u32>(), BlockShape[0].Cast<u32>(), BlockShape[1].Cast<u32>(), BlockShape[2].Cast<u32>(), 0u32, __cast<i64, i8*>(0), kernel_params, __cast<i64, i8**>(0));
+    return re.Cast<i64>();
 }
 
-func launchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
+func LaunchKernelForDim1(kernel_function_pointer: i8*, paramters: i8**){
 
 }
 
-template <Type_, Dim_>
+template <Type, Dim>
 struct Tensor {
-    data : Type_*;
-    layout: Layout<Dim_>;
+    data : Type*;
+    layout: Layout<Dim>;
 }
 
-template <Type_, Dim_>
-interface atProperty {
-    func get(idx: Array<i64, Dim_>)->Type_;
-    func set(idx: Array<i64, Dim_>, value: Type_);
+template <Type, Dim>
+interface AtProperty {
+    func Get(idx: Array<i64, Dim>)->Type;
+    func Set(idx: Array<i64, Dim>, value: Type);
 }
 
-template <Type_, Dim_>
-implement atProperty<Type_, Dim_> for Tensor<Type_, Dim_>{
-    func get(idx: Array<i64, Dim_>)->Type_{
-        var offset = this.layout.arrayIndexToLinearIndex(idx);
+template <Type, Dim>
+implement AtProperty<Type, Dim> for Tensor<Type, Dim>{
+    func Get(idx: Array<i64, Dim>)->Type{
+        var offset = this.layout.ArrayIndexToLinearIndex(idx);
         return this.data[offset];
     }
 
-    func set(idx: Array<i64, Dim_>, value: Type_){
-        var offset = this.layout.arrayIndexToLinearIndex(idx);
+    func Set(idx: Array<i64, Dim>, value: Type){
+        var offset = this.layout.ArrayIndexToLinearIndex(idx);
         this.data[offset] = value;
     }
 }
 
-template <Type_, Dim_>
-implement operator::ArrayIndex<Type_, Dim_> for Tensor<Type_, Dim_> {
-    func get(index: Array<i64, Dim_>)->Type_{
-        return this.at(index);
+template <Type, Dim>
+implement operator::ArrayIndex<Type, Dim> for Tensor<Type, Dim> {
+    func Get(index: Array<i64, Dim>)->Type{
+        return this.At(index);
     }
 
-    func set(index: Array<i64, Dim_>, value: Type_){
-        this.at(index) = value;
+    func Set(index: Array<i64, Dim>, value: Type){
+        this.At(index) = value;
     }
 }
 
-template <Type_, Dim_>
-implement Tensor<Type_, Dim_> {
+template <Type, Dim>
+implement Tensor<Type, Dim> {
     @static
-    func create(shape :Array<i64, Dim_>)->Tensor<Type_, Dim_>{
-        var self: Tensor<Type_, Dim_>;
-        self.layout = Layout<Dim_>::create(shape);
+    func Create(shape :Array<i64, Dim>)->Tensor<Type, Dim>{
+        var self: Tensor<Type, Dim>;
+        self.layout = Layout<Dim>::Create(shape);
 
-        var bytes = self.layout.length() * sizeof(Type_);
-        cuda::cuMemAlloc(__bit_cast<Type_** ,i8**>(&self.data), bytes);
-        bindings::registerReferenceCount(__bit_cast<Type_* ,undef*>(self.data));
-        bindings::incrementReferenceCount(__bit_cast<Type_* ,undef*>(self.data));
+        var bytes = self.layout.Length() * sizeof(Type);
+        cuda::cuMemAlloc(__bit_cast<Type** ,i8**>(&self.data), bytes);
+        bindings::RegisterReferenceCount(__bit_cast<Type* ,undef*>(self.data));
+        bindings::IncrementReferenceCount(__bit_cast<Type* ,undef*>(self.data));
 
         return self;
     }
 
-    func toHost()->::Tensor<Type_, Dim_>{
-        var host_tensor = ::Tensor<Type_, Dim_>::create(this.layout.shape);
+    func ToHost()->::Tensor<Type, Dim>{
+        var host_tensor = ::Tensor<Type, Dim>::Create(this.layout.shape);
         var size = 1;
-        for i in 0 to Dim_ {
+        for i in 0 to Dim {
             size = size * this.layout.shape[i];
         }
-        var re =  cuda::cudaMemcpy(__bit_cast<Type_* ,i8*>(host_tensor.data.raw_ptr), __bit_cast<Type_*, i8*>(this.data), size * sizeof(Type_), 2i32);
+        var re =  cuda::cudaMemcpy(__bit_cast<Type* ,i8*>(host_tensor.data.raw_ptr), __bit_cast<Type*, i8*>(this.data), size * sizeof(Type), 2i32);
         return host_tensor;
     }
 }
 
-template <Type_, Dim_>
-implement ::Tensor<Type_, Dim_> {
-    func toGpu()->Tensor<Type_, Dim_>{
-        var cuda_tensor = Tensor<Type_, Dim_>::create(this.layout.shape);
+template <Type, Dim>
+implement ::Tensor<Type, Dim> {
+    func ToGpu()->Tensor<Type, Dim>{
+        var cuda_tensor = Tensor<Type, Dim>::Create(this.layout.shape);
         var size = 1;
-        for i in 0 to Dim_ {
+        for i in 0 to Dim {
             size = size * this.layout.shape[i];
         }
-        var re = cuda::cudaMemcpy(__bit_cast<Type_* ,i8*>(cuda_tensor.data), __bit_cast<Type_*, i8*>(this.data.raw_ptr), size * sizeof(Type_), 1i32);
+        var re = cuda::cudaMemcpy(__bit_cast<Type* ,i8*>(cuda_tensor.data), __bit_cast<Type*, i8*>(this.data.raw_ptr), size * sizeof(Type), 1i32);
         return cuda_tensor;
     }
 }
@@ -158,21 +158,21 @@ func __grid_shape_z()->u32;
 func __warp_size()->u32;
 
 @target("nvptx")
-func threadIndex()->Array<i64, 3> {
-    return [__thread_idx_x().cast<i64>(), __thread_idx_y().cast<i64>(), __thread_idx_z().cast<i64>()];
+func ThreadIndex()->Array<i64, 3> {
+    return [__thread_idx_x().Cast<i64>(), __thread_idx_y().Cast<i64>(), __thread_idx_z().Cast<i64>()];
 }
 
 @target("nvptx")
-func blockShape()->Array<i64, 3> {
-    return [__block_shape_x().cast<i64>(), __block_shape_y().cast<i64>(), __block_shape_z().cast<i64>()];
+func BlockShape()->Array<i64, 3> {
+    return [__block_shape_x().Cast<i64>(), __block_shape_y().Cast<i64>(), __block_shape_z().Cast<i64>()];
 }
 
 @target("nvptx")
-func blockIndex()->Array<i64, 3> {
-    return [__block_idx_x().cast<i64>(), __block_idx_y().cast<i64>(), __block_idx_z().cast<i64>()];
+func BlockIndex()->Array<i64, 3> {
+    return [__block_idx_x().Cast<i64>(), __block_idx_y().Cast<i64>(), __block_idx_z().Cast<i64>()];
 }
 
 @target("nvptx")
-func gridShape()->Array<i64, 3> {
-    return [__grid_shape_x().cast<i64>(), __grid_shape_y().cast<i64>(), __grid_shape_z().cast<i64>()];
+func GridShape()->Array<i64, 3> {
+    return [__grid_shape_x().Cast<i64>(), __grid_shape_y().Cast<i64>(), __grid_shape_z().Cast<i64>()];
 }

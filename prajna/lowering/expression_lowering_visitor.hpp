@@ -105,10 +105,10 @@ class ExpressionLoweringVisitor {
         ast::IdentifierPath ast_identifier_path;
         ast_identifier_path.root_optional = ast::Operator("::");
         ast_identifier_path.identifiers.resize(1);
-        ast_identifier_path.identifiers.front().identifier = "str";
+        ast_identifier_path.identifiers.front().identifier = "String";
         auto string_type = cast<ir::StructType>(
             symbolGet<ir::Type>(this->applyIdentifierPath(ast_identifier_path)));
-        auto ir_string_from_char_pat = string_type->function_dict["from_char_ptr"];
+        auto ir_string_from_char_pat = string_type->function_dict["__from_char_ptr"];
 
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
         return ir_builder->create<ir::Call>(
@@ -642,7 +642,7 @@ class ExpressionLoweringVisitor {
         for (auto iter_ast_identifier = ast_identifier_path.identifiers.begin();
              iter_ast_identifier != ast_identifier_path.identifiers.end(); ++iter_ast_identifier) {
             std::string flag = iter_ast_identifier->identifier;
-            if (flag == "ptr") {
+            if (flag == "Pointer") {
                 int a = 0;
             }
 
@@ -932,7 +932,7 @@ class ExpressionLoweringVisitor {
             //                   ast_dynamic_cast.pointer);
             // }
             if (!ir_builder->isPtrType(ir_operand->type)) {
-                logger->error("not a ptr type", ast_dynamic_cast.pointer);
+                logger->error("not a Pointer type", ast_dynamic_cast.pointer);
             }
             auto symbol_template_arguments = std::any_cast<std::list<lowering::Symbol>>(
                 ir_operand->type->template_arguments_any);
@@ -995,14 +995,14 @@ class ExpressionLoweringVisitor {
             ir_builder->pushBlock(ir_if->trueBlock());
             ir_builder->create<ir::WriteVariableLiked>(
                 ir_builder->create<ir::Call>(
-                    ir_target_ptr_type->function_dict["fromUndef"],
+                    ir_target_ptr_type->function_dict["FromUndef"],
                     std::list<std::shared_ptr<ir::Value>>{
                         ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
                 ir_ptr);
             ir_builder->popBlock();
 
             ir_builder->pushBlock(ir_if->falseBlock());
-            auto ir_nullptr = ir_builder->create<ir::Call>(ir_ptr->type->function_dict["null"],
+            auto ir_nullptr = ir_builder->create<ir::Call>(ir_ptr->type->function_dict["Null"],
                                                            std::list<std::shared_ptr<ir::Value>>{});
             ir_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
             ir_builder->popBlock();

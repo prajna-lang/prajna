@@ -91,15 +91,15 @@ interface Not {
 template <T>
 @disable_dynamic_dispatch
 interface LinearIndex {
-    func get(index: i64)->T;
-    func set(index: i64, value: T);
+    func Get(index: i64)->T;
+    func Set(index: i64, value: T);
 }
 
 template <ValueType, Dim>
 @disable_dynamic_dispatch
 interface ArrayIndex {
-    func get(index: Array<i64, Dim>)->ValueType;
-    func set(index: Array<i64, Dim>, value: ValueType);
+    func Get(index: Array<i64, Dim>)->ValueType;
+    func Set(index: Array<i64, Dim>, value: ValueType);
 }
 
 

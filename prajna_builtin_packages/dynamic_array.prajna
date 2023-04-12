@@ -1,6 +1,6 @@
-func ceilPowerOf2(value: i64)->i64{
+func CeilPowerOf2(value: i64)->i64{
     // TODO
-    debug::assert(value >= 0);
+    debug::Assert(value >= 0);
     var re = 1;
     while (re < value) {
         re = re * 2;
@@ -10,18 +10,18 @@ func ceilPowerOf2(value: i64)->i64{
 
 template <ValueType>
 struct DynamicArray{
-    data: ptr<ValueType>;
+    data: Pointer<ValueType>;
     length: i64;
     capacity: i64;
 }
 
 template <ValueType>
 implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
-    func get(idx: i64)->ValueType{
+    func Get(idx: i64)->ValueType{
         return this.data.raw_ptr[idx];
     }
 
-    func set(idx: i64, value: ValueType){
+    func Set(idx: i64, value: ValueType){
         this.data.raw_ptr[idx] = value;
     }
 }
@@ -29,17 +29,17 @@ implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
 template <ValueType>
 implement DynamicArray<ValueType> {
     @static
-    func create(length: i64)->DynamicArray<ValueType>{
+    func Create(length: i64)->DynamicArray<ValueType>{
         var self: DynamicArray<ValueType>;
         self.length = length;
-        self.capacity = ceilPowerOf2(length);
-        self.data = ptr<ValueType>::allocate(self.capacity);
+        self.capacity = CeilPowerOf2(length);
+        self.data = Pointer<ValueType>::Allocate(self.capacity);
         return self;
     }
 
-    func pushBack(value: ValueType) {
+    func PushBack(value: ValueType) {
         if (this.length + 1 > this.capacity) {
-            var new_self = create(this.length + 1);
+            var new_self = Create(this.length + 1);
             for idx in 0 to this.length {
                 new_self[idx] = this[idx];
             }

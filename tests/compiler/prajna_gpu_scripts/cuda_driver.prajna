@@ -1,18 +1,18 @@
 use gpu;
 
-debug::assert(cuda::cuInit(0i32) == 0i32);
+debug::Assert(cuda::cuInit(0i32) == 0i32);
 var count: i32;
-debug::assert(cuda::cuDeviceGetCount(&count) == 0i32);
-"device count is : " + count.tostr() + "\n";
+debug::Assert(cuda::cuDeviceGetCount(&count) == 0i32);
+"device count is : " + count.ToString() + "\n";
 var mp_count: i32;
-debug::assert(cuda::cuDeviceGetAttribute(&mp_count, 16i32, 0i32) == 0i32);
-"multi processor count is " + mp_count.tostr() + "\n";
+debug::Assert(cuda::cuDeviceGetAttribute(&mp_count, 16i32, 0i32) == 0i32);
+"multi processor count is " + mp_count.ToString() + "\n";
 var max_thread_per_block: i32;
-debug::assert(cuda::cuDeviceGetAttribute(&max_thread_per_block, 1i32, 0i32) == 0i32);
-"max thread: " + max_thread_per_block.tostr() + "\n";
+debug::Assert(cuda::cuDeviceGetAttribute(&max_thread_per_block, 1i32, 0i32) == 0i32);
+"Max thread: " + max_thread_per_block.ToString() + "\n";
 
 gpu::init();
 
-"max thread per block: " + gpu::maxThreadPerBlock0i64.tostr() + "\n";
-"multi processors count: " +  gpu::multiProcessorsCount0i64.tostr() + "\n";
+"Max thread per block: " + gpu::maxThreadPerBlock0i64.ToString() + "\n";
+"multi processors count: " +  gpu::multiProcessorsCount0i64.ToString() + "\n";
 gpu::init();

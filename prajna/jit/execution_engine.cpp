@@ -226,14 +226,14 @@ void ExecutionEngine::bindBuiltinFunction() {
     this->bindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print_c");
     this->bindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input_c");
 
-    this->bindCFunction(reinterpret_cast<void *>(registerReferenceCount),
-                        "::bindings::registerReferenceCount");
-    this->bindCFunction(reinterpret_cast<void *>(getReferenceCount),
-                        "::bindings::getReferenceCount");
-    this->bindCFunction(reinterpret_cast<void *>(incrementReferenceCount),
-                        "::bindings::incrementReferenceCount");
-    this->bindCFunction(reinterpret_cast<void *>(decrementReferenceCount),
-                        "::bindings::decrementReferenceCount");
+    this->bindCFunction(reinterpret_cast<void *>(RegisterReferenceCount),
+                        "::bindings::RegisterReferenceCount");
+    this->bindCFunction(reinterpret_cast<void *>(GetReferenceCount),
+                        "::bindings::GetReferenceCount");
+    this->bindCFunction(reinterpret_cast<void *>(IncrementReferenceCount),
+                        "::bindings::IncrementReferenceCount");
+    this->bindCFunction(reinterpret_cast<void *>(DecrementReferenceCount),
+                        "::bindings::DecrementReferenceCount");
 
 #ifdef PRAJNA_WITH_GPU
     this->bindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");

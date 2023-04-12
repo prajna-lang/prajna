@@ -2,62 +2,62 @@
 
 @test
 func testExtremum() {
-  // unsigned int
-  debug::assert(uint<8>::max()   == 255u8);
-  debug::assert(uint<16>::max()  == 65535u16);
-  debug::assert(uint<32>::max()  == 4294967295u32);
-  debug::assert(uint<64>::max()  == 18446744073709551615u64);
+  // unsigned Int
+  debug::Assert(Uint<8>::Max()   == 255u8);
+  debug::Assert(Uint<16>::Max()  == 65535u16);
+  debug::Assert(Uint<32>::Max()  == 4294967295u32);
+  debug::Assert(Uint<64>::Max()  == 18446744073709551615u64);
 
-  debug::assert(uint<8>::min()   == 0u8);
-  debug::assert(uint<16>::min()  == 0u16);
-  debug::assert(uint<32>::min()  == 0u32);
-  debug::assert(uint<64>::min()  == 0u64);
+  debug::Assert(Uint<8>::Min()   == 0u8);
+  debug::Assert(Uint<16>::Min()  == 0u16);
+  debug::Assert(Uint<32>::Min()  == 0u32);
+  debug::Assert(Uint<64>::Min()  == 0u64);
 
-  // signed int
-  debug::assert(int<8>::max()   == 127i8);
-  debug::assert(int<16>::max()  == 32767i16);
-  debug::assert(int<32>::max()  == 2147483647i32);
-  debug::assert(int<64>::max()  == 9223372036854775807i64);
+  // signed Int
+  debug::Assert(Int<8>::Max()   == 127i8);
+  debug::Assert(Int<16>::Max()  == 32767i16);
+  debug::Assert(Int<32>::Max()  == 2147483647i32);
+  debug::Assert(Int<64>::Max()  == 9223372036854775807i64);
 
-  debug::assert(int<8>::min()   == -128i8);
-  debug::assert(int<16>::min()  == -32768i16);
-  debug::assert(int<32>::min()  == -2147483648i32);
-  debug::assert(int<64>::min()  == -9223372036854775808i64);
+  debug::Assert(Int<8>::Min()   == -128i8);
+  debug::Assert(Int<16>::Min()  == -32768i16);
+  debug::Assert(Int<32>::Min()  == -2147483648i32);
+  debug::Assert(Int<64>::Min()  == -9223372036854775808i64);
 }
 
 
 template IntTest <Type> {
     @test
     func testFloatStaticFunction() {
-        Type::max();
-        Type::min();
+        Type::Max();
+        Type::Min();
     }
 
     @test
     func testFloatIUnaryFunction(){
         {
-          var value = (0).cast<Type>();
+          var value = (0).Cast<Type>();
         }
         {
-           0i64.cast<Type>().tostr();
+           0i64.Cast<Type>().ToString();
         }
     }
 }
 
 
-use IntTest<int<4>>;
-use IntTest<int<8>>;
-use IntTest<int<16>>;
-use IntTest<int<32>>;
-use IntTest<int<64>>;
-use IntTest<int<128>>;
+use IntTest<Int<4>>;
+use IntTest<Int<8>>;
+use IntTest<Int<16>>;
+use IntTest<Int<32>>;
+use IntTest<Int<64>>;
+use IntTest<Int<128>>;
 
-use IntTest<uint<4>>;
-use IntTest<uint<8>>;
-use IntTest<uint<16>>;
-use IntTest<uint<32>>;
-use IntTest<uint<64>>;
-use IntTest<uint<128>>;
+use IntTest<Uint<4>>;
+use IntTest<Uint<8>>;
+use IntTest<Uint<16>>;
+use IntTest<Uint<32>>;
+use IntTest<Uint<64>>;
+use IntTest<Uint<128>>;
 
 @test
 func testParseInt(){

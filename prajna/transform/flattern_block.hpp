@@ -46,9 +46,9 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
 
             auto ir_end_merge_label = ir::Label::create();
             auto ir_true_branch = ir::JumpBranch::create(ir_end_merge_label);
-            ir_if->trueBlock()->pushBack(ir_true_branch);
+            ir_if->trueBlock()->PushBack(ir_true_branch);
             auto ir_false_branch = ir::JumpBranch::create(ir_end_merge_label);
-            ir_if->falseBlock()->pushBack(ir_false_branch);
+            ir_if->falseBlock()->PushBack(ir_false_branch);
 
             ir_block->insert(iter, ir_condition_branch);
             for (auto e : ir_if->trueBlock()->values) {
@@ -76,11 +76,11 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             // auto ir_label_after_loop = ir::Label::create();
             auto ir_condition_branch = ir::ConditionBranch::create(
                 ir_while->condition(), ir_label_loop, ir_while->afterLabel());
-            ir_while->conditionBlock()->pushBack(ir_condition_branch);
+            ir_while->conditionBlock()->PushBack(ir_condition_branch);
 
             auto ir_label_condition_entry = ir_while->beforeLabel();
             auto ir_jump_branch = ir::JumpBranch::create(ir_label_condition_entry);
-            ir_while->loopBlock()->pushBack(ir_jump_branch);
+            ir_while->loopBlock()->PushBack(ir_jump_branch);
 
             //在while开始的地方, 需要jump到conditionBlock(),
             auto ir_concat_branch = ir::JumpBranch::create(ir_label_condition_entry);
@@ -148,7 +148,7 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_builder->popBlock();
 
             auto ir_jump_branch = ir::JumpBranch::create(ir_label_condition_entry);
-            ir_for->loopBlock()->pushBack(ir_jump_branch);
+            ir_for->loopBlock()->PushBack(ir_jump_branch);
             for (auto e : ir_for->loopBlock()->values) {
                 ir_block->insert(iter, e);
             }
@@ -182,7 +182,7 @@ inline std::list<std::shared_ptr<ir::Block>> splitBlock(std::shared_ptr<ir::Bloc
                 inst_with_idx.instruction->operand(inst_with_idx.operand_index, blocks.back());
             }
         } else {
-            blocks.back()->pushBack(ir_value);
+            blocks.back()->PushBack(ir_value);
         }
     }
 

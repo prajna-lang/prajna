@@ -1,13 +1,13 @@
 module test1{
     func hello1(){
-        "Hello1\n".print();
+        "Hello1\n".Print();
     }
 }
 
 module test1::test2{
     func hello2(){
         hello1();
-        "Hello2\n".print();
+        "Hello2\n".Print();
     }
 }
 

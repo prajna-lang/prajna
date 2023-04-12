@@ -1,19 +1,19 @@
 @test
 func testTensor(){
     var shape = [10, 20];
-    var ts = Tensor<i64, 2>::create(shape);
+    var ts = Tensor<i64, 2>::Create(shape);
     var bs = ts;
 
-    ts.at([1, 2]) = 2;
-    debug::assert(ts.at([1,2]) == 2);
-    debug::assert(bs.at([1,2]) == ts.at([1,2]));
-    // debug::assert(ts.data.raw_ptr[22] == 2);
+    ts.At([1, 2]) = 2;
+    debug::Assert(ts.At([1,2]) == 2);
+    debug::Assert(bs.At([1,2]) == ts.At([1,2]));
+    // debug::Assert(ts.data.raw_ptr[22] == 2);
 
-    var ts1 = Tensor<f32, 2>::create(shape);
-    ts1.at([1,2]) = 3.1415;
-    debug::assert(ts1[1,2] == 3.1415);
+    var ts1 = Tensor<f32, 2>::Create(shape);
+    ts1.At([1,2]) = 3.1415;
+    debug::Assert(ts1[1,2] == 3.1415);
 
-    var ts0 = Tensor<i64, 1>::create([2]);
+    var ts0 = Tensor<i64, 1>::Create([2]);
     ts0[0] = 1;
 
 }

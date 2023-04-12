@@ -16,7 +16,7 @@ class Array {
     template <typename... Values_>
     Array(Values_... values) : data{values...} {}
 
-    i64 length() const { return Dim_; }
+    i64 Length() const { return Dim_; }
 
     const Type_& operator[](i64 offset) const { return data[offset]; }
     Type_& operator[](i64 offset) { return data[offset]; }
@@ -41,7 +41,7 @@ class Layout {
         return self;
     }
 
-    Array<i64, Dim_> linearIndexToArrayIndex(i64 offset) {
+    Array<i64, Dim_> LinearIndexToArrayIndex(i64 offset) {
         Array<i64, Dim_> array_idx;
         auto remain = offset;
         i64 i = 0;
@@ -54,7 +54,7 @@ class Layout {
         return array_idx;
     }
 
-    i64 arrayIndexToLinearIndex(Array<i64, Dim_> idx) {
+    i64 ArrayIndexToLinearIndex(Array<i64, Dim_> idx) {
         i64 offset = 0;
         i64 i = Dim_ - 1;
         while (i >= 0) {
@@ -64,7 +64,7 @@ class Layout {
         return offset;
     }
 
-    i64 length() { return this->shape[0] * this->stride[0]; }
+    i64 Length() { return this->shape[0] * this->stride[0]; }
 };
 
 template <typename Type_, i64 Dim_>
@@ -81,35 +81,35 @@ class Tensor {
         Tensor<Type_, Dim_> self;
         self.layout = Layout<Dim_>::create(shape);
 
-        auto bytes = self.layout.length() * sizeof(Type_);
+        auto bytes = self.layout.Length() * sizeof(Type_);
         self.data = reinterpret_cast<Type_*>(malloc(bytes));
 
-        registerReferenceCount(self.data);
-        incrementReferenceCount(self.data);
+        RegisterReferenceCount(self.data);
+        IncrementReferenceCount(self.data);
 
         return self;
     }
 
     Tensor(const Tensor& ts) : data(ts.data), layout(ts.layout) {
-        incrementReferenceCount(this->data);
+        IncrementReferenceCount(this->data);
     }
 
     ~Tensor() {
-        decrementReferenceCount(this->data);
+        DecrementReferenceCount(this->data);
         if (this->data) {
-            if (getReferenceCount(this->data) == 0) {
+            if (GetReferenceCount(this->data) == 0) {
                 free(this->data);
             }
         }
     }
 
     const Type_& at(Array<i64, Dim_> idx) const {
-        i64 offset = this->layout.arrayIndexToLinearIndex(idx);
+        i64 offset = this->layout.ArrayIndexToLinearIndex(idx);
         return this->data[offset];
     }
 
     Type_& at(Array<i64, Dim_> idx) {
-        i64 offset = this->layout.arrayIndexToLinearIndex(idx);
+        i64 offset = this->layout.ArrayIndexToLinearIndex(idx);
         return this->data[offset];
     }
 

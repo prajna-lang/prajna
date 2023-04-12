@@ -105,10 +105,10 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
 
     {
         std::string code =
-            "var thread_idx = gpu::threadIndex();"
-            "var block_idx = gpu::blockIndex();"
-            "var block_shape = gpu::blockShape();"
-            "var grid_shape = gpu::gridShape();"
+            "var thread_idx = gpu::ThreadIndex();"
+            "var block_idx = gpu::BlockIndex();"
+            "var block_shape = gpu::BlockShape();"
+            "var grid_shape = gpu::GridShape();"
             "i = first + thread_idx[0] + block_idx[0] * block_shape[0];"
             "while (i < last){"
             "   i = i + block_shape[0] * grid_shape[0];"
@@ -175,10 +175,10 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
             lowering::symbolGet<lowering::SymbolTable>(ir_module->symbol_table->get("gpu"));
         PRAJNA_ASSERT(symbol_table_gpu);
         auto ir_max_thread_per_block_function =
-            lowering::symbolGet<ir::Value>(symbol_table_gpu->get("maxThreadPerBlock"));
+            lowering::symbolGet<ir::Value>(symbol_table_gpu->get("MaxThreadPerBlock"));
         PRAJNA_ASSERT(ir_max_thread_per_block_function);
         auto ir_multi_processor_count_function =
-            lowering::symbolGet<ir::Value>(symbol_table_gpu->get("multiProcessorsCount"));
+            lowering::symbolGet<ir::Value>(symbol_table_gpu->get("MultiProcessorsCount"));
         PRAJNA_ASSERT(ir_multi_processor_count_function);
 
         auto ir_zero = ir_builder->getIndexConstant(0);
@@ -208,7 +208,7 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
                 std::shared_ptr<ir::Variable> ir_captured_variable) -> std::shared_ptr<ir::Value> {
                 if (utility::isHostTensorType(ir_captured_variable->type, ir_module)) {
                     auto ir_gpu_tensor =
-                        ir_builder->callMemberFunction(ir_captured_variable, "toGpu", {});
+                        ir_builder->callMemberFunction(ir_captured_variable, "ToGpu", {});
                     gpu_host_tensor_dict[ir_gpu_tensor] = ir_captured_variable;
                     return ir_gpu_tensor;
                 } else {
@@ -220,7 +220,7 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
                                                    ir_block_shape, ir_arguments);
         for (auto [ir_gpu_tensor, ir_host_tensor_variable] : gpu_host_tensor_dict) {
             PRAJNA_ASSERT(utility::isGpuTensorType(ir_gpu_tensor->type, ir_module));
-            auto ir_host_tensor = ir_builder->callMemberFunction(ir_gpu_tensor, "toHost", {});
+            auto ir_host_tensor = ir_builder->callMemberFunction(ir_gpu_tensor, "ToHost", {});
             ir_builder->create<ir::WriteVariableLiked>(ir_host_tensor, ir_host_tensor_variable);
         }
 

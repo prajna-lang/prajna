@@ -1,5 +1,5 @@
 @test
 func testMain(){
     var hello_world =  "Hello World!\n";
-    hello_world.print();
+    hello_world.Print();
 }

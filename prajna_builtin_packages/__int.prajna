@@ -1,29 +1,29 @@
 
 
 template <Bits>
-implement uint<Bits> {
+implement Uint<Bits> {
     @static
-    func min()->uint<Bits>{
-        return 0i64.cast<uint<Bits>>();
+    func Min()->Uint<Bits>{
+        return 0i64.Cast<Uint<Bits>>();
     }
 
     @static
-    func max()->uint<Bits>{
-        return !uint<Bits>::min();
+    func Max()->Uint<Bits>{
+        return !Uint<Bits>::Min();
     }
 }
 
 
 template <Bits>
-implement int<Bits> {
+implement Int<Bits> {
     @static
-    func max()->int<Bits>{
-        var re = __shift_right<uint<Bits>>(uint<Bits>::max(), 1i64.cast<uint<Bits>>());
-        return re.cast<int<Bits>>();
+    func Max()->Int<Bits>{
+        var re = __shift_right<Uint<Bits>>(Uint<Bits>::Max(), 1i64.Cast<Uint<Bits>>());
+        return re.Cast<Int<Bits>>();
     }
 
     @static
-    func min()->int<Bits>{
-        return !int<Bits>::max();
+    func Min()->Int<Bits>{
+        return !Int<Bits>::Max();
     }
 }

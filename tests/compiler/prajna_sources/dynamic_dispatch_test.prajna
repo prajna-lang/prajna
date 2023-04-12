@@ -1,9 +1,9 @@
 func sayHi(){
-    "Hi\n".print();
+    "Hi\n".Print();
 }
 
 func sayHello(){
-    "Hello\n".print();
+    "Hello\n".Print();
 }
 
 

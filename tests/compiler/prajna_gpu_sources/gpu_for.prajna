@@ -3,22 +3,22 @@ use gpu;
 @test
 func testGpuFor2d(){
     var shape = [10, 20];
-    var tensor0 = Tensor<i64, 2>::create(shape);
-    var tensor1 = Tensor<i64, 2>::create(shape);
-    var tensor2 = Tensor<i64, 2>::create(shape);
+    var tensor0 = Tensor<i64, 2>::Create(shape);
+    var tensor1 = Tensor<i64, 2>::Create(shape);
+    var tensor2 = Tensor<i64, 2>::Create(shape);
 
     for idx in [0, 0] to shape {
-        tensor0.at(idx) = 1;
-        tensor1.at(idx) = 2;
+        tensor0.At(idx) = 1;
+        tensor1.At(idx) = 2;
     }
 
     @gpu // 标注后, 会自动拷贝数据到gpu上
     for idx in [0, 0] to shape{
-        tensor2.at(idx) = tensor0.at(idx) + tensor1.at(idx);
+        tensor2.At(idx) = tensor0.At(idx) + tensor1.At(idx);
     }
 
     // 运行完后, gpu的数据会自动拷贝的主机上
     for idx in [0, 0] to shape{
-        debug::assert(tensor2.at(idx) == 3);
+        debug::Assert(tensor2.At(idx) == 3);
     }
 }

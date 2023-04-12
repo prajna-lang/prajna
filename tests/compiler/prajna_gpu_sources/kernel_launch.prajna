@@ -3,29 +3,29 @@ use gpu;
 @kernel
 @target("nvptx")
 func myKernel(tensor: gpu::Tensor<i64, 1>, value: i64){
-    var idx = gpu::threadIndex()[0];
+    var idx = gpu::ThreadIndex()[0];
     tensor[idx] = value;
 }
 
 @test
 func testKernel(){
-    var gridShape = [1,1,1];
-    var blockShape = [1,1,1];
+    var GridShape = [1,1,1];
+    var BlockShape = [1,1,1];
 
     var shape = [1];
-    var host_tensor = Tensor<i64, 1>::create(shape);
-    var gpu_tensor = host_tensor.toGpu();
+    var host_tensor = Tensor<i64, 1>::Create(shape);
+    var gpu_tensor = host_tensor.ToGpu();
     var parameters: i8*[2];
     parameters[0] = __bit_cast<gpu::Tensor<i64, 1>* ,i8*>(&gpu_tensor);
     var value = 1023;
     parameters[1] = __bit_cast<i64* ,i8*>(&value);
     var parameters_ptr = &parameters[0];
 
-    var re = gpu::launchKernel(__bit_cast<func{(gpu::Tensor<i64, 1>, i64)->void}* ,i8*>(myKernel), gridShape, blockShape, parameters_ptr);
-    debug::assert(re == 0);
+    var re = gpu::LaunchKernel(__bit_cast<func{(gpu::Tensor<i64, 1>, i64)->void}* ,i8*>(myKernel), GridShape, BlockShape, parameters_ptr);
+    debug::Assert(re == 0);
 
-    host_tensor = gpu_tensor.toHost();
-    "\ndata[0] is: ".print();
-    host_tensor.at([0]).tostr().print();
-    "\n".print();
+    host_tensor = gpu_tensor.ToHost();
+    "\ndata[0] is: ".Print();
+    host_tensor.At([0]).ToString().Print();
+    "\n".Print();
 }

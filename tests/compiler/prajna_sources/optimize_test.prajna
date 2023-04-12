@@ -6,5 +6,5 @@ func add(a:i64, b:i64)->i64{
 @test
 func testMain(){
     var a = add(11, 22);
-    a.tostr().print();
+    a.ToString().Print();
 }

@@ -1,16 +1,16 @@
-template <Dim_>
+template <Dim>
 struct Layout{
-    shape: Array<i64, Dim_>;
-    stride: Array<i64, Dim_>;
+    shape: Array<i64, Dim>;
+    stride: Array<i64, Dim>;
 }
 
-template <Dim_>
-implement Layout<Dim_> {
+template <Dim>
+implement Layout<Dim> {
     @static
-    func create(shape: Array<i64, Dim_>)->Layout<Dim_>{
-        var self: Layout<Dim_>;
+    func Create(shape: Array<i64, Dim>)->Layout<Dim>{
+        var self: Layout<Dim>;
         self.shape = shape;
-        var i = Dim_ - 1;
+        var i = Dim - 1;
         self.stride[i] = 1;
         while (i > 0){
             i = i - 1;
@@ -19,11 +19,11 @@ implement Layout<Dim_> {
         return self;
     }
 
-    func linearIndexToArrayIndex(offset: i64)->Array<i64, Dim_>{
-        var array_idx: Array<i64, Dim_>;
+    func LinearIndexToArrayIndex(offset: i64)->Array<i64, Dim>{
+        var array_idx: Array<i64, Dim>;
         var remain = offset;
         var i = 0;
-        while (i < Dim_){
+        while (i < Dim){
             array_idx[i] = remain / this.stride[i];
             remain = remain % this.stride[i];
             i = i + 1;
@@ -32,9 +32,9 @@ implement Layout<Dim_> {
         return array_idx;
     }
 
-    func arrayIndexToLinearIndex(idx: Array<i64, Dim_>)->i64{
+    func ArrayIndexToLinearIndex(idx: Array<i64, Dim>)->i64{
         var offset = 0;
-        var i =  Dim_ - 1;
+        var i =  Dim - 1;
         while (i >= 0){
             offset = offset + idx[i] * this.stride[i];
             i = i - 1;
@@ -42,56 +42,56 @@ implement Layout<Dim_> {
         return offset;
     }
 
-    func length()->i64{
+    func Length()->i64{
         return this.shape[0] * this.stride[0];
     }
 
 }
 
-template <Type_, Dim_>
+template <Type, Dim>
 struct Tensor {
-    data : ptr<Type_>;
-    layout: Layout<Dim_>;
+    data : Pointer<Type>;
+    layout: Layout<Dim>;
 }
 
-template <Type_, Dim_>
-interface atProperty {
-    func get(idx: Array<i64, Dim_>)->Type_;
-    func set(idx: Array<i64, Dim_>, value: Type_);
+template <Type, Dim>
+interface AtProperty {
+    func Get(idx: Array<i64, Dim>)->Type;
+    func Set(idx: Array<i64, Dim>, value: Type);
 }
 
-template <Type_, Dim_>
-implement atProperty<Type_, Dim_> for Tensor<Type_, Dim_>{
-    func get(idx: Array<i64, Dim_>)->Type_{
-        var offset = this.layout.arrayIndexToLinearIndex(idx);
+template <Type, Dim>
+implement AtProperty<Type, Dim> for Tensor<Type, Dim>{
+    func Get(idx: Array<i64, Dim>)->Type{
+        var offset = this.layout.ArrayIndexToLinearIndex(idx);
         return this.data.raw_ptr[offset];
     }
 
-    func set(idx: Array<i64, Dim_>, value: Type_){
-        var offset = this.layout.arrayIndexToLinearIndex(idx);
+    func Set(idx: Array<i64, Dim>, value: Type){
+        var offset = this.layout.ArrayIndexToLinearIndex(idx);
         this.data.raw_ptr[offset] = value;
     }
 }
 
-template <Type_, Dim_>
-implement Tensor<Type_, Dim_> {
+template <Type, Dim>
+implement Tensor<Type, Dim> {
     @static
-    func create(shape :Array<i64, Dim_>)->Tensor<Type_, Dim_>{
-        var self: Tensor<Type_, Dim_>;
-        self.layout = Layout<Dim_>::create(shape);
+    func Create(shape :Array<i64, Dim>)->Tensor<Type, Dim>{
+        var self: Tensor<Type, Dim>;
+        self.layout = Layout<Dim>::Create(shape);
 
-        self.data = ptr<Type_>::allocate(self.layout.length());
+        self.data = Pointer<Type>::Allocate(self.layout.Length());
         return self;
     }
 }
 
-template <Type_, Dim_>
-implement operator::ArrayIndex<Type_, Dim_> for Tensor<Type_, Dim_> {
-    func get(idx: Array<i64, Dim_>)->Type_{
-        return this.at(idx);
+template <Type, Dim>
+implement operator::ArrayIndex<Type, Dim> for Tensor<Type, Dim> {
+    func Get(idx: Array<i64, Dim>)->Type{
+        return this.At(idx);
     }
 
-    func set(idx: Array<i64, Dim_>, value: Type_){
-        this.at(idx) = value;
+    func Set(idx: Array<i64, Dim>, value: Type){
+        this.At(idx) = value;
     }
 }

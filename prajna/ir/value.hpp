@@ -425,7 +425,7 @@ class Block : public Value {
         this->values.push_front(ir_value);
     }
 
-    void pushBack(std::shared_ptr<Value> ir_value) {
+    void PushBack(std::shared_ptr<Value> ir_value) {
         ir_value->parent_block = cast<Block>(this->shared_from_this());
         this->values.push_back(ir_value);
     }
@@ -1631,8 +1631,8 @@ class KernelFunctionCall : public Instruction {
         auto ir_function_type = ir_function_value->getFunctionType();
         PRAJNA_ASSERT(ir_function_type);
         // TODO 后期需要坐下处理, 需要是kernel函数合法, 禁止在host函数里对device函数进行赋值等操作.
-        self->gridShape(ir_grid_shape);
-        self->blockShape(ir_block_shape);
+        self->GridShape(ir_grid_shape);
+        self->BlockShape(ir_block_shape);
 
         auto iter_parameter_type = ir_function_type->parameter_types.begin();
         size_t i = 0;
@@ -1650,11 +1650,11 @@ class KernelFunctionCall : public Instruction {
     std::shared_ptr<Value> function() { return this->operand(0); }
     void function(std::shared_ptr<Value> ir_value) { this->operand(0, ir_value); }
 
-    std::shared_ptr<Value> gridShape() { return this->operand(1); }
-    void gridShape(std::shared_ptr<Value> ir_grid_shape) { this->operand(1, ir_grid_shape); }
+    std::shared_ptr<Value> GridShape() { return this->operand(1); }
+    void GridShape(std::shared_ptr<Value> ir_grid_shape) { this->operand(1, ir_grid_shape); }
 
-    std::shared_ptr<Value> blockShape() { return this->operand(2); }
-    void blockShape(std::shared_ptr<Value> ir_block_shape) { this->operand(2, ir_block_shape); }
+    std::shared_ptr<Value> BlockShape() { return this->operand(2); }
+    void BlockShape(std::shared_ptr<Value> ir_block_shape) { this->operand(2, ir_block_shape); }
 
     size_t argumentSize() { return this->operandSize() - 3; }
 
@@ -1724,7 +1724,7 @@ inline std::shared_ptr<Value> Block::clone(std::shared_ptr<FunctionCloner> funct
             function_cloner->value_dict[ir_value] = ir_new_value;
         }
 
-        ir_new->pushBack(function_cloner->value_dict[ir_value]);
+        ir_new->PushBack(function_cloner->value_dict[ir_value]);
     }
 
     ir_new->parent_function = cast<Function>(function_cloner->value_dict[this->parent_function]);

@@ -2,10 +2,10 @@
 
 @test
 func testMain(){
-    var a = ptr<i64>::new();
-    var b = ptr<f32>::new();
+    var a = Pointer<i64>::New();
+    var b = Pointer<f32>::New();
 
     var t = dynamic_cast<Serializable>(a);
-    t.tostr();
+    t.ToString();
 
 }

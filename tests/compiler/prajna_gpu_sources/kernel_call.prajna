@@ -3,7 +3,7 @@ use gpu;
 @kernel
 @target("nvptx")
 func myKernel(tensor: gpu::Tensor<i64, 1>){
-    var thread_idx = gpu::threadIndex();
+    var thread_idx = gpu::ThreadIndex();
     var thread_idx_x = thread_idx[0];
     tensor.data[thread_idx_x] = thread_idx_x;
 }
@@ -11,16 +11,16 @@ func myKernel(tensor: gpu::Tensor<i64, 1>){
 @test
 func testKernel(){
     var size = 13;
-    var gridShape = [1,1,1];
-    var blockShape = [size, 1, 1];
+    var GridShape = [1,1,1];
+    var BlockShape = [size, 1, 1];
 
     var shape = [size];
-    var gpu_tensor = gpu::Tensor<i64, 1>::create(shape);
+    var gpu_tensor = gpu::Tensor<i64, 1>::Create(shape);
 
-    myKernel<<<gridShape, blockShape>>>(gpu_tensor);
+    myKernel<<<GridShape, BlockShape>>>(gpu_tensor);
 
-    var host_tensor = gpu_tensor.toHost();
+    var host_tensor = gpu_tensor.ToHost();
     for i in 0 to size{
-        debug::assert(host_tensor[i] == i);
+        debug::Assert(host_tensor[i] == i);
     }
 }

@@ -1,9 +1,9 @@
-use __ptr::ptr;
+use __ptr::Pointer;
 
 template <ValueType>
 struct Node {
     // TODO(zhangzhimin) nested struct 内存释放规则存在问题, 需要修复
-    next: ptr<Node<ValueType>>;
-    pre: ptr<Node<ValueType>>;
+    next: Pointer<Node<ValueType>>;
+    pre: Pointer<Node<ValueType>>;
     value: ValueType;
 }

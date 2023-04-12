@@ -1,7 +1,7 @@
 
 template <T>
-func print(value: T) {
-    value.tostr().print();
+func Print(value: T) {
+    value.ToString().Print();
 }
 
 struct Tmp{
@@ -11,7 +11,7 @@ struct Tmp{
 implement Tmp {
 
     template <T>
-    func create()->T {
+    func Create()->T {
         var tmp: T;
         return tmp;
     }
@@ -29,13 +29,13 @@ implement Tmp {
 
 @test
 func testMain() {
-    print(3.1415);
-    "\n".print();
-    print(3);
-    print<i64>(4);
+    Print(3.1415);
+    "\n".Print();
+    Print(3);
+    Print<i64>(4);
 
     var tmp: Tmp;
-    tmp.create<f32>();
+    tmp.Create<f32>();
     Tmp::create2<f32>();
-    // Tmp::create<f32>();
+    // Tmp::Create<f32>();
 }

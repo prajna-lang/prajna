@@ -43,7 +43,7 @@ func testFor(){
             i = i + 1;
         }
 
-        debug::assert(tmp == 4950);
+        debug::Assert(tmp == 4950);
     }
     {
         var j =  0;
@@ -53,7 +53,7 @@ func testFor(){
             }
             j  = j + 1;
         }
-        debug::assert(j == 2);
+        debug::Assert(j == 2);
     }
     {
         var i =  0;
@@ -64,14 +64,14 @@ func testFor(){
             }
             j = j + 1;
         }
-        debug::assert(j == 9);
+        debug::Assert(j == 9);
     }
 
     {
         var first = [0, 0];
         var last = [10, 10];
         for idx in first to last {
-            idx.tostr().print();
+            idx.ToString().Print();
         }
     }
 }
@@ -105,15 +105,15 @@ func testContinue()->i64{
 
 @test
 func testControlFlow(){
-    debug::assert(testIfElse(true) == 4);
-    debug::assert(testIfElse(false) == 5);
+    debug::Assert(testIfElse(true) == 4);
+    debug::Assert(testIfElse(false) == 5);
 
-    debug::assert(testWhile(0) == 0);
-    debug::assert(testWhile(5) == 6);
-    debug::assert(testWhile(10) == 20);
+    debug::Assert(testWhile(0) == 0);
+    debug::Assert(testWhile(5) == 6);
+    debug::Assert(testWhile(10) == 20);
 
-    debug::assert(testBreak() == 2);
-    debug::assert(testContinue() == 9);
+    debug::Assert(testBreak() == 2);
+    debug::Assert(testContinue() == 9);
 
     testFor();
 

@@ -12,11 +12,11 @@ func callRecursively(i: i64)->i64{
 
 // 若没有返回值类型, 则表示为void
 func printHi(){
-    "Hi\n".print();
+    "Hi\n".Print();
 }
 
 func printHello(){
-    "Hello\n".print();
+    "Hello\n".Print();
 }
 
 func call(fun: func{()->void}*) {
@@ -25,15 +25,15 @@ func call(fun: func{()->void}*) {
 
 @test // @test表示函数的注解, 会被当做测试函数而执行
 func testFunction(){
-    debug::assert(add(3, 7) == 10);
+    debug::Assert(add(3, 7) == 10);
     printHi();
     // fun_address表示存储printHi函数的变量, 其类型是函数"指针"类型,
     var fun_address = printHi;
     fun_address = printHello;
     fun_address();
 
-    debug::assert(callRecursively(4) == 0);
-    debug::assert(callRecursively(5) == 0);
+    debug::Assert(callRecursively(4) == 0);
+    debug::Assert(callRecursively(5) == 0);
 
 
     call(printHi);

@@ -1,160 +1,160 @@
 template <T>
 func assertNear(value0: T, value1: f32, eps: f32){
-    debug::assert((value0 - value1.cast<T>()).abs() < eps.cast<T>());
+    debug::Assert((value0 - value1.Cast<T>()).Abs() < eps.Cast<T>());
 }
 
 template FloatTest <Bits> {
     @test
     func testFloatStaticFunction() {
-        float<Bits>::largest();
-        float<Bits>::smallest();
-        float<Bits>::nan();
-        float<Bits>::inf();
+        Float<Bits>::Largest();
+        Float<Bits>::Smallest();
+        Float<Bits>::NaN();
+        Float<Bits>::Inf();
     }
 
     @test
     func testFloatIUnaryFunction(){
         {
-            var value = (0.0).cast<float<Bits>>();
-            var expect = (0.0).cast<float<Bits>>();
-            test::assert(value == expect);
-            value = (-0.0).cast<float<Bits>>();
-            expect = (0.0).cast<float<Bits>>();
-            test::assert(value == expect);
+            var value = (0.0).Cast<Float<Bits>>();
+            var expect = (0.0).Cast<Float<Bits>>();
+            test::Assert(value == expect);
+            value = (-0.0).Cast<Float<Bits>>();
+            expect = (0.0).Cast<Float<Bits>>();
+            test::Assert(value == expect);
         }
         {
-            var value = (-1.0).cast<float<Bits>>();
-            var expect = 1.0.cast<float<Bits>>();
-            test::assert(value.abs() == expect);
+            var value = (-1.0).Cast<Float<Bits>>();
+            var expect = 1.0.Cast<Float<Bits>>();
+            test::Assert(value.Abs() == expect);
         }
         {
-            var pi = (3.1415926).cast<float<Bits>>();
-            assertNear<float<Bits>>(pi.sin(), 0.0, 0.001);
-            pi = (3.1415926/2.0).cast<float<Bits>>();
-            assertNear<float<Bits>>(pi.sin(), 1.0, 0.001);
-            pi = (2.0*3.1415926).cast<float<Bits>>();
-            assertNear<float<Bits>>(pi.sin(), 0.0, 0.01);
-            var value = (0.5).cast<float<Bits>>();
-            assertNear<float<Bits>>(value.sin(), 0.47943, 0.001);
+            var pi = (3.1415926).Cast<Float<Bits>>();
+            assertNear<Float<Bits>>(pi.Sin(), 0.0, 0.001);
+            pi = (3.1415926/2.0).Cast<Float<Bits>>();
+            assertNear<Float<Bits>>(pi.Sin(), 1.0, 0.001);
+            pi = (2.0*3.1415926).Cast<Float<Bits>>();
+            assertNear<Float<Bits>>(pi.Sin(), 0.0, 0.01);
+            var value = (0.5).Cast<Float<Bits>>();
+            assertNear<Float<Bits>>(value.Sin(), 0.47943, 0.001);
         }
         {
-            var pi = (3.1415926).cast<float<Bits>>();
-            assertNear<float<Bits>>(pi.cos(), -1.0, 0.001);
-            pi = (3.1415926/2.0).cast<float<Bits>>();
-            assertNear<float<Bits>>(pi.cos(), 0.0, 0.001);
-            pi = (2.0*3.1415926).cast<float<Bits>>();
-            assertNear<float<Bits>>(pi.cos(), 1.0, 0.001);
-            var value = (0.5).cast<float<Bits>>();
-            assertNear<float<Bits>>(value.cos(), 0.87758, 0.001);
+            var pi = (3.1415926).Cast<Float<Bits>>();
+            assertNear<Float<Bits>>(pi.Cos(), -1.0, 0.001);
+            pi = (3.1415926/2.0).Cast<Float<Bits>>();
+            assertNear<Float<Bits>>(pi.Cos(), 0.0, 0.001);
+            pi = (2.0*3.1415926).Cast<Float<Bits>>();
+            assertNear<Float<Bits>>(pi.Cos(), 1.0, 0.001);
+            var value = (0.5).Cast<Float<Bits>>();
+            assertNear<Float<Bits>>(value.Cos(), 0.87758, 0.001);
         }
         {
-            var value = (1.3).cast<float<Bits>>();
-            var expect = (1.0).cast<float<Bits>>();
-            test::assert(value.floor() == expect);
-            value = (5.99).cast<float<Bits>>();
-            expect = (5.0).cast<float<Bits>>();
-            test::assert(value.floor() == expect);
+            var value = (1.3).Cast<Float<Bits>>();
+            var expect = (1.0).Cast<Float<Bits>>();
+            test::Assert(value.Floor() == expect);
+            value = (5.99).Cast<Float<Bits>>();
+            expect = (5.0).Cast<Float<Bits>>();
+            test::Assert(value.Floor() == expect);
 
-            value = (-0.0001).cast<float<Bits>>();
-            expect = (-1.0).cast<float<Bits>>();
-            test::assert(value.floor() == expect);
-            value = (-5.999).cast<float<Bits>>();
-            expect = (-6.0).cast<float<Bits>>();
-            test::assert(value.floor() == expect);
-            value = (-1234.5678).cast<float<Bits>>();
-            expect = (-1235.0).cast<float<Bits>>();
-            test::assert(value.floor() == expect);
+            value = (-0.0001).Cast<Float<Bits>>();
+            expect = (-1.0).Cast<Float<Bits>>();
+            test::Assert(value.Floor() == expect);
+            value = (-5.999).Cast<Float<Bits>>();
+            expect = (-6.0).Cast<Float<Bits>>();
+            test::Assert(value.Floor() == expect);
+            value = (-1234.5678).Cast<Float<Bits>>();
+            expect = (-1235.0).Cast<Float<Bits>>();
+            test::Assert(value.Floor() == expect);
         }
         {
-            var value = (1.3).cast<float<Bits>>();
-            var expect = (2.0).cast<float<Bits>>();
-            test::assert(value.ceil() == expect);
-            value = (5.999).cast<float<Bits>>();
-            expect = (6.0).cast<float<Bits>>();
-            test::assert(value.ceil() == expect);
-            value = (-5.99).cast<float<Bits>>();
-            expect = (-5.0).cast<float<Bits>>();
-            test::assert(value.ceil() == expect);
+            var value = (1.3).Cast<Float<Bits>>();
+            var expect = (2.0).Cast<Float<Bits>>();
+            test::Assert(value.Ceil() == expect);
+            value = (5.999).Cast<Float<Bits>>();
+            expect = (6.0).Cast<Float<Bits>>();
+            test::Assert(value.Ceil() == expect);
+            value = (-5.99).Cast<Float<Bits>>();
+            expect = (-5.0).Cast<Float<Bits>>();
+            test::Assert(value.Ceil() == expect);
 
-            value = (-0.0001).cast<float<Bits>>();
-            expect = (0.0).cast<float<Bits>>();
-            test::assert(value.ceil() == expect);
+            value = (-0.0001).Cast<Float<Bits>>();
+            expect = (0.0).Cast<Float<Bits>>();
+            test::Assert(value.Ceil() == expect);
             // 存在精度问题, float16的精度没那么高
-            // value = (-1234.5678).cast<float<Bits>>();
-            // expect = (-1234).cast<float<Bits>>();
-            // test::assert(value.ceil() == expect);
+            // value = (-1234.5678).Cast<Float<Bits>>();
+            // expect = (-1234).Cast<Float<Bits>>();
+            // test::Assert(value.Ceil() == expect);
         }
         {
-            var value = (1.23456789).cast<float<Bits>>();
-            var expect = (1.0).cast<float<Bits>>();
-            test::assert(value.round() == expect);
-            value = (123456789.0).cast<float<Bits>>();
-            expect = (123456789.0).cast<float<Bits>>();
-            test::assert(value.round() == expect);
-            value = (1.5).cast<float<Bits>>();
-            expect = (2.0).cast<float<Bits>>();
-            test::assert(value.round() == expect);
-            value = (-2.4).cast<float<Bits>>();
-            expect = (-2.0).cast<float<Bits>>();
-            test::assert(value.round() == expect);
-            value = (-3.5).cast<float<Bits>>();
-            expect = (-4.0).cast<float<Bits>>();
-            test::assert(value.round() == expect);
-            value = (-0.0).cast<float<Bits>>();
-            expect = (-0.0).cast<float<Bits>>();
-            test::assert(value.round() == expect);
+            var value = (1.23456789).Cast<Float<Bits>>();
+            var expect = (1.0).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
+            value = (123456789.0).Cast<Float<Bits>>();
+            expect = (123456789.0).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
+            value = (1.5).Cast<Float<Bits>>();
+            expect = (2.0).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
+            value = (-2.4).Cast<Float<Bits>>();
+            expect = (-2.0).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
+            value = (-3.5).Cast<Float<Bits>>();
+            expect = (-4.0).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
+            value = (-0.0).Cast<Float<Bits>>();
+            expect = (-0.0).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
         }
         {
-            var value = (0.12345678901234567890).cast<float<Bits>>();
-            var expect = (0.0).cast<float<Bits>>();
-            test::assert(value.round() == expect);
-            value = (12345678901234567890.0).cast<float<Bits>>();
-            expect = (12345678901234567890.0).cast<float<Bits>>();
-            test::assert(value.round() == expect);
-            value = (12345678901234567890.12345678901234567890).cast<float<Bits>>();
-            expect = (12345678901234567890.12345678901234567890).cast<float<Bits>>();
-            test::assert(value.round() == expect);
-            value = (-0.12345678901234567890).cast<float<Bits>>();
-            expect = 0i64.cast<float<Bits>>();
-            test::assert(value.round() == expect);
+            var value = (0.12345678901234567890).Cast<Float<Bits>>();
+            var expect = (0.0).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
+            value = (12345678901234567890.0).Cast<Float<Bits>>();
+            expect = (12345678901234567890.0).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
+            value = (12345678901234567890.12345678901234567890).Cast<Float<Bits>>();
+            expect = (12345678901234567890.12345678901234567890).Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
+            value = (-0.12345678901234567890).Cast<Float<Bits>>();
+            expect = 0i64.Cast<Float<Bits>>();
+            test::Assert(value.Round() == expect);
         }
         {
-            var value = (2.4).cast<float<Bits>>();
-            var expect = (2.0).cast<float<Bits>>();
-            test::assert(value.roundeven() == expect);
-            value = (-2.4).cast<float<Bits>>();
-            expect = (-2.0).cast<float<Bits>>();
-            test::assert(value.roundeven() == expect);
-            value = (2.5).cast<float<Bits>>();
-            expect = (2.0).cast<float<Bits>>();
-            test::assert(value.roundeven() == expect);
-            value = (-2.5).cast<float<Bits>>();
-            expect = (-2.0).cast<float<Bits>>();
-            test::assert(value.roundeven() == expect);
-            value = (2.6).cast<float<Bits>>();
-            expect = (3.0).cast<float<Bits>>();
-            test::assert(value.roundeven() == expect);
-            value = (3.5).cast<float<Bits>>();
-            expect = (4.0).cast<float<Bits>>();
-            test::assert(value.roundeven() == expect);
-            value = (-3.5).cast<float<Bits>>();
-            expect = (-4.0).cast<float<Bits>>();
-            test::assert(value.roundeven() == expect);
-            value = (-0.0).cast<float<Bits>>();
-            expect = (-0.0).cast<float<Bits>>();
-            test::assert(value.roundeven() == expect);
+            var value = (2.4).Cast<Float<Bits>>();
+            var expect = (2.0).Cast<Float<Bits>>();
+            test::Assert(value.RoundEven() == expect);
+            value = (-2.4).Cast<Float<Bits>>();
+            expect = (-2.0).Cast<Float<Bits>>();
+            test::Assert(value.RoundEven() == expect);
+            value = (2.5).Cast<Float<Bits>>();
+            expect = (2.0).Cast<Float<Bits>>();
+            test::Assert(value.RoundEven() == expect);
+            value = (-2.5).Cast<Float<Bits>>();
+            expect = (-2.0).Cast<Float<Bits>>();
+            test::Assert(value.RoundEven() == expect);
+            value = (2.6).Cast<Float<Bits>>();
+            expect = (3.0).Cast<Float<Bits>>();
+            test::Assert(value.RoundEven() == expect);
+            value = (3.5).Cast<Float<Bits>>();
+            expect = (4.0).Cast<Float<Bits>>();
+            test::Assert(value.RoundEven() == expect);
+            value = (-3.5).Cast<Float<Bits>>();
+            expect = (-4.0).Cast<Float<Bits>>();
+            test::Assert(value.RoundEven() == expect);
+            value = (-0.0).Cast<Float<Bits>>();
+            expect = (-0.0).Cast<Float<Bits>>();
+            test::Assert(value.RoundEven() == expect);
         }
         {
-            var value = (3.14159).cast<float<Bits>>();
-            var expect = (3.0).cast<float<Bits>>();
-            test::assert(value.trunc() == expect);
-            value = (-6.789).cast<float<Bits>>();
-            expect = (-6.0).cast<float<Bits>>();
-            test::assert(value.trunc() == expect);
+            var value = (3.14159).Cast<Float<Bits>>();
+            var expect = (3.0).Cast<Float<Bits>>();
+            test::Assert(value.Trunc() == expect);
+            value = (-6.789).Cast<Float<Bits>>();
+            expect = (-6.0).Cast<Float<Bits>>();
+            test::Assert(value.Trunc() == expect);
 
-            value = (-2.99).cast<float<Bits>>();
-            expect = (-2.0).cast<float<Bits>>();
-            test::assert(value.trunc() == expect);
+            value = (-2.99).Cast<Float<Bits>>();
+            expect = (-2.0).Cast<Float<Bits>>();
+            test::Assert(value.Trunc() == expect);
         }
     }
 }

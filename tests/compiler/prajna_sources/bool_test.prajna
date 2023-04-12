@@ -3,6 +3,6 @@ func testMain(){
     var a = true;
     var b = false;
 
-    debug::assert(!b);
-    // debug::assert(!a.__equal__(false));
+    debug::Assert(!b);
+    // debug::Assert(!a.__equal__(false));
 }

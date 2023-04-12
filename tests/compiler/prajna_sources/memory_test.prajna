@@ -1,7 +1,7 @@
 
 @test
 func testMain(){
-    var t = ptr<i64>::new();
-    t.referenceCount().tostr().print();
-    // var t0 = t.cast<i32>();
+    var t = Pointer<i64>::New();
+    t.ReferenceCount().ToString().Print();
+    // var t0 = t.Cast<i32>();
 }

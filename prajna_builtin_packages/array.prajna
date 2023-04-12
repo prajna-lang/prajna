@@ -1,30 +1,30 @@
 
 
-template <Type_, Length_>
+template <Type, Length_>
 struct Array{
-    data: Type_[Length_];
+    data: Type[Length_];
 }
 
-template <Type_, Length_>
-implement operator::LinearIndex<Type_> for Array<Type_, Length_> {
-    func get(idx: i64)->Type_{
+template <Type, Length_>
+implement operator::LinearIndex<Type> for Array<Type, Length_> {
+    func Get(idx: i64)->Type{
         return this.data[idx];
     }
 
-    func set(idx: i64, value: Type_){
+    func Set(idx: i64, value: Type){
         this.data[idx] = value;
     }
 }
 
-template <Type_, Length_>
-implement Array<Type_, Length_>{
+template <Type, Length_>
+implement Array<Type, Length_>{
 
-    func length()->i64{
+    func Length()->i64{
         return Length_;
     }
 
-    func cumprod()->Type_{
-        var re = 1i64.cast<Type_>();
+    func Cumprod()->Type{
+        var re = 1i64.Cast<Type>();
         for i in 0 to Length_{
             re = re * this[i];
         }
@@ -32,21 +32,21 @@ implement Array<Type_, Length_>{
     }
 
     @static
-    func one()->Array<Type_, Length_>{
-        var tmp = 1i64.cast<Type_>();
-        var re_one : Array<Type_, Length_>;
-        for i in 0 to re_one.length() {
+    func One()->Array<Type, Length_>{
+        var tmp = 1i64.Cast<Type>();
+        var re_one : Array<Type, Length_>;
+        for i in 0 to re_one.Length() {
             re_one[i] = tmp;
         }
         return re_one;
     }
 }
 
-template <Type_, Length_>
-implement operator::Add<Array<Type_, Length_>> for Array<Type_, Length_> {
-    func Add(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
-        var re : Array<Type_, Length_>;
-        for i in 0 to this.length() {
+template <Type, Length_>
+implement operator::Add<Array<Type, Length_>> for Array<Type, Length_> {
+    func Add(operand: Array<Type, Length_>)->Array<Type, Length_>{
+        var re : Array<Type, Length_>;
+        for i in 0 to this.Length() {
             re[i] = this[i] + operand[i];
         }
 
@@ -54,11 +54,11 @@ implement operator::Add<Array<Type_, Length_>> for Array<Type_, Length_> {
     }
 }
 
-template <Type_, Length_>
-implement operator::Sub<Array<Type_, Length_>> for Array<Type_, Length_> {
-    func Sub(operand: Array<Type_, Length_>)->Array<Type_, Length_>{
-        var re : Array<Type_, Length_>;
-        for i in 0 to this.length() {
+template <Type, Length_>
+implement operator::Sub<Array<Type, Length_>> for Array<Type, Length_> {
+    func Sub(operand: Array<Type, Length_>)->Array<Type, Length_>{
+        var re : Array<Type, Length_>;
+        for i in 0 to this.Length() {
             re[i] = this[i] - operand[i];
         }
 

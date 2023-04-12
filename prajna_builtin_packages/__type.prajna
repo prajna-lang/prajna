@@ -2,7 +2,7 @@ template CastableTemplate <RealNumberType> {
     template <Bits>
     implement RealNumberType<Bits> {
         template <TargetType>
-        func cast()->TargetType{
+        func Cast()->TargetType{
             return __cast<RealNumberType<Bits>, TargetType>(this);
         }
     }
@@ -133,7 +133,7 @@ template LogicalableTemplate <RealNumberType> {
     template <Bits>
     implement operator::Not<RealNumberType<Bits>> for RealNumberType<Bits> {
         func Not()->RealNumberType<Bits> {
-            var _true = (-1).cast<RealNumberType<Bits>>();
+            var _true = (-1).Cast<RealNumberType<Bits>>();
             return __xor<RealNumberType<Bits>>(this, _true);
         }
     }
@@ -142,7 +142,7 @@ template LogicalableTemplate <RealNumberType> {
 template CastableTemplate2 <Type> {
     implement Type {
         template <TargetType>
-        func cast()->TargetType{
+        func Cast()->TargetType{
             return __cast<Type, TargetType>(this);
         }
     }
@@ -254,7 +254,7 @@ template LogicalableTemplate2 <T> {
 
     implement operator::Not<T> for T {
         func Not()->T {
-            var _true = (-1).cast<T>();
+            var _true = (-1).Cast<T>();
             return __xor<T>(this, _true);
         }
     }
@@ -264,7 +264,7 @@ template NegativeAndPositiveTemplate <RealNumberType> {
     template <Bits>
     implement operator::Negative<RealNumberType<Bits>> for RealNumberType<Bits>{
         func Negative()->RealNumberType<Bits> {
-            var zero = 0i64.cast<RealNumberType<Bits>>();
+            var zero = 0i64.Cast<RealNumberType<Bits>>();
             return zero - this;
         }
     }
@@ -281,7 +281,7 @@ template NegativeAndPositiveTemplate <RealNumberType> {
 template NegativeAndPositiveTemplate2 <Type> {
     implement operator::Negative<Type> for Type{
         func Negative()->Type {
-            var zero = 0i64.cast<Type>();
+            var zero = 0i64.Cast<Type>();
             return zero - this;
         }
     }
@@ -293,22 +293,22 @@ template NegativeAndPositiveTemplate2 <Type> {
     }
 }
 
-use CastableTemplate<int>;
-use ArithmeticTemplate<int>;
-use ComparableTemplate<int>;
-use NegativeAndPositiveTemplate<int>;
-use LogicalableTemplate<int>;
+use CastableTemplate<Int>;
+use ArithmeticTemplate<Int>;
+use ComparableTemplate<Int>;
+use NegativeAndPositiveTemplate<Int>;
+use LogicalableTemplate<Int>;
 
-use CastableTemplate<uint>;
-use ArithmeticTemplate<uint>;
-use ComparableTemplate<uint>;
-use NegativeAndPositiveTemplate<uint>;
-use LogicalableTemplate<uint>;
+use CastableTemplate<Uint>;
+use ArithmeticTemplate<Uint>;
+use ComparableTemplate<Uint>;
+use NegativeAndPositiveTemplate<Uint>;
+use LogicalableTemplate<Uint>;
 
-use CastableTemplate<float>;
-use ArithmeticTemplate<float>;
-use ComparableTemplate<float>;
-use NegativeAndPositiveTemplate<float>;
+use CastableTemplate<Float>;
+use ArithmeticTemplate<Float>;
+use ComparableTemplate<Float>;
+use NegativeAndPositiveTemplate<Float>;
 
 use CastableTemplate2<char>;
 use ArithmeticTemplate2<char>;

@@ -528,7 +528,7 @@ class StatementLoweringVisitor {
                                               std::shared_ptr<ir::Function> ir_function,
                                               ast::Function ast_function) {
         // 处理copy等回调函数
-        std::set<std::string> copy_destroy_callback_names = {"initialize", "copy", "destroy"};
+        std::set<std::string> copy_destroy_callback_names = {"Initialize", "copy", "destroy"};
         if (not copy_destroy_callback_names.count(ir_function->name)) return;
 
         if (ir_function->annotation_dict.count("static") != 0) {
@@ -680,7 +680,7 @@ class StatementLoweringVisitor {
 
             ir_builder->create<ir::WriteVariableLiked>(
                 ir_builder->callMemberFunction(
-                    ir_interface->dynamic_type_creator->parameters.front(), "toUndef", {}),
+                    ir_interface->dynamic_type_creator->parameters.front(), "ToUndef", {}),
                 ir_builder->accessField(ir_self, "object_pointer"));
             for (auto ir_function : ir_interface->functions) {
                 auto iter_field = std::find_if(
@@ -1361,11 +1361,11 @@ class StatementLoweringVisitor {
             this->createBitCastTemplate(), "__bit_cast");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createIntTypeTemplate(true), "int");
+            this->createIntTypeTemplate(true), "Int");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createIntTypeTemplate(false), "uint");
+            this->createIntTypeTemplate(false), "Uint");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeTemplate(), "float");
+            this->createFloatTypeTemplate(), "Float");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createCastInstructionTemplate(), "__cast");

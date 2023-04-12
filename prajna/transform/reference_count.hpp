@@ -69,7 +69,7 @@ inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
 
         if (isReferenceCount(ir_type)) {
             auto ir_function = ir::getFunctionByName(
-                ir_type->interface_dict["ReferenceCountable"]->functions, "initialize");
+                ir_type->interface_dict["ReferenceCountable"]->functions, "Initialize");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         };
     }
@@ -93,7 +93,7 @@ inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
         if (isReferenceCount(ir_type)) {
             auto ir_function =
                 ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
-                                      "decrementReferenceCount");
+                                      "DecrementReferenceCount");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         };
     }
@@ -121,7 +121,7 @@ inline void copyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
         if (isReferenceCount(ir_type)) {
             auto ir_function =
                 ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
-                                      "incrementReferenceCount");
+                                      "IncrementReferenceCount");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
         }
     }

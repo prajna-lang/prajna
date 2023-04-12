@@ -5,5 +5,5 @@ func testMain(){
     b - b;
     b = tmp_array;
     b[2] = 3;
-    tmp_array.length();
+    tmp_array.Length();
 }

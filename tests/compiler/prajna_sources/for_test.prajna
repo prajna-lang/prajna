@@ -4,7 +4,7 @@ func testFor(){
         var first = [1, 1];
         var last = [11, 11];
         for idx in first to last {
-            idx.tostr().print();
+            idx.ToString().Print();
         }
     }
 }

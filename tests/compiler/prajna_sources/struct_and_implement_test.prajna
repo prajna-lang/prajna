@@ -1,17 +1,17 @@
 
 struct People{
-    name: str;
+    name: String;
     age: i64;
 }
 
 implement People{
     func sayHello(){
-        "Hello\n".print();
+        "Hello\n".Print();
     }
 
     func sayHi(){
         this.sayHello();
-        ("Hi, My name is " + this.name + ".\n").print();
+        ("Hi, My name is " + this.name + ".\n").Print();
     }
 
     // static注解则为静态成员函数
@@ -35,5 +35,5 @@ func testStructAndImplement(){
     // "."索引成员函数
     mike.sayHi();
     // 注意域成员都是通过::来索引的
-    debug::assert(People::getAge(mike) == 18);
+    debug::Assert(People::getAge(mike) == 18);
 }

@@ -1,55 +1,55 @@
 template <Bits>
-implement float<Bits> {
-    func abs()->float<Bits> {
-        return __fabs<float<Bits>>(this);
+implement Float<Bits> {
+    func Abs()->Float<Bits> {
+        return __fabs<Float<Bits>>(this);
     }
 
-    func sin()->float<Bits> {
-        return __sin<float<Bits>>(this);
+    func Sin()->Float<Bits> {
+        return __sin<Float<Bits>>(this);
     }
 
-    func cos()->float<Bits> {
-        return __cos<float<Bits>>(this);
+    func Cos()->Float<Bits> {
+        return __cos<Float<Bits>>(this);
     }
 
-    func floor()->float<Bits> {
-        return __floor<float<Bits>>(this);
+    func Floor()->Float<Bits> {
+        return __floor<Float<Bits>>(this);
     }
 
-    func ceil()->float<Bits> {
-        return __ceil<float<Bits>>(this);
+    func Ceil()->Float<Bits> {
+        return __ceil<Float<Bits>>(this);
     }
 
-    func round()->float<Bits> {
-        return __round<float<Bits>>(this);
+    func Round()->Float<Bits> {
+        return __round<Float<Bits>>(this);
     }
 
-    func roundeven()->float<Bits> {
-        return __roundeven<float<Bits>>(this);
+    func RoundEven()->Float<Bits> {
+        return __roundeven<Float<Bits>>(this);
     }
 
-    func trunc()->float<Bits> {
-        return __trunc<float<Bits>>(this);
-    }
-
-    @static
-    func largest()->float<Bits> {
-        return __largest<float<Bits>>();
+    func Trunc()->Float<Bits> {
+        return __trunc<Float<Bits>>(this);
     }
 
     @static
-    func smallest()->float<Bits> {
-        return __smallest<float<Bits>>();
+    func Largest()->Float<Bits> {
+        return __largest<Float<Bits>>();
     }
 
     @static
-    func nan()->float<Bits> {
-        return __nan<float<Bits>>();
+    func Smallest()->Float<Bits> {
+        return __smallest<Float<Bits>>();
+    }
+
+    @static
+    func NaN()->Float<Bits> {
+        return __nan<Float<Bits>>();
 
     }
 
     @static
-    func inf()->float<Bits>{
-        return __inf<float<Bits>>();
+    func Inf()->Float<Bits>{
+        return __inf<Float<Bits>>();
     }
 }

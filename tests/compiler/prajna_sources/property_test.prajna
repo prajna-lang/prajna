@@ -1,20 +1,20 @@
 
 struct People{
-    name: str;
+    name: String;
     _age: i64;
 }
 
 interface ageProperty {
-    func get()->i64;
-    func set(v: i64);
+    func Get()->i64;
+    func Set(v: i64);
 }
 
 implement ageProperty for People{
-    func get()->i64{
+    func Get()->i64{
         return this._age;
     }
 
-    func set(v: i64){
+    func Set(v: i64){
         this._age = v;
     }
 }
@@ -22,12 +22,12 @@ implement ageProperty for People{
 @test
 func testProperty(){
     var people = People("Mike", 18);
-    debug::assert(people._age == 18);
+    debug::Assert(people._age == 18);
     // 我们可以像字段一样使用属性
-    debug::assert(people.age == 18);
+    debug::Assert(people.age == 18);
     people.age = 22;
-    debug::assert(people._age == 22);
-    debug::assert(people.age == 22);
+    debug::Assert(people._age == 22);
+    debug::Assert(people.age == 22);
 
     people.age;
 }

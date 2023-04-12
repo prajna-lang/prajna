@@ -1,34 +1,34 @@
-struct str{
+struct String{
     darray: DynamicArray<char>;
     size: i64;
 }
 
-implement operator::LinearIndex<char> for str {
-    func get(idx: i64)->char{
+implement operator::LinearIndex<char> for String {
+    func Get(idx: i64)->char{
         return this.darray[idx];
     }
 
-    func set(idx: i64, value: char){
+    func Set(idx: i64, value: char){
         this.darray[idx] = value;
     }
 }
 
-implement str{
+implement String{
     @static
-    func create(size: i64)->str{
-        var str_re: str;
-        str_re.darray = DynamicArray<char>::create(size+1);
+    func Create(size: i64)->String{
+        var str_re: String;
+        str_re.darray = DynamicArray<char>::Create(size+1);
         str_re.size = size;
         return str_re;
     }
 
     @static
-    func from_char_ptr(cstr_ptr: char*)->str {
+    func __from_char_ptr(cstr_ptr: char*)->String {
         var str_size = 0;
         while (cstr_ptr[str_size] != '\0'){
             str_size = str_size + 1;
         }
-        var str_re = str::create(str_size);
+        var str_re = String::Create(str_size);
         for i in 0 to str_re.size {
             str_re.darray[i] = cstr_ptr[i];
         }
@@ -36,57 +36,52 @@ implement str{
         return str_re;
     }
 
-    func print(){
+    func Print(){
         this.darray[this.size] = '\0';
         bindings::print_c(this.darray.data.raw_ptr);
     }
 
-    func append(v: char){
-        this.darray.pushBack('\0');
+    func Append(v: char){
+        this.darray.PushBack('\0');
         this.size = this.size + 1;
         this.darray[this.size-1] = v;
     }
 
-    func printLine() {
+    func PrintLine() {
         var tmp = this;
-        tmp.append('\n');
-        tmp.print();
+        tmp.Append('\n');
+        tmp.Print();
     }
 
-    func tostr()->str{
+    func ToString()->String{
         return this;
     }
 }
 
-func print2(ss:str) {
-    ss.print();
-}
-
-
-implement reference_count::ReferenceCountable for str {
-    func initialize(){
+implement reference_count::ReferenceCountable for String {
+    func Initialize(){
         this.size = 0;
-        this.darray = DynamicArray<char>::create(1);
+        this.darray = DynamicArray<char>::Create(1);
         this.darray[0] = '\0';
     }
 
-    func registerReferenceCount(){
+    func RegisterReferenceCount(){
 
     }
 
-    func decrementReferenceCount(){
+    func DecrementReferenceCount(){
 
     }
 
-    func incrementReferenceCount(){
+    func IncrementReferenceCount(){
 
     }
 }
 
 
-implement operator::Add<str> for str {
-    func Add(str_re: str)->str{
-        var new_str = str::create(this.size + str_re.size);
+implement operator::Add<String> for String {
+    func Add(str_re: String)->String{
+        var new_str = String::Create(this.size + str_re.size);
         var i = 0;
         while (i < this.size){
             new_str.darray[i] = this.darray[i];
@@ -98,14 +93,14 @@ implement operator::Add<str> for str {
             j = j + 1;
             i = i + 1;
         }
-        // "hit11\n".print();
+        // "hit11\n".Print();
 
         return new_str;
     }
 }
 
-implement operator::Equal<str> for str{
-    func Equal(rhs_str: str) -> bool{
+implement operator::Equal<String> for String{
+    func Equal(rhs_str: String) -> bool{
         if(this.size!=rhs_str.size) {
             return false;
         }
@@ -120,17 +115,17 @@ implement operator::Equal<str> for str{
     }
 }
 
-implement operator::NotEqual<str> for str{
-    func NotEqual(rhs_str: str) -> bool{
+implement operator::NotEqual<String> for String{
+    func NotEqual(rhs_str: String) -> bool{
          return !(this == rhs_str);
     }
 }
 
-func print(ss: str){
-    ss.print();
+func Print(ss: String){
+    ss.Print();
 }
 
-func printLine(ss: str) {
-    ss.printLine();
+func PrintLine(ss: String) {
+    ss.PrintLine();
 }
 

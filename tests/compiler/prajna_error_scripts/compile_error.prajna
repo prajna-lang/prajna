@@ -25,10 +25,10 @@ var t:s0;
 
 //
 // st<i8>;
-str::create2(10);
-Tensor<i64, 1>::create<i32>([10]);
+String::create2(10);
+Tensor<i64, 1>::Create<i32>([10]);
 core::Tensor2;
-core::str<i64>;
+core::String<i64>;
 
 Tensor<i, 1>;
 // Tensor<i64, 3.13415>;
@@ -48,15 +48,15 @@ for i in 3.14 to 10{}
 for i in 10 to 3.14{}
 // 4 = 6; 需要修复
 
-Tensor<i64, 1, 2>::create([10]);
+Tensor<i64, 1, 2>::Create([10]);
 
-func get(a: i64, b: f32){}
-get(1, 1);
+func Get(a: i64, b: f32){}
+Get(1, 1);
 
-str::create(3.1341);
+String::Create(3.1341);
 
 var tt: Tensor<i64, 1>;
-tt.at(12.3);
+tt.At(12.3);
 
 #error("unexpect code load");
 #warning("this is a warning!");

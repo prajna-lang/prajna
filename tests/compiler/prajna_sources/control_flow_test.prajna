@@ -1,5 +1,5 @@
 
-func testIfElse(a: bool)->i64 {
+func TestIfElse(a: bool)->i64 {
     var b: i64;
     if (a){
         b = 4;
@@ -10,13 +10,13 @@ func testIfElse(a: bool)->i64 {
     return b;
 }
 
-func testWhileTmpe(){
+func TestWhileTmpe(){
     while(true){
 
     }
 }
 
-func testWhile(size: i64)->i64{
+func TestWhile(size: i64)->i64{
     var tmp = 0;
     var i = 0;
     while (i < size) {
@@ -29,7 +29,7 @@ func testWhile(size: i64)->i64{
     return tmp;
 }
 
-func testFor(){
+func TestFor(){
     {
         var first = 0;
         var last = 100;
@@ -77,7 +77,7 @@ func testFor(){
 }
 
 
-func testBreak()->i64{
+func TestBreak()->i64{
     var i = 0;
     while (i < 10){
         i = i + 1;
@@ -89,7 +89,7 @@ func testBreak()->i64{
     return i;
 }
 
-func testContinue()->i64{
+func TestContinue()->i64{
     var i = 0;
     var j = 0;
     while (i < 10){
@@ -104,18 +104,18 @@ func testContinue()->i64{
 }
 
 @test
-func testControlFlow(){
-    debug::Assert(testIfElse(true) == 4);
-    debug::Assert(testIfElse(false) == 5);
+func TestControlFlow(){
+    debug::Assert(TestIfElse(true) == 4);
+    debug::Assert(TestIfElse(false) == 5);
 
-    debug::Assert(testWhile(0) == 0);
-    debug::Assert(testWhile(5) == 6);
-    debug::Assert(testWhile(10) == 20);
+    debug::Assert(TestWhile(0) == 0);
+    debug::Assert(TestWhile(5) == 6);
+    debug::Assert(TestWhile(10) == 20);
 
-    debug::Assert(testBreak() == 2);
-    debug::Assert(testContinue() == 9);
+    debug::Assert(TestBreak() == 2);
+    debug::Assert(TestContinue() == 9);
 
-    testFor();
+    TestFor();
 
     return;
 }

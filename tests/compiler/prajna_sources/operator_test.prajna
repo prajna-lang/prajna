@@ -6,7 +6,7 @@
 
 
 @test
-func testMain(){
+func TestMain(){
     var t = 3;
     var g = t + 4;
     t.Add(6);

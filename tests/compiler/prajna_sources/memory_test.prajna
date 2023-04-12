@@ -1,6 +1,6 @@
 
 @test
-func testMain(){
+func TestMain(){
     var t = Pointer<i64>::New();
     t.ReferenceCount().ToString().Print();
     // var t0 = t.Cast<i32>();

@@ -1,7 +1,7 @@
 
 
 @test
-func testExtremum() {
+func TestExtremum() {
   // unsigned Int
   debug::Assert(Uint<8>::Max()   == 255u8);
   debug::Assert(Uint<16>::Max()  == 65535u16);
@@ -28,13 +28,13 @@ func testExtremum() {
 
 template IntTest <Type> {
     @test
-    func testFloatStaticFunction() {
+    func TestFloatStaticFunction() {
         Type::Max();
         Type::Min();
     }
 
     @test
-    func testFloatIUnaryFunction(){
+    func TestFloatIUnaryFunction(){
         {
           var value = (0).Cast<Type>();
         }
@@ -60,7 +60,7 @@ use IntTest<Uint<64>>;
 use IntTest<Uint<128>>;
 
 @test
-func testParseInt(){
+func TestParseInt(){
     10;
     0001;
     0;

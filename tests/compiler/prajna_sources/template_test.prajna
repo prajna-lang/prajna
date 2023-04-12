@@ -32,7 +32,7 @@ use ArrayTp<i64, 3>;
 
 template ptrTp <Type>{
     implement Type* {
-        func test(){}
+        func Test(){}
     }
 }
 
@@ -44,7 +44,7 @@ struct MyArray {
 }
 
 @test
-func test(){
+func Test(){
     var root: Node<f32>;
     root.value = 1.0;
     var next_node: Node<f32>;
@@ -57,7 +57,7 @@ func test(){
     debug::Assert(t.length2() == 3);
 
     var tt: i64*;
-    tt.test();
+    tt.Test();
     root.nextValue();
 
     var tmp: MyArray<i64, 2>;

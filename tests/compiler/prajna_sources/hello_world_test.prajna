@@ -1,5 +1,5 @@
 @test
-func testMain(){
+func TestMain(){
     var hello_world =  "Hello World!\n";
     hello_world.Print();
 }

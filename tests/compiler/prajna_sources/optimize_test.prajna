@@ -4,7 +4,7 @@ func add(a:i64, b:i64)->i64{
 }
 
 @test
-func testMain(){
+func TestMain(){
     var a = add(11, 22);
     a.ToString().Print();
 }

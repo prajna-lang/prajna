@@ -1,6 +1,6 @@
 use io;
 
-func main(){
+func Main(){
     var input = io::Input();
     input.Print();
 }

@@ -60,7 +60,7 @@ implement TestA {
 }
 
 @test
-func testMemoryManager(){
+func TestMemoryManager(){
     var a : TestA;
     // var a1 = TestA::Create(10); // 调用copy函数, 然后调用destroy函数
     // a1.name = "a1";

@@ -1,5 +1,5 @@
 @test
-func testMain(){
+func TestMain(){
     var a = true;
     var b = false;
 

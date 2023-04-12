@@ -8,7 +8,7 @@ func myKernel(tensor: gpu::Tensor<i64, 1>, value: i64){
 }
 
 @test
-func testKernel(){
+func TestKernel(){
     var GridShape = [1,1,1];
     var BlockShape = [1,1,1];
 

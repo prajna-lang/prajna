@@ -70,4 +70,4 @@ use core::t;
 var tmp1234 = 3;
 var tmp1234 = 4;
 
-func test(){ var a:i64 = 3i32; }
+func Test(){ var a:i64 = 3i32; }

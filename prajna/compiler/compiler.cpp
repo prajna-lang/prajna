@@ -142,7 +142,7 @@ void Compiler::executateMainFunction() {
     this->_symbol_table->each([=, &main_functions](lowering::Symbol symbol) {
         if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
             if (auto ir_function = cast<ir::Function>(ir_value)) {
-                if (ir_function->name == "main") {
+                if (ir_function->name == "Main") {
                     main_functions.insert(ir_function);
                     if (main_functions.size() >= 2) {
                         return;

@@ -1,5 +1,5 @@
 @test
-func testBitCast(){
+func TestBitCast(){
     var a: i64*;
     var b: undef* = __bit_cast<i64*, undef*>(a);
 }

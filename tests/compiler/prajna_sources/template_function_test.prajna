@@ -28,7 +28,7 @@ implement Tmp {
 
 
 @test
-func testMain() {
+func TestMain() {
     Print(3.1415);
     "\n".Print();
     Print(3);

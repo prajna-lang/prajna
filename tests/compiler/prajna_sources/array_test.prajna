@@ -1,5 +1,5 @@
 @test
-func testMain(){
+func TestMain(){
     var tmp_array: Array<i64, 3>;
     var b = [1,2,3];
     b - b;

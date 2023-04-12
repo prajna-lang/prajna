@@ -1,7 +1,7 @@
 use gpu;
 
 @test
-func testGpuFor2d(){
+func TestGpuFor2d(){
     var shape = [10, 20];
     var tensor0 = Tensor<i64, 2>::Create(shape);
     var tensor1 = Tensor<i64, 2>::Create(shape);

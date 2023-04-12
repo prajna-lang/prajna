@@ -1,17 +1,17 @@
 module test1{
-    func hello1(){
+    func Hello1(){
         "Hello1\n".Print();
     }
 }
 
 module test1::test2{
-    func hello2(){
-        hello1();
+    func Hello2(){
+        Hello1();
         "Hello2\n".Print();
     }
 }
 
 @test
-func testMain(){
-    test1::test2::hello2();
+func TestMain(){
+    test1::test2::Hello2();
 }

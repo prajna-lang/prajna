@@ -33,7 +33,7 @@ implement Say for SayHello{
 }
 
 @test
-func testDynamicDispatch(){
+func TestDynamicDispatch(){
     var say_hi = Pointer<SayHi>::New();
     say_hi.say();
     debug::Assert(!say_hi.IsNull());

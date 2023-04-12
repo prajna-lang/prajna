@@ -1,5 +1,5 @@
 @test
-func testTensor(){
+func TestTensor(){
     var shape = [10, 20];
     var ts = Tensor<i64, 2>::Create(shape);
     var bs = ts;

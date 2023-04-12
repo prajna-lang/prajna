@@ -1,5 +1,5 @@
 @test
-func testFor(){
+func TestFor(){
     {
         var first = [1, 1];
         var last = [11, 11];

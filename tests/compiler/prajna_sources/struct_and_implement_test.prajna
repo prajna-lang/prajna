@@ -9,14 +9,14 @@ implement People{
         "Hello\n".Print();
     }
 
-    func sayHi(){
+    func SayHi(){
         this.sayHello();
         ("Hi, My name is " + this.name + ".\n").Print();
     }
 
     // static注解则为静态成员函数
     @static
-    func getAge(people: People)->i64{
+    func GetAge(people: People)->i64{
         return people.age;
     }
 }
@@ -24,16 +24,16 @@ implement People{
 struct NestedMemberFunction {}
 
 implement NestedMemberFunction {
-    func test() {
-        this.test();
+    func Test() {
+        this.Test();
     }
 }
 
 @test
-func testStructAndImplement(){
+func TestStructAndImplement(){
     var mike = People("Mike", 18);
     // "."索引成员函数
-    mike.sayHi();
+    mike.SayHi();
     // 注意域成员都是通过::来索引的
-    debug::Assert(People::getAge(mike) == 18);
+    debug::Assert(People::GetAge(mike) == 18);
 }

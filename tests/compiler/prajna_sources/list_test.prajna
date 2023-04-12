@@ -1,5 +1,5 @@
 @test
-func testMain() {
+func TestMain() {
     var root = Pointer<list::Node<i64>>::New();
     root.value = 3;
     // TODO 引用计数存在bug

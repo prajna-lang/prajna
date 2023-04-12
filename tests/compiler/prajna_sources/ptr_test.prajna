@@ -1,7 +1,7 @@
 
 
 @test
-func testMain(){
+func TestMain(){
     var p: Pointer<i64>;
     p._ToInt64();
 
@@ -14,7 +14,7 @@ func testMain(){
 }
 
 @test
-func testLocal() {
+func TestLocal() {
     var p: Pointer<i64>;
     p._ToInt64();
 
@@ -29,7 +29,7 @@ func testLocal() {
 }
 
 @test
-func testIndex() {
+func TestIndex() {
     var p = Pointer<i64>::Allocate(10);
     p[9] = 10;
     debug::Assert(p[9] == 10);
@@ -37,6 +37,6 @@ func testIndex() {
 
 
 @test
-func testNested() {
+func TestNested() {
     var p = Pointer<Pointer<i64>>::New();
 }

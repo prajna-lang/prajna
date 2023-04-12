@@ -1,17 +1,17 @@
-func sayHi(){
+func SayHi(){
     "Hi\n".Print();
 }
 
-func sayHello(){
+func SayHello(){
     "Hello\n".Print();
 }
 
 
 @test
-func testMain(){
+func TestMain(){
     var vtable: func{()->void}*[2];
-    vtable[0] = sayHi;
-    vtable[1] = sayHello;
+    vtable[0] = SayHi;
+    vtable[1] = SayHello;
 
     vtable[0]();
     vtable[1]();

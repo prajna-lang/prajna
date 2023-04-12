@@ -1,5 +1,5 @@
 @test
-func testTypes(){
+func TestTypes(){
     // Prajna是强类型, 赋值只能在类型一致的时候才能进行
     var tmp0: i64 = 0; // 整数默认就是i64的类型
     var tmp1: i64 = 0i64; // i表示是有符号整型, 64表示64位, 所以其是64位有符号整型

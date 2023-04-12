@@ -1,6 +1,6 @@
 use io;
 
 @test
-func testMain(){
+func TestMain(){
     var t = io::Input;
 }

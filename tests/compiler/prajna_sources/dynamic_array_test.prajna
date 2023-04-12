@@ -1,5 +1,5 @@
 @test
-func testMain(){
+func TestMain(){
     var darray = DynamicArray<i64>::Create(64);
     debug::Assert(darray.length == 64);
     debug::Assert(darray.capacity == 64);

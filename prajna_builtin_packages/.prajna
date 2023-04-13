@@ -5,15 +5,18 @@ use Int<8> as i8;
 use Int<16> as i16;
 use Int<32> as i32;
 use Int<64> as i64;
+use Int<128> as i128;
 
 use Uint<8> as u8;
 use Uint<16> as u16;
 use Uint<32> as u32;
 use Uint<64> as u64;
+use Uint<128> as u128;
 
 use Float<16> as f16;
 use Float<32> as f32;
 use Float<64> as f64;
+use Float<128> as f128;
 
 use operator;
 

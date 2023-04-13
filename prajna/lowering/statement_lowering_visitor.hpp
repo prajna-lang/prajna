@@ -1246,6 +1246,10 @@ class StatementLoweringVisitor {
                     }
                 }
                 if (is<ir::FloatType>(ir_type)) {
+                    auto ir_float_type = cast<ir::FloatType>(ir_type);
+                    if (ir_float_type->bits == 128) {
+                        PRAJNA_ASSERT(false, "float128 remaind operation has bug");
+                    }
                     binary_operation = ir::BinaryOperator::Operation::FRem;
                 }
             }

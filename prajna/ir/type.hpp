@@ -83,7 +83,6 @@ class NullType : public Type {
         }
 
         std::shared_ptr<NullType> self(new NullType);
-        // i1 默认为一
         self->bytes = 0;
         self->name = "NullType";
         self->fullname = "NullType";
@@ -157,7 +156,7 @@ class IntType : public RealNumberType {
     }
 
    public:
-    bool is_signed;
+    bool is_signed = true;
 };
 
 class BoolType : public IntType {
@@ -173,9 +172,9 @@ class BoolType : public IntType {
         }
 
         std::shared_ptr<BoolType> self(new BoolType);
-        // i1 默认为一
-        self->bits = 8;
         self->is_signed = false;
+        // i1 默认为1个字节
+        self->bits = 8;
         self->bytes = 1;
         self->name = "bool";
         self->fullname = "bool";
@@ -296,7 +295,6 @@ class FunctionType : public Type {
    public:
     std::shared_ptr<Type> return_type = nullptr;
     std::list<std::shared_ptr<Type>> parameter_types;
-
     std::shared_ptr<Function> function = nullptr;
 };
 
@@ -326,7 +324,7 @@ class PointerType : public Type {
     }
 
    public:
-    std::shared_ptr<Type> value_type;
+    std::shared_ptr<Type> value_type = nullptr;
 };
 
 class ArrayType : public Type {
@@ -354,8 +352,8 @@ class ArrayType : public Type {
     }
 
    public:
-    std::shared_ptr<Type> value_type;
-    size_t size;
+    std::shared_ptr<Type> value_type = nullptr;
+    size_t size = 0;
 };
 
 class Field {
@@ -372,8 +370,8 @@ class Field {
     }
 
     std::string name;
-    std::shared_ptr<Type> type;
-    size_t index;
+    std::shared_ptr<Type> type = nullptr;
+    size_t index = 0;
 };
 
 class StructType : public Type {
@@ -425,7 +423,7 @@ class InterfacePrototype : public Named {
 
    public:
     std::list<std::shared_ptr<Function>> functions;
-    std::shared_ptr<StructType> dynamic_type;
+    std::shared_ptr<StructType> dynamic_type = nullptr;
 
     bool disable_dynamic_dispatch = false;
 

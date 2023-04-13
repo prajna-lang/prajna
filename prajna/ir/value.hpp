@@ -144,19 +144,14 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
 
    public:
     std::shared_ptr<Type> type = nullptr;
-
     // std::set<std::string> annotation_dict;
     std::unordered_map<std::string, std::list<std::string>> annotation_dict;
-
     // 最后需要释放以解除智能指针的引用计数
     std::shared_ptr<Block> parent_block = nullptr;
     std::list<InstructionWithOperandIndex> instruction_with_index_list;
-
     ast::SourceLocation source_location;
-
     // 用于llvm的codegen, 仅引用, 不管理内存
     llvm::Value* llvm_value = nullptr;
-
     // 用于方便调试, 否则无法有效辨别他们
     std::string tag = "";
 };
@@ -506,10 +501,10 @@ class Function : public Value {
 
    public:
     bool is_declaration = false;
-    std::shared_ptr<FunctionType> function_type;
+    std::shared_ptr<FunctionType> function_type = nullptr;
     std::list<std::shared_ptr<Value>> parameters;
     std::list<std::shared_ptr<Block>> blocks;
-    std::shared_ptr<Module> parent_module;
+    std::shared_ptr<Module> parent_module = nullptr;
 };
 
 /// @brief 在lowering时需要用到的辅助IR, 并不应该在lowering后出现
@@ -529,8 +524,8 @@ class MemberFunctionWithThisPointer : public Value {
         return self;
     }
 
-    std::shared_ptr<Value> this_pointer;
-    std::shared_ptr<Function> function_prototype;
+    std::shared_ptr<Value> this_pointer = nullptr;
+    std::shared_ptr<Function> function_prototype = nullptr;
 };
 
 class WriteReadAble : virtual public Value {
@@ -1533,7 +1528,7 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
     }
 
    public:
-    std::shared_ptr<ir::Property> property;
+    std::shared_ptr<ir::Property> property = nullptr;
 };
 
 class WriteProperty : public Instruction {
@@ -1584,18 +1579,12 @@ class Module : public Named, public std::enable_shared_from_this<Module> {
         return self;
     }
 
-    // bool empty()
-
     std::list<std::shared_ptr<Function>> functions;
     std::list<std::shared_ptr<GlobalVariable>> global_variables;
     std::list<std::shared_ptr<GlobalAlloca>> global_allocas;
-
     std::shared_ptr<lowering::SymbolTable> symbol_table = nullptr;
-
     std::shared_ptr<Module> parent_module = nullptr;
-
     std::unordered_map<Target, std::shared_ptr<Module>> modules;
-
     llvm::Module* llvm_module = nullptr;
 };
 

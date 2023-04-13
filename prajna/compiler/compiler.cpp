@@ -67,7 +67,6 @@ std::shared_ptr<Compiler> Compiler::create() {
 
 void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
     this->addPackageDirectoryPath(builtin_sources_dir);
-    // this->compileProgram("prajna_bootstrap.prajna", false);
     this->compileProgram(".prajna", false);
 }
 

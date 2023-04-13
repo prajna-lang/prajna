@@ -1,8 +1,10 @@
 
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 
+#include "fmt/printf.h"
 #include "gtest/gtest.h"
 #include "prajna/compiler/compiler.h"
 #include "prajna/exception.hpp"
@@ -22,8 +24,15 @@ TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
     auto compiler = Compiler::create();
     std::string prajna_source_path = GetParam();
     compiler->addPackageDirectoryPath(".");
+    auto t0 = std::chrono::high_resolution_clock::now();
     compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+    auto t1 = std::chrono::high_resolution_clock::now();
+    fmt::print("compiling cost time: {}ms\n",
+               std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
     compiler->runTests(prajna_source_path);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    fmt::print("execution cost time: {}ms\n",
+               std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
 }
 
 class CompilerScriptTests : public testing::TestWithParam<std::string> {};

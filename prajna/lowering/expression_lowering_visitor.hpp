@@ -207,10 +207,6 @@ class ExpressionLoweringVisitor {
         return ir_builder->create<ir::ConstantBool>(ast_bool_literal.value);
     }
 
-    std::shared_ptr<ir::Value> operator()(ast::Null /*ast_null*/) {
-        return ir_builder->create<ir::ConstantNull>();
-    }
-
     std::shared_ptr<ir::Value> operator()(ast::Identifier ast_identifier) {
         if (!ir_builder->symbol_table->has(ast_identifier)) {
             logger->error(fmt::format("{} not found", ast_identifier), ast_identifier);

@@ -6,7 +6,6 @@
 #include "boost/fusion/include/adapt_struct.hpp"
 #include "boost/fusion/include/io.hpp"
 #include "boost/optional.hpp"
-// #include "boost/tuple/tuple.hpp" // 感觉匹配属性的时候存在很多问题, 不推荐使用了
 #include "boost/variant/recursive_variant.hpp"
 #include "prajna/ast/source_position.hpp"
 #include "prajna/config.hpp"
@@ -31,10 +30,6 @@ struct Template;
 struct TemplateStatement;
 struct DynamicCast;
 struct Module;
-/// @note  operator const char*() const 函数在boost::spirit的debug node的模式下是需要的,
-/// 但用处不大故直接删除了
-
-struct Null : SourceLocation {};
 
 struct Operator : SourceLocation {
     Operator() = default;
@@ -155,7 +150,7 @@ struct SizeOf : SourceLocation {
 };
 
 typedef boost::variant<
-    Blank, Null, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral, Identifier,
+    Blank, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral, Identifier,
     IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
     boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
     boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Array>, SizeOf,
@@ -215,16 +210,7 @@ struct Class;
 struct FunctionHeader;
 struct Function;
 struct Operator;
-struct Namespace;
 struct Block;
-
-struct require_statement : SourceLocation {
-    StringLiteral path;
-};
-
-struct using_statement : SourceLocation {
-    Operand object;
-};
 
 struct Pragma : SourceLocation {
     Identifier name;

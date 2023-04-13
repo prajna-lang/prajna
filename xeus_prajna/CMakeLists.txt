@@ -1,4 +1,4 @@
-include(cmake/openssl.cmake)
+# include(cmake/openssl.cmake)
 
 set(CMAKE_SYSTEM_PROGRAM_PATH /opt/homebrew/Cellar/llvm/15.0.4/bin/)
 
@@ -9,12 +9,19 @@ set(XEUS_ZMQ_STATIC_DEPENDENCIES ON CACHE BOOL "" FORCE)
 # set(XEUS_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(XEUS_STATIC_DEPENDENCIES ON CACHE BOOL "" FORCE)
 
-if (APPLE)
+if (APPLE AND UNIX)
     set(ENABLE_WS OFF CACHE BOOL "" FORCE)
 endif()
 
-set(OPENSSL_INCLUDE_DIR /home/zhimin/miniconda3/envs/xwidgets/include)
-set(OPENSSL_CRYPTO_LIBRARY /home/zhimin/miniconda3/envs/xwidgets/lib/libcrypto.a)
+if (UNIX AND NOT APPLE)
+    set(OPENSSL_INCLUDE_DIR /usr/include)
+    set(OPENSSL_CRYPTO_LIBRARY /usr/lib/x86_64-linux-gnu/libcrypto.a)
+endif()
+if (UNIX AND APPLE)
+    set(OPENSSL_INCLUDE_DIR /usr/local/include)
+    set(OPENSSL_CRYPTO_LIBRARY /usr/local/lib/libcrypto.a)
+endif()
+
 add_subdirectory(third_party/json EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/xtl EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/xeus EXCLUDE_FROM_ALL)

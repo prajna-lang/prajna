@@ -146,7 +146,7 @@ pipeline{
                             steps {
                                 sh 'git config --global --list'
                                 sh './scripts/clone_submodules.sh --jobs=16 --depth=10'
-                                sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF -DPRAJNA_WITH_GPU=ON'
+                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_WITH_GPU=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc
                                 sh 'cd build_${BUILD_TYPE}/third_party/llvm-project/llvm/tools/llc && make llc -j && cp  ../../bin/llc /usr/bin'

@@ -388,11 +388,6 @@ class IrBuilder {
         return block_stack.top();
     }
 
-    void popSymbolTableAndBlock() {
-        this->popSymbolTable();
-        this->popBlock();
-    }
-
     void SetSymbol(Symbol symbol, ast::Identifier ast_identifier) {
         if (symbol_table->currentTableHas(ast_identifier)) {
             logger->error(fmt::format("the symbol {} is defined already", ast_identifier),

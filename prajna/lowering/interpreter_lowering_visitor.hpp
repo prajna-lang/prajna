@@ -51,9 +51,8 @@ class InterpreterLoweringVisitor {
         ir_builder->pushBlock(ir_block);
         ir_function->blocks.push_back(ir_block);
 
-        return function_guard::create([=]() {
-            // 打印结果
-            auto ir_builder = _statement_lowering_visitor->ir_builder;
+        // 打印结果
+        return function_guard::create([=, ir_builder = _statement_lowering_visitor->ir_builder]() {
             boost::apply_visitor(
                 overloaded{[=](auto x) {},
                            [=](std::shared_ptr<ir::Value> ir_result_value) {

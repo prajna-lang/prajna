@@ -93,11 +93,13 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::Block block) {
         ir_builder->pushSymbolTable();
         ir_builder->createAndPushBlock();
+        auto guard = function_guard::create([this]() {
+            this->ir_builder->popSymbolTable();
+            this->ir_builder->popBlock();
+        });
 
         (*this)(block.statements);
         auto ir_block = ir_builder->currentBlock();
-        ir_builder->popSymbolTableAndBlock();
-
         return ir_block;
     }
 
@@ -272,6 +274,12 @@ class StatementLoweringVisitor {
             if (ast_function.body_optional) {
                 ir_builder->pushSymbolTable();
                 ir_builder->createTopBlockForFunction(ir_function);
+                auto guard = function_guard::create([=]() {
+                    this->ir_builder->popBlock();
+                    this->ir_builder->function_stack.pop();
+                    this->ir_builder->popSymbolTable();
+                    ir_function->is_declaration = false;
+                });
 
                 auto iter_argument = ir_function->parameters.begin();
                 if (ir_builder->isBuildingMemberfunction()) {
@@ -307,11 +315,6 @@ class StatementLoweringVisitor {
                                       ast_function.declaration);
                     }
                 }
-
-                ir_builder->popBlock();
-                ir_builder->function_stack.pop();
-                ir_builder->popSymbolTable();
-                ir_function->is_declaration = false;
             } else {
                 ir_function->is_declaration = true;
             }
@@ -418,17 +421,19 @@ class StatementLoweringVisitor {
         auto ir_loop_block = ir::Block::create();
         ir_loop_block->parent_function = ir_builder->function_stack.top();
         auto ir_index = ir_builder->create<ir::LocalVariable>(ir_last->type);
-        // 迭代变量应该在下一层迭代空间
-        ir_builder->pushSymbolTable();
-        ir_builder->SetSymbol(ir_index, ast_for.index);
         auto ir_for = ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value,
                                                   ir_loop_block, ir_loop_before, ir_loop_after);
-
-        ir_builder->pushBlock(ir_for->loopBlock());
-        (*this)(ast_for.body);
-        ir_builder->popBlock();
-
-        ir_builder->popSymbolTable();
+        // 迭代变量应该在下一层迭代空间
+        {
+            ir_builder->pushSymbolTable();
+            ir_builder->SetSymbol(ir_index, ast_for.index);
+            ir_builder->pushBlock(ir_for->loopBlock());
+            auto guard = function_guard::create([this]() {
+                this->ir_builder->popBlock();
+                this->ir_builder->popSymbolTable();
+            });
+            (*this)(ast_for.body);
+        }
 
         for (auto ast_annotation : ast_for.annotation_dict) {
             std::list<std::string> values;
@@ -557,9 +562,12 @@ class StatementLoweringVisitor {
 
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_type->name;
-
             PRAJNA_ASSERT(!ir_builder->current_implement_type);
             ir_builder->current_implement_type = ir_type;
+            auto guard = function_guard::create([this]() {
+                this->ir_builder->popSymbolTable();
+                this->ir_builder->current_implement_type = nullptr;
+            });
 
             for (auto ast_statement : ast_implement.statements) {
                 auto symbol_function = (*this)(ast_statement);
@@ -574,9 +582,6 @@ class StatementLoweringVisitor {
                 }
                 PRAJNA_TODO;
             }
-
-            ir_builder->popSymbolTable();
-            ir_builder->current_implement_type = nullptr;
         } catch (CompileError compile_error) {
             logger->note(ast_implement.type);
             throw compile_error;
@@ -610,8 +615,14 @@ class StatementLoweringVisitor {
 
             ir_builder->pushSymbolTable();
             ir_builder->symbol_table->name = ir_interface->name;
-
             ir_builder->current_implement_interface = ir_interface;
+
+            auto guard = function_guard::create([=]() {
+                this->ir_builder->popSymbolTable();
+                this->ir_builder->popSymbolTable();
+                this->ir_builder->current_implement_type = nullptr;
+                this->ir_builder->current_implement_interface = nullptr;
+            });
 
             // 需要前置, 因为函数会用的接口类型本身
             if (!ir_interface_prototype->disable_dynamic_dispatch) {
@@ -631,10 +642,6 @@ class StatementLoweringVisitor {
             }
 
             if (ir_interface_prototype->disable_dynamic_dispatch) {
-                ir_builder->popSymbolTable();
-                ir_builder->current_implement_type = nullptr;
-                ir_builder->popSymbolTable();
-                ir_builder->current_implement_interface = nullptr;
                 return nullptr;
             }
 
@@ -693,11 +700,6 @@ class StatementLoweringVisitor {
             }
             ir_builder->create<ir::Return>(ir_self);
             ir_builder->popBlock();
-
-            ir_builder->popSymbolTable();
-            ir_builder->current_implement_type = nullptr;
-            ir_builder->current_implement_interface = nullptr;
-            ir_builder->popSymbolTable();
         } catch (CompileError compile_error) {
             logger->note(ast_implement.type);
             throw compile_error;
@@ -1514,10 +1516,10 @@ class StatementLoweringVisitor {
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ///  TODO function_type and name , 下面的代码会导致函数重复
             ir_builder->pushSymbolTable();
+            auto guard = function_guard::create([=]() { this->ir_builder->popSymbolTable(); });
             ir_builder->symbol_table->name = ir_interface_prototype->name;
             auto symbol_function = (*this)(ast_function_declaration);
             auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(symbol_function));
-            ir_builder->popSymbolTable();
             ir_interface_prototype->functions.push_back(ir_function);
             // 需要将去从module移出来, 这里的function并不会实际被生成
             ir_builder->module->functions.remove(ir_function);

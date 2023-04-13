@@ -54,7 +54,7 @@ struct Identifier : public std::string, public SourceLocation {
         last_position = rhs.last_position;
     }
 
-    explicit Identifier(const std::string& s) : std::string(s) {}
+    Identifier(const std::string& s) : std::string(s) {}
 
     Identifier& operator=(const Identifier& other) {
         std::string::operator=(other);

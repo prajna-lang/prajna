@@ -66,21 +66,26 @@ class Logger {
     }
 
     void log(std::string message, ast::SourcePosition first_position,
-             ast::SourcePosition last_position, std::string log_level,
-             std::string locator_ascii_color, bool throw_error) {
+             ast::SourcePosition last_position, std::string prompt, std::string locator_ascii_color,
+             bool throw_error) {
         std::string what_message;
         if (first_position.file.empty()) {
             what_message = fmt::format("{}:{}: {}: {}\n", first_position.line,
-                                       first_position.column, log_level, message);
+                                       first_position.column, prompt, message);
         } else {
-            what_message =
-                fmt::format("{}:{}:{}: {}: {}\n", first_position.file, first_position.line,
-                            first_position.column, log_level, message);
+            what_message = fmt::format("{}:{}:{}: {}: {}\n", first_position.file,
+                                       first_position.line, first_position.column, prompt, message);
         }
 
-        // 确保位置信息是有效的
-        PRAJNA_ASSERT(first_position.line >= 0);
-        PRAJNA_ASSERT(last_position.line >= 0);
+        print_callback(what_message);
+
+        // 没有位置信息的话提前放回
+        if (first_position.line < 0 || last_position.line < 0) {
+            if (throw_error) {
+                throw CompileError();
+            }
+            return;
+        }
 
         std::vector<std::string> code_lines;
         for (size_t i = first_position.line; i <= last_position.line; ++i) {
@@ -105,7 +110,6 @@ class Logger {
             code_region.append("\n");
         }
 
-        print_callback(what_message);
         print_callback(code_region);
 
         if (throw_error) {

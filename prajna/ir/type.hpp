@@ -317,7 +317,7 @@ class PointerType : public Type {
         std::shared_ptr<PointerType> self(new PointerType);
         self->value_type = value_type;
         self->bytes = ADDRESS_BITS / 8;
-        self->name = value_type->name + "*";
+        self->name = value_type->fullname + "*";
         self->fullname = self->name;
         global_context.created_types.push_back(self);
         return self;

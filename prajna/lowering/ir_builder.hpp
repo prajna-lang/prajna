@@ -393,19 +393,24 @@ class IrBuilder {
         this->popBlock();
     }
 
-    void setSymbolWithAssigningName(Symbol symbol, ast::Identifier ast_identifier) {
+    void SetSymbol(Symbol symbol, ast::Identifier ast_identifier) {
         if (symbol_table->currentTableHas(ast_identifier)) {
-            logger->error("the symbol is defined already", ast_identifier);
+            logger->error(fmt::format("the symbol {} is defined already", ast_identifier),
+                          ast_identifier);
         }
 
         symbol_table->setWithAssigningName(symbol, ast_identifier);
     }
 
+    void SetSymbolWithTemplateArgumentsPostify(Symbol symbol, ast::Identifier ast_identifier) {
+        ast_identifier.append(this->getCurrentTemplateArgumentsPostify());
+        this->SetSymbol(symbol, ast_identifier);
+    }
+
     std::shared_ptr<ir::Function> createFunction(
-        std::string name, std::shared_ptr<ir::FunctionType> ir_function_type) {
+        ast::Identifier ast_identifier, std::shared_ptr<ir::FunctionType> ir_function_type) {
         auto ir_function = ir::Function::create(ir_function_type);
-        this->symbol_table->setWithAssigningName(ir_function,
-                                                 name + this->getCurrentTemplateArgumentsPostify());
+        this->SetSymbolWithTemplateArgumentsPostify(ir_function, ast_identifier);
         ir_function->parent_module = this->module;
         this->module->functions.push_back(ir_function);
         return ir_function;

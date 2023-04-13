@@ -139,7 +139,7 @@ class StatementLoweringVisitor {
         } else {
             ir_variable_liked = ir_builder->create<ir::LocalVariable>(ir_type);
         }
-        ir_builder->setSymbolWithAssigningName(ir_variable_liked, ast_variable_declaration.name);
+        ir_builder->SetSymbol(ir_variable_liked, ast_variable_declaration.name);
 
         if (ir_initial_value) {
             auto write_variable =
@@ -284,7 +284,7 @@ class StatementLoweringVisitor {
                 for (auto iter_parameter = ast_function.declaration.parameters.begin();
                      iter_parameter != ast_function.declaration.parameters.end();
                      ++iter_argument, ++iter_parameter) {
-                    ir_builder->setSymbolWithAssigningName(*iter_argument, iter_parameter->name);
+                    ir_builder->SetSymbol(*iter_argument, iter_parameter->name);
                 }
 
                 if (ir_builder->isBuildingMemberfunction()) {
@@ -420,7 +420,7 @@ class StatementLoweringVisitor {
         auto ir_index = ir_builder->create<ir::LocalVariable>(ir_last->type);
         // 迭代变量应该在下一层迭代空间
         ir_builder->pushSymbolTable();
-        ir_builder->setSymbolWithAssigningName(ir_index, ast_for.index);
+        ir_builder->SetSymbol(ir_index, ast_for.index);
         auto ir_for = ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value,
                                                   ir_loop_block, ir_loop_before, ir_loop_after);
 
@@ -507,8 +507,7 @@ class StatementLoweringVisitor {
         auto ir_struct_type = ir::StructType::create();
         ir_builder->instantiating_type_stack.push(ir_struct_type);
 
-        ir_builder->symbol_table->setWithAssigningName(
-            ir_struct_type, ast_struct.name + ir_builder->getCurrentTemplateArgumentsPostify());
+        ir_builder->SetSymbolWithTemplateArgumentsPostify(ir_struct_type, ast_struct.name);
 
         std::list<std::shared_ptr<ir::Field>> ir_fields;
         std::transform(
@@ -618,7 +617,7 @@ class StatementLoweringVisitor {
             if (!ir_interface_prototype->disable_dynamic_dispatch) {
                 // 创建接口动态类型生成函数
                 ir_interface->dynamic_type_creator = ir_builder->createFunction(
-                    "dynamic_type_creator",
+                    std::string("dynamic_type_creator"),
                     ir::FunctionType::create({ir_builder->getPtrType(ir_type)},
                                              ir_interface->prototype->dynamic_type));
             }
@@ -729,7 +728,7 @@ class StatementLoweringVisitor {
             return template_;
         } else {
             auto template_ = Template::create();
-            ir_builder->setSymbolWithAssigningName(template_, ast_identifier);
+            ir_builder->SetSymbol(template_, ast_identifier);
             return template_;
         }
     }
@@ -808,7 +807,7 @@ class StatementLoweringVisitor {
                         PRAJNA_ASSERT(template_struct);
                     } else {
                         template_struct = TemplateStruct::create();
-                        ir_builder->setSymbolWithAssigningName(template_struct, ast_struct.name);
+                        ir_builder->SetSymbol(template_struct, ast_struct.name);
                     }
 
                     template_struct->template_struct_impl->generator =
@@ -908,8 +907,9 @@ class StatementLoweringVisitor {
             [symbol_table = this->ir_builder->symbol_table, logger = this->logger, this](
                 std::list<Symbol> symbol_template_arguments,
                 std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 2);
+            if (symbol_template_arguments.size() != 2) {
+                logger->error("should give 2 template arguments");
+            }
             auto ir_source_type = symbolGet<ir::Type>(symbol_template_arguments.front());
             auto ir_target_type = symbolGet<ir::Type>(symbol_template_arguments.back());
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
@@ -1500,9 +1500,8 @@ class StatementLoweringVisitor {
 
     Symbol operator()(ast::InterfacePrototype ast_interface_prototype) {
         auto ir_interface_prototype = ir::InterfacePrototype::create();
-        ir_builder->symbol_table->setWithAssigningName(
-            ir_interface_prototype,
-            ast_interface_prototype.name + ir_builder->getCurrentTemplateArgumentsPostify());
+        ir_builder->SetSymbolWithTemplateArgumentsPostify(ir_interface_prototype,
+                                                          ast_interface_prototype.name);
 
         ir_interface_prototype->disable_dynamic_dispatch = std::any_of(
             RANGE(ast_interface_prototype.annotation_dict),

@@ -1,5 +1,5 @@
 #! /bin/bash
-# set -e
+set -e
 
 build_configure=$1
 shift 1

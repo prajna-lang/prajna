@@ -244,10 +244,4 @@ struct assign_to_container_from_value<prajna::ast::Identifier, std::vector<prajn
     }
 };
 
-// template <typename Attribute, typename Iterator, typename AttributeTypes, typename HasState,
-//           typename Idtype>
-// struct assign_to_attribute_from_value<
-//     prajna::ast::Blank, lex::lexertl::token<Iterator, AttributeTypes, HasState, Idtype>> {
-//     static void call(lex::lexertl::token<Iterator, AttributeTypes, HasState, Idtype> const& t,
-//                      prajna::ast::Blank& attr) {}  // namespace traits
 }  // namespace boost::spirit::traits

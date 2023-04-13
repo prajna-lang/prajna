@@ -1,11 +1,3 @@
-//
-//  prajna_parser.cpp
-//  binding
-//
-//  Created by 张志敏 on 11/13/13.
-//
-//
-
 #include "prajna/parser/parse.h"
 
 #include "boost/spirit/home/classic/iterator/position_iterator.hpp"

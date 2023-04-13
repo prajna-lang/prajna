@@ -1,11 +1,3 @@
-//
-//  prajna_parser.h
-//  binding
-//
-//  Created by 张志敏 on 11/13/13.
-//
-//
-
 #pragma once
 
 #include <memory>

@@ -32,6 +32,7 @@
 
 namespace prajna::codegen {
 
+/// llvm的全局context, 若放在局部不是特别容易管理, 故直接搞成全局变量
 static llvm::LLVMContext static_llvm_context;
 
 class LlvmCodegen {

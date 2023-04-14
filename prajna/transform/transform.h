@@ -331,6 +331,36 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
     return ir_module;
 }
 
+inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->annotation_dict.count("intrinsic")) {
+            PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
+            auto intrinsic_function_name = ir_function->annotation_dict["intrinsic"].front();
+            auto ir_decl_function = ir::Function::create(ir_function->function_type);
+            ir_decl_function->fullname = intrinsic_function_name;
+            ir_decl_function->parent_module = ir_module;
+            ir_decl_function->is_declaration = true;
+            ir_module->functions.push_front(ir_decl_function);
+
+            PRAJNA_ASSERT(ir_function->blocks.empty());
+            auto ir_builder = lowering::IrBuilder::create();
+            ir_builder->createTopBlockForFunction(ir_function);
+            ir_builder->create<ir::Return>(
+                ir_builder->create<ir::Call>(ir_decl_function, ir_function->parameters));
+            ir_function->annotation_dict.erase("intrinsic");
+            ir_function->is_declaration = false;
+        }
+    }
+
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_module) continue;
+
+        WrapIntrinsicFunction(ir_sub_module);
+    }
+
+    return ir_module;
+}
+
 inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
     std::shared_ptr<ir::Module> ir_module) {
     auto ir_fors = utility::getValuesInModule<ir::For>(ir_module);
@@ -446,6 +476,8 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     // 在sperateModule后面
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = declareExternalFunction(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
+    WrapIntrinsicFunction(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     return ir_module;
 }

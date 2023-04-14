@@ -462,8 +462,6 @@ class Function : public Value {
         return self;
     }
 
-    bool isIntrinsic() { return this->annotation_dict.count("intrinsic"); }
-
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Function> ir_new(new Function(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;

@@ -169,36 +169,24 @@ class LlvmCodegen {
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            if (not(ir_function->isIntrinsic() or ir_function->is_declaration)) {
+            if (!ir_function->is_declaration) {
                 this->emitFunction(ir_function, ir_target);
             }
         }
     }
 
     void emitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
-        if (ir_function->annotation_dict.count("intrinsic")) {
-            PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
-            auto function_name = ir_function->annotation_dict["intrinsic"].front();
-            PRAJNA_ASSERT(ir_function->function_type->llvm_type);
-            llvm::FunctionType *llvm_fun_type =
-                static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
-            llvm::Function *llvm_fun =
-                llvm::Function::Create(llvm_fun_type, llvm::Function::ExternalLinkage,
-                                       function_name, ir_function->parent_module->llvm_module);
-            ir_function->llvm_value = llvm_fun;
-        } else {
-            auto function_fullname = ir_target == ir::Target::nvptx
-                                         ? mangleNvvmName(ir_function->fullname)
-                                         : ir_function->fullname;
+        auto function_fullname = ir_target == ir::Target::nvptx
+                                     ? mangleNvvmName(ir_function->fullname)
+                                     : ir_function->fullname;
 
-            PRAJNA_ASSERT(ir_function->function_type->llvm_type);
-            llvm::FunctionType *llvm_fun_type =
-                static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
-            llvm::Function *llvm_fun =
-                llvm::Function::Create(llvm_fun_type, llvm::Function::ExternalLinkage,
-                                       function_fullname, ir_function->parent_module->llvm_module);
-            ir_function->llvm_value = llvm_fun;
-        }
+        PRAJNA_ASSERT(ir_function->function_type->llvm_type);
+        llvm::FunctionType *llvm_fun_type =
+            static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
+        llvm::Function *llvm_fun =
+            llvm::Function::Create(llvm_fun_type, llvm::Function::ExternalLinkage,
+                                   function_fullname, ir_function->parent_module->llvm_module);
+        ir_function->llvm_value = llvm_fun;
     }
 
     void emitFunction(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {

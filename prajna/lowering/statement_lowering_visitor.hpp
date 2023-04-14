@@ -1017,8 +1017,9 @@ class StatementLoweringVisitor {
                 symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
             // TODO, 还需要再处理下, LLVM支持的float类型有限.
             auto bits = ir_constant_bit_size->value;
-            // LLVM只支持float16/32/16, 128在特定平台可以打开,  bfloat需要另外的函数去实现
-            PRAJNA_ASSERT(bits == 16 || bits == 32 || bits == 64 || bits == 128);
+            // LLVM只支持float16/32/16,  bfloat需要另外的函数去实现, float128支持并不好, sin,
+            // cos等函数都是错误的结果
+            PRAJNA_ASSERT(bits == 16 || bits == 32 || bits == 64 /*|| bits == 128*/);
 
             return ir::FloatType::create(ir_constant_bit_size->value);
         };
@@ -1247,9 +1248,6 @@ class StatementLoweringVisitor {
                 }
                 if (is<ir::FloatType>(ir_type)) {
                     auto ir_float_type = cast<ir::FloatType>(ir_type);
-                    if (ir_float_type->bits == 128) {
-                        PRAJNA_ASSERT(false, "float128 remaind operation has bug");
-                    }
                     binary_operation = ir::BinaryOperator::Operation::FRem;
                 }
             }

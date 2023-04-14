@@ -462,14 +462,7 @@ class Function : public Value {
         return self;
     }
 
-    bool isIntrinsicOrInstructoin() {
-        return (this->annotation_dict.count("intrinsic")) ||
-               (this->annotation_dict.count("instruction"));
-    }
-
     bool isIntrinsic() { return this->annotation_dict.count("intrinsic"); }
-
-    bool isInstruction() { return this->annotation_dict.count("instruction"); }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Function> ir_new(new Function(*this));

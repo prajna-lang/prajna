@@ -169,17 +169,14 @@ class LlvmCodegen {
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            if (not(ir_function->isInstruction() or ir_function->isIntrinsic() or
-                    ir_function->is_declaration)) {
+            if (not(ir_function->isIntrinsic() or ir_function->is_declaration)) {
                 this->emitFunction(ir_function, ir_target);
             }
         }
     }
 
     void emitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
-        if (ir_function->annotation_dict.count("instruction")) {
-            return;
-        } else if (ir_function->annotation_dict.count("intrinsic")) {
+        if (ir_function->annotation_dict.count("intrinsic")) {
             PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
             auto function_name = ir_function->annotation_dict["intrinsic"].front();
             PRAJNA_ASSERT(ir_function->function_type->llvm_type);

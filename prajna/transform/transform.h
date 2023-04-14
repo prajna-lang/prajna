@@ -13,8 +13,6 @@
 #include "prajna/transform/transform_pass.hpp"
 #include "prajna/transform/utility.hpp"
 #include "prajna/transform/verify.hpp"
-#include "prajna/transform/wrap_instruction_function_pass.hpp"
-
 namespace prajna::ir {
 class Module;
 }
@@ -310,7 +308,7 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
             auto ir_operand = ir_instruction->operand(i);
 
             if (auto ir_function = cast<ir::Function>(ir_operand)) {
-                if (ir_function->parent_module != ir_module && !ir_function->isInstruction()) {
+                if (ir_function->parent_module != ir_module) {
                     // 不会重复添加, 因为会置换所有的操作数
                     auto ir_decl_function = ir::Function::create(ir_function->function_type);
                     ir_decl_function->fullname = ir_function->fullname;
@@ -396,7 +394,6 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertPropertyToFunctionCall(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = wrapInstructionFunction(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = insertReferenceCount(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));

@@ -29,9 +29,7 @@ implement Tmp {
 
 @test
 func TestMain() {
-    Print(3.1415);
     "\n".Print();
-    Print(3);
     Print<i64>(4);
 
     var tmp: Tmp;

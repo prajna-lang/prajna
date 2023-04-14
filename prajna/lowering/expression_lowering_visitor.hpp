@@ -243,10 +243,9 @@ class ExpressionLoweringVisitor {
         PRAJNA_ASSERT(identifier_path.identifiers.size() == 1);
         std::string member_name = identifier_path.identifiers.front().identifier;
 
-        ir_builder->instantiateTypeImplements(ir_lhs->type);
-
         // 模板函数
         if (identifier_path.identifiers.front().template_arguments_optional) {
+            ir_builder->instantiateTypeImplements(ir_lhs->type);
             if (!ir_lhs->type->template_any_dict.count(member_name)) {
                 logger->error("invalid template", ast_binary_operation.operand);
             }
@@ -416,20 +415,6 @@ class ExpressionLoweringVisitor {
             ir_builder->currentBlock()->values.push_back(ir_access_property);
             ir_access_property->arguments(ir_arguments);
             return ir_access_property;
-        }
-
-        if (auto ir_value_any = cast<ir::ValueAny>(ir_lhs)) {
-            auto lowering_template = std::any_cast<std::shared_ptr<Template>>(ir_value_any->any);
-            std::list<lowering::Symbol> symbol_template_argument_list;
-            std::transform(RANGE(ir_arguments), std::back_inserter(symbol_template_argument_list),
-                           [](auto ir_argument) { return ir_argument->type; });
-            auto template_instance =
-                lowering_template->instantiate(symbol_template_argument_list, ir_builder->module);
-            if (auto ir_function = cast<ir::Function>(symbolGet<ir::Value>(template_instance))) {
-                return ir_builder->create<ir::Call>(ir_function, ir_arguments);
-            } else {
-                logger->error("not a valid template function", ast_binary_operaton.operator_);
-            }
         }
 
         logger->error("not a valid callable", ast_binary_operaton);
@@ -668,7 +653,6 @@ class ExpressionLoweringVisitor {
                             return ir_function;
                         }
 
-                        this->ir_builder->instantiateTypeImplements(ir_type);
                         auto ir_static_fun =
                             ir_builder->GetImplementFunction(ir_type, static_function_identifier);
                         if (ir_static_fun == nullptr) {
@@ -748,14 +732,13 @@ class ExpressionLoweringVisitor {
                     }
                     return ir_type->constructor;
                 },
+                // template parameter could be a ConstantInt.
                 [ir_builder = this->ir_builder](std::shared_ptr<ir::ConstantInt> ir_constant_int)
                     -> std::shared_ptr<ir::Value> {
                     // 需要在block里插入, 这才符合后面IR转换生成的规则
+                    // TODO 可以挪到transform里做这个事
                     PRAJNA_ASSERT(ir_constant_int->type == ir_builder->getIndexType());
                     return ir_builder->getIndexConstant(ir_constant_int->value);
-                },
-                [=](std::shared_ptr<Template> template_) -> std::shared_ptr<ir::Value> {
-                    return ir::ValueAny::create(template_);
                 },
                 [=](auto x) {
                     logger->error(fmt::format("use invalid symbol as a value"),
@@ -764,26 +747,6 @@ class ExpressionLoweringVisitor {
                 }},
             symbol);
     }
-
-    // std::shared_ptr<ir::Value> operator()(ast::Array ast_array) {
-    //     PRAJNA_ASSERT(ast_array.values.size() > 0);
-    //     auto ir_first_value = this->applyOperand(ast_array.values.front());
-    //     auto ir_value_type = ir_first_value->type;
-    //     auto ir_array = ir_builder->create<ir::LocalVariable>(
-    //         ir::ArrayType::create(ir_value_type, ast_array.values.size()));
-    //     for (size_t i = 0; i < ast_array.values.size(); ++i) {
-    //         auto ir_idx = ir_builder->getIndexConstant(i);
-    //         auto ir_index_array = ir_builder->create<ir::IndexArray>(ir_array, ir_idx);
-    //         auto ir_value = this->applyOperand(ast_array.values[i]);
-    //         if (ir_value->type != ir_value_type) {
-    //             logger->error("the array element type are not the same",
-    //             ast_array.values[i]);
-    //         }
-    //         ir_builder->create<ir::WriteVariableLiked>(ir_value, ir_index_array);
-    //     }
-
-    //     return ir_array;
-    // }
 
     std::shared_ptr<ir::Value> applyArray(std::list<ast::Expression> ast_array_values) {
         // 获取数组类型

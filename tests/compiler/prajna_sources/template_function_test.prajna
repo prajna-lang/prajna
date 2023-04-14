@@ -36,4 +36,19 @@ func TestMain() {
     tmp.Create<f32>();
     Tmp::create2<f32>();
     // Tmp::Create<f32>();
+    var t = f32::Sin;
+}
+
+@test
+func TestScopeAccess() {
+    var f0 = Tmp::Create<f32>;
+    var f1 = Tmp::create2<f16>;
+    var f2 = f32::Sin;
+    var f3 = f32::Cos;
+    f2 = f32::Sin;
+    var f4 = f32::Add;
+
+    var a = 3.1415 / 2.0;
+    f2(&a);
+    f3(&a);
 }

@@ -59,8 +59,8 @@ class InterpreterLoweringVisitor {
                                if (!ir_result_value->type || !compiler->settings.print_result)
                                    return;
 
-                               if (!ir_builder->getMemberFunction(ir_result_value->type,
-                                                                  "ToString"))
+                               if (!ir_builder->GetImplementFunction(ir_result_value->type,
+                                                                     "ToString"))
                                    return;
                                auto ir_result_string =
                                    ir_builder->callMemberFunction(ir_result_value, "ToString", {});

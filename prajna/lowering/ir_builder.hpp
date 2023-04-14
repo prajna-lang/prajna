@@ -214,8 +214,8 @@ class IrBuilder {
         }
     }
 
-    std::shared_ptr<ir::Function> getMemberFunction(std::shared_ptr<ir::Type> ir_type,
-                                                    std::string member_name) {
+    std::shared_ptr<ir::Function> GetImplementFunction(std::shared_ptr<ir::Type> ir_type,
+                                                       std::string member_name) {
         this->instantiateTypeImplements(ir_type);
 
         if (ir_type->function_dict.count(member_name)) {
@@ -249,11 +249,10 @@ class IrBuilder {
         auto ir_type = ir_object->type;
 
         auto ir_variable_liked = this->variableLikedNormalize(ir_object);
-        if (auto member_function = this->getMemberFunction(ir_type, member_name)) {
+        if (auto member_function = this->GetImplementFunction(ir_type, member_name)) {
             auto ir_this_pointer = this->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             return ir::MemberFunctionWithThisPointer::create(ir_this_pointer, member_function);
         }
-
         auto iter_field = std::find_if(
             RANGE(ir_type->fields),
             [=](std::shared_ptr<ir::Field> ir_field) { return ir_field->name == member_name; });
@@ -274,7 +273,7 @@ class IrBuilder {
     std::shared_ptr<ir::Call> callMemberFunction(
         std::shared_ptr<ir::Value> ir_object, std::string member_function,
         std::list<std::shared_ptr<ir::Value>> ir_arguments) {
-        auto ir_member_function = this->getMemberFunction(ir_object->type, member_function);
+        auto ir_member_function = this->GetImplementFunction(ir_object->type, member_function);
         PRAJNA_ASSERT(ir_member_function);
         return this->callMemberFunction(ir_object, ir_member_function, ir_arguments);
     }

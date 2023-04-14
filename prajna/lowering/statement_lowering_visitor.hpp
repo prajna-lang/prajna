@@ -249,9 +249,11 @@ class StatementLoweringVisitor {
         auto ir_function = ir_builder->createFunction(ast_function_header.name, ir_function_type);
         ir_function->annotation_dict = this->applyAnnotations(ast_function_header.annotation_dict);
 
+        // 加入interface里
         if (ir_builder->current_implement_interface) {
             ir_builder->current_implement_interface->functions.push_back(ir_function);
         } else {
+            // 加入struct里
             if (ir_builder->current_implement_type) {
                 ir_builder->current_implement_type->function_dict[ir_function->name] = ir_function;
             }

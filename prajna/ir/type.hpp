@@ -52,7 +52,7 @@ class Type : public Named {
    public:
     virtual ~Type() {}
 
-    std::shared_ptr<Function> getMemberFunction(std::string member_function_name);
+    std::shared_ptr<Function> GetImplementFunction(std::string member_function_name);
 
    public:
     // @ref https://llvm.org/docs/LangRef.html#langref-datalayout bytes是多少可参阅datalyout的描述

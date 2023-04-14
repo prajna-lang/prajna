@@ -351,11 +351,12 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
         std::list<lowering::Symbol> template_arguments = {ir_rank};
         auto ir_layout_type = ir_layout_template_struct->instantiate(template_arguments, ir_module);
         auto ir_layout =
-            ir_builder->create<ir::Call>(ir_layout_type->function_dict["Create"],
+            ir_builder->create<ir::Call>(ir_builder->GetImplementFunction(ir_layout_type, "Create"),
                                          std::list<std::shared_ptr<ir::Value>>{ir_for->last()});
         auto ir_linear_first = ir_builder->getIndexConstant(0);
 
-        auto ir_array_one = ir_builder->create<ir::Call>(ir_array_type->function_dict["One"]);
+        auto ir_array_one =
+            ir_builder->create<ir::Call>(ir_builder->GetImplementFunction(ir_array_type, "One"));
         auto ir_array_range = ir_builder->callBinaryOperator(
             ir_builder->callBinaryOperator(ir_array_last, "-", ir_array_first), "-", ir_array_one);
         auto ir_linear_last = ir_builder->callBinaryOperator(

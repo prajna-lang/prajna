@@ -108,8 +108,9 @@ class ExpressionLoweringVisitor {
         ast_identifier_path.identifiers.front().identifier = "String";
         auto string_type = cast<ir::StructType>(
             symbolGet<ir::Type>(this->applyIdentifierPath(ast_identifier_path)));
-        auto ir_string_from_char_pat = string_type->function_dict["__from_char_ptr"];
 
+        auto ir_string_from_char_pat =
+            ir_builder->GetImplementFunction(string_type, "__from_char_ptr");
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
         return ir_builder->create<ir::Call>(
             ir_string_from_char_pat, std::list<std::shared_ptr<ir::Value>>{ir_c_string_address});
@@ -668,7 +669,8 @@ class ExpressionLoweringVisitor {
                         }
 
                         this->ir_builder->instantiateTypeImplements(ir_type);
-                        auto ir_static_fun = ir_type->function_dict[static_function_identifier];
+                        auto ir_static_fun =
+                            ir_builder->GetImplementFunction(ir_type, static_function_identifier);
                         if (ir_static_fun == nullptr) {
                             logger->error(
                                 fmt::format("the static function {} is not exit in type {}",
@@ -991,15 +993,16 @@ class ExpressionLoweringVisitor {
             ir_builder->pushBlock(ir_if->trueBlock());
             ir_builder->create<ir::WriteVariableLiked>(
                 ir_builder->create<ir::Call>(
-                    ir_target_ptr_type->function_dict["FromUndef"],
+                    ir_builder->GetImplementFunction(ir_target_ptr_type, "FromUndef"),
                     std::list<std::shared_ptr<ir::Value>>{
                         ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
                 ir_ptr);
             ir_builder->popBlock();
 
             ir_builder->pushBlock(ir_if->falseBlock());
-            auto ir_nullptr = ir_builder->create<ir::Call>(ir_ptr->type->function_dict["Null"],
-                                                           std::list<std::shared_ptr<ir::Value>>{});
+            auto ir_nullptr =
+                ir_builder->create<ir::Call>(ir_builder->GetImplementFunction(ir_ptr->type, "Null"),
+                                             std::list<std::shared_ptr<ir::Value>>{});
             ir_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
             ir_builder->popBlock();
 

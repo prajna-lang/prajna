@@ -305,20 +305,25 @@ inline std::shared_ptr<ir::Module> removeValuesAfterReturn(std::shared_ptr<ir::M
 }
 
 inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
-    utility::each<ir::Call>(ir_module, [=](std::shared_ptr<ir::Call> ir_call) {
-        if (auto ir_callee = cast<ir::Function>(ir_call->function())) {
-            if (ir_callee->parent_module != ir_module && !ir_callee->isInstruction()) {
-                // 不会重复添加, 因为会置换所有的操作数
-                auto ir_function = ir::Function::create(ir_callee->function_type);
-                ir_function->fullname = ir_callee->fullname;
-                ir_function->name = ir_callee->name;
-                ir_function->parent_module = ir_module;
-                ir_module->functions.push_front(ir_function);
+    utility::each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
+        for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
+            auto ir_operand = ir_instruction->operand(i);
 
-                auto instruction_with_index_list_copy = ir_callee->instruction_with_index_list;
-                for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
-                    if (ir_instruction->getParentFunction()->parent_module == ir_module) {
-                        ir_instruction->operand(op_idx, ir_function);
+            if (auto ir_function = cast<ir::Function>(ir_operand)) {
+                if (ir_function->parent_module != ir_module && !ir_function->isInstruction()) {
+                    // 不会重复添加, 因为会置换所有的操作数
+                    auto ir_decl_function = ir::Function::create(ir_function->function_type);
+                    ir_decl_function->fullname = ir_function->fullname;
+                    ir_decl_function->name = ir_function->name;
+                    ir_decl_function->parent_module = ir_module;
+                    ir_module->functions.push_front(ir_decl_function);
+
+                    auto instruction_with_index_list_copy =
+                        ir_function->instruction_with_index_list;
+                    for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
+                        if (ir_instruction->getParentFunction()->parent_module == ir_module) {
+                            ir_instruction->operand(op_idx, ir_decl_function);
+                        }
                     }
                 }
             }

@@ -46,3 +46,6 @@
 [submodule "xeus_prajna/third_party/xproperty"]
 	path = xeus_prajna/third_party/xproperty
 	url = https://github.com/matazure/xproperty.git
+[submodule "docs/notebooks"]
+	path = docs/notebooks
+	url = https://github.com/matazure/prajna-notebooks.git

@@ -1498,6 +1498,7 @@ class StatementLoweringVisitor {
         }
         if (ast_pragma.name == "system") {
             std::string command = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
+            // TODO 需要处理下支持Jupyter的输出
             std::system(command.c_str());
             return nullptr;
         }

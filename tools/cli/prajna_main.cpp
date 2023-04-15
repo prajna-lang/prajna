@@ -74,10 +74,12 @@ int prajna_jupyter_main(int argc, char* argv[]) {
         auto jupyter_data_dir = future_jupyter_data_dir.get();
         // 末尾存在换行符, 将其删除
         jupyter_data_dir.pop_back();
+        std::filesystem::create_directories(jupyter_data_dir + "/kernels/prajna");
         std::ofstream kernel_json_ofs(jupyter_data_dir + "/kernels/prajna/kernel.json");
         if (!kernel_json_ofs.good()) {
             fmt::print("failed to create jupyter prajna kernel.jsonf file: {}\n",
                        jupyter_data_dir + "/kernels/prajna/kernel.json");
+            return -1;
         }
         kernel_json_ofs << prajna_kernel_json;
         fmt::print("success to install jupyter prajna kernel in {}\n",

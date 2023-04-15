@@ -91,7 +91,8 @@ include(CMakePackageConfigHelpers)
 install(TARGETS prajna EXPORT ${PROJECT_NAME}-targets)
 # xeus_prajna依赖
 install(TARGETS nlohmann_json EXPORT ${PROJECT_NAME}-targets)
-install(DIRECTORY prajna_builtin_packages
-              DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(DIRECTORY prajna_builtin_packages DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(DIRECTORY dockerfiles DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(DIRECTORY docs DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 

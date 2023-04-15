@@ -710,21 +710,6 @@ class StatementLoweringVisitor {
         return nullptr;
     }
 
-    std::list<Symbol> getTemplateConcepts(ast::TemplateParameters ast_template_parameter_list) {
-        std::list<Symbol> symbol_template_concepts;
-        std::transform(RANGE(ast_template_parameter_list),
-                       std::back_inserter(symbol_template_concepts),
-                       [=](ast::TemplateParameter ast_template_parameter) -> Symbol {
-                           if (ast_template_parameter.concept_optional) {
-                               return expression_lowering_visitor->applyIdentifierPath(
-                                   ast_template_parameter.concept_optional.get());
-                           } else {
-                               return nullptr;
-                           }
-                       });
-        return symbol_template_concepts;
-    }
-
     std::shared_ptr<Template> getOrCreateTemplate(ast::Identifier ast_identifier) {
         if (ir_builder->symbol_table->currentTableHas(ast_identifier)) {
             auto template_ = symbolGet<Template>(ir_builder->symbol_table->get(ast_identifier));
@@ -798,21 +783,12 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::TemplateStatement ast_template_statement) {
-        auto template_concepts =
-            this->getTemplateConcepts(ast_template_statement.template_parameters);
-
         return boost::apply_visitor(
             overloaded{
                 [=](ast::Struct ast_struct) -> Symbol {
                     std::shared_ptr<TemplateStruct> template_struct;
-                    if (ir_builder->symbol_table->currentTableHas(ast_struct.name)) {
-                        template_struct = symbolGet<TemplateStruct>(
-                            ir_builder->symbol_table->get(ast_struct.name));
-                        PRAJNA_ASSERT(template_struct);
-                    } else {
-                        template_struct = TemplateStruct::create();
-                        ir_builder->SetSymbol(template_struct, ast_struct.name);
-                    }
+                    template_struct = TemplateStruct::create();
+                    ir_builder->SetSymbol(template_struct, ast_struct.name);
 
                     template_struct->template_struct_impl->generator =
                         this->createTemplateGenerator(ast_template_statement.template_parameters,

@@ -928,7 +928,7 @@ class StatementLoweringVisitor {
                 return ir_function;
             }
 
-            auto cast_operation = ir::CastInstruction::Operation::BitCast;
+            auto cast_operation = ir::CastInstruction::Operation::None;
 
             if (auto ir_source_int_type = cast<ir::IntType>(ir_source_type)) {
                 if (is<ir::FloatType>(ir_target_type)) {
@@ -974,7 +974,10 @@ class StatementLoweringVisitor {
                 }
             }
 
-            PRAJNA_ASSERT(cast_operation != ir::CastInstruction::Operation::BitCast);
+            if (cast_operation == ir::CastInstruction::Operation::None) {
+                logger->error("invalid cast");
+            }
+
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CastInstruction>(
                 cast_operation, ir_function->parameters.front(), ir_target_type));
             return ir_function;
@@ -990,12 +993,14 @@ class StatementLoweringVisitor {
                                    logger = this->logger](
                                       std::list<Symbol> symbol_template_arguments,
                                       std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
-
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
             auto ir_constant_bit_size =
                 symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
-
+            if (!ir_constant_bit_size) {
+                logger->error("int bits should be a constant int");
+            }
             return ir::IntType::create(ir_constant_bit_size->value, is_signed);
         };
 
@@ -1012,17 +1017,20 @@ class StatementLoweringVisitor {
                                    logger = this->logger](
                                       std::list<Symbol> symbol_template_arguments,
                                       std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
-
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
             auto ir_constant_bit_size =
                 symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
-            // TODO, 还需要再处理下, LLVM支持的float类型有限.
+            if (!ir_constant_bit_size) {
+                logger->error("int bits should be a constant int");
+            }
             auto bits = ir_constant_bit_size->value;
             // LLVM只支持float16/32/16,  bfloat需要另外的函数去实现, float128支持并不好, sin,
             // cos等函数都是错误的结果
-            PRAJNA_ASSERT(bits == 16 || bits == 32 || bits == 64 /*|| bits == 128*/);
-
+            if (!(bits == 16 || bits == 32 || bits == 64 /*|| bits == 128*/)) {
+                logger->error("float support only 16, 32, 64 bits");
+            }
             return ir::FloatType::create(ir_constant_bit_size->value);
         };
 
@@ -1031,8 +1039,8 @@ class StatementLoweringVisitor {
         return template_struct_float;
     }
 
-    std::shared_ptr<Template> createFloatTypeIntrinsicFunctionTemplate(std::string intrinsic_name,
-                                                                       size_t argument_size = 1) {
+    std::shared_ptr<Template> createFloatTypeIntrinsicUnaryFunctionTemplate(
+        std::string intrinsic_name, size_t argument_size = 1) {
         auto template_intrinsic = Template::create();
 
         template_intrinsic->generator = [=, symbol_table = this->ir_builder->symbol_table,
@@ -1040,11 +1048,15 @@ class StatementLoweringVisitor {
                                             std::list<Symbol> symbol_template_arguments,
                                             std::shared_ptr<ir::Module> ir_module) -> Symbol {
             // TODO
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
 
             auto ir_float_type =
                 cast<ir::FloatType>(symbolGet<ir::Type>(symbol_template_arguments.front()));
-            PRAJNA_ASSERT(ir_float_type);
+            if (!ir_float_type) {
+                logger->error("should be a float type");
+            }
 
             std::list<std::shared_ptr<ir::Type>> ir_argument_list(argument_size, ir_float_type);
             auto ir_function_type = ir::FunctionType::create(ir_argument_list, ir_float_type);
@@ -1075,12 +1087,18 @@ class StatementLoweringVisitor {
                                         logger = this->logger,
                                         this](std::list<Symbol> symbol_template_arguments,
                                               std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 2);
-
+            if (symbol_template_arguments.size() != 2) {
+                logger->error("should input 2 template argument");
+            }
             auto ir_source_type = symbolGet<ir::Type>(symbol_template_arguments.front());
             auto ir_target_type = symbolGet<ir::Type>(symbol_template_arguments.back());
-            PRAJNA_ASSERT(ir_source_type->bytes == ir_target_type->bytes);
+            if (!ir_source_type or !ir_target_type) {
+                logger->error("template arguments should be type");
+            }
+            if (ir_source_type->bytes != ir_target_type->bytes) {
+                logger->error("the types byte size are not same");
+            }
+
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
             auto ir_function = ir_tmp_builder->createFunction(
@@ -1102,9 +1120,13 @@ class StatementLoweringVisitor {
                                        logger = this->logger](
                                           std::list<Symbol> symbol_template_arguments,
                                           std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
             auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("template argument should be a type");
+            }
 
             auto compare_operation = ir::CompareInstruction::Operation::None;
             // arithmatic
@@ -1171,7 +1193,9 @@ class StatementLoweringVisitor {
                 }
             }
 
-            PRAJNA_ASSERT(compare_operation != ir::CompareInstruction::Operation::None);
+            if (compare_operation == ir::CompareInstruction::Operation::None) {
+                logger->error("not support compare operation");
+            }
 
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type =
@@ -1190,7 +1214,6 @@ class StatementLoweringVisitor {
         return template_compare;
     }
 
-    // TODO 类型不对应, 会导致错误.
     std::shared_ptr<Template> createBinaryOperatorTemplate(std::string binary_operator_name) {
         auto template_binary_operator = Template::create();
 
@@ -1198,9 +1221,13 @@ class StatementLoweringVisitor {
                                                logger = this->logger](
                                                   std::list<Symbol> symbol_template_arguments,
                                                   std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
             auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("the template argument should be a type");
+            }
 
             auto binary_operation = ir::BinaryOperator::Operation::None;
             // arithmatic
@@ -1286,7 +1313,9 @@ class StatementLoweringVisitor {
                 }
             }
 
-            PRAJNA_ASSERT(binary_operation != ir::BinaryOperator::Operation::None);
+            if (binary_operation == ir::BinaryOperator::Operation::None) {
+                logger->error("not support binary operator");
+            }
 
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({ir_type, ir_type}, ir_type);
@@ -1311,9 +1340,14 @@ class StatementLoweringVisitor {
                                                logger = this->logger](
                                                   std::list<Symbol> symbol_template_arguments,
                                                   std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
             auto ir_float_type =
                 cast<ir::FloatType>(symbolGet<ir::Type>(symbol_template_arguments.front()));
+            if (!ir_float_type) {
+                logger->error("template argument should be a float type");
+            }
 
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({}, ir_float_type);
@@ -1413,37 +1447,37 @@ class StatementLoweringVisitor {
             this->createCompareInstructionTemplate("le"), "__le");
         //
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("sin"), "__sin");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("sin"), "__sin");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("cos"), "__cos");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("cos"), "__cos");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("pow"), "__pow");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("pow"), "__pow");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("exp"), "__exp");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp"), "__exp");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("exp2"), "__exp2");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp2"), "__exp2");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("log"), "__log");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log"), "__log");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("log10"), "__log10");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log10"), "__log10");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("log2"), "__log2");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log2"), "__log2");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("fabs"), "__fabs");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("fabs"), "__fabs");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("floor"), "__floor");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("floor"), "__floor");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("ceil"), "__ceil");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("ceil"), "__ceil");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("trunc"), "__trunc");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("trunc"), "__trunc");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("rint"), "__rint");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("rint"), "__rint");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("nearby"), "__nearby");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("nearby"), "__nearby");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("round"), "__round");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("round"), "__round");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicFunctionTemplate("roundeven"), "__roundeven");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("roundeven"), "__roundeven");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createFloatSmallestOrLargest(ir::ConstantFloat::SpecialValue::Smallest, false),

@@ -662,10 +662,6 @@ class ExpressionLoweringVisitor {
                                 static_function_identifier);
                         }
 
-                        if (iter_ast_identifier->template_arguments_optional) {
-                            logger->error("the template arguments is invalid",
-                                          *iter_ast_identifier);
-                        }
                         return ir_static_fun;
                     },
                     [=](std::shared_ptr<TemplateStruct> template_strcut) -> Symbol {
@@ -682,31 +678,32 @@ class ExpressionLoweringVisitor {
                         if (!iter_ast_identifier->template_arguments_optional) {
                             return symbol;
                         } else {
-                            auto symbol_template_arguments = this->applyTemplateArguments(
-                                *iter_ast_identifier->template_arguments_optional);
+                            try {
+                                auto symbol_template_arguments = this->applyTemplateArguments(
+                                    *iter_ast_identifier->template_arguments_optional);
 
-                            if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
-                                // 如果获取到nullptr则说明实例化正在进行中,
-                                // 使用instantiating_type来获取相应类型
-                                if (auto ir_type = template_struct->instantiate(
-                                        symbol_template_arguments, ir_builder->module)) {
-                                    return ir_type;
-                                } else {
-                                    PRAJNA_ASSERT(ir_builder->instantiating_type_stack.size());
-                                    return ir_builder->instantiating_type_stack.top();
+                                if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
+                                    // 如果获取到nullptr则说明实例化正在进行中,
+                                    // 使用instantiating_type来获取相应类型
+                                    if (auto ir_type = template_struct->instantiate(
+                                            symbol_template_arguments, ir_builder->module)) {
+                                        return ir_type;
+                                    } else {
+                                        PRAJNA_ASSERT(ir_builder->instantiating_type_stack.size());
+                                        return ir_builder->instantiating_type_stack.top();
+                                    }
                                 }
+
+                                if (auto tempate_ = symbolGet<Template>(symbol)) {
+                                    return tempate_->instantiate(symbol_template_arguments,
+                                                                 ir_builder->module);
+                                }
+                            } catch (CompileError compile_error) {
+                                logger->note(*iter_ast_identifier);
+                                throw compile_error;
                             }
 
-                            if (auto tempate_ = symbolGet<Template>(symbol)) {
-                                return tempate_->instantiate(symbol_template_arguments,
-                                                             ir_builder->module);
-                            }
-
-                            auto v = symbolGet<ir::Value>(symbol);
-
-                            logger->error(
-                                "it's not a template [struct] but with template arguments",
-                                *iter_ast_identifier);
+                            PRAJNA_UNREACHABLE;
                             return nullptr;
                         }
                     }},

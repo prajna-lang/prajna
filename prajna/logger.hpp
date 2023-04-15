@@ -125,6 +125,7 @@ class Logger {
 
     void error(std::string message) {
         fmt::print("{}: {}\n", fmt::styled("error", fmt::fg(fmt::color::red)), message);
+        throw CompileError();
     }
 
     void error(std::string message, ast::SourcePosition first_position) {

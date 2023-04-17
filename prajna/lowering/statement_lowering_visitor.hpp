@@ -974,8 +974,8 @@ class StatementLoweringVisitor {
             }
             auto ir_constant_bit_size =
                 symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
-            if (!ir_constant_bit_size) {
-                logger->error("int bits should be a constant int");
+            if (!ir_constant_bit_size || ir_constant_bit_size->value <= 0) {
+                logger->error("int bits should be a positive constant int");
             }
             return ir::IntType::create(ir_constant_bit_size->value, is_signed);
         };
@@ -998,8 +998,8 @@ class StatementLoweringVisitor {
             }
             auto ir_constant_bit_size =
                 symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
-            if (!ir_constant_bit_size) {
-                logger->error("int bits should be a constant int");
+            if (!ir_constant_bit_size || ir_constant_bit_size->value <= 0) {
+                logger->error("int bits should be a positive constant int");
             }
             auto bits = ir_constant_bit_size->value;
             // LLVM只支持float16/32/16,  bfloat需要另外的函数去实现, float128支持并不好, sin,

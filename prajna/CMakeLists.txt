@@ -10,6 +10,7 @@ target_link_libraries(prajna_config_target
     INTERFACE Boost::optional
     INTERFACE Boost::fusion
     INTERFACE Boost::algorithm
+    INTERFACE Boost::dll
     INTERFACE fmt::fmt
 )
 

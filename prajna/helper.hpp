@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 
+#include "boost/dll/runtime_symbol_info.hpp"
 #include "prajna/assert.hpp"
 
 #define RANGE(container) container.begin(), container.end()
@@ -46,12 +47,8 @@ bool is(std::shared_ptr<SrcType_> ir_src) {
     return cast<DstType_, SrcType_>(ir_src) != nullptr;
 }
 
-inline std::filesystem::path RealPath(const char* cstr_path) {
-    char buffer[1000];
-    std::cout << std::string(cstr_path) << std::endl;
-    auto re = realpath(cstr_path, buffer);
-    PRAJNA_ASSERT(re);
-    return std::filesystem::path(buffer);
+inline std::filesystem::path ProgramLocation(const char* cstr_path) {
+    return boost::dll::program_location().string();
 }
 
 }  // namespace prajna

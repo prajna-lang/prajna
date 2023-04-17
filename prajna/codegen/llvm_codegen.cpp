@@ -343,7 +343,7 @@ class LlvmCodegen {
         PRAJNA_TODO;
     }
 
-    void emitGlobalAlloca(sp<ir::GlobalAlloca> ir_global_alloca) {
+    void emitGlobalAlloca(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) {
         auto ir_value_type = cast<ir::PointerType>(ir_global_alloca->type)->value_type;
         PRAJNA_ASSERT(ir_value_type && ir_value_type->llvm_type);
         PRAJNA_ASSERT(ir_global_alloca->parent_module->llvm_module);

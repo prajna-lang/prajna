@@ -11,6 +11,7 @@
 #include "fmt/format.h"
 #include "nlohmann/json.hpp"
 #include "prajna/compiler/compiler.h"
+#include "prajna/helper.hpp"
 #include "repl/repl.h"
 
 int prajna_exe_main(int argc, char* argv[]) {
@@ -28,7 +29,7 @@ int prajna_exe_main(int argc, char* argv[]) {
             compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
         } else {
             auto prajna_builtin_packages_directory =
-                std::filesystem::path(argv[0]).parent_path() / "../prajna_builtin_packages";
+                prajna::RealPath(argv[0]).parent_path() / "../prajna_builtin_packages";
             compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
         }
         compiler->addPackageDirectoryPath(std::filesystem::current_path());
@@ -49,9 +50,8 @@ int prajna_jupyter_main(int argc, char* argv[]) {
                                                            "install jupyter prajna kernel");
     auto result = options.parse(argc, argv);
 
-    auto executable_path = std::filesystem::path(argv[0]);
-    auto xeus_path =
-        std::filesystem::current_path() / executable_path.parent_path() / "xeus_prajna";
+    auto xeus_path = std::filesystem::current_path() /
+                     std::filesystem::absolute(std::string(argv[0])).parent_path() / "xeus_prajna";
     if (!std::filesystem::is_regular_file(xeus_path)) {
         fmt::print(
             "xeus_prajna is not found, please configure cmake with -DPRAJNA_WITH_JUPYTER=ON");

@@ -1025,7 +1025,7 @@ class GlobalAlloca : public Instruction {
 
    public:
     bool is_external = false;
-    sp<Module> parent_module;
+    std::shared_ptr<Module> parent_module;
     // std::shared_ptr<GlobalVariable> link_to_global_variable = nullptr;
 };
 

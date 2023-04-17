@@ -1,6 +1,6 @@
 # 般若编程语言
 
-[![jenkins](http://www.matazure.com:8081/job/prajna/job/main/badge/icon)](http://www.matazure.com:8081/blue/organizations/jenkins/prajna/activity)
+[![Jenkins](http://www.matazure.com:8081/job/prajna/job/main/badge/icon)](http://www.matazure.com:8081/blue/organizations/jenkins/prajna/activity)
 
 般若是一门专门为构建更加模块化, 自动化和智能化的人工智能基础设施而研发的开源编程语言. 般若编程语言的目标是同时满足人工智能研究, 训练和部署等多个阶段的使用; 可以简易使用的CPU, GPU和各种TPU为人工智能提供算力.
 
@@ -171,13 +171,13 @@ CUDA仅支持英伟达自己的GPU, 虽然目前般若也只支持英伟达GPU, 
 
 Pytorch/Tensorflow项目代码过于庞大混乱, 基础架构和框架耦合在一起, 般若生态会着清晰的架构, 在合适的地方处理问题
 
-## 与社区开发者关系
-
-般若生态的建设需要社区开发者的大量参与, 般若生态会和开发者建立良好关系, 一起学习成长; 即使是编译器, 张量计算优化等关键技术, 般若生态也会和大家无私分享.
-
 ## 文档
 
 可以查阅[般若编程语言指南](docs/般若编程语言指南.md)来进一步了解.
+
+## 在线体验[![Binder](https://mybinder.org/badge_logo.svg)](<https://hub.gke2.mybinder.org/user/matazure-prajna-notebooks-w73bpdy2/lab/workspaces/auto-F/tree/work/hello_world.ipynb>)
+
+点击"launch binder"按钮来快速在线体验般若编程语言.
 
 ## 其他
 

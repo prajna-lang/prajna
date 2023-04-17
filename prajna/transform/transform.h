@@ -155,11 +155,12 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
                     if (ir_function->annotation_dict.count("kernel")) {
                         auto global_variable_fullname = getKernelFunctionAddressName(ir_function);
 
-                        sp<ir::GlobalVariable> ir_global_variable = nullptr;
-                        auto iter_global_variable = std::find_if(
-                            RANGE(ir_module->global_variables), [=](sp<ir::GlobalVariable> x) {
-                                return x->fullname == global_variable_fullname;
-                            });
+                        std::shared_ptr<ir::GlobalVariable> ir_global_variable = nullptr;
+                        auto iter_global_variable =
+                            std::find_if(RANGE(ir_module->global_variables),
+                                         [=](std::shared_ptr<ir::GlobalVariable> x) {
+                                             return x->fullname == global_variable_fullname;
+                                         });
                         if (iter_global_variable != ir_module->global_variables.end()) {
                             ir_global_variable = *iter_global_variable;
                         } else {
@@ -183,7 +184,8 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
     return ir_module;
 }
 
-inline sp<ir::Module> convertGlobalVariableToPointer(sp<ir::Module> ir_module) {
+inline std::shared_ptr<ir::Module> convertGlobalVariableToPointer(
+    std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_global_variable : ir_module->global_variables) {
         auto ir_global_alloca = ir::GlobalAlloca::create(ir_global_variable->type);
         ir_global_alloca->name = ir_global_variable->name;
@@ -203,11 +205,11 @@ inline sp<ir::Module> convertGlobalVariableToPointer(sp<ir::Module> ir_module) {
                 // @note 全局变量目前遵循如果使用其他module的则自身为external的原则
                 if (auto ir_global_variable =
                         cast<ir::GlobalVariable>(ir_instruction->operand(i))) {
-                    auto iter_global_alloca =
-                        std::find_if(RANGE(ir_module->global_allocas), [=](sp<ir::GlobalAlloca> x) {
+                    auto iter_global_alloca = std::find_if(
+                        RANGE(ir_module->global_allocas), [=](std::shared_ptr<ir::GlobalAlloca> x) {
                             return x->fullname == ir_global_variable->fullname;
                         });
-                    sp<ir::GlobalAlloca> ir_global_alloca = nullptr;
+                    std::shared_ptr<ir::GlobalAlloca> ir_global_alloca = nullptr;
                     if (iter_global_alloca != ir_module->global_allocas.end()) {
                         ir_global_alloca = *iter_global_alloca;
                     } else {
@@ -271,8 +273,9 @@ inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
         if (ir_function->annotation_dict.count("kernel")) {
             auto global_variable_fullname = getKernelFunctionAddressName(ir_function);
             auto iter_global_variable = std::find_if(
-                RANGE(ir_module->global_variables),
-                [=](sp<ir::GlobalVariable> x) { return x->fullname == global_variable_fullname; });
+                RANGE(ir_module->global_variables), [=](std::shared_ptr<ir::GlobalVariable> x) {
+                    return x->fullname == global_variable_fullname;
+                });
             if (iter_global_variable == ir_module->global_variables.end()) {
                 auto ir_global_variable = ir::GlobalVariable::create(ir_function->type);
                 ir_global_variable->name = global_variable_fullname;

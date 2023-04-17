@@ -1,14 +1,15 @@
 #include <filesystem>
 #include <iostream>
 
+#include "prajna/helper.hpp"
 #include "prajna_xeus_interpreter.hpp"
 #include "xeus-zmq/xserver_shell_main.hpp"
 #include "xeus/xkernel.hpp"
 #include "xeus/xkernel_configuration.hpp"
 
 int main(int argc, char* argv[]) {
-    auto exe_path = std::filesystem::path(argv[0]);
-    auto prajna_builtin_packages_directory = exe_path.parent_path() / "../prajna_builtin_packages";
+    auto prajna_builtin_packages_directory =
+        prajna::RealPath(argv[0]).parent_path() / "../prajna_builtin_packages";
     std::cout << "xeus_prajna use prajna_builtin_papckages: " << prajna_builtin_packages_directory
               << std::endl;
     std::cout << "xeus_prajna working directory is " << std::filesystem::current_path().string()

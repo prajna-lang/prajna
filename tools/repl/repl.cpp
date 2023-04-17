@@ -36,7 +36,7 @@ int prajna_repl_main(int argc, char* argv[]) {
         compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
     } else {
         auto prajna_builtin_packages_directory =
-            std::filesystem::path(argv[0]).parent_path() / "../prajna_builtin_packages";
+            prajna::RealPath(argv[0]).parent_path() / "../prajna_builtin_packages";
         compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
     }
 

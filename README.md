@@ -175,7 +175,7 @@ Pytorch/Tensorflow项目代码过于庞大混乱, 基础架构和框架耦合在
 
 可以查阅[般若编程语言指南](docs/般若编程语言指南.md)来进一步了解.
 
-## 在线体验[![Binder](https://mybinder.org/badge_logo.svg)](<https://mybinder.org/v2/gh/matazure/prajna-notebooks/HEAD?labpath=%2Fprajna_install%2Fdocs%2Fnotebooks%2Fhello_world.ipynb>)
+## 在线体验[![Binder](https://mybinder.org/badge_logo.svg)](<https://mybinder.org/v2/gh/matazure/prajna-notebooks/HEAD?labpath=%2Fprajna%2Fdocs%2Fnotebooks%2Fhello_world.ipynb>)
 
 点击"launch binder"按钮来快速在线体验般若编程语言.
 

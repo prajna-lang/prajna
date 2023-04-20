@@ -38,7 +38,7 @@ func TestDynamicDispatch(){
     say_hi.say();
     debug::Assert(!say_hi.IsNull());
 
-    var say: dynamic<Say> = dynamic_cast<Say>(say_hi);
+    var say: dynamic<Say> = say_hi.As<Say>();
     say.say();
 
     var say_hello = Pointer<SayHello>::New();

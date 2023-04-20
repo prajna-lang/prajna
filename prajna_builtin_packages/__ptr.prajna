@@ -46,7 +46,6 @@ implement Pointer<Type>{
         return self;
     }
 
-
     func IsNull()->bool{
         return this._ToInt64() == 0;
     }
@@ -61,6 +60,11 @@ implement Pointer<Type>{
         this_pointer.raw_ptr = this_raw_pointer;
         bindings::IncrementReferenceCount(__bit_cast<Type* ,undef*>(this_pointer.raw_ptr));
         return this_pointer;
+    }
+
+    template <Interface>
+    func As()->dynamic<Interface> {
+        return dynamic_cast<Interface>(this);
     }
 }
 

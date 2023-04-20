@@ -279,9 +279,9 @@ class ExpressionLoweringVisitor {
                 return ir_member;
             }
         }
-        // ir_lhs
 
-        logger->error(fmt::format("{} is not a member", member_name), ast_binary_operation.operand);
+        logger->error(fmt::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
+                      ast_binary_operation.operand);
         return nullptr;
     }
 

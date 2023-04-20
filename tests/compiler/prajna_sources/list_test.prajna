@@ -1,11 +1,16 @@
 @test
-func TestMain() {
-    var root = Pointer<list::Node<i64>>::New();
-    root.value = 3;
-    // TODO 引用计数存在bug
-    root.next = Pointer<list::Node<i64>>::New();
-    root.next.pre = root;
-    root.next.value = 4;
+func TestList() {
+    var tmp_list = List<i64>::Create();
+    tmp_list.PushFront(2);
+    tmp_list.PushBack(3);
+    tmp_list.PushBack(4);
+    tmp_list.PushFront(1);
 
-    debug::Assert(root.next.pre.value == 3);
+    var node = tmp_list.Begin();
+    while (node != tmp_list.End()) {
+        node.value.ToString().Print();
+        ", ".Print();
+        node = node.next;
+    }
+    "\n".Print();
 }

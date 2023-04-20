@@ -54,6 +54,14 @@ implement Pointer<Type>{
     func ReferenceCount()->i64 {
         return bindings::GetReferenceCount(__bit_cast<Type* ,undef*>(this.raw_ptr));
     }
+
+    @static
+    func FromThisRawPointer(this_raw_pointer: Type*)->Pointer<Type>{
+        var this_pointer: Pointer<Type>;
+        this_pointer.raw_ptr = this_raw_pointer;
+        bindings::IncrementReferenceCount(__bit_cast<Type* ,undef*>(this_pointer.raw_ptr));
+        return this_pointer;
+    }
 }
 
 template <Type>
@@ -90,5 +98,20 @@ implement reference_count::ReferenceCountable for Pointer<Type> {
                 this.raw_ptr = __cast<i64, Type*>(0);
             }
         }
+    }
+}
+
+template <Type>
+implement operator::Equal<Pointer<Type>> for Pointer<Type> {
+    func Equal(operand: Pointer<Type>) -> bool {
+        return this._ToInt64() == operand._ToInt64();
+    }
+}
+
+
+template <Type>
+implement operator::NotEqual<Pointer<Type>> for Pointer<Type> {
+    func NotEqual(operand: Pointer<Type>) -> bool {
+        return !(this == operand);
     }
 }

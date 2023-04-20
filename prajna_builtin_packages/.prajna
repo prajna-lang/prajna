@@ -55,6 +55,7 @@ use tensor;
 use tensor::Tensor;
 use tensor::Layout;
 
-use list;
+use list::Node;
+use list::List;
 
 // use io;

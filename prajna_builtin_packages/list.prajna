@@ -2,8 +2,70 @@ use __ptr::Pointer;
 
 template <ValueType>
 struct Node {
-    // TODO(zhangzhimin) nested struct 内存释放规则存在问题, 需要修复
     next: Pointer<Node<ValueType>>;
-    pre: Pointer<Node<ValueType>>;
+    prev: Pointer<Node<ValueType>>;
     value: ValueType;
+}
+
+template <ValueType>
+implement Node<ValueType> {
+    /// @brief
+    /// @warning 确保节点前面存在节点
+    func InsertBefore(value: ValueType){
+        var new_node = Pointer<Node<ValueType>>::New();
+        new_node.value = value;
+        var this_pointer = Pointer<Node<ValueType>>::FromThisRawPointer(&this);
+        new_node.prev = this.prev;
+        this.prev.next = new_node;
+        new_node.next = this_pointer;
+        this.prev = new_node;
+    }
+
+    /// @warning 确定节点后面存在节点
+    func InsertAfter(value: ValueType){
+        var new_node = Pointer<Node<ValueType>>::New();
+        new_node.value = value;
+        var this_pointer = Pointer<Node<ValueType>>::FromThisRawPointer(&this);
+        new_node.next = this.next;
+        this.next.prev = new_node;
+        new_node.prev = this_pointer;
+        this.next = new_node;
+    }
+}
+
+template <ValueType>
+struct List {
+    _head: Pointer<Node<ValueType>>;
+    _end: Pointer<Node<ValueType>>;
+}
+
+template <ValueType>
+implement List<ValueType> {
+    @static
+    func Create()->List<ValueType> {
+        var tmp_list : List<ValueType>;
+        tmp_list._head = Pointer<Node<ValueType>>::New();
+        tmp_list._end = Pointer<Node<ValueType>>::New();
+        tmp_list._head.prev = Pointer<Node<ValueType>>::Null();
+        tmp_list._head.next = tmp_list._end;
+        tmp_list._end.prev =  tmp_list._head;
+        tmp_list._end.next = Pointer<Node<ValueType>>::Null();
+        return tmp_list;
+    }
+
+    func PushFront(value: ValueType) {
+        this._head.InsertAfter(value);
+    }
+
+    func PushBack(value: ValueType) {
+        this._end.InsertBefore(value);
+    }
+
+    func End()->Pointer<Node<ValueType>> {
+        return this._end;
+    }
+
+    func Begin()->Pointer<Node<ValueType>> {
+        return this._head.next;
+    }
 }

@@ -1123,9 +1123,8 @@ class StatementLoweringVisitor {
     }
 
     std::shared_ptr<Template> createBitCastTemplate() {
-        auto lowering_template = Template::create();
-
-        lowering_template->generator = [symbol_table = this->ir_builder->symbol_table,
+        auto template_bit_cast = Template::create();
+        template_bit_cast->generator = [symbol_table = this->ir_builder->symbol_table,
                                         logger = this->logger,
                                         this](std::list<Symbol> symbol_template_arguments,
                                               std::shared_ptr<ir::Module> ir_module) -> Symbol {
@@ -1144,7 +1143,7 @@ class StatementLoweringVisitor {
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
             auto ir_function = ir_tmp_builder->createFunction(
-                "__bit_cast<" + ir_source_type->fullname + ", " + ir_target_type->fullname + ">",
+                "__bit_cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BitCast>(
@@ -1152,7 +1151,34 @@ class StatementLoweringVisitor {
             return ir_function;
         };
 
-        return lowering_template;
+        return template_bit_cast;
+    }
+
+    std::shared_ptr<Template> createSizeOfTemplate() {
+        auto template_sizeof = Template::create();
+        template_sizeof->generator = [symbol_table = this->ir_builder->symbol_table,
+                                      logger = this->logger,
+                                      this](std::list<Symbol> symbol_template_arguments,
+                                            std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("template argument should be type");
+            }
+
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type = ir::FunctionType::create({}, ir_builder->getIndexType());
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__sizeof" + getTemplateArgumentsPostify(symbol_template_arguments),
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->getIndexConstant(ir_type->bytes));
+            return ir_function;
+        };
+
+        return template_sizeof;
     }
 
     std::shared_ptr<Template> createCompareInstructionTemplate(std::string compare_operation_name) {
@@ -1441,6 +1467,9 @@ class StatementLoweringVisitor {
     void stage1() {
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createBitCastTemplate(), "__bit_cast");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createSizeOfTemplate(), "__sizeof");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createIntTypeTemplate(true), "Int");

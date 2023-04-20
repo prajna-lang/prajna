@@ -128,15 +128,11 @@ struct Use : SourceLocation {
     boost::optional<Identifier> as_optional;
 };
 
-struct SizeOf : SourceLocation {
-    Type type;
-};
-
 typedef boost::variant<
     Blank, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral, Identifier,
     IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
     boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
-    boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Array>, SizeOf,
+    boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Array>,
     boost::recursive_wrapper<KernelFunctionCall>, boost::recursive_wrapper<DynamicCast>>
     Operand;
 
@@ -378,7 +374,6 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotation_dic
                           functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, root_optional, identifiers)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Use, identifier_path, as_optional)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IntLiteralPostfix, int_literal, postfix)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FloatLiteralPostfix, float_literal, postfix)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, block_shape,

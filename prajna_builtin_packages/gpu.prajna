@@ -73,7 +73,7 @@ implement Tensor<Type, Dim> {
         var self: Tensor<Type, Dim>;
         self.layout = Layout<Dim>::Create(shape);
 
-        var bytes = self.layout.Length() * sizeof(Type);
+        var bytes = self.layout.Length() * __sizeof<Type>();
         cuda::cuMemAlloc(__bit_cast<__raw_ptr<Type>* ,__raw_ptr<i8>*>(&self.data), bytes);
         bindings::RegisterReferenceCount(__bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(self.data));
         bindings::IncrementReferenceCount(__bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(self.data));
@@ -87,7 +87,7 @@ implement Tensor<Type, Dim> {
         for i in 0 to Dim {
             size = __raw_ptr<size> this.layout.shape[i];
         }
-        var re =  cuda::cudaMemcpy(__bit_cast<__raw_ptr<Type> ,__raw_ptr<i8>>(host_tensor.data.raw_ptr), __bit_cast<__raw_ptr<Type>, __raw_ptr<i8>>(this.data), __raw_ptr<size> sizeof(Type), 2i32);
+        var re =  cuda::cudaMemcpy(__bit_cast<__raw_ptr<Type> ,__raw_ptr<i8>>(host_tensor.data.raw_ptr), __bit_cast<__raw_ptr<Type>, __raw_ptr<i8>>(this.data), __raw_ptr<size> __sizeof<Type>(), 2i32);
         return host_tensor;
     }
 }
@@ -100,7 +100,7 @@ implement ::Tensor<Type, Dim> {
         for i in 0 to Dim {
             size = __raw_ptr<size> this.layout.shape[i];
         }
-        var re = cuda::cudaMemcpy(__bit_cast<__raw_ptr<Type> ,__raw_ptr<i8>>(cuda_tensor.data), __bit_cast<__raw_ptr<Type>, __raw_ptr<i8>>(this.data.raw_ptr), __raw_ptr<size> sizeof(Type), 1i32);
+        var re = cuda::cudaMemcpy(__bit_cast<__raw_ptr<Type> ,__raw_ptr<i8>>(cuda_tensor.data), __bit_cast<__raw_ptr<Type>, __raw_ptr<i8>>(this.data.raw_ptr), __raw_ptr<size> __sizeof<Type>(), 1i32);
         return cuda_tensor;
     }
 }

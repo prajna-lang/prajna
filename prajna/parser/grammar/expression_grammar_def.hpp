@@ -109,7 +109,7 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_success(arguments, success_handler_function);
 
     primary_expr.name("primary experssion");
-    primary_expr = literal | tok.this_ | identifier_path | sizeof_ | array |
+    primary_expr = literal | tok.this_ | identifier_path | array |
                    omit[tok.left_bracket] > expr > omit[tok.right_bracket] | dynamic_cast_;
     on_error<fail>(primary_expr, error_handler_function);
     on_success(primary_expr, success_handler_function);
@@ -118,11 +118,6 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     array = omit[tok.left_square_bracket] > (expr % tok.comma) > tok.right_square_bracket;
     on_error<fail>(array, error_handler_function);
     on_success(array, success_handler_function);
-
-    sizeof_.name("sizeof");
-    sizeof_ = tok.sizeof_ > omit[tok.left_bracket] > type > tok.right_bracket;
-    on_error<fail>(sizeof_, error_handler_function);
-    on_success(sizeof_, success_handler_function);
 
     literal.name("literal");
     literal = int_literal_postfix | float_literal_postfix | tok.string_literal | tok.float_literal |

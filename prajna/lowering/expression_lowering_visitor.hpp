@@ -792,11 +792,6 @@ class ExpressionLoweringVisitor {
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
     }
 
-    std::shared_ptr<ir::Value> operator()(ast::SizeOf ast_sizeof) {
-        auto ir_type = this->applyType(ast_sizeof.type);
-        return ir_builder->getIndexConstant(ir_type->bytes);
-    }
-
     std::shared_ptr<ir::Value> operator()(ast::DynamicCast ast_dynamic_cast) {
         auto symbol_target_type = this->applyIdentifierPath(ast_dynamic_cast.identifier_path);
         if (auto ir_interface_prototype = symbolGet<ir::InterfacePrototype>(symbol_target_type)) {

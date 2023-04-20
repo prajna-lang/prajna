@@ -64,7 +64,6 @@ struct ExpressionGrammer
     rule<ast::Expression> access_call_index_expr;
     rule<ast::Operand> primary_expr;
     rule<ast::Operand> literal;
-    rule<ast::SizeOf> sizeof_;
     rule<ast::KernelFunctionCall> kernel_function_call;
     rule<ast::Operand> kernel_function_operand;
     rule<ast::DynamicCast> dynamic_cast_;

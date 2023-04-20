@@ -9,7 +9,7 @@ implement Pointer<Type>{
     @static
     func Allocate(size: i64)->Pointer<Type>{
         var self: Pointer<Type>;
-        self.raw_ptr =  __bit_cast<__raw_ptr<undef> ,__raw_ptr<Type>>(bindings::malloc(__mul<i64>(size, sizeof(Type))));
+        self.raw_ptr =  __bit_cast<__raw_ptr<undef> ,__raw_ptr<Type>>(bindings::malloc(__mul<i64>(size, __sizeof<Type>())));
         bindings::RegisterReferenceCount(__bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(self.raw_ptr));
         bindings::IncrementReferenceCount(__bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(self.raw_ptr));
         return self;

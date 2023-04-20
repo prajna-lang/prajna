@@ -35,5 +35,5 @@ func TestStructAndImplement(){
     // "."索引成员函数
     mike.SayHi();
     // 注意域成员都是通过::来索引的
-    debug::Assert(People::GetAge(mike) == 18);
+    test::Assert(People::GetAge(mike) == 18);
 }

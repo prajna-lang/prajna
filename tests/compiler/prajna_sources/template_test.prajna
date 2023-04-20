@@ -47,6 +47,6 @@ func Test(){
     root.nextValue();
 
     var tmp: MyArray<i64, 2>;
-    debug::Assert(root.nextValue() == 2.0);
+    test::Assert(root.nextValue() == 2.0);
 }
 

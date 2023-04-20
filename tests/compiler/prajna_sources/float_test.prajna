@@ -1,6 +1,6 @@
 template <T>
 func AssertNear(value0: T, value1: f32, eps: f32){
-    debug::Assert((value0 - value1.Cast<T>()).Abs() < eps.Cast<T>());
+    test::Assert((value0 - value1.Cast<T>()).Abs() < eps.Cast<T>());
 }
 
 template FloatTest <Bits> {

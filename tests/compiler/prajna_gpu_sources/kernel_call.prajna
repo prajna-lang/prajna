@@ -21,6 +21,6 @@ func TestKernel(){
 
     var host_tensor = gpu_tensor.ToHost();
     for i in 0 to size{
-        debug::Assert(host_tensor[i] == i);
+        test::Assert(host_tensor[i] == i);
     }
 }

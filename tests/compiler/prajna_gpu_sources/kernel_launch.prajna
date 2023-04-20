@@ -22,7 +22,7 @@ func TestKernel(){
     var parameters_ptr = &parameters[0];
 
     var re = gpu::LaunchKernel(__bit_cast<__raw_ptr<Func<gpu::Tensor<i64, 1>, i64, void>> ,__raw_ptr<i8>>(myKernel), GridShape, BlockShape, parameters_ptr);
-    debug::Assert(re == 0);
+    test::Assert(re == 0);
 
     host_tensor = gpu_tensor.ToHost();
     "\ndata[0] is: ".Print();

@@ -28,7 +28,7 @@ func TestTypes(){
     // 获取num的地址, 只要属于变量范畴的都可以获取地址,如字段, 数组索引, 全局变量等.
     var num_pointer: __raw_ptr<i64> = &num;
     *num_pointer = 0;
-    debug::Assert(num == 0);
+    test::Assert(num == 0);
 
     // str类型
     var hello = "Hello";

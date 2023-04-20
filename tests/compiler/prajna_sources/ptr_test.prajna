@@ -5,12 +5,12 @@ func TestMain(){
     var p: Pointer<i64>;
     p._ToInt64();
 
-    debug::Assert(p._ToInt64() == 0i64);
-    // debug::Assert(p == Pointer<i64>::Null());
-    debug::Assert(p.IsNull());
+    test::Assert(p._ToInt64() == 0i64);
+    // test::Assert(p == Pointer<i64>::Null());
+    test::Assert(p.IsNull());
 
     p = Pointer<i64>::New();
-    debug::Assert(!p.IsNull());
+    test::Assert(!p.IsNull());
 }
 
 @test
@@ -18,21 +18,21 @@ func TestLocal() {
     var p: Pointer<i64>;
     p._ToInt64();
 
-    debug::Assert(p._ToInt64() == 0i64);
-    debug::Assert(p.IsNull());
+    test::Assert(p._ToInt64() == 0i64);
+    test::Assert(p.IsNull());
     {
        var p1 = Pointer<i64>::New();
-       debug::Assert(!p1.IsNull());
+       test::Assert(!p1.IsNull());
        p = p1;
     }
-    debug::Assert(!p.IsNull());
+    test::Assert(!p.IsNull());
 }
 
 @test
 func TestIndex() {
     var p = Pointer<i64>::Allocate(10);
     p[9] = 10;
-    debug::Assert(p[9] == 10);
+    test::Assert(p[9] == 10);
 }
 
 

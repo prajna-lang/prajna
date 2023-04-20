@@ -3,13 +3,13 @@ func TestMain() {
     var tmp = String::Create(2);
     tmp[0] = 'H';
     tmp[1] = 'i';
-    debug::Assert(tmp[1] == 'i');
+    test::Assert(tmp[1] == 'i');
     tmp.Print();
-    debug::Assert(tmp.size == 2);
+    test::Assert(tmp.size == 2);
     tmp.Append('!');
     tmp.Append('\n');
     tmp.Print();
-    debug::Assert(tmp.size == 4);
+    test::Assert(tmp.size == 4);
 
     ("Hello" + " World!\n").Print();
 
@@ -18,13 +18,13 @@ func TestMain() {
     str1 = "こんにちは世界";
     str2 = "こんにちは世界";
     //str1.ToString().Print();
-    debug::Assert(str1 == str2);
+    test::Assert(str1 == str2);
 
     str1 = "hello world";
     str2 = "a@#$%^&*()_-+=[]{}|;:',.<>/?b";
-    debug::Assert(str1 != str2);
+    test::Assert(str1 != str2);
 
     str1 = "";
     str2 = "";
-    debug::Assert(str1 == str2);
+    test::Assert(str1 == str2);
 }

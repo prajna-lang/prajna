@@ -1,14 +1,14 @@
 use gpu;
 
-debug::Assert(cuda::cuInit(0i32) == 0i32);
+test::Assert(cuda::cuInit(0i32) == 0i32);
 var count: i32;
-debug::Assert(cuda::cuDeviceGetCount(&count) == 0i32);
+test::Assert(cuda::cuDeviceGetCount(&count) == 0i32);
 "device count is : " + count.ToString() + "\n";
 var mp_count: i32;
-debug::Assert(cuda::cuDeviceGetAttribute(&mp_count, 16i32, 0i32) == 0i32);
+test::Assert(cuda::cuDeviceGetAttribute(&mp_count, 16i32, 0i32) == 0i32);
 "multi processor count is " + mp_count.ToString() + "\n";
 var max_thread_per_block: i32;
-debug::Assert(cuda::cuDeviceGetAttribute(&max_thread_per_block, 1i32, 0i32) == 0i32);
+test::Assert(cuda::cuDeviceGetAttribute(&max_thread_per_block, 1i32, 0i32) == 0i32);
 "Max thread: " + max_thread_per_block.ToString() + "\n";
 
 gpu::init();

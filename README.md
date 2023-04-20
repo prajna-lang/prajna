@@ -71,7 +71,7 @@ func main(){
 
     // 运行完后, gpu的数据会自动拷贝的主机上
     for idx in [0, 0] to shape{
-        debug::assert(tensor2.at(idx) == 3);
+        test::Assert(tensor2.at(idx) == 3);
     }
 }
 ```

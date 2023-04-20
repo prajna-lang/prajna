@@ -482,84 +482,13 @@ class ExpressionLoweringVisitor {
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
     }
 
-    std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
-        auto ir_type = boost::apply_visitor(
-            overloaded{[](auto x) -> std::shared_ptr<ir::Type> {
-                           PRAJNA_UNREACHABLE;
-                           return nullptr;
-                       },
-                       [=](ast::IdentifierPath ast_identifier_path) -> std::shared_ptr<ir::Type> {
-                           auto symbol_type = this->applyIdentifierPath(ast_identifier_path);
-
-                           if (auto ir_type = symbolGet<ir::Type>(symbol_type)) {
-                               return ir_type;
-                           }
-
-                           logger->error("the symbol is not a type", ast_postfix_type);
-
-                           return nullptr;
-                       },
-                       [=](ast::FunctionType ast_function_type) -> std::shared_ptr<ir::Type> {
-                           auto ir_return_type = this->applyType(ast_function_type.return_type);
-                           std::list<std::shared_ptr<ir::Type>> ir_parameter_types(
-                               ast_function_type.paramter_types.size());
-                           std::transform(
-                               RANGE(ast_function_type.paramter_types), ir_parameter_types.begin(),
-                               [=](ast::Type ast_type) { return this->applyType(ast_type); });
-
-                           return ir::FunctionType::create(ir_parameter_types, ir_return_type);
-                       }},
-            ast_postfix_type.base_type);
-
-        // @note 有数组类型后需要再处理一下
-        for (auto postfix_operator : ast_postfix_type.postfix_type_operators) {
-            boost::apply_visitor(
-                overloaded{[&ir_type](ast::Operator ast_star) {
-                               // parser 处理了
-                               PRAJNA_ASSERT(ast_star == ast::Operator("*"));
-                               ir_type = ir::PointerType::create(ir_type);
-                           },
-                           [&ir_type](ast::IntLiteral ast_int_literal) {
-                               ir_type = ir::ArrayType::create(ir_type, ast_int_literal.value);
-                           },
-                           [&ir_type, ir_builder = ir_builder](ast::Identifier ast_identifier) {
-                               auto symbol_const_int =
-                                   ir_builder->symbol_table->get(ast_identifier);
-                               auto ir_constant_int = symbolGet<ir::ConstantInt>(symbol_const_int);
-                               // parser 处理了
-                               PRAJNA_ASSERT(ir_constant_int);
-                               ir_type = ir::ArrayType::create(ir_type, ir_constant_int->value);
-                           }},
-                postfix_operator);
+    std::shared_ptr<ir::Type> applyType(ast::Type ast_type) {
+        auto symbol_type = this->applyIdentifierPath(ast_type);
+        auto ir_type = symbolGet<ir::Type>(symbol_type);
+        if (!ir_type) {
+            logger->error("the symbol is not a type", ast_type);
         }
-
-        PRAJNA_ASSERT(ir_type);
         return ir_type;
-    }  // namespace prajna::lowering
-
-    Symbol getTemplateArgumentSymbol(ast::TemplateArgument ast_template_argument) {
-        return boost::apply_visitor(
-            overloaded{[=](ast::Blank) -> Symbol {
-                           PRAJNA_UNREACHABLE;
-                           return nullptr;
-                       },
-                       [=](ast::Type ast_type) -> Symbol {
-                           // 并不是所有模板参数都是ir::Type, 还有Rank_这类数字的,
-                           // 后面可能还需要重构
-                           if (ast_type.postfix_type_operators.size() == 0 &&
-                               ast_type.base_type.type() == typeid(ast::IdentifierPath)) {
-                               auto ast_identifier_path =
-                                   boost::get<ast::IdentifierPath>(ast_type.base_type);
-                               return this->applyIdentifierPath(ast_identifier_path);
-                           }
-
-                           return this->applyType(ast_type);
-                       },
-                       [=](ast::IntLiteral ast_int_literal) -> Symbol {
-                           return ir::ConstantInt::create(ir_builder->getIndexType(),
-                                                          ast_int_literal.value);
-                       }},
-            ast_template_argument);
     }
 
     std::shared_ptr<Template> createDynamicTemplate() {
@@ -589,17 +518,8 @@ class ExpressionLoweringVisitor {
                                PRAJNA_UNREACHABLE;
                                return nullptr;
                            },
-                           [=](ast::Type ast_type) -> Symbol {
-                               // 并不是所有模板参数都是ir::Type, 还有Rank_这类数字的,
-                               // 后面可能还需要重构
-                               if (ast_type.postfix_type_operators.size() == 0 &&
-                                   ast_type.base_type.type() == typeid(ast::IdentifierPath)) {
-                                   auto ast_identifier_path =
-                                       boost::get<ast::IdentifierPath>(ast_type.base_type);
-                                   return this->applyIdentifierPath(ast_identifier_path);
-                               }
-
-                               return this->applyType(ast_type);
+                           [=](ast::IdentifierPath ast_identifier_path) -> Symbol {
+                               return this->applyIdentifierPath(ast_identifier_path);
                            },
                            [=](ast::IntLiteral ast_int_literal) -> Symbol {
                                return ir::ConstantInt::create(ir_builder->getIndexType(),

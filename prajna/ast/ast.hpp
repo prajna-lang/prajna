@@ -102,10 +102,12 @@ struct StringLiteral : SourceLocation {
     std::string value;
 };
 
-struct Type;
 struct IdentifierPath;
 
-using TemplateArgument = boost::variant<Blank, boost::recursive_wrapper<Type>, IntLiteral>;
+typedef IdentifierPath Type;
+
+using TemplateArgument =
+    boost::variant<Blank, boost::recursive_wrapper<IdentifierPath>, IntLiteral>;
 
 struct TemplateArguments : SourceLocation, std::list<TemplateArgument> {};
 
@@ -125,25 +127,6 @@ struct Use : SourceLocation {
     IdentifierPath identifier_path;
     boost::optional<Identifier> as_optional;
 };
-
-using PostfixTypeOperator = boost::variant<Operator, IntLiteral, Identifier>;
-
-struct FunctionType;
-
-// struct BaseType
-typedef boost::variant<Blank, IdentifierPath, boost::recursive_wrapper<FunctionType>> BasicType;
-
-struct Type : SourceLocation {
-    BasicType base_type;
-    std::list<PostfixTypeOperator> postfix_type_operators;
-};
-
-struct FunctionType : SourceLocation {
-    std::list<Type> paramter_types;
-    Type return_type;
-};
-
-using PostfixType = Type;
 
 struct SizeOf : SourceLocation {
     Type type;
@@ -394,8 +377,6 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotation_dict, interface, type,
                           functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, root_optional, identifiers)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Use, identifier_path, as_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IntLiteralPostfix, int_literal, postfix)

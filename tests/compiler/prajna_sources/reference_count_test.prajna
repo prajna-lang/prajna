@@ -1,6 +1,6 @@
 
 struct TestA {
-    data: undef*;
+    data: __raw_ptr<undef>;
     name: String;
 }
 
@@ -13,7 +13,7 @@ implement reference_count::ReferenceCountable for TestA {
 
     func Initialize(){
         this.name = "undef";
-        this.data = __cast<i64, undef*>(0);
+        this.data = __cast<i64, __raw_ptr<undef>>(0);
         this.RegisterReferenceCount();
         // (this.name + " __initialize\n").Print();
     }
@@ -26,7 +26,7 @@ implement reference_count::ReferenceCountable for TestA {
         // (this.name + " ref count: " + ref_count.ToString() + "\n").Print();
 
         if (ref_count == 0 ){
-            if (__cast<undef*, i64>(this.data) == 0) {
+            if (__cast<__raw_ptr<undef>, i64>(this.data) == 0) {
                 bindings::free(this.data);
             }
             "free memory\n".Print();

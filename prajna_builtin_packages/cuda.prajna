@@ -7,19 +7,19 @@
 // Curesult -> i32
 func cuInit(flag:i32)->i32;
 
-func cuDeviceGetCount(count: i32*)->i32;
+func cuDeviceGetCount(count: __raw_ptr<i32>)->i32;
 
-func cuDeviceGet(device: i32*, ordinal: i32)->i32;
+func cuDeviceGet(device: __raw_ptr<i32>, ordinal: i32)->i32;
 
-func cuDeviceGetAttribute(pi: i32*, attrib: i32, device: i32)->i32;
+func cuDeviceGetAttribute(pi: __raw_ptr<i32>, attrib: i32, device: i32)->i32;
 
-func cuLaunchKernel(kernel_fun_ptr: i8*, gridDimX : u32, gridDimY: u32, gridDimZ: u32, blockDimX: u32, blockDimY: u32, blockDimZ: u32, shared_mem_bytes: u32, stream: i8*, kernel_params: i8**, extra: i8**)->i32;
+func cuLaunchKernel(kernel_fun_ptr: __raw_ptr<i8>, gridDimX : u32, gridDimY: u32, gridDimZ: u32, blockDimX: u32, blockDimY: u32, blockDimZ: u32, shared_mem_bytes: u32, stream: __raw_ptr<i8>, kernel_params: __raw_ptr<i8>*, extra: __raw_ptr<i8>*)->i32;
 
 // cuda runtime api
 
-func cuMemAlloc(dev_pointer: i8**, size: i64)->i32;
+func cuMemAlloc(dev_pointer: __raw_ptr<i8>*, size: i64)->i32;
 
-func cudaMalloc(dev_pointer: i8**, size: i64)->i32;
+func cudaMalloc(dev_pointer: __raw_ptr<i8>*, size: i64)->i32;
 
 // cudaMemcpyHostToHost = 0
 // Host -> Host
@@ -33,7 +33,7 @@ func cudaMalloc(dev_pointer: i8**, size: i64)->i32;
 
 func cudaSetDevice(id: i64)->i32;
 
-func cudaMemcpy(dst: i8*, src: i8*, memory_bytes : i64, mode : i32)->i32;
+func cudaMemcpy(dst: __raw_ptr<i8>, src: __raw_ptr<i8>, memory_bytes : i64, mode : i32)->i32;
 
 // prajna cuca api
 

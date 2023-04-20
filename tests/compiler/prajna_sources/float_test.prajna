@@ -42,7 +42,7 @@ template FloatTest <Bits> {
             AssertNear<Float<Bits>>(pi.Cos(), -1.0, 0.001);
             pi = (3.1415926/2.0).Cast<Float<Bits>>();
             AssertNear<Float<Bits>>(pi.Cos(), 0.0, 0.001);
-            pi = (2.0*3.1415926).Cast<Float<Bits>>();
+            pi = (2.0 * 3.1415926).Cast<Float<Bits>>();
             AssertNear<Float<Bits>>(pi.Cos(), 1.0, 0.001);
             var value = (0.5).Cast<Float<Bits>>();
             AssertNear<Float<Bits>>(value.Cos(), 0.87758, 0.001);

@@ -804,17 +804,7 @@ class StatementLoweringVisitor {
                     auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
                         ast_template_statement.template_parameters);
 
-                    if (ast_implement_type_for_interface.type.postfix_type_operators.size()) {
-                        // 只能是原始的type, 因为是自动特化的
-                        logger->error("invalid template implement",
-                                      ast_implement_type_for_interface.type);
-                    }
-                    // TODO
-                    PRAJNA_ASSERT(ast_implement_type_for_interface.type.base_type.which() == 1);
-                    auto ast_identifier_path = boost::get<ast::IdentifierPath>(
-                        ast_implement_type_for_interface.type.base_type);
-                    // 只获取模板类, 不能带模板参数
-                    auto ast_template_struct = ast_identifier_path;
+                    auto ast_template_struct = ast_implement_type_for_interface.type;
                     ast_template_struct.identifiers.back().template_arguments_optional =
                         boost::none;
                     auto ir_symbol =
@@ -822,7 +812,7 @@ class StatementLoweringVisitor {
                     auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
                     if (template_struct == nullptr) {
                         logger->error("it's not a template struct but with template parameters",
-                                      ast_identifier_path);
+                                      ast_implement_type_for_interface.type);
                     }
 
                     auto template_ = Template::create();
@@ -837,16 +827,7 @@ class StatementLoweringVisitor {
                     auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
                         ast_template_statement.template_parameters);
 
-                    if (ast_implement_type.type.postfix_type_operators.size()) {
-                        // 只能是原始的type, 因为是自动特化的
-                        logger->error("invalid template implement", ast_implement_type.type);
-                    }
-                    // TODO
-                    PRAJNA_ASSERT(ast_implement_type.type.base_type.which() == 1);
-                    auto ast_identifier_path =
-                        boost::get<ast::IdentifierPath>(ast_implement_type.type.base_type);
-                    // 只获取模板类, 不能带模板参数
-                    auto ast_template_struct = ast_identifier_path;
+                    auto ast_template_struct = ast_implement_type.type;
                     ast_template_struct.identifiers.back().template_arguments_optional =
                         boost::none;
                     auto ir_symbol =
@@ -854,7 +835,7 @@ class StatementLoweringVisitor {
                     auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
                     if (template_struct == nullptr) {
                         logger->error("it's not a template struct but with template parameters",
-                                      ast_identifier_path);
+                                      ast_implement_type.type);
                     }
 
                     auto template_ = Template::create();
@@ -1058,6 +1039,87 @@ class StatementLoweringVisitor {
         };
 
         return template_intrinsic;
+    }
+
+    std::shared_ptr<TemplateStruct> createRawArrayTypeTemplate() {
+        auto template_raw_array = Template::create();
+        template_raw_array->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                         logger = this->logger](
+                                            std::list<Symbol> symbol_template_arguments,
+                                            std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 2) {
+                logger->error("should input 2 template argument");
+            }
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("should be a type");
+            }
+
+            auto ir_constant_length = symbolGet<ir::ConstantInt>(symbol_template_arguments.back());
+            if (!ir_constant_length || ir_constant_length->value <= 0) {
+                logger->error("array length should be a positive constant int");
+            }
+
+            return ir::ArrayType::create(ir_type, ir_constant_length->value);
+        };
+
+        auto template_struct_raw_array = TemplateStruct::create();
+        template_struct_raw_array->template_struct_impl = template_raw_array;
+        return template_struct_raw_array;
+    }
+
+    std::shared_ptr<TemplateStruct> createRawPtrTypeTemplate() {
+        auto template_raw_ptr = Template::create();
+        template_raw_ptr->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                       logger = this->logger](
+                                          std::list<Symbol> symbol_template_arguments,
+                                          std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("should be a type");
+            }
+
+            return ir::PointerType::create(ir_type);
+        };
+
+        auto template_struct_raw_ptr = TemplateStruct::create();
+        template_struct_raw_ptr->template_struct_impl = template_raw_ptr;
+        return template_struct_raw_ptr;
+    }
+
+    std::shared_ptr<TemplateStruct> createFunctionTypeTemplate() {
+        auto template_function_type = Template::create();
+        template_function_type->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                             logger = this->logger](
+                                                std::list<Symbol> symbol_template_arguments,
+                                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() < 1) {
+                logger->error("should input at least 1 template argument");
+            }
+
+            std::list<std::shared_ptr<ir::Type>> ir_type_list;
+            std::transform(RANGE(symbol_template_arguments), std::back_inserter(ir_type_list),
+                           [=](auto symbol_template_argument) {
+                               auto ir_type = symbolGet<ir::Type>(symbol_template_argument);
+                               if (!ir_type) {
+                                   logger->error("should be types");
+                               }
+                               return ir_type;
+                           });
+
+            auto ir_parameter_list = ir_type_list;
+            ir_parameter_list.pop_back();
+            auto ir_return_type = ir_type_list.back();
+
+            return ir::FunctionType::create(ir_parameter_list, ir_return_type);
+        };
+
+        auto template_struct_function_type = TemplateStruct::create();
+        template_struct_function_type->template_struct_impl = template_function_type;
+        return template_struct_function_type;
     }
 
     std::shared_ptr<Template> createBitCastTemplate() {
@@ -1386,6 +1448,13 @@ class StatementLoweringVisitor {
             this->createIntTypeTemplate(false), "Uint");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createFloatTypeTemplate(), "Float");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createRawArrayTypeTemplate(), "__raw_array");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createRawPtrTypeTemplate(), "__raw_ptr");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFunctionTypeTemplate(), "Func");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createCastInstructionTemplate(), "__cast");

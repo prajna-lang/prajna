@@ -32,7 +32,7 @@ struct StatementGrammer
     template <typename _T>
     using rule = qi::rule<Iterator, _T(), skipper_type>;
 
-    rule<ast::PostfixType> type;
+    rule<ast::Type> type;
     rule<ast::Identifier> identifier;
     rule<ast::IdentifierPath> identifier_path;
     rule<ast::Use> use;

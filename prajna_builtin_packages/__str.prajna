@@ -23,7 +23,7 @@ implement String{
     }
 
     @static
-    func __from_char_ptr(cstr_ptr: char*)->String {
+    func __from_char_ptr(cstr_ptr: __raw_ptr<char>)->String {
         var str_size = 0;
         while (cstr_ptr[str_size] != '\0'){
             str_size = str_size + 1;

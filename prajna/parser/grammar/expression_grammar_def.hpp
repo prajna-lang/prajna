@@ -161,33 +161,7 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_success(template_argument, success_handler_function);
 
     type.name("type");
-    type = basic_type >> *type_postfix_operator;
-    on_error<fail>(type, error_handler_function);
-    on_success(type, success_handler_function);
-
-    basic_type.name("basic type");
-    basic_type = identifier_path | function_type;
-    on_error<fail>(basic_type, error_handler_function);
-    on_success(basic_type, success_handler_function);
-
-    function_type.name("function type");
-    function_type = tok.func >> omit[tok.left_braces] > omit[tok.left_bracket] >
-                    -(type % tok.comma) > tok.right_bracket > tok.arrow > type > omit[tok.r_braces];
-    on_error<fail>(function_type, error_handler_function);
-    on_success(function_type, success_handler_function);
-
-    type_postfix_operator.name("type postfix operator");
-    type_postfix_operator =
-        as<ast::PostfixTypeOperator>()[(omit[tok.left_square_bracket] >
-                                        type_array_postfix_operator > tok.right_square_bracket)] |
-        tok.times;
-    on_error<fail>(type_postfix_operator, error_handler_function);
-    on_success(type_postfix_operator, success_handler_function);
-
-    type_array_postfix_operator.name("array size");
-    type_array_postfix_operator = identifier | int_literal;
-    on_error<fail>(type_array_postfix_operator, error_handler_function);
-    on_success(type_array_postfix_operator, success_handler_function);
+    type = identifier_path.alias();
 
     dynamic_cast_.name("dynamic cast");
     dynamic_cast_ = tok.dynamic_cast_ > omit[tok.less] > identifier_path > omit[tok.greater] >

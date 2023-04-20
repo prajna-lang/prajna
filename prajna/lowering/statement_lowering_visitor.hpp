@@ -756,6 +756,10 @@ class StatementLoweringVisitor {
             auto templates_symbol_table = SymbolTable::create(symbol_table);
             templates_symbol_table->name = getTemplateArgumentsPostify(symbol_template_arguments);
 
+            if (template_parameter_identifier_list.size() != symbol_template_arguments.size()) {
+                logger->error("template arguments size si not matched");
+            }
+
             for (auto [identifier, symbol] :
                  boost::combine(template_parameter_identifier_list, symbol_template_arguments)) {
                 templates_symbol_table->set(symbol, identifier);

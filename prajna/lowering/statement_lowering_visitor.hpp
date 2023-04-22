@@ -530,34 +530,6 @@ class StatementLoweringVisitor {
         return ir_struct_type;
     }
 
-    void processInitializeCopyDestroyFunction(std::shared_ptr<ir::Type> ir_type,
-                                              std::shared_ptr<ir::Function> ir_function,
-                                              ast::Function ast_function) {
-        // 处理copy等回调函数
-        std::set<std::string> copy_destroy_callback_names = {"Initialize", "copy", "destroy"};
-        if (not copy_destroy_callback_names.count(ir_function->name)) return;
-
-        if (ir_function->annotation_dict.count("static") != 0) {
-            auto iter_static_annotation = std::find_if(
-                RANGE(ast_function.declaration.annotation_dict),
-                [](ast::Annotation ast_annotation) { return ast_annotation.name == "static"; });
-            logger->error(fmt::format("the {} function can not be static", ir_function->name),
-                          *iter_static_annotation);
-        }
-
-        if (not is<ir::VoidType>(ir_function->function_type->return_type)) {
-            logger->error(
-                fmt::format("the {} function return type must be void", ir_function->name),
-                ast_function.declaration.return_type_optional.get());
-        }
-        // this pointer argument
-        if (ir_function->function_type->parameter_types.size() != 1) {
-            logger->error(
-                fmt::format("the {} function should has no parameters", ir_function->name),
-                ast_function.declaration.parameters);
-        }
-    }
-
     Symbol operator()(ast::ImplementType ast_implement) {
         try {
             auto ir_type = expression_lowering_visitor->applyType(ast_implement.type);

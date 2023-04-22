@@ -299,6 +299,7 @@ class ExpressionLoweringVisitor {
                 fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
         }
+        // 之所以没包装成模板函数, 是因为需要包装成属性过于复杂了. 这样反而比较简单
         if (is<ir::ArrayType>(ir_object->type)) {
             if (ir_arguments.size() > 1) {
                 logger->error("too many index arguments", ast_binary_operation.operand);

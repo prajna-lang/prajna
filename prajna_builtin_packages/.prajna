@@ -30,8 +30,8 @@ use test;
 use array;
 use array::Array;
 
-use __ptr;
-use __ptr::Ptr;
+use _ptr;
+use _ptr::Ptr;
 
 use _dynamic;
 

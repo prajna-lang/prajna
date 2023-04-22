@@ -1,5 +1,3 @@
-use __ptr::Ptr;
-
 template <ValueType>
 struct Node {
     next: Ptr<Node<ValueType>>;

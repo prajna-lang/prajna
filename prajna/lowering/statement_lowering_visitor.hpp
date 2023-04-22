@@ -1614,7 +1614,7 @@ class StatementLoweringVisitor {
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createRawArrayTypeTemplate(), "__raw_array");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createRawPtrTypeTemplate(), "__raw_ptr");
+            this->createRawPtrTypeTemplate(), "__ptr");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createFunctionTypeTemplate(), "Func");
 

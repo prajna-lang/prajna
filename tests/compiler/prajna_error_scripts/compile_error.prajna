@@ -15,9 +15,9 @@ tmp_str[3];
 tmp_str(3);
 //
 &3;
-var p:__raw_ptr<i8>;
-var g = __bit_cast<__raw_ptr<i8> ,f32>(p);
-var gg = __bit_cast<i64 ,__raw_ptr<f32>>(3);
+var p:__ptr<i8>;
+var g = __bit_cast<__ptr<i8> ,f32>(p);
+var gg = __bit_cast<i64 ,__ptr<f32>>(3);
 
 //
 var s0 = 3;

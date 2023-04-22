@@ -1,15 +1,15 @@
 /// 通过该文件导出符号, 这样后面才能索引到
-func print_c(String : __raw_ptr<char>);
-func input_c()->__raw_ptr<char>;
+func print_c(String : __ptr<char>);
+func input_c()->__ptr<char>;
 
 func assert(flag : bool);
 
-func malloc(bytes: i64)->__raw_ptr<undef>;
-func free(pointer: __raw_ptr<undef>);
+func malloc(bytes: i64)->__ptr<undef>;
+func free(pointer: __ptr<undef>);
 
 func getchar()->char;
 
-func RegisterReferenceCount(pointer: __raw_ptr<undef>);
-func GetReferenceCount(pointer: __raw_ptr<undef>)->i64;
-func IncrementReferenceCount(pointer: __raw_ptr<undef>);
-func DecrementReferenceCount(pointer: __raw_ptr<undef>);
+func RegisterReferenceCount(pointer: __ptr<undef>);
+func GetReferenceCount(pointer: __ptr<undef>)->i64;
+func IncrementReferenceCount(pointer: __ptr<undef>);
+func DecrementReferenceCount(pointer: __ptr<undef>);

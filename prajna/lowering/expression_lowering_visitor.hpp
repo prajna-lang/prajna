@@ -492,10 +492,9 @@ class ExpressionLoweringVisitor {
         return ir_type;
     }
 
-    std::shared_ptr<Template> createDynamicTemplate() {
-        auto dynamic_template = Template::create();
-
-        dynamic_template->generator = [symbol_table = this->ir_builder->symbol_table,
+    std::shared_ptr<TemplateStruct> createDynamicTemplate() {
+        auto template_dynamic = Template::create();
+        template_dynamic->generator = [symbol_table = this->ir_builder->symbol_table,
                                        logger = this->logger,
                                        this](std::list<Symbol> symbol_template_arguments,
                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
@@ -508,7 +507,9 @@ class ExpressionLoweringVisitor {
             return ir_interface_prototype->dynamic_type;
         };
 
-        return dynamic_template;
+        auto template_struct_dynamic = TemplateStruct::create();
+        template_struct_dynamic->template_struct_impl = template_dynamic;
+        return template_struct_dynamic;
     }
 
     std::list<Symbol> applyTemplateArguments(ast::TemplateArguments ast_template_arguments) {
@@ -788,103 +789,6 @@ class ExpressionLoweringVisitor {
                           ast_binary_operation.operand);
         }
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
-    }
-
-    std::shared_ptr<ir::Value> operator()(ast::DynamicCast ast_dynamic_cast) {
-        auto symbol_target_type = this->applyIdentifierPath(ast_dynamic_cast.identifier_path);
-        if (auto ir_interface_prototype = symbolGet<ir::InterfacePrototype>(symbol_target_type)) {
-            auto ir_operand = (*this)(ast_dynamic_cast.pointer);
-            // if (!is<ir::PointerType>(ir_operand->type)) {
-            //     logger->error("not a pointer", ast_dynamic_cast.pointer);
-            // }
-            // auto ir_pointer_type = cast<ir::PointerType>(ir_operand->type);
-            // if (!is<ir::PointerType>(ir_operand)) {
-            //     logger->error("dynamic_cast operand type must be a poniter type",
-            //                   ast_dynamic_cast.pointer);
-            // }
-            if (!ir_builder->isPtrType(ir_operand->type)) {
-                logger->error("not a Ptr type", ast_dynamic_cast.pointer);
-            }
-            auto symbol_template_arguments = std::any_cast<std::list<lowering::Symbol>>(
-                ir_operand->type->template_arguments_any);
-            auto ir_value_type = symbolGet<ir::Type>(symbol_template_arguments.front());
-            auto iter_interface = std::find_if(RANGE(ir_value_type->interface_dict), [=](auto x) {
-                if (!x.second) return false;
-                return x.second->prototype == ir_interface_prototype;
-            });
-            auto ir_interface = iter_interface->second;
-            if (!ir_interface) {
-                logger->error(fmt::format("the interface {} is not implemented",
-                                          ir_interface_prototype->fullname),
-                              ast_dynamic_cast.pointer);
-            }
-            std::list<std::shared_ptr<ir::Value>> ir_arguments = {ir_operand};
-
-            return ir_builder->create<ir::Call>(ir_interface->dynamic_type_creator, ir_arguments);
-        }
-
-        if (auto ir_target_type = symbolGet<ir::Type>(symbol_target_type)) {
-            // auto ir_interface_prototype
-            auto ir_dynamic_object = (*this)(ast_dynamic_cast.pointer);
-            auto iter_interface_implement =
-                std::find_if(RANGE(ir_target_type->interface_dict), [=](auto x) {
-                    return x.second->prototype->dynamic_type == ir_dynamic_object->type;
-                });
-            if (iter_interface_implement == ir_target_type->interface_dict.end()) {
-                logger->error("invalid dynamic cast, operand is not a interface dynamic type",
-                              ast_dynamic_cast.pointer);
-            }
-            auto ir_interface_implement = iter_interface_implement->second;
-            auto ir_interface_prototype = ir_interface_implement->prototype;
-            // interface implement必然有一个函数, 我们通过该函数来判断dynamic
-            // type是否是某一个具体类型
-            PRAJNA_ASSERT(ir_interface_implement->functions.front());
-            auto ir_target_ptr_type = ir_builder->getPtrType(ir_target_type);
-            auto ir_ptr = ir_builder->create<ir::LocalVariable>(ir_target_ptr_type);
-            auto ir_interface_implement_function0 =
-                ir_interface_implement
-                    ->undef_this_pointer_functions[ir_interface_implement->functions.front()];
-
-            auto template_cast = symbolGet<Template>(ir_builder->getSymbolByPath(true, {"__cast"}));
-            auto ir_rawptr_to_i64_cast_function = symbolGet<ir::Value>(template_cast->instantiate(
-                {ir_interface_implement_function0->type, ir_builder->getIndexType()},
-                ir_builder->module));
-            auto ir_rawptr_i64_0 = ir_builder->create<ir::Call>(ir_rawptr_to_i64_cast_function,
-                                                                ir_interface_implement_function0);
-
-            auto ir_rawptr_i64_1 = ir_builder->create<ir::Call>(
-                ir_rawptr_to_i64_cast_function,
-                ir_builder->accessField(ir_dynamic_object,
-                                        ir_interface_implement->functions.front()->name + "/fp"));
-            auto ir_condition =
-                ir_builder->callBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
-            auto ir_if =
-                ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
-            ir_if->trueBlock()->parent_function = ir_builder->function_stack.top();
-            ir_if->falseBlock()->parent_function = ir_builder->function_stack.top();
-
-            ir_builder->pushBlock(ir_if->trueBlock());
-            ir_builder->create<ir::WriteVariableLiked>(
-                ir_builder->create<ir::Call>(
-                    ir_builder->GetImplementFunction(ir_target_ptr_type, "FromUndef"),
-                    std::list<std::shared_ptr<ir::Value>>{
-                        ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
-                ir_ptr);
-            ir_builder->popBlock();
-
-            ir_builder->pushBlock(ir_if->falseBlock());
-            auto ir_nullptr =
-                ir_builder->create<ir::Call>(ir_builder->GetImplementFunction(ir_ptr->type, "Null"),
-                                             std::list<std::shared_ptr<ir::Value>>{});
-            ir_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
-            ir_builder->popBlock();
-
-            return ir_ptr;
-        }
-
-        logger->error("the dynamic_cast target type is invalid", ast_dynamic_cast.identifier_path);
-
-        return nullptr;
     }
 
    private:

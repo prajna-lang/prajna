@@ -5,7 +5,5 @@ func TestMain(){
     var a = Ptr<i64>::New();
     var b = Ptr<f32>::New();
 
-    var t = dynamic_cast<Serializable>(a);
-    t.ToString();
-
+    a.ToString();
 }

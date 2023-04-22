@@ -54,8 +54,6 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<lex::omit> interface;
     lex::token_def<lex::omit> template_;
 
-    lex::token_def<lex::omit> dynamic_cast_;
-
     lex::token_def<lex::omit> use;
     lex::token_def<lex::omit> as;
 

@@ -28,7 +28,6 @@ struct PrefixCall;
 struct Array;
 struct Template;
 struct TemplateStatement;
-struct DynamicCast;
 struct Module;
 
 struct Operator : SourceLocation {
@@ -128,12 +127,12 @@ struct Use : SourceLocation {
     boost::optional<Identifier> as_optional;
 };
 
-typedef boost::variant<
-    Blank, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral, Identifier,
-    IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
-    boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
-    boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Array>,
-    boost::recursive_wrapper<KernelFunctionCall>, boost::recursive_wrapper<DynamicCast>>
+typedef boost::variant<Blank, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral,
+                       Identifier, IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix,
+                       boost::recursive_wrapper<Unary>, boost::recursive_wrapper<PostfixUnary>,
+                       boost::recursive_wrapper<Expression>, boost::recursive_wrapper<Expressions>,
+                       boost::recursive_wrapper<Array>,
+                       boost::recursive_wrapper<KernelFunctionCall>>
     Operand;
 
 struct Unary : SourceLocation {
@@ -337,11 +336,6 @@ struct KernelFunctionCall : SourceLocation {
     boost::optional<KernelFunctionCallOperation> operation;
 };
 
-struct DynamicCast : SourceLocation {
-    IdentifierPath identifier_path;
-    Expression pointer;
-};
-
 }  // namespace prajna::ast
 
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Module, name, statements)
@@ -380,7 +374,6 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, 
                           arguments)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCall, kernel_function, operation)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Array, values)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::DynamicCast, identifier_path, pointer)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateParameter, name, concept_optional)
 
 BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotation_dict, statement)

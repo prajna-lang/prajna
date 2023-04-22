@@ -64,7 +64,7 @@ implement Ptr<Type>{
 
     template <Interface>
     func As()->dynamic<Interface> {
-        return dynamic_cast<Interface>(this);
+        return __as<Type, Interface>(this);
     }
 }
 

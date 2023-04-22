@@ -12,9 +12,8 @@ implement Say for SayHi{
     }
 
     func createSayObject()->dynamic<Say>{
-        var ptr_object: Ptr<SayHi>;
-        ptr_object.raw_ptr = &this;
-        return dynamic_cast<Say>(ptr_object);
+        var ptr_object = Ptr<SayHi>::FromThisRawPointer(&this);
+        return ptr_object.As<Say>();
     }
 }
 
@@ -26,9 +25,8 @@ implement Say for SayHello{
     }
 
     func createSayObject()->dynamic<Say>{
-        var ptr_object: Ptr<SayHello>;
-        ptr_object.raw_ptr = &this;
-        return dynamic_cast<Say>(ptr_object);
+        var ptr_object = Ptr<SayHello>::FromThisRawPointer(&this);
+        return ptr_object.As<Say>();
     }
 }
 
@@ -44,14 +42,14 @@ func TestDynamicDispatch(){
     var say_hello = Ptr<SayHello>::New();
     say_hello.say();
 
-    say = dynamic_cast<Say>(say_hello);
+    say = say_hello.As<Say>();
     say.say();
 
-    var say_hello2 = dynamic_cast<SayHello>(say);
+    var say_hello2 = say.DynamicCast<SayHello>();
     test::Assert(!say_hello2.IsNull());
     say_hello2.say();
 
-    var say_hi2 = dynamic_cast<SayHi>(say);
+    var say_hi2 = say.DynamicCast<SayHi>();
     test::Assert(say_hi2.IsNull());
 
     var say_hi3: dynamic<Say> = say.createSayObject();

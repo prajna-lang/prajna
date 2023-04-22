@@ -33,6 +33,8 @@ use array::Array;
 use __ptr;
 use __ptr::Ptr;
 
+use _dynamic;
+
 use __type;
 use __float;
 use __int;

@@ -89,9 +89,6 @@ CodeLexer<Lexer>::CodeLexer() {
     this_ = "this";
     this->self += var | this_;
 
-    dynamic_cast_ = "dynamic_cast";
-    this->self += dynamic_cast_;
-
     char_literal =
         "('[^'\\\"\\\\]')|('\\\\a')|('\\\\b')|('\\\\f')|('\\\\n')|('\\\\r')|('\\\\t')|('"
         "\\\\v')|('"

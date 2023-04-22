@@ -9,7 +9,7 @@ func SayHello(){
 
 @test
 func TestMain(){
-    var vtable: __raw_array<__ptr<Func<void>>, 2>;
+    var vtable: __array<__ptr<Func<void>>, 2>;
     vtable[0] = SayHi;
     vtable[1] = SayHello;
 

@@ -2,7 +2,7 @@
 
 template <Type, Length_>
 struct Array{
-    data: __raw_array<Type, Length_>;
+    data: __array<Type, Length_>;
 }
 
 template <Type, Length_>

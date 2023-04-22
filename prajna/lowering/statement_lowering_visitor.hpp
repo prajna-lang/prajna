@@ -1612,7 +1612,7 @@ class StatementLoweringVisitor {
             this->createFloatTypeTemplate(), "Float");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createRawArrayTypeTemplate(), "__raw_array");
+            this->createRawArrayTypeTemplate(), "__array");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createRawPtrTypeTemplate(), "__ptr");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(

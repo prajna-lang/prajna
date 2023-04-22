@@ -15,7 +15,7 @@ func TestKernel(){
     var shape = [1];
     var host_tensor = Tensor<i64, 1>::Create(shape);
     var gpu_tensor = host_tensor.ToGpu();
-    var parameters: __raw_array<__ptr<i8>, 2>;
+    var parameters: __array<__ptr<i8>, 2>;
     parameters[0] = __bit_cast<__ptr<gpu::Tensor<i64, 1>> ,__ptr<i8>>(&gpu_tensor);
     var value = 1023;
     parameters[1] = __bit_cast<__ptr<i64> ,__ptr<i8>>(&value);

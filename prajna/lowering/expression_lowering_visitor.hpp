@@ -545,9 +545,6 @@ class ExpressionLoweringVisitor {
         for (auto iter_ast_identifier = ast_identifier_path.identifiers.begin();
              iter_ast_identifier != ast_identifier_path.identifiers.end(); ++iter_ast_identifier) {
             std::string flag = iter_ast_identifier->identifier;
-            if (flag == "Pointer") {
-                int a = 0;
-            }
 
             symbol = boost::apply_visitor(
                 overloaded{
@@ -806,7 +803,7 @@ class ExpressionLoweringVisitor {
             //                   ast_dynamic_cast.pointer);
             // }
             if (!ir_builder->isPtrType(ir_operand->type)) {
-                logger->error("not a Pointer type", ast_dynamic_cast.pointer);
+                logger->error("not a Ptr type", ast_dynamic_cast.pointer);
             }
             auto symbol_template_arguments = std::any_cast<std::list<lowering::Symbol>>(
                 ir_operand->type->template_arguments_any);

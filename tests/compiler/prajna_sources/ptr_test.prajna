@@ -2,26 +2,26 @@
 
 @test
 func TestMain(){
-    var p: Pointer<i64>;
+    var p: Ptr<i64>;
     p._ToInt64();
 
     test::Assert(p._ToInt64() == 0i64);
-    // test::Assert(p == Pointer<i64>::Null());
+    // test::Assert(p == Ptr<i64>::Null());
     test::Assert(p.IsNull());
 
-    p = Pointer<i64>::New();
+    p = Ptr<i64>::New();
     test::Assert(!p.IsNull());
 }
 
 @test
 func TestLocal() {
-    var p: Pointer<i64>;
+    var p: Ptr<i64>;
     p._ToInt64();
 
     test::Assert(p._ToInt64() == 0i64);
     test::Assert(p.IsNull());
     {
-       var p1 = Pointer<i64>::New();
+       var p1 = Ptr<i64>::New();
        test::Assert(!p1.IsNull());
        p = p1;
     }
@@ -30,7 +30,7 @@ func TestLocal() {
 
 @test
 func TestIndex() {
-    var p = Pointer<i64>::Allocate(10);
+    var p = Ptr<i64>::Allocate(10);
     p[9] = 10;
     test::Assert(p[9] == 10);
 }
@@ -38,5 +38,5 @@ func TestIndex() {
 
 @test
 func TestNested() {
-    var p = Pointer<Pointer<i64>>::New();
+    var p = Ptr<Ptr<i64>>::New();
 }

@@ -31,7 +31,7 @@ use array;
 use array::Array;
 
 use __ptr;
-use __ptr::Pointer;
+use __ptr::Ptr;
 
 use __type;
 use __float;

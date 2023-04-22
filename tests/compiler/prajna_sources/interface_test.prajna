@@ -12,7 +12,7 @@ implement Say for SayHi{
     }
 
     func createSayObject()->dynamic<Say>{
-        var ptr_object: Pointer<SayHi>;
+        var ptr_object: Ptr<SayHi>;
         ptr_object.raw_ptr = &this;
         return dynamic_cast<Say>(ptr_object);
     }
@@ -26,7 +26,7 @@ implement Say for SayHello{
     }
 
     func createSayObject()->dynamic<Say>{
-        var ptr_object: Pointer<SayHello>;
+        var ptr_object: Ptr<SayHello>;
         ptr_object.raw_ptr = &this;
         return dynamic_cast<Say>(ptr_object);
     }
@@ -34,14 +34,14 @@ implement Say for SayHello{
 
 @test
 func TestDynamicDispatch(){
-    var say_hi = Pointer<SayHi>::New();
+    var say_hi = Ptr<SayHi>::New();
     say_hi.say();
     test::Assert(!say_hi.IsNull());
 
     var say: dynamic<Say> = say_hi.As<Say>();
     say.say();
 
-    var say_hello = Pointer<SayHello>::New();
+    var say_hello = Ptr<SayHello>::New();
     say_hello.say();
 
     say = dynamic_cast<Say>(say_hello);

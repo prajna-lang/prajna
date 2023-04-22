@@ -50,7 +50,7 @@ implement Layout<Dim> {
 
 template <Type, Dim>
 struct Tensor {
-    data : Pointer<Type>;
+    data : Ptr<Type>;
     layout: Layout<Dim>;
 }
 
@@ -80,7 +80,7 @@ implement Tensor<Type, Dim> {
         var self: Tensor<Type, Dim>;
         self.layout = Layout<Dim>::Create(shape);
 
-        self.data = Pointer<Type>::Allocate(self.layout.Length());
+        self.data = Ptr<Type>::Allocate(self.layout.Length());
         return self;
     }
 }

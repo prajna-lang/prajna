@@ -1,14 +1,14 @@
 
 template <Type>
-struct Pointer{
+struct Ptr{
     raw_ptr: __raw_ptr<Type>;
 }
 
 template <Type>
-implement Pointer<Type>{
+implement Ptr<Type>{
     @static
-    func Allocate(size: i64)->Pointer<Type>{
-        var self: Pointer<Type>;
+    func Allocate(size: i64)->Ptr<Type>{
+        var self: Ptr<Type>;
         self.raw_ptr =  __bit_cast<__raw_ptr<undef> ,__raw_ptr<Type>>(bindings::malloc(__mul<i64>(size, __sizeof<Type>())));
         bindings::RegisterReferenceCount(__bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(self.raw_ptr));
         bindings::IncrementReferenceCount(__bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(self.raw_ptr));
@@ -16,14 +16,14 @@ implement Pointer<Type>{
     }
 
     @static
-    func New()->Pointer<Type>{
+    func New()->Ptr<Type>{
         var t = Allocate(1);
         return t;
     }
 
     @static
-    func Null()->Pointer<Type>{
-        var self: Pointer<Type>;
+    func Null()->Ptr<Type>{
+        var self: Ptr<Type>;
         self.raw_ptr = __cast<i64, __raw_ptr<Type>>(0);
         return self;
     }
@@ -33,15 +33,15 @@ implement Pointer<Type>{
     }
 
     // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
-    func ToUndef()->Pointer<undef>{
-        var undef_ptr: Pointer<undef>;
+    func ToUndef()->Ptr<undef>{
+        var undef_ptr: Ptr<undef>;
         undef_ptr.raw_ptr = __bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(this.raw_ptr);
         return undef_ptr;
     }
 
     @static
-    func FromUndef(undef_ptr: Pointer<undef>)->Pointer<Type>{
-        var self: Pointer<Type>;
+    func FromUndef(undef_ptr: Ptr<undef>)->Ptr<Type>{
+        var self: Ptr<Type>;
         self.raw_ptr = __bit_cast<__raw_ptr<undef> ,__raw_ptr<Type>>(undef_ptr.raw_ptr);
         return self;
     }
@@ -55,8 +55,8 @@ implement Pointer<Type>{
     }
 
     @static
-    func FromThisRawPointer(this_raw_pointer: __raw_ptr<Type>)->Pointer<Type>{
-        var this_pointer: Pointer<Type>;
+    func FromThisRawPointer(this_raw_pointer: __raw_ptr<Type>)->Ptr<Type>{
+        var this_pointer: Ptr<Type>;
         this_pointer.raw_ptr = this_raw_pointer;
         bindings::IncrementReferenceCount(__bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(this_pointer.raw_ptr));
         return this_pointer;
@@ -69,7 +69,7 @@ implement Pointer<Type>{
 }
 
 template <Type>
-implement operator::LinearIndex<Type> for Pointer<Type> {
+implement operator::LinearIndex<Type> for Ptr<Type> {
     func Get(index: i64)->Type {
         return  this.raw_ptr[index];
     }
@@ -80,7 +80,7 @@ implement operator::LinearIndex<Type> for Pointer<Type> {
 
 template <Type>
 @disable_dynamic_dispatch
-implement reference_count::ReferenceCountable for Pointer<Type> {
+implement reference_count::ReferenceCountable for Ptr<Type> {
     func RegisterReferenceCount() {
         bindings::RegisterReferenceCount(__bit_cast<__raw_ptr<Type> ,__raw_ptr<undef>>(this.raw_ptr));
     }
@@ -106,16 +106,16 @@ implement reference_count::ReferenceCountable for Pointer<Type> {
 }
 
 template <Type>
-implement operator::Equal<Pointer<Type>> for Pointer<Type> {
-    func Equal(operand: Pointer<Type>) -> bool {
+implement operator::Equal<Ptr<Type>> for Ptr<Type> {
+    func Equal(operand: Ptr<Type>) -> bool {
         return this._ToInt64() == operand._ToInt64();
     }
 }
 
 
 template <Type>
-implement operator::NotEqual<Pointer<Type>> for Pointer<Type> {
-    func NotEqual(operand: Pointer<Type>) -> bool {
+implement operator::NotEqual<Ptr<Type>> for Ptr<Type> {
+    func NotEqual(operand: Ptr<Type>) -> bool {
         return !(this == operand);
     }
 }

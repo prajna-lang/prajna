@@ -10,7 +10,7 @@ func CeilPowerOf2(value: i64)->i64{
 
 template <ValueType>
 struct DynamicArray{
-    data: Pointer<ValueType>;
+    data: Ptr<ValueType>;
     length: i64;
     capacity: i64;
 }
@@ -33,7 +33,7 @@ implement DynamicArray<ValueType> {
         var self: DynamicArray<ValueType>;
         self.length = length;
         self.capacity = CeilPowerOf2(length);
-        self.data = Pointer<ValueType>::Allocate(self.capacity);
+        self.data = Ptr<ValueType>::Allocate(self.capacity);
         return self;
     }
 

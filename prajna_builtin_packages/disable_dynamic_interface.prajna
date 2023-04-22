@@ -3,5 +3,9 @@ interface ReferenceCountable {
     func RegisterReferenceCount();
     func IncrementReferenceCount();
     func DecrementReferenceCount();
+}
+
+@disable_dynamic_dispatch
+interface Initializable {
     func Initialize();
 }

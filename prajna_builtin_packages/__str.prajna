@@ -58,23 +58,11 @@ implement String{
     }
 }
 
-implement reference_count::ReferenceCountable for String {
+implement Initializable for String {
     func Initialize(){
         this.size = 0;
         this.darray = DynamicArray<char>::Create(1);
         this.darray[0] = '\0';
-    }
-
-    func RegisterReferenceCount(){
-
-    }
-
-    func DecrementReferenceCount(){
-
-    }
-
-    func IncrementReferenceCount(){
-
     }
 }
 

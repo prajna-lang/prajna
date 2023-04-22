@@ -20,8 +20,8 @@ use Float<64> as f64;
 
 use operator;
 
-use reference_count;
-use reference_count::ReferenceCountable;
+use disable_dynamic_interface::ReferenceCountable;
+use disable_dynamic_interface::Initializable;
 
 use bindings;
 use debug;

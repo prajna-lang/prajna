@@ -79,15 +79,9 @@ implement operator::LinearIndex<Type> for Ptr<Type> {
 }
 
 template <Type>
-@disable_dynamic_dispatch
-implement reference_count::ReferenceCountable for Ptr<Type> {
+implement ReferenceCountable for Ptr<Type> {
     func RegisterReferenceCount() {
         bindings::RegisterReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr));
-    }
-
-    func Initialize() {
-        this.raw_ptr = __cast<i64, __ptr<Type>>(0);
-        this.RegisterReferenceCount();
     }
 
     func IncrementReferenceCount() {
@@ -102,6 +96,14 @@ implement reference_count::ReferenceCountable for Ptr<Type> {
                 this.raw_ptr = __cast<i64, __ptr<Type>>(0);
             }
         }
+    }
+}
+
+template <Type>
+implement Initializable for Ptr<Type> {
+    func Initialize() {
+        this.raw_ptr = __cast<i64, __ptr<Type>>(0);
+        this.RegisterReferenceCount();
     }
 }
 

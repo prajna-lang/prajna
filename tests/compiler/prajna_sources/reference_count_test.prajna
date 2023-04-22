@@ -4,18 +4,10 @@ struct TestA {
     name: String;
 }
 
-// @disable_dynamic_dispatch
-implement reference_count::ReferenceCountable for TestA {
+implement ReferenceCountable for TestA {
     func RegisterReferenceCount(){
         bindings::RegisterReferenceCount(this.data);
         // (this.name + " RegisterReferenceCount\n").Print();
-    }
-
-    func Initialize(){
-        this.name = "undef";
-        this.data = __cast<i64, __ptr<undef>>(0);
-        this.RegisterReferenceCount();
-        // (this.name + " __initialize\n").Print();
     }
 
     func DecrementReferenceCount(){
@@ -40,6 +32,15 @@ implement reference_count::ReferenceCountable for TestA {
 
         var ref_count = bindings::GetReferenceCount(this.data);
         // (this.name + " ref count: " + ref_count.ToString() + "\n").Print();
+    }
+}
+
+implement Initializable for TestA {
+    func Initialize(){
+        this.name = "undef";
+        this.data = __cast<i64, __ptr<undef>>(0);
+        this.RegisterReferenceCount();
+        // (this.name + " __initialize\n").Print();
     }
 }
 

@@ -19,7 +19,7 @@ implement Node<ValueType> {
         this.prev = new_node;
     }
 
-    /// @warning 确定节点后面存在节点
+    /// @warning 确保节点后面存在节点
     func InsertAfter(value: ValueType){
         var new_node = Ptr<Node<ValueType>>::New();
         new_node.value = value;
@@ -35,22 +35,12 @@ template <ValueType>
 struct List {
     _head: Ptr<Node<ValueType>>;
     _end: Ptr<Node<ValueType>>;
+    // 用于引用计数
+    _reference_counter : __ptr<undef>;
 }
 
 template <ValueType>
 implement List<ValueType> {
-    @static
-    func Create()->List<ValueType> {
-        var tmp_list : List<ValueType>;
-        tmp_list._head = Ptr<Node<ValueType>>::New();
-        tmp_list._end = Ptr<Node<ValueType>>::New();
-        tmp_list._head.prev = Ptr<Node<ValueType>>::Null();
-        tmp_list._head.next = tmp_list._end;
-        tmp_list._end.prev =  tmp_list._head;
-        tmp_list._end.next = Ptr<Node<ValueType>>::Null();
-        return tmp_list;
-    }
-
     func PushFront(value: ValueType) {
         this._head.InsertAfter(value);
     }
@@ -67,3 +57,49 @@ implement List<ValueType> {
         return this._head.next;
     }
 }
+
+template <ValueType>
+implement Initializable for List<ValueType> {
+    func Initialize() {
+        this._head = Ptr<Node<ValueType>>::New();
+        this._end = Ptr<Node<ValueType>>::New();
+        this._head.prev = Ptr<Node<ValueType>>::Null();
+        this._head.next = this._end;
+        this._end.prev =  this._head;
+        this._end.next = Ptr<Node<ValueType>>::Null();
+
+        this._reference_counter = bindings::malloc(1);
+        bindings::RegisterReferenceCount(this._reference_counter);
+        bindings::IncrementReferenceCount(this._reference_counter);
+    }
+}
+
+template <ValueType>
+implement Finalizable for List<ValueType> {
+    // 有循环引用, 需要特殊处理一下
+    func Finalize() {
+        var node = this.Begin();
+        while (node != this.End()) {
+            // 两个链接都断开, 否则会形成很长的递归调用
+            node.prev.next = Ptr<Node<ValueType>>::Null();
+            node.prev = Ptr<Node<ValueType>>::Null();
+            node = node.next;
+        }
+    }
+}
+
+template <ValueType>
+implement ReferenceCountable for List<ValueType> {
+    func IncrementReferenceCount() {
+        bindings::IncrementReferenceCount(this._reference_counter);
+    }
+
+    func DecrementReferenceCount() {
+        bindings::DecrementReferenceCount(this._reference_counter);
+        if (bindings::GetReferenceCount(this._reference_counter) == 0){
+            this.Finalize();
+            bindings::free(this._reference_counter);
+        }
+    }
+}
+

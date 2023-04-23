@@ -9,3 +9,8 @@ interface ReferenceCountable {
 interface Initializable {
     func Initialize();
 }
+
+@disable_dynamic
+interface Finalizable {
+    func Finalize();
+}

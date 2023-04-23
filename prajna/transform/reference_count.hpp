@@ -22,19 +22,40 @@ namespace prajna::transform {
 
 namespace {
 
-bool isReferenceCount(std::shared_ptr<ir::Type> ir_type) {
+bool isReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
     auto ir_interface_implement = ir_type->interface_dict["ReferenceCountable"];
     return ir_interface_implement != nullptr;
 }
 
-bool isReferenceCountAble(std::shared_ptr<ir::Type> ir_type) {
-    if (isReferenceCount(ir_type)) {
+bool hasReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
+    if (isReferenceCountable(ir_type)) {
         return true;
     }
 
     if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
-            if (isReferenceCountAble(ir_field->type)) {
+            if (hasReferenceCountable(ir_field->type)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool isInitializable(std::shared_ptr<ir::Type> ir_type) {
+    auto ir_interface_implement = ir_type->interface_dict["Initializable"];
+    return ir_interface_implement != nullptr;
+}
+
+bool hasInitializable(std::shared_ptr<ir::Type> ir_type) {
+    if (isInitializable(ir_type)) {
+        return true;
+    }
+
+    if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+        for (auto ir_field : ir_struct_type->fields) {
+            if (hasInitializable(ir_field->type)) {
                 return true;
             }
         }
@@ -56,10 +77,10 @@ std::shared_ptr<lowering::IrBuilder> makeIRbuilder() {
 inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> ir_variable_liked,
                                             std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_variable_liked->type;
-    if (isReferenceCountAble(ir_type)) {
+    if (hasInitializable(ir_type)) {
         if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
             for (auto ir_field : is_struct_type->fields) {
-                if (isReferenceCountAble(ir_field->type)) {
+                if (hasInitializable(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
                     initializeVariableLikedCallback(ir_access_field, ir_builder);
@@ -67,7 +88,7 @@ inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
             }
         }
 
-        if (isReferenceCount(ir_type)) {
+        if (isInitializable(ir_type)) {
             auto ir_function = ir::getFunctionByName(
                 ir_type->interface_dict["Initializable"]->functions, "Initialize");
             ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
@@ -78,24 +99,28 @@ inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
 inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
                                          std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_value->type;
-    if (isReferenceCountAble(ir_type)) {
+    if (hasReferenceCountable(ir_type)) {
         auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_value);
+        // 和incresement的顺序是相反的
+        if (isReferenceCountable(ir_type)) {
+            auto ir_function =
+                ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
+                                      "DecrementReferenceCount");
+            ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
+        };
+
         if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
-            for (auto ir_field : is_struct_type->fields) {
-                if (isReferenceCountAble(ir_field->type)) {
+            // 按声明相反的顺序处理
+            for (auto iter_field = is_struct_type->fields.rbegin();
+                 iter_field != is_struct_type->fields.rend(); ++iter_field) {
+                auto ir_field = *iter_field;
+                if (hasReferenceCountable(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
                     destroyVariableLikedCallback(ir_access_field, ir_builder);
                 }
             }
         }
-
-        if (isReferenceCount(ir_type)) {
-            auto ir_function =
-                ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
-                                      "DecrementReferenceCount");
-            ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
-        };
     }
 }
 
@@ -106,11 +131,11 @@ inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
 inline void copyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
                                       std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_value->type;
-    if (isReferenceCountAble(ir_type)) {
+    if (hasReferenceCountable(ir_type)) {
         auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_value);
         if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
             for (auto ir_field : ir_struct_type->fields) {
-                if (isReferenceCountAble(ir_field->type)) {
+                if (hasReferenceCountable(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
                     copyVariableLikedCallback(ir_access_field, ir_builder);
@@ -118,7 +143,7 @@ inline void copyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
             }
         }
 
-        if (isReferenceCount(ir_type)) {
+        if (isReferenceCountable(ir_type)) {
             auto ir_function =
                 ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
                                       "IncrementReferenceCount");
@@ -233,7 +258,7 @@ inline std::shared_ptr<ir::Module> insertCopyAndDecrementReferenceCountForCallan
     for (auto ir_function : ir_module->functions) {
         auto ir_calls = utility::getValuesInFunction<ir::Call>(ir_function);
         for (auto ir_call : ir_calls) {
-            if (not isReferenceCountAble(ir_call->type)) continue;
+            if (not hasReferenceCountable(ir_call->type)) continue;
 
             auto ir_builder = makeIRbuilder();
             ir_builder->pushBlock(ir_call->parent_block);
@@ -260,7 +285,7 @@ inline std::shared_ptr<ir::Module> insertCopyAndDecrementReferenceCountForCallan
 
         auto ir_returns = utility::getValuesInFunction<ir::Return>(ir_function);
         for (auto ir_return : ir_returns) {
-            if (not isReferenceCountAble(ir_return->type)) continue;
+            if (not hasReferenceCountable(ir_return->type)) continue;
 
             auto ir_builder = makeIRbuilder();
             ir_builder->pushBlock(ir_return->parent_block);

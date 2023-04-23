@@ -1,6 +1,6 @@
 @test
 func TestList() {
-    var tmp_list = List<i64>::Create();
+    var tmp_list: List<i64>;
     tmp_list.PushFront(2);
     tmp_list.PushBack(3);
     tmp_list.PushBack(4);

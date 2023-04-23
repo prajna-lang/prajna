@@ -1,0 +1,15 @@
+struct Tmp{
+    value: i64;
+}
+
+implement Initializable for Tmp {
+    func Initialize() {
+        this.value = -1;
+    }
+}
+
+@test
+func TestInitializable() {
+    var tmp: Tmp;
+    test::Assert(tmp.value == -1);
+}

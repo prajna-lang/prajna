@@ -22,6 +22,7 @@ use operator;
 
 use disable_dynamic_interface::ReferenceCountable;
 use disable_dynamic_interface::Initializable;
+use disable_dynamic_interface::Finalizable;
 
 use bindings;
 use debug;

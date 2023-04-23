@@ -131,6 +131,30 @@ template FloatTest <Bits> {
             test::Assert(value.Trunc() == expect);
         }
     }
+
+    @test
+    func TestFloatFixedPrinter() {
+        var float_fixed_printer: FloatFixedPrinter<Float<Bits>>;
+        float_fixed_printer.decimal_precision = 5;
+        float_fixed_printer.ConvertFloatToString((3.1415926f64).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((-3.1415926f64).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((4102).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((-4102).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((0.123455f64).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((0.123454f64).Cast<Float<Bits>>()).PrintLine();
+    }
+
+    @test
+    func TestFloatScientificPrinter() {
+        var float_scientific_printer: FloatScientificPrinter<Float<Bits>>;
+        float_scientific_printer.decimal_precision = 5;
+        float_scientific_printer.ConvertFloatToString((3.1415926f64).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((-3.1415926f64).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((2102).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((-2102).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((0.823455f64).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((4000.123454f64).Cast<Float<Bits>>()).PrintLine();
+    }
 }
 
 @test

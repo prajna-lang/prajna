@@ -28,38 +28,29 @@ use bindings;
 use debug;
 use test;
 
-use array;
 use array::Array;
 
-use _ptr;
 use _ptr::Ptr;
-
 use _dynamic;
 
 use __type;
-use __float;
+use __float::FloatFixedPrinter;
+use __float::FloatScientificPrinter;
 use __int;
 
-use dynamic_array;
 use dynamic_array::DynamicArray;
+use tensor::Tensor;
+use tensor::Layout;
+use list::Node;
+use list::List;
+use dict::ListDict;
 
-use __str;
 use __str::String;
 use __str::Print;
 use __str::PrintLine;
 
-
-use serializable;
 use serializable::Serializable;
-
 use serialize;
 
-use tensor;
-use tensor::Tensor;
-use tensor::Layout;
 
-use list::Node;
-use list::List;
-
-use dict::ListDict;
 // use io;

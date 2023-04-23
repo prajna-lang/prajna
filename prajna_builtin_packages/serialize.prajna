@@ -68,38 +68,8 @@ implement Serializable for bool{
 template <Bits>
 implement Serializable for Float<Bits>{
     func ToString()->String{
-        var x = this;
-        var n = 4;
-        var rounder = (0.00005f32).Cast<Float<Bits>>();
-        var zero = 0i64.Cast<Float<Bits>>();
-        var one = 1i64.Cast<Float<Bits>>();
-        var ten = 10i64.Cast<Float<Bits>>();
-        x = x + rounder;
-        // TODO
-        // var re = "";
-        var re = String::Create(0);
-
-        if (x < zero){
-            re.Push('-');
-            x = zero-x;
-        }
-
-        var int_part = x.Cast<Int<64>>(); // 越界了需要处理
-        re = re  + int_part.ToString();
-        x = x - int_part.Cast<Float<Bits>>();
-
-        if (x < one){
-            re.Push('.');
-            while (n > 0){
-                x = x * ten;
-                int_part = x.Cast<Int<64>>();
-                re.Push((x.Cast<Int<64>>() + '0'.Cast<Int<64>>()).Cast<char>());
-                x = x - int_part.Cast<Float<Bits>>();
-                n = n - 1;
-            }
-        }
-
-        return re;
+        var float_fixed_printer = FloatFixedPrinter<Float<Bits>>(6);
+        return float_fixed_printer.ConvertFloatToString(this);
     }
 }
 

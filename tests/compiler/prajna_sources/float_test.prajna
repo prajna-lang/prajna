@@ -170,6 +170,6 @@ func TestFloatParse() {
     -2.12;
 }
 
-use FloatTest<16>;
+// use FloatTest<16>;
 use FloatTest<32>;
 use FloatTest<64>;

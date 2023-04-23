@@ -599,7 +599,7 @@ class StatementLoweringVisitor {
             });
 
             // 需要前置, 因为函数会用的接口类型本身
-            if (!ir_interface_prototype->disable_dynamic_dispatch) {
+            if (!ir_interface_prototype->disable_dynamic) {
                 // 创建接口动态类型生成函数
                 ir_interface->dynamic_type_creator = ir_builder->createFunction(
                     std::string("dynamic_type_creator"),
@@ -615,7 +615,7 @@ class StatementLoweringVisitor {
                 // ir_interface->functions.push_back(ir_function);
             }
 
-            if (ir_interface_prototype->disable_dynamic_dispatch) {
+            if (ir_interface_prototype->disable_dynamic) {
                 return nullptr;
             }
 
@@ -1732,11 +1732,11 @@ class StatementLoweringVisitor {
         ir_builder->SetSymbolWithTemplateArgumentsPostify(ir_interface_prototype,
                                                           ast_interface_prototype.name);
 
-        ir_interface_prototype->disable_dynamic_dispatch = std::any_of(
+        ir_interface_prototype->disable_dynamic = std::any_of(
             RANGE(ast_interface_prototype.annotation_dict),
-            [](auto ast_annotation) { return ast_annotation.name == "disable_dynamic_dispatch"; });
+            [](auto ast_annotation) { return ast_annotation.name == "disable_dynamic"; });
 
-        if (!ir_interface_prototype->disable_dynamic_dispatch) {
+        if (!ir_interface_prototype->disable_dynamic) {
             ir_interface_prototype->dynamic_type = ir::StructType::create({});
             // 我们通过dynamic<Interface>来获取接口所对应的类型, 需要将他们关联,
             // 以便获取dynamic的实现
@@ -1758,7 +1758,7 @@ class StatementLoweringVisitor {
             ir_builder->module->functions.remove(ir_function);
         }
 
-        if (!ir_interface_prototype->disable_dynamic_dispatch) {
+        if (!ir_interface_prototype->disable_dynamic) {
             this->createInterfaceDynamicType(ir_interface_prototype);
         }
 

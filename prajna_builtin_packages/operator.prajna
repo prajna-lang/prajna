@@ -1,102 +1,102 @@
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Add {
     func Add(operand: T)->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Sub {
     func Sub(operand: T)->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Multiply {
     func Multiply(operand: T)->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Divide {
     func Divide(operand: T)->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Remaind {
     func Remaind(operand: T)->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Equal {
     func Equal(operand: T)->bool;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface NotEqual {
     func NotEqual(operand: T)->bool;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Greater {
     func Greater(operand: T)->bool;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Less {
     func Less(operand: T)->bool;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface GreaterOrEqual {
     func GreaterOrEqual(operand: T)->bool;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface LessOrEqual {
     func LessOrEqual(operand: T)->bool;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface And {
     func And(operand: T)->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Or {
     func Or(operand: T)->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Xor {
     func Xor(operand: T)->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Not {
     func Not()->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface LinearIndex {
     func Get(index: i64)->T;
     func Set(index: i64, value: T);
 }
 
 template <ValueType, Dim>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface ArrayIndex {
     func Get(index: Array<i64, Dim>)->ValueType;
     func Set(index: Array<i64, Dim>, value: ValueType);
@@ -104,19 +104,19 @@ interface ArrayIndex {
 
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Negative {
     func Negative()->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Positive {
     func Positive()->T;
 }
 
 template <T>
-@disable_dynamic_dispatch
+@disable_dynamic
 interface Not {
     func Not()->T;
 }

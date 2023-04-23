@@ -425,7 +425,7 @@ class InterfacePrototype : public Named {
     std::list<std::shared_ptr<Function>> functions;
     std::shared_ptr<StructType> dynamic_type = nullptr;
 
-    bool disable_dynamic_dispatch = false;
+    bool disable_dynamic = false;
 
     // 用于追溯模板接口
     std::shared_ptr<lowering::Template> template_interface = nullptr;

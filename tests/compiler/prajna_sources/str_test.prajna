@@ -5,11 +5,11 @@ func TestMain() {
     tmp[1] = 'i';
     test::Assert(tmp[1] == 'i');
     tmp.Print();
-    test::Assert(tmp.size == 2);
-    tmp.Append('!');
-    tmp.Append('\n');
+    test::Assert(tmp.Length() == 2);
+    tmp.Push('!');
+    tmp.Push('\n');
     tmp.Print();
-    test::Assert(tmp.size == 4);
+    test::Assert(tmp.Length() == 4);
 
     ("Hello" + " World!\n").Print();
 

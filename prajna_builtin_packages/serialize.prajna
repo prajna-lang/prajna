@@ -16,7 +16,7 @@ implement Serializable for Uint<Bits>{
             return "0";
         }
 
-        // 只有十进制只有一位, 直接返回
+        // 十进制只有一位, 直接返回
         if (Bits <= 3) {
             return (this.Cast<char>() + '0').ToString();
         }
@@ -24,14 +24,14 @@ implement Serializable for Uint<Bits>{
         var temp = this;
         var inverse_re = "";
         while (temp != zero){
-            inverse_re.Append((temp % ten).Cast<char>() + '0');
+            inverse_re.Push((temp % ten).Cast<char>() + '0');
             temp = temp / ten;
         }
 
-        var re = String::Create(inverse_re.size);
+        var re = String::Create(inverse_re.Length());
         var j = 0;
-        while (j < re.size){
-            re.darray[j] = inverse_re.darray[inverse_re.size-j-1];
+        while (j < re.Length()){
+            re.darray[j] = inverse_re.darray[inverse_re.Length()-j-1];
             j = j + 1;
         }
 
@@ -80,7 +80,7 @@ implement Serializable for Float<Bits>{
         var re = String::Create(0);
 
         if (x < zero){
-            re.Append('-');
+            re.Push('-');
             x = zero-x;
         }
 
@@ -89,11 +89,11 @@ implement Serializable for Float<Bits>{
         x = x - int_part.Cast<Float<Bits>>();
 
         if (x < one){
-            re.Append('.');
+            re.Push('.');
             while (n > 0){
                 x = x * ten;
                 int_part = x.Cast<Int<64>>();
-                re.Append((x.Cast<Int<64>>() + '0'.Cast<Int<64>>()).Cast<char>());
+                re.Push((x.Cast<Int<64>>() + '0'.Cast<Int<64>>()).Cast<char>());
                 x = x - int_part.Cast<Float<Bits>>();
                 n = n - 1;
             }

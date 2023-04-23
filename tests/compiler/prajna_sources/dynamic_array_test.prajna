@@ -1,16 +1,16 @@
 @test
 func TestMain(){
     var darray = DynamicArray<i64>::Create(64);
-    test::Assert(darray.length == 64);
-    test::Assert(darray.capacity == 64);
+    test::Assert(darray.Length() == 64);
+    test::Assert(darray.Capacity() == 64);
     darray[3] = 4;
     test::Assert(darray[3] == 4);
-    darray.PushBack(13);
+    darray.Push(13);
     test::Assert(darray[64] == 13);
-    test::Assert(darray.length == 65);
-    test::Assert(darray.capacity == 128);
-    darray.PushBack(14);
+    test::Assert(darray._length == 65);
+    test::Assert(darray._capacity == 128);
+    darray.Push(14);
     test::Assert(darray[65] == 14);
-    test::Assert(darray.length == 66);
-    test::Assert(darray.capacity == 128);
+    test::Assert(darray.Length() == 66);
+    test::Assert(darray.Capacity() == 128);
 }

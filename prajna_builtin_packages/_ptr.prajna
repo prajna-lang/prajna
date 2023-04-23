@@ -103,7 +103,8 @@ template <Type>
 implement Initializable for Ptr<Type> {
     func Initialize() {
         this.raw_ptr = __cast<i64, __ptr<Type>>(0);
-        this.RegisterReferenceCount();
+        // 零指针并不需要注册
+        // this.RegisterReferenceCount();
     }
 }
 

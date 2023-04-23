@@ -34,6 +34,6 @@ func TestTypes(){
     var hello = "Hello";
     var word = "World";
     var hello_word = hello + ", " + word;
-    hello_word.Append(newline);
+    hello_word.Push(newline);
     hello_word.Print();
 }

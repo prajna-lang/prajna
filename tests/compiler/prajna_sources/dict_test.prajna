@@ -1,7 +1,6 @@
 @test
 func TestListDict() {
     var list_dict: ListDict<i64, f32>;
-    list_dict._key_value_list = List<dict::KeyValue<i64, f32>>::Create();
     list_dict.Insert(2, 3.1415);
     var re = list_dict.Get(2);
     re.ToString().Print();

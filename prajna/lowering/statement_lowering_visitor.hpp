@@ -1639,17 +1639,17 @@ class StatementLoweringVisitor {
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createFloatTypeIntrinsicUnaryFunctionTemplate("cos"), "__cos");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("pow"), "__pow");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("pow", 2), "__pow");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp"), "__exp");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp", 2), "__exp");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp2"), "__exp2");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp2", 2), "__exp2");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log"), "__log");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log", 2), "__log");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log10"), "__log10");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log10", 2), "__log10");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log2"), "__log2");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log2", 2), "__log2");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createFloatTypeIntrinsicUnaryFunctionTemplate("fabs"), "__fabs");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(

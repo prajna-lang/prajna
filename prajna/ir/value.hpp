@@ -1733,7 +1733,7 @@ inline std::shared_ptr<ir::Function> getFunctionByName(
     std::list<std::shared_ptr<ir::Function>> function_list, std::string name) {
     auto iter_function = std::find_if(RANGE(function_list),
                                       [=](auto ir_function) { return ir_function->name == name; });
-    PRAJNA_ASSERT(iter_function != function_list.end());
+    PRAJNA_ASSERT(iter_function != function_list.end(), name);
     return *iter_function;
 }
 

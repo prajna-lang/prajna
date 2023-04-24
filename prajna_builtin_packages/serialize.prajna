@@ -64,12 +64,17 @@ implement Serializable for bool{
 }
 
 
-/// TODO 输出位数, 需要重构,
 template <Bits>
 implement Serializable for Float<Bits>{
     func ToString()->String{
-        var float_fixed_printer = FloatFixedPrinter<Float<Bits>>(6);
-        return float_fixed_printer.ConvertFloatToString(this);
+        if (this > 0.00001.Cast<Float<Bits>>()){
+            var float_fixed_printer: FloatFixedPrinter<Float<Bits>>;
+            return float_fixed_printer.ConvertFloatToString(this);
+        } else {
+            var float_scientific_printer : FloatScientificPrinter<Float<Bits>>;
+            return float_scientific_printer.ConvertFloatToString(this);
+        }
+
     }
 }
 

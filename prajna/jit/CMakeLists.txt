@@ -28,7 +28,7 @@ target_link_libraries(prajna_jit
 # https://github.com/fxcoudert/gfortran-for-macOS/releases
 # 对于mac平台, 需要下载安装gfortran. 因为jigt运行时float128会依赖下面的动态库
 if (APPLE AND UNIX)
-    target_link_libraries(prajna_jit PRIVATE /usr/local/gfortran/lib/libgfortran.dylib)
+    # target_link_libraries(prajna_jit PRIVATE /usr/local/gfortran/lib/libgfortran.dylib)
 endif()
 
 target_include_directories(prajna_jit PRIVATE /usr/local/cuda/include)

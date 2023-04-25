@@ -1,0 +1,2 @@
+@intrinsic("__atomic_load")
+func __atomic_load(v0: i64, v1: __ptr<i64>, v2: __ptr<i64>, o: i32);

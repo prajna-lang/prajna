@@ -1,7 +1,55 @@
 
 template <Type>
+implement __ptr<Type> {
+    @static
+    func Allocate(size: i64)->__ptr<Type> {
+        return __bit_cast<__ptr<undef> ,__ptr<Type>>(bindings::malloc(size * __sizeof<Type>()));
+    }
+
+    @static
+    func New()->__ptr<Type>{
+        var t = __ptr<Type>::Allocate(1);
+        return t;
+    }
+
+    @static
+    func Null()->__ptr<Type> {
+        return __cast<i64, __ptr<Type>>(0);
+    }
+
+    func Free() {
+        bindings::free(__bit_cast<__ptr<Type>, __ptr<undef>>(this));
+    }
+
+    func _ToInt64()->i64{
+        return __cast<__ptr<Type>, i64>(this);
+    }
+}
+
+template <Type>
+implement operator::Equal<__ptr<Type>> for __ptr<Type> {
+    func Equal(operand: __ptr<Type>) -> bool {
+        return this._ToInt64() == operand._ToInt64();
+    }
+}
+
+
+template <Type>
+implement operator::NotEqual<__ptr<Type>> for __ptr<Type> {
+    func NotEqual(operand: __ptr<Type>) -> bool {
+        return !(this == operand);
+    }
+}
+
+
+
+template <Type>
 struct Ptr{
     raw_ptr: __ptr<Type>;
+    // TODO 在激活多线程后将其换位
+    // 我们也可以使用外部的dict来存放计数器, 但是这样会增加索引的时间, 并且不利于和其他语言互操作.
+    // 在Ptr里增加个计数器不至于影响性能, 并且可以利用llvm对计数方法进行优化
+    _reference_counter: __ptr<i64>;
 }
 
 template <Type>
@@ -9,9 +57,9 @@ implement Ptr<Type>{
     @static
     func Allocate(size: i64)->Ptr<Type>{
         var self: Ptr<Type>;
-        self.raw_ptr =  __bit_cast<__ptr<undef> ,__ptr<Type>>(bindings::malloc(__mul<i64>(size, __sizeof<Type>())));
-        bindings::RegisterReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(self.raw_ptr));
-        bindings::IncrementReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(self.raw_ptr));
+        self.raw_ptr =  __ptr<Type>::Allocate(size);
+        // self._reference_count; //不需要再次申请, Initialize的时候会产生.
+        *self._reference_counter = 1;
         return self;
     }
 
@@ -24,7 +72,7 @@ implement Ptr<Type>{
     @static
     func Null()->Ptr<Type>{
         var self: Ptr<Type>;
-        self.raw_ptr = __cast<i64, __ptr<Type>>(0);
+        self.raw_ptr = __ptr<Type>::Null();
         return self;
     }
 
@@ -36,6 +84,8 @@ implement Ptr<Type>{
     func ToUndef()->Ptr<undef>{
         var undef_ptr: Ptr<undef>;
         undef_ptr.raw_ptr = __bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr);
+        undef_ptr._reference_counter = this._reference_counter;
+        *undef_ptr._reference_counter = *undef_ptr._reference_counter + 1;
         return undef_ptr;
     }
 
@@ -43,6 +93,8 @@ implement Ptr<Type>{
     func FromUndef(undef_ptr: Ptr<undef>)->Ptr<Type>{
         var self: Ptr<Type>;
         self.raw_ptr = __bit_cast<__ptr<undef> ,__ptr<Type>>(undef_ptr.raw_ptr);
+        self._reference_counter = undef_ptr._reference_counter;
+        *self._reference_counter = *self._reference_counter + 1;
         return self;
     }
 
@@ -51,15 +103,7 @@ implement Ptr<Type>{
     }
 
     func ReferenceCount()->i64 {
-        return bindings::GetReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr));
-    }
-
-    @static
-    func FromThisRawPointer(this_raw_pointer: __ptr<Type>)->Ptr<Type>{
-        var this_pointer: Ptr<Type>;
-        this_pointer.raw_ptr = this_raw_pointer;
-        bindings::IncrementReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(this_pointer.raw_ptr));
-        return this_pointer;
+        return *this._reference_counter;
     }
 
     template <Interface>
@@ -81,19 +125,20 @@ implement operator::LinearIndex<Type> for Ptr<Type> {
 template <Type>
 implement ReferenceCountable for Ptr<Type> {
     func RegisterReferenceCount() {
-        bindings::RegisterReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr));
+        *this._reference_counter = 0;
     }
 
     func IncrementReferenceCount() {
-        bindings::IncrementReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr));
+        // TODO 后面改为原子操作
+        *this._reference_counter = *this._reference_counter + 1;
     }
 
     func DecrementReferenceCount() {
-        bindings::DecrementReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr));
-        if (__eq<i64>(bindings::GetReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr)), 0)){
-            if (!this.IsNull()){
-                bindings::free(__bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr));
-                this.raw_ptr = __cast<i64, __ptr<Type>>(0);
+        *this._reference_counter = *this._reference_counter - 1;
+        if (*this._reference_counter == 0){
+            if (!this.IsNull()) {
+                this.raw_ptr.Free();
+                this._reference_counter.Free();
             }
         }
     }
@@ -102,9 +147,10 @@ implement ReferenceCountable for Ptr<Type> {
 template <Type>
 implement Initializable for Ptr<Type> {
     func Initialize() {
-        this.raw_ptr = __cast<i64, __ptr<Type>>(0);
-        // 零指针并不需要注册
-        // this.RegisterReferenceCount();
+        this.raw_ptr = __ptr<Type>::Null();
+        // 需要申请, 判断的时候需要用到
+        this._reference_counter = __ptr<i64>::New();
+        *this._reference_counter = 0;
     }
 }
 

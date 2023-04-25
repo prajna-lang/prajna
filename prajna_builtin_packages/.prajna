@@ -30,13 +30,15 @@ use test;
 
 use array::Array;
 
-use _ptr::Ptr;
-use _dynamic;
-
 use __type;
 use __float::FloatFixedPrinter;
 use __float::FloatScientificPrinter;
 use __int;
+
+use _ptr::Ptr;
+use _dynamic;
+
+use atomic;
 
 use dynamic_array::DynamicArray;
 use tensor::Tensor;

@@ -17,10 +17,10 @@ implement ListDict<Key, Value> {
     func Get(key: Key)->Value {
         var node =  this._key_value_list.Begin();
         while (node != this._key_value_list.End()) {
-            if (node.value.key == key) {
-                return node.value.value;
+            if ((*node).value.key == key) {
+                return (*node).value.value;
             }
-            node = node.next;
+            node = (*node).next;
         }
 
         debug::Assert(false);

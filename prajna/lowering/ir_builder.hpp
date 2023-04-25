@@ -123,6 +123,8 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::Property> getLinearIndexProperty(std::shared_ptr<ir::Type> ir_type) {
+        instantiateTypeImplements(ir_type);
+
         auto iter_linear_index_interface =
             std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
                 if (!key_value.second) return false;
@@ -144,6 +146,8 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::Property> getArrayIndexProperty(std::shared_ptr<ir::Type> ir_type) {
+        instantiateTypeImplements(ir_type);
+
         auto iter_array_index_interface =
             std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
                 if (!key_value.second) return false;

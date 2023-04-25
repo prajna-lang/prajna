@@ -110,7 +110,8 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
     }
 
     std::shared_ptr<ir::Type> instantiate(std::list<Symbol> template_arguments,
-                                          std::shared_ptr<ir::Module> ir_module) {
+                                          std::shared_ptr<ir::Module> ir_module,
+                                          bool inside_struct = false) {
         // imlement_is_processing会确保 struct 实例化, implement实例化顺序执行, 而不产生递归
         if (implement_is_processing.count(template_arguments) == 0) {
             implement_is_processing[template_arguments] = false;
@@ -127,7 +128,7 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
             implement_is_processing[template_arguments] = false;
         }
 
-        if (!implement_is_processing[template_arguments]) {
+        if (!implement_is_processing[template_arguments] && !inside_struct) {
             for (auto template_implement : template_implement_type_vec) {
                 implement_is_processing[template_arguments] = true;
                 template_implement->instantiate(template_arguments, ir_module);

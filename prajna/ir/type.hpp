@@ -244,7 +244,7 @@ class UndefType : public Type {
 
         std::shared_ptr<UndefType> self(new UndefType);
         self->name = "undef";
-        self->bytes = 0;  // 应该是个无效值
+        self->bytes = 1;  // 应该是个无效值
         self->fullname = "undef";
         global_context.created_types.push_back(self);
         return self;

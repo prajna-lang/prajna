@@ -47,34 +47,7 @@ graph LR
 
 ## 使用实例
 
-下面展示的是一段在gpu上的运行的代码, 实现了在GPU上的张量加法. 我们可以看到在般若里, 只需要在for循环前面加一个"@gpu"的注解
-, 编译器就会自动从CPU上拷贝数据到GPU, 在GPU上完成计算后又拷贝回到CPU上. 与CUDA的GPU编程相比, 般若同样的功能要简单很多.
-
-```
-import ::gpu;
-
-func main(){
-    var shape = [10, 20];
-    var tensor0 = Tensor<i64, 2>::create(shape);
-    var tensor1 = Tensor<i64, 2>::create(shape);
-    var tensor2 = Tensor<i64, 2>::create(shape);
-
-    for idx in [0, 0] to shape {
-        tensor0.at(idx) = 1;
-        tensor1.at(idx) = 2;
-    }
-
-    @gpu // 标注后, 会自动拷贝数据到gpu上
-    for idx in [0, 0] to shape{
-        tensor2.at(idx) = tensor0.at(idx) + tensor1.at(idx);
-    }
-
-    // 运行完后, gpu的数据会自动拷贝的主机上
-    for idx in [0, 0] to shape{
-        test::Assert(tensor2.at(idx) == 3);
-    }
-}
-```
+可以搜索*.prajna文件查看
 
 ## 般若生态路线图
 

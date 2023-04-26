@@ -19,10 +19,24 @@ endif()
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
+# llvm compiler-rt不支持"Linux", 所以需要改为"linxu-gnu"
+if (UNIX AND NOT APPLE)
+    set(CMAKE_SYSTEM_NAME "linux-gnu")
 
-set(LLVM_INCLUDE_TESTS OFF)
+    # llvm compiler-rt需要, 交叉编译需要重新设置
+    set(CMAKE_C_COMPILER_TARGET "${CMAKE_SYSTEM_PROCESSOR}-unknown-${CMAKE_SYSTEM_NAME}")
+    # 不可设置C++的, 会导致头文件找不到
+    # set(CMAKE_CXX_COMPILER_TARGET "${CMAKE_SYSTEM_PROCESSOR}-unknown-${CMAKE_SYSTEM_NAME}")
+    message("prajna build target triple: ${CMAKE_C_COMPILER_TARGET}")
 
+    set(COMPILER_RT_DEFAULT_TARGET_ONLY=ON)
+    set(DLLVM_ENABLE_PROJECTS "compiler-rt")
+    set(COMPILER_RT_BUILD_BUILTINS On)
+endif()
+
+# set(COMPILER_RT_BUILTINS_HIDE_SYMBOLS Off)
 add_subdirectory(third_party/llvm-project/llvm EXCLUDE_FROM_ALL)
+
 # 需要手动添加llvm的头文件路径
 add_library(llvm_include_dir INTERFACE)
 target_include_directories(llvm_include_dir

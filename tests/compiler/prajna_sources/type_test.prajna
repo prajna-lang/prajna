@@ -1,10 +1,22 @@
 template RealNumberTypeTest <Type> {
     @test
     func TestCast() {
-        0i64.Cast<Type>();
         var tmp: Type;
+        tmp.Cast<i8>();
+        tmp.Cast<i16>();
+        tmp.Cast<i32>();
         tmp.Cast<i64>();
-        tmp.Cast<Type>();
+        // tmp.Cast<Int<128>>(); //需要soft-fp的支持
+
+        tmp.Cast<u8>();
+        tmp.Cast<u16>();
+        tmp.Cast<u32>();
+        tmp.Cast<i64>();
+        // tmp.Cast<Uint<128>>();
+
+        tmp.Cast<f16>();
+        tmp.Cast<f32>();
+        tmp.Cast<f64>();
     }
 
     @test

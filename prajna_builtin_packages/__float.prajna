@@ -83,7 +83,7 @@ implement FloatFixedPrinter<FloatType> {
             return "0";
         }
 
-        while (tmp_integer > zero) {
+        while (tmp_integer > ten) {
             var cur_char =  (tmp_integer % ten).Cast<char>() + '0';
             char_list.PushFront(cur_char);
             tmp_integer = (tmp_integer / ten).Trunc();
@@ -116,6 +116,19 @@ implement FloatFixedPrinter<FloatType> {
     }
 
     func ConvertFloatToString(value: FloatType)->String {
+        if (value == FloatType::Inf()) {
+            return "inf";
+        }
+        if (value == -FloatType::Inf()) {
+            return "-inf";
+        }
+        if (value == FloatType::NaN()) {
+            return "nan";
+        }
+        if (value == -FloatType::NaN()) {
+            return "-nan";
+        }
+
         var zero = 0i64.Cast<FloatType>();
         var str_re = "";
         if (value < zero) {
@@ -151,10 +164,15 @@ implement FloatScientificPrinter<FloatType> {
         var ten = 10i64.Cast<FloatType>();
         var one = 1i64.Cast<FloatType>();
 
-        var str_re = "";
         if (value < zero) {
-            str_re = "-";
-            return str_re +  this.ConvertFloatToString(-value);
+            return "-" +  this.ConvertFloatToString(-value);
+        }
+
+        var float_fixed_printer: FloatFixedPrinter<FloatType>;
+        float_fixed_printer.decimal_precision = this.decimal_precision;
+
+        if (value == zero) {
+            return float_fixed_printer.ConvertFloatToString(value);
         }
 
         var exp = 0;
@@ -168,9 +186,7 @@ implement FloatScientificPrinter<FloatType> {
             exp = exp - 1;
         }
 
-        var float_fixed_printer: FloatFixedPrinter<FloatType>;
-        float_fixed_printer.decimal_precision = this.decimal_precision;
-        str_re = str_re + float_fixed_printer.ConvertFloatToString(tmp);
+        var str_re = float_fixed_printer.ConvertFloatToString(tmp);
         str_re = str_re + "e" + exp.ToString();
         return str_re;
     }

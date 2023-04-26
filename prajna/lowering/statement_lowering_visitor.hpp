@@ -1699,35 +1699,7 @@ class StatementLoweringVisitor {
             expression_lowering_visitor->createDynamicTemplate(), "dynamic");
     }
 
-    Symbol operator()(ast::Pragma ast_pragma) {
-        if (ast_pragma.name == "error") {
-            std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-            logger->error(fmt::format("pragma error: {}", msg), ast_pragma);
-            return nullptr;
-        }
-        if (ast_pragma.name == "warning") {
-            std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-            logger->warning(fmt::format("pragma warning: {}", msg), ast_pragma);
-            return nullptr;
-        }
-        if (ast_pragma.name == "system") {
-            std::string command = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-            // TODO 需要处理下支持Jupyter的输出
-            std::system(command.c_str());
-            return nullptr;
-        }
-        if (ast_pragma.name == "stage0") {
-            this->stage0();
-            return nullptr;
-        }
-        if (ast_pragma.name == "stage1") {
-            this->stage1();
-            return nullptr;
-        }
-
-        logger->error("the pragma is undefined", ast_pragma);
-        return nullptr;
-    }
+    Symbol operator()(ast::Pragma ast_pragma);
 
     Symbol operator()(ast::InterfacePrototype ast_interface_prototype) {
         auto ir_interface_prototype = ir::InterfacePrototype::create();

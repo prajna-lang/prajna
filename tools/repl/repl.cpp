@@ -40,13 +40,14 @@ int prajna_repl_main(int argc, char* argv[]) {
         compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
     }
 
-    Term::Terminal term(false, true, false, false);
+    Term::terminal.setOptions({Term::Option::NoClearScreen, Term::Option::SignalKeys,
+                               Term::Option::Cursor, Term::Option::Raw});
     std::vector<std::string> history;
     while (true) {
         std::function<bool(std::string)> iscomplete = [](std::string code_line) {
             return code_line.empty() || code_line[code_line.size() - 2] != '\\';
         };
-        std::string code_line = Term::prompt_multiline(term, "prajna > ", history, iscomplete);
+        std::string code_line = Term::prompt_multiline("prajna > ", history, iscomplete);
 
         if (code_line.size() == 1 && code_line[0] == Term::Key::CTRL_D) break;
         if (code_line == "quit") break;

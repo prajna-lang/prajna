@@ -26,7 +26,7 @@ target_link_libraries(prajna_jit
 )
 
 if (UNIX AND NOT APPLE)
-    target_link_directories(prajna_jit PRIVATE clang_rt.builtins-${CMAKE_SYSTEM_PROCESSOR})
+    target_link_libraries(prajna_jit PUBLIC clang_rt.builtins-${CMAKE_SYSTEM_PROCESSOR})
 endif()
 
 # https://github.com/fxcoudert/gfortran-for-macOS/releases

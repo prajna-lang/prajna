@@ -1272,7 +1272,9 @@ class StatementLoweringVisitor {
             if (!ir_type) {
                 logger->error("template argument should be type");
             }
-            PRAJNA_ASSERT(ir_type->bytes > 0);
+
+            // 的确存在为零的情况, 比如没有字段的结构
+            // PRAJNA_ASSERT(ir_type->bytes > 0);
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({}, ir_builder->getIndexType());
             auto ir_function = ir_tmp_builder->createFunction(

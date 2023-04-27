@@ -24,11 +24,6 @@ implement Float<Bits> {
         return __round<Float<Bits>>(this);
     }
 
-    // float128 not support
-    // func RoundEven()->Float<Bits> {
-    //     return __roundeven<Float<Bits>>(this);
-    // }
-
     func Trunc()->Float<Bits> {
         return __trunc<Float<Bits>>(this);
     }

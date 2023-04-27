@@ -29,6 +29,8 @@ inline void eachValue(std::shared_ptr<ir::Block> ir_block,
             eachValue(ir_for->loopBlock(), ir_value_callback);
         }
     }
+
+    ir_value_callback(ir_block);
 }
 
 inline void eachValue(std::shared_ptr<ir::Function> ir_function,

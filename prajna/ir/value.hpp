@@ -427,6 +427,7 @@ class Block : public Value {
 
     void finalize() override {
         Value::finalize();
+        this->parent_function = nullptr;
         this->values.clear();
     }
 
@@ -488,6 +489,14 @@ class Function : public Value {
 
         function_cloner->functions.push_back(ir_new);
         return ir_new;
+    }
+
+    void finalize() override {
+        Value::finalize();
+        this->parent_module = nullptr;
+        this->function_type = nullptr;
+        this->parameters.clear();
+        this->blocks.clear();
     }
 
    public:

@@ -27,10 +27,10 @@ CodeLexer<Lexer>::CodeLexer() {
     period = '.';
     this->self += arrow | scope | period;
 
-    and_ = "&|and";
-    or_ = "\\||or";
-    not_ = "!|not";
-    xor_ = "\\^|xor";
+    and_ = "&";
+    or_ = "\\|";
+    not_ = "!";
+    xor_ = "\\^";
     this->self += and_ | or_ | xor_ | not_;
 
     plus = '+';

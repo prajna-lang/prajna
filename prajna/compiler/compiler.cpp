@@ -242,6 +242,8 @@ Compiler::~Compiler() {
                        }},
             symbol);
     });
+
+    this->_symbol_table->finalize();
 }
 
 }  // namespace prajna

@@ -91,6 +91,19 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
         }
     }
 
+    void finalize() {
+        for (auto [key, symbol] : current_symbol_dict) {
+            boost::apply_visitor(overloaded{[](auto) {},
+                                            [](std::shared_ptr<SymbolTable> symbol_table) {
+                                                symbol_table->finalize();
+                                            }},
+                                 symbol);
+        }
+
+        parent_symbol_table = nullptr;
+        current_symbol_dict.clear();
+    }
+
     std::shared_ptr<SymbolTable> rootSymbolTable() {
         std::shared_ptr<SymbolTable> root_symbol_table = shared_from_this();
         while (root_symbol_table->parent_symbol_table) {

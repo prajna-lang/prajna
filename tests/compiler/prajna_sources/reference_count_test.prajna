@@ -65,3 +65,15 @@ func TestMemoryManager(){
     test::Assert(bindings::GetReferenceCount(a1.data) == 2);
 }
 
+implement Ptr<i64> {
+    func ThisPtr()->Ptr<i64> {
+        return this;
+    }
+}
+
+@test
+func TestThisPtr() {
+    var a = Ptr<i64>::New();
+    var b = a.ThisPtr();
+    test::Assert(b.ReferenceCount() == 2);
+}

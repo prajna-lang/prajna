@@ -77,9 +77,8 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
 
     kernel_function_call.name("kernel function call");
     kernel_function_call =
-        access_call_index_expr >>
-        -(tok.left_angle_brackets3 > expr > tok.comma > expr > tok.right_angle_brackets3 >
-          omit[tok.left_bracket] > arguments > tok.right_bracket);
+        access_call_index_expr >> -(tok.left_arrow2 > expr > tok.comma > expr > tok.right_arrow2 >
+                                    omit[tok.left_bracket] > arguments > tok.right_bracket);
     on_error<fail>(kernel_function_call, error_handler_function);
     on_success(kernel_function_call, success_handler_function);
 

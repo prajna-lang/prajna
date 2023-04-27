@@ -10,6 +10,10 @@ CodeLexer<Lexer>::CodeLexer() {
     line_comment = "\\/\\/[^\\n]*\\n";
     this->self("WS") = space | c_comment | line_comment;
 
+    left_arrow2 = "<\\|";
+    right_arrow2 = "\\|>";
+    this->self += left_arrow2 | right_arrow2;
+
     equal = "==";
     not_equal = "!=";
     less_or_equal = "<=";
@@ -22,10 +26,6 @@ CodeLexer<Lexer>::CodeLexer() {
     scope = "::";
     period = '.';
     this->self += arrow | scope | period;
-
-    left_angle_brackets3 = "<<<";
-    right_angle_brackets3 = ">>>";
-    this->self += left_angle_brackets3 | right_angle_brackets3;
 
     and_ = "&|and";
     or_ = "\\||or";

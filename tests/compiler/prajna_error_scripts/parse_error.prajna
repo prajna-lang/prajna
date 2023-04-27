@@ -5,7 +5,7 @@ var a
 var a:
 var a: i64[3;
 var b:;
-kernel<<<
+kernel<|
 2 + ::;
 
 var a: i64[];

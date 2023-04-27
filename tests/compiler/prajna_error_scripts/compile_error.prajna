@@ -35,7 +35,7 @@ Tensor<i, 1>;
 Tensor<>;
 var s22 = 3034;
 s22::tmp();
-s22<<<tmp, tmp>>>(ttt);
+s22<|tmp, tmp|>(ttt);
 
 var bb0 = "Hi\n";
 bb0 - 2;

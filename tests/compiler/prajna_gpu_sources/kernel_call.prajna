@@ -17,7 +17,7 @@ func TestKernel(){
     var shape = [size];
     var gpu_tensor = gpu::Tensor<i64, 1>::Create(shape);
 
-    myKernel<<<GridShape, BlockShape>>>(gpu_tensor);
+    myKernel<|GridShape, BlockShape|>(gpu_tensor);
 
     var host_tensor = gpu_tensor.ToHost();
     for i in 0 to size{

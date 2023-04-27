@@ -1,6 +1,7 @@
 use io;
 
 func Main(){
+    "Please input: ".PrintLine();
     var input = io::Input();
     input.Print();
 }

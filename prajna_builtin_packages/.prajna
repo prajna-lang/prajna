@@ -54,5 +54,4 @@ use __str::PrintLine;
 use serializable::Serializable;
 use serialize;
 
-
-// use io;
+use io::Input;

@@ -28,8 +28,28 @@ bool determine_completeness(CPP_TERMINAL_MAYBE_UNUSED std::string command) {
     return complete;
 }
 
+std::string __input;
+
 int prajna_repl_main(int argc, char* argv[]) {
-    std::cout << "Prajna 0.0, all copyrights @ \"Zhang Zhimin\"" << std::endl;
+    prajna::input_callback = [&]() -> char* {
+        Term::terminal.store_and_restore();
+
+        __input.clear();
+        while (true) {
+            auto c = getchar();
+            if (c == EOF || c == 10 || c == 4) {
+                break;
+            }
+            __input.push_back(static_cast<char>(c));
+        }
+
+        Term::terminal.store_and_restore();
+        Term::terminal.setOptions({Term::Option::NoClearScreen, Term::Option::SignalKeys,
+                                   Term::Option::Cursor, Term::Option::Raw});
+        return (char*)__input.c_str();
+    };
+
+    Term::terminal << "Prajna 0.0.0, all copyrights @ \"www.github.com/matazure\"" << std::endl;
 
     auto compiler = prajna::Compiler::create();
     if (std::filesystem::exists("prajna_builtin_packages")) {
@@ -49,7 +69,7 @@ int prajna_repl_main(int argc, char* argv[]) {
         };
         std::string code_line = Term::prompt_multiline("prajna > ", history, iscomplete);
 
-        if (code_line.size() == 1 && code_line[0] == Term::Key::CTRL_D) break;
+        if (code_line.size() == 1 && code_line[0] == Term::Key::CTRL_C) break;
         if (code_line == "quit") break;
 
         // 移除换行符号 '\\'

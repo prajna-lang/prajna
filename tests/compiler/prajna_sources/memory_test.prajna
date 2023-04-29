@@ -1,7 +1,7 @@
 
 @test
 func TestMain(){
-    var t = Pointer<i64>::New();
+    var t = Ptr<i64>::New();
     t.ReferenceCount().ToString().Print();
     // var t0 = t.Cast<i32>();
 }

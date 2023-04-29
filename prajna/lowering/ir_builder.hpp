@@ -55,7 +55,7 @@ class IrBuilder {
 
     bool isPtrType(std::shared_ptr<ir::Type> ir_type) {
         auto ptr_template_struct =
-            symbolGet<TemplateStruct>(this->getSymbolByPath(true, {"__ptr", "Pointer"}));
+            symbolGet<TemplateStruct>(this->getSymbolByPath(true, {"_ptr", "Ptr"}));
         PRAJNA_ASSERT(ptr_template_struct);
         return ir_type->template_struct == ptr_template_struct;
     }
@@ -92,7 +92,7 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::Type> getPtrType(std::shared_ptr<ir::Type> ir_value_type) {
-        auto symbol_ptr = this->getSymbolByPath(true, {"__ptr", "Pointer"});
+        auto symbol_ptr = this->getSymbolByPath(true, {"_ptr", "Ptr"});
         auto ptr_template = symbolGet<TemplateStruct>(symbol_ptr);
         PRAJNA_ASSERT(ptr_template);
         std::list<Symbol> symbol_template_arguments = {ir_value_type};
@@ -123,6 +123,8 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::Property> getLinearIndexProperty(std::shared_ptr<ir::Type> ir_type) {
+        instantiateTypeImplements(ir_type);
+
         auto iter_linear_index_interface =
             std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
                 if (!key_value.second) return false;
@@ -144,6 +146,8 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::Property> getArrayIndexProperty(std::shared_ptr<ir::Type> ir_type) {
+        instantiateTypeImplements(ir_type);
+
         auto iter_array_index_interface =
             std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
                 if (!key_value.second) return false;

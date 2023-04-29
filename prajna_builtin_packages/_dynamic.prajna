@@ -1,0 +1,7 @@
+template <Interface>
+implement dynamic<Interface> {
+    template <Target>
+    func DynamicCast()->Ptr<Target>{
+        return __dynamic_cast<Interface, Target>(this);
+    }
+}

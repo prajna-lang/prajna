@@ -38,11 +38,7 @@ struct ExpressionGrammer
     rule<ast::IntLiteralPostfix> int_literal_postfix;
     rule<ast::FloatLiteralPostfix> float_literal_postfix;
     rule<ast::StringLiteral> string_literal;
-    rule<ast::PostfixTypeOperator> type_array_postfix_operator;
-    rule<ast::PostfixTypeOperator> type_postfix_operator;
-    rule<ast::BasicType> basic_type;
-    rule<ast::FunctionType> function_type;
-    rule<ast::PostfixType> type;
+    rule<ast::Type> type;
     rule<ast::TemplateArgument> template_argument;
     rule<ast::IdentifierPath> identifier_path;
     rule<ast::TemplateArguments> template_arguments;
@@ -68,10 +64,8 @@ struct ExpressionGrammer
     rule<ast::Expression> access_call_index_expr;
     rule<ast::Operand> primary_expr;
     rule<ast::Operand> literal;
-    rule<ast::SizeOf> sizeof_;
     rule<ast::KernelFunctionCall> kernel_function_call;
     rule<ast::Operand> kernel_function_operand;
-    rule<ast::DynamicCast> dynamic_cast_;
 };
 
 }  // namespace prajna::parser::grammar

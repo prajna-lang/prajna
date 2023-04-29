@@ -60,6 +60,8 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
 
     void addPackageDirectoryPath(std::string package_directory);
 
+    ~Compiler();
+
     /**
      * @brief 编译单个源文件
      * @param[in] prajna_source_dir

@@ -90,12 +90,6 @@ struct SuccessHandler {
                              ast_statement);
     }
 
-    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
-                    ast::BasicType& ast_basic_type) const {
-        boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x); },
-                             ast_basic_type);
-    }
-
     // template <typename _T>
     // void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
     //                 _T& ast_t) const {
@@ -103,12 +97,6 @@ struct SuccessHandler {
     //     },
     //                          ast_t);
     // }
-
-    void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
-                    ast::PostfixTypeOperator& ast_postfix_type_operator) const {
-        boost::apply_visitor([=](auto& x) { (*this)(first_iter, input_last_iter, last_iter, x); },
-                             ast_postfix_type_operator);
-    }
 
     template <typename _T>
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,

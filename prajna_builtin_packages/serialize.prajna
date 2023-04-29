@@ -16,7 +16,7 @@ implement Serializable for Uint<Bits>{
             return "0";
         }
 
-        // 只有十进制只有一位, 直接返回
+        // 十进制只有一位, 直接返回
         if (Bits <= 3) {
             return (this.Cast<char>() + '0').ToString();
         }
@@ -24,14 +24,14 @@ implement Serializable for Uint<Bits>{
         var temp = this;
         var inverse_re = "";
         while (temp != zero){
-            inverse_re.Append((temp % ten).Cast<char>() + '0');
+            inverse_re.Push((temp % ten).Cast<char>() + '0');
             temp = temp / ten;
         }
 
-        var re = String::Create(inverse_re.size);
+        var re = String::Create(inverse_re.Length());
         var j = 0;
-        while (j < re.size){
-            re.darray[j] = inverse_re.darray[inverse_re.size-j-1];
+        while (j < re.Length()){
+            re.darray[j] = inverse_re.darray[inverse_re.Length()-j-1];
             j = j + 1;
         }
 
@@ -64,42 +64,17 @@ implement Serializable for bool{
 }
 
 
-/// TODO 输出位数, 需要重构,
 template <Bits>
 implement Serializable for Float<Bits>{
     func ToString()->String{
-        var x = this;
-        var n = 4;
-        var rounder = (0.00005f32).Cast<Float<Bits>>();
-        var zero = 0i64.Cast<Float<Bits>>();
-        var one = 1i64.Cast<Float<Bits>>();
-        var ten = 10i64.Cast<Float<Bits>>();
-        x = x + rounder;
-        // TODO
-        // var re = "";
-        var re = String::Create(0);
-
-        if (x < zero){
-            re.Append('-');
-            x = zero-x;
+        if (this > 0.00001.Cast<Float<Bits>>()){
+            var float_fixed_printer: FloatFixedPrinter<Float<Bits>>;
+            return float_fixed_printer.ConvertFloatToString(this);
+        } else {
+            var float_scientific_printer : FloatScientificPrinter<Float<Bits>>;
+            return float_scientific_printer.ConvertFloatToString(this);
         }
 
-        var int_part = x.Cast<Int<64>>(); // 越界了需要处理
-        re = re  + int_part.ToString();
-        x = x - int_part.Cast<Float<Bits>>();
-
-        if (x < one){
-            re.Append('.');
-            while (n > 0){
-                x = x * ten;
-                int_part = x.Cast<Int<64>>();
-                re.Append((x.Cast<Int<64>>() + '0'.Cast<Int<64>>()).Cast<char>());
-                x = x - int_part.Cast<Float<Bits>>();
-                n = n - 1;
-            }
-        }
-
-        return re;
     }
 }
 

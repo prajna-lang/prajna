@@ -20,20 +20,20 @@ func TestTypes(){
     var newline: char = '\n';
     var back_slash : char = '\\';
 
-    var arr0 : i64[3];
+    var arr0 : __array<i64, 3>;
     var arr1 = [0, 1, 2];
     var arr2 = [3.0, 4.2, 6.4];
 
     var num: i64 = 1024;
     // 获取num的地址, 只要属于变量范畴的都可以获取地址,如字段, 数组索引, 全局变量等.
-    var num_pointer: i64* = &num;
+    var num_pointer: __ptr<i64> = &num;
     *num_pointer = 0;
-    debug::Assert(num == 0);
+    test::Assert(num == 0);
 
     // str类型
     var hello = "Hello";
     var word = "World";
     var hello_word = hello + ", " + word;
-    hello_word.Append(newline);
+    hello_word.Push(newline);
     hello_word.Print();
 }

@@ -19,8 +19,8 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<ast::Operator> period;    // .
     lex::token_def<ast::Operator> backslash; /* \ */
 
-    lex::token_def<lex::omit> left_angle_brackets3;   // <<<
-    lex::token_def<lex::omit> right_angle_brackets3;  // >>>
+    lex::token_def<lex::omit> left_arrow2;   // <|
+    lex::token_def<lex::omit> right_arrow2;  // |>
 
     lex::token_def<ast::Operator> or_, and_, xor_, not_;  // logical
 
@@ -54,8 +54,6 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<lex::omit> interface;
     lex::token_def<lex::omit> template_;
 
-    lex::token_def<lex::omit> dynamic_cast_;
-
     lex::token_def<lex::omit> use;
     lex::token_def<lex::omit> as;
 
@@ -67,7 +65,6 @@ struct CodeLexer : lex::lexer<Lexer> {
 
     lex::token_def<lex::omit> var;
     lex::token_def<ast::Identifier> this_;
-    lex::token_def<lex::omit> sizeof_;
 
     lex::token_def<ast::Identifier> identifier;
 

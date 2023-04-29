@@ -12,6 +12,7 @@
 #include "prajna/lowering/lower.h"
 #include "prajna/parser/parse.h"
 #include "prajna/transform/transform.h"
+#include "prajna/transform/utility.hpp"
 
 namespace prajna {
 
@@ -226,6 +227,23 @@ std::shared_ptr<ir::Module> Compiler::compileProgram(
         logger->error("invalid program");
         return nullptr;
     }
+}
+
+Compiler::~Compiler() {
+    this->_symbol_table->each([](lowering::Symbol symbol) {
+        boost::apply_visitor(
+            overloaded{[](auto) {},
+                       [](std::shared_ptr<ir::Module> ir_module) {
+                           auto ir_values =
+                               transform::utility::getValuesInModule<ir::Value>(ir_module);
+                           for (auto ir_value : ir_values) {
+                               ir_value->finalize();
+                           }
+                       }},
+            symbol);
+    });
+
+    this->_symbol_table->finalize();
 }
 
 }  // namespace prajna

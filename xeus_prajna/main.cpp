@@ -9,7 +9,7 @@
 
 int main(int argc, char* argv[]) {
     auto prajna_builtin_packages_directory =
-        prajna::RealPath(argv[0]).parent_path() / "../prajna_builtin_packages";
+        prajna::ProgramLocation(argv[0]).parent_path() / "../prajna_builtin_packages";
     std::cout << "xeus_prajna use prajna_builtin_papckages: " << prajna_builtin_packages_directory
               << std::endl;
     std::cout << "xeus_prajna working directory is " << std::filesystem::current_path().string()

@@ -8,48 +8,52 @@
 namespace prajna::transform::utility {
 
 inline void eachValue(std::shared_ptr<ir::Block> ir_block,
-                      std::function<void(std::shared_ptr<ir::Value>)> ir_value_callback) {
+                      std::function<void(std::shared_ptr<ir::Value>)> callback) {
     for (auto &ir_value : ir_block->values) {
-        ir_value_callback(ir_value);
+        callback(ir_value);
 
         if (auto ir_block = cast<ir::Block>(ir_value)) {
-            eachValue(ir_block, ir_value_callback);
+            eachValue(ir_block, callback);
         }
 
         if (auto ir_if = cast<ir::If>(ir_value)) {
-            eachValue(ir_if->trueBlock(), ir_value_callback);
-            eachValue(ir_if->falseBlock(), ir_value_callback);
+            eachValue(ir_if->trueBlock(), callback);
+            eachValue(ir_if->falseBlock(), callback);
         }
 
         if (auto ir_while = cast<ir::While>(ir_value)) {
-            eachValue(ir_while->loopBlock(), ir_value_callback);
+            eachValue(ir_while->loopBlock(), callback);
         }
 
         if (auto ir_for = cast<ir::For>(ir_value)) {
-            eachValue(ir_for->loopBlock(), ir_value_callback);
+            eachValue(ir_for->loopBlock(), callback);
         }
     }
+
+    callback(ir_block);
 }
 
 inline void eachValue(std::shared_ptr<ir::Function> ir_function,
-                      std::function<void(std::shared_ptr<ir::Value>)> ir_value_callback) {
+                      std::function<void(std::shared_ptr<ir::Value>)> callback) {
     for (auto &ir_block : ir_function->blocks) {
-        eachValue(ir_block, ir_value_callback);
+        eachValue(ir_block, callback);
     }
+
+    callback(ir_function);
 }
 
 inline void eachValue(std::shared_ptr<ir::Module> ir_module,
-                      std::function<void(std::shared_ptr<ir::Value>)> ir_value_callback) {
+                      std::function<void(std::shared_ptr<ir::Value>)> callback) {
     for (auto ir_value : ir_module->global_variables) {
-        ir_value_callback(ir_value);
+        callback(ir_value);
     }
 
     for (auto ir_value : ir_module->global_allocas) {
-        ir_value_callback(ir_value);
+        callback(ir_value);
     }
 
     for (auto ir_function : ir_module->functions) {
-        eachValue(ir_function, ir_value_callback);
+        eachValue(ir_function, callback);
     }
 }
 

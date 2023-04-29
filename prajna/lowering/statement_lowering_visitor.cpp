@@ -2,8 +2,13 @@
 
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <optional>
 
+#include "boost/asio/io_service.hpp"
+#include "boost/process/io.hpp"
+#include "boost/process/search_path.hpp"
+#include "boost/process/system.hpp"
 #include "prajna/compiler/compiler.h"
 
 namespace prajna::lowering {
@@ -163,6 +168,39 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         logger->note(ast_import.identifier_path);
         throw compile_error;
     }
+}
+
+Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
+    if (ast_pragma.name == "error") {
+        std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
+        logger->error(fmt::format("pragma error: {}", msg), ast_pragma);
+        return nullptr;
+    }
+    if (ast_pragma.name == "warning") {
+        std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
+        logger->warning(fmt::format("pragma warning: {}", msg), ast_pragma);
+        return nullptr;
+    }
+    if (ast_pragma.name == "system") {
+        std::string command = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
+
+        boost::asio::io_service ios;
+        std::future<std::string> future_stdout;
+        boost::process::system(command, boost::process::std_out > future_stdout);
+        print_callback(future_stdout.get().c_str());
+        return nullptr;
+    }
+    if (ast_pragma.name == "stage0") {
+        this->stage0();
+        return nullptr;
+    }
+    if (ast_pragma.name == "stage1") {
+        this->stage1();
+        return nullptr;
+    }
+
+    logger->error("the pragma is undefined", ast_pragma);
+    return nullptr;
 }
 
 }  // namespace prajna::lowering

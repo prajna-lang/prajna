@@ -11,10 +11,9 @@ std::string __input;
 /// 在不同的IDE中, 需要重载不同的实现
 std::function<char *(void)> input_callback = []() -> char * {
     __input.clear();
-    // auto c = getchar();
     while (true) {
         auto c = getchar();
-        if (c == EOF || c == 10) {
+        if (c == EOF || c == 10 || c == 4) {
             break;
         }
         __input.push_back(static_cast<char>(c));

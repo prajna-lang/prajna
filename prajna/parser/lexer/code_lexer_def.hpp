@@ -10,6 +10,10 @@ CodeLexer<Lexer>::CodeLexer() {
     line_comment = "\\/\\/[^\\n]*\\n";
     this->self("WS") = space | c_comment | line_comment;
 
+    left_arrow2 = "<\\|";
+    right_arrow2 = "\\|>";
+    this->self += left_arrow2 | right_arrow2;
+
     equal = "==";
     not_equal = "!=";
     less_or_equal = "<=";
@@ -23,14 +27,10 @@ CodeLexer<Lexer>::CodeLexer() {
     period = '.';
     this->self += arrow | scope | period;
 
-    left_angle_brackets3 = "<<<";
-    right_angle_brackets3 = ">>>";
-    this->self += left_angle_brackets3 | right_angle_brackets3;
-
-    and_ = "&|and";
-    or_ = "\\||or";
-    not_ = "!|not";
-    xor_ = "\\^|xor";
+    and_ = "&";
+    or_ = "\\|";
+    not_ = "!";
+    xor_ = "\\^";
     this->self += and_ | or_ | xor_ | not_;
 
     plus = '+';
@@ -87,11 +87,7 @@ CodeLexer<Lexer>::CodeLexer() {
 
     var = "var";
     this_ = "this";
-    sizeof_ = "sizeof";
-    this->self += var | this_ | sizeof_;
-
-    dynamic_cast_ = "dynamic_cast";
-    this->self += dynamic_cast_;
+    this->self += var | this_;
 
     char_literal =
         "('[^'\\\"\\\\]')|('\\\\a')|('\\\\b')|('\\\\f')|('\\\\n')|('\\\\r')|('\\\\t')|('"

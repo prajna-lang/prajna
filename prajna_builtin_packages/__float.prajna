@@ -24,13 +24,12 @@ implement Float<Bits> {
         return __round<Float<Bits>>(this);
     }
 
-    // float128 not support
-    // func RoundEven()->Float<Bits> {
-    //     return __roundeven<Float<Bits>>(this);
-    // }
-
     func Trunc()->Float<Bits> {
         return __trunc<Float<Bits>>(this);
+    }
+
+    func Pow(exp: Float<Bits>)->Float<Bits> {
+        return __pow<Float<Bits>>(this, exp);
     }
 
     @static
@@ -46,11 +45,144 @@ implement Float<Bits> {
     @static
     func NaN()->Float<Bits> {
         return __nan<Float<Bits>>();
-
     }
 
     @static
     func Inf()->Float<Bits>{
         return __inf<Float<Bits>>();
+    }
+}
+
+
+template <FloatType>
+struct FloatFixedPrinter {
+    decimal_precision: i64;
+}
+
+template <FloatType>
+implement Initializable for FloatFixedPrinter<FloatType> {
+    func Initialize() {
+        this.decimal_precision = 6;
+    }
+}
+
+template <FloatType>
+implement FloatFixedPrinter<FloatType> {
+    func _ConvertIntegerToString(integer: FloatType)->String {
+        var char_list : List<char>;
+        var zero = 0i64.Cast<FloatType>();
+        var ten = 10i64.Cast<FloatType>();
+        var tmp_integer = integer;
+
+        if (tmp_integer == zero) {
+            return "0";
+        }
+
+        while (tmp_integer > ten) {
+            var cur_char =  (tmp_integer % ten).Cast<char>() + '0';
+            char_list.PushFront(cur_char);
+            tmp_integer = (tmp_integer / ten).Trunc();
+        }
+
+        var str_re = "";
+        var node = char_list.Begin();
+        while (node != char_list.End()) {
+            str_re.Push((*node).value);
+            node = (*node).next;
+        }
+
+        return str_re;
+    }
+
+    func _ConvertDecimalToString(decimal: FloatType)->String {
+        var n = this.decimal_precision;
+        var rounder = 0.5.Cast<FloatType>() * (0.1).Cast<FloatType>().Pow((n).Cast<FloatType>());
+        var ten = 10i64.Cast<FloatType>();
+        var tmp = decimal + rounder;
+        var str_re = "";
+        while (n > 0) {
+            tmp = tmp * ten;
+            var integer_part = tmp.Cast<i64>();
+            str_re.Push(integer_part.Cast<char>() + '0');
+            tmp = tmp - integer_part.Cast<FloatType>();
+            n = n - 1;
+        }
+        return str_re;
+    }
+
+    func ConvertFloatToString(value: FloatType)->String {
+        if (value == FloatType::Inf()) {
+            return "inf";
+        }
+        if (value == -FloatType::Inf()) {
+            return "-inf";
+        }
+        if (value == FloatType::NaN()) {
+            return "nan";
+        }
+        if (value == -FloatType::NaN()) {
+            return "-nan";
+        }
+
+        var zero = 0i64.Cast<FloatType>();
+        var str_re = "";
+        if (value < zero) {
+            str_re = "-";
+            return str_re +  this.ConvertFloatToString(-value);
+        }
+
+        var integer_part = value.Trunc();
+        str_re = str_re + this._ConvertIntegerToString(integer_part);
+        str_re = str_re + ".";
+        str_re = str_re + this._ConvertDecimalToString(value - integer_part);
+        return str_re;
+    }
+}
+
+
+template <FloatType>
+struct FloatScientificPrinter {
+    decimal_precision: i64;
+}
+
+template <FloatType>
+implement Initializable for FloatScientificPrinter<FloatType> {
+    func Initialize() {
+        this.decimal_precision = 6;
+    }
+}
+
+template <FloatType>
+implement FloatScientificPrinter<FloatType> {
+    func ConvertFloatToString(value: FloatType)->String {
+        var zero = 0i64.Cast<FloatType>();
+        var ten = 10i64.Cast<FloatType>();
+        var one = 1i64.Cast<FloatType>();
+
+        if (value < zero) {
+            return "-" +  this.ConvertFloatToString(-value);
+        }
+
+        var float_fixed_printer: FloatFixedPrinter<FloatType>;
+        float_fixed_printer.decimal_precision = this.decimal_precision;
+
+        if (value == zero) {
+            return float_fixed_printer.ConvertFloatToString(value);
+        }
+
+        var exp = 0;
+        var tmp = value;
+        while (tmp > ten) {
+            tmp = tmp / ten;
+            exp = exp + 1;
+        }
+        while (tmp < one) {
+            tmp = tmp * ten;
+            exp = exp - 1;
+        }
+
+        var str_re = float_fixed_printer.ConvertFloatToString(tmp);
+        str_re = str_re + "e" + exp.ToString();
+        return str_re;
     }
 }

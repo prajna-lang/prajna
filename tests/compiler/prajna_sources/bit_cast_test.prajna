@@ -1,5 +1,5 @@
 @test
 func TestBitCast(){
-    var a: i64*;
-    var b: undef* = __bit_cast<i64*, undef*>(a);
+    var a: __ptr<i64>;
+    var b: __ptr<undef> = __bit_cast<__ptr<i64>, __ptr<undef>>(a);
 }

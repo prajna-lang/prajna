@@ -1,6 +1,5 @@
 interface Say{
     func say();
-    func createSayObject()->dynamic<Say>;
 }
 
 struct SayHi{
@@ -9,12 +8,6 @@ struct SayHi{
 implement Say for SayHi{
     func say() {
         "Hi\n".Print();
-    }
-
-    func createSayObject()->dynamic<Say>{
-        var ptr_object: Pointer<SayHi>;
-        ptr_object.raw_ptr = &this;
-        return dynamic_cast<Say>(ptr_object);
     }
 }
 
@@ -25,36 +18,28 @@ implement Say for SayHello{
         "Hello\n".Print();
     }
 
-    func createSayObject()->dynamic<Say>{
-        var ptr_object: Pointer<SayHello>;
-        ptr_object.raw_ptr = &this;
-        return dynamic_cast<Say>(ptr_object);
-    }
 }
 
 @test
 func TestDynamicDispatch(){
-    var say_hi = Pointer<SayHi>::New();
+    var say_hi = Ptr<SayHi>::New();
     say_hi.say();
-    debug::Assert(!say_hi.IsNull());
+    test::Assert(!say_hi.IsNull());
 
-    var say: dynamic<Say> = dynamic_cast<Say>(say_hi);
+    var say: dynamic<Say> = say_hi.As<Say>();
     say.say();
 
-    var say_hello = Pointer<SayHello>::New();
+    var say_hello = Ptr<SayHello>::New();
     say_hello.say();
 
-    say = dynamic_cast<Say>(say_hello);
+    say = say_hello.As<Say>();
     say.say();
 
-    var say_hello2 = dynamic_cast<SayHello>(say);
-    debug::Assert(!say_hello2.IsNull());
+    var say_hello2 = say.DynamicCast<SayHello>();
+    test::Assert(!say_hello2.IsNull());
     say_hello2.say();
 
-    var say_hi2 = dynamic_cast<SayHi>(say);
-    debug::Assert(say_hi2.IsNull());
-
-    var say_hi3: dynamic<Say> = say.createSayObject();
-    say_hi3.say();
+    var say_hi2 = say.DynamicCast<SayHi>();
+    test::Assert(say_hi2.IsNull());
 }
 

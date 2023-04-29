@@ -1,26 +1,26 @@
 @test
 func TestExtremum() {
   // unsigned Int
-  debug::Assert(Uint<8>::Max()   == 255u8);
-  debug::Assert(Uint<16>::Max()  == 65535u16);
-  debug::Assert(Uint<32>::Max()  == 4294967295u32);
-  debug::Assert(Uint<64>::Max()  == 18446744073709551615u64);
+  test::Assert(Uint<8>::Max()   == 255u8);
+  test::Assert(Uint<16>::Max()  == 65535u16);
+  test::Assert(Uint<32>::Max()  == 4294967295u32);
+  test::Assert(Uint<64>::Max()  == 18446744073709551615u64);
 
-  debug::Assert(Uint<8>::Min()   == 0u8);
-  debug::Assert(Uint<16>::Min()  == 0u16);
-  debug::Assert(Uint<32>::Min()  == 0u32);
-  debug::Assert(Uint<64>::Min()  == 0u64);
+  test::Assert(Uint<8>::Min()   == 0u8);
+  test::Assert(Uint<16>::Min()  == 0u16);
+  test::Assert(Uint<32>::Min()  == 0u32);
+  test::Assert(Uint<64>::Min()  == 0u64);
 
   // signed Int
-  debug::Assert(Int<8>::Max()   == 127i8);
-  debug::Assert(Int<16>::Max()  == 32767i16);
-  debug::Assert(Int<32>::Max()  == 2147483647i32);
-  debug::Assert(Int<64>::Max()  == 9223372036854775807i64);
+  test::Assert(Int<8>::Max()   == 127i8);
+  test::Assert(Int<16>::Max()  == 32767i16);
+  test::Assert(Int<32>::Max()  == 2147483647i32);
+  test::Assert(Int<64>::Max()  == 9223372036854775807i64);
 
-  debug::Assert(Int<8>::Min()   == -128i8);
-  debug::Assert(Int<16>::Min()  == -32768i16);
-  debug::Assert(Int<32>::Min()  == -2147483648i32);
-  debug::Assert(Int<64>::Min()  == -9223372036854775808i64);
+  test::Assert(Int<8>::Min()   == -128i8);
+  test::Assert(Int<16>::Min()  == -32768i16);
+  test::Assert(Int<32>::Min()  == -2147483648i32);
+  test::Assert(Int<64>::Min()  == -9223372036854775808i64);
 }
 
 

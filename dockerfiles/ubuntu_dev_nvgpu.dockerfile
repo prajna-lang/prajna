@@ -7,5 +7,6 @@ RUN apt-get install -y uuid-dev
 RUN apt-get install -y libgnutls28-dev
 RUN apt-get install -y software-properties-common
 RUN add-apt-repository ppa:git-core/ppa && apt update && apt install -y git
+RUN apt-get install -y valgrind
 RUN touch //.gitconfig && chmod 777 //.gitconfig
 

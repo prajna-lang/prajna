@@ -244,7 +244,7 @@ class UndefType : public Type {
 
         std::shared_ptr<UndefType> self(new UndefType);
         self->name = "undef";
-        self->bytes = 0;  // 应该是个无效值
+        self->bytes = 1;  // 应该是个无效值
         self->fullname = "undef";
         global_context.created_types.push_back(self);
         return self;
@@ -425,7 +425,7 @@ class InterfacePrototype : public Named {
     std::list<std::shared_ptr<Function>> functions;
     std::shared_ptr<StructType> dynamic_type = nullptr;
 
-    bool disable_dynamic_dispatch = false;
+    bool disable_dynamic = false;
 
     // 用于追溯模板接口
     std::shared_ptr<lowering::Template> template_interface = nullptr;

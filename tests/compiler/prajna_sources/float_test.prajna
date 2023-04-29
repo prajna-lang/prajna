@@ -1,6 +1,6 @@
 template <T>
 func AssertNear(value0: T, value1: f32, eps: f32){
-    debug::Assert((value0 - value1.Cast<T>()).Abs() < eps.Cast<T>());
+    test::Assert((value0 - value1.Cast<T>()).Abs() < eps.Cast<T>());
 }
 
 template FloatTest <Bits> {
@@ -42,7 +42,7 @@ template FloatTest <Bits> {
             AssertNear<Float<Bits>>(pi.Cos(), -1.0, 0.001);
             pi = (3.1415926/2.0).Cast<Float<Bits>>();
             AssertNear<Float<Bits>>(pi.Cos(), 0.0, 0.001);
-            pi = (2.0*3.1415926).Cast<Float<Bits>>();
+            pi = (2.0 * 3.1415926).Cast<Float<Bits>>();
             AssertNear<Float<Bits>>(pi.Cos(), 1.0, 0.001);
             var value = (0.5).Cast<Float<Bits>>();
             AssertNear<Float<Bits>>(value.Cos(), 0.87758, 0.001);
@@ -130,6 +130,37 @@ template FloatTest <Bits> {
             expect = (-2.0).Cast<Float<Bits>>();
             test::Assert(value.Trunc() == expect);
         }
+    }
+
+    @test
+    func TestFloatFixedPrinter() {
+        var float_fixed_printer: FloatFixedPrinter<Float<Bits>>;
+        float_fixed_printer.ConvertFloatToString((3.1415926f64).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((-3.1415926f64).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((4102).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((-4102).Cast<Float<Bits>>()).PrintLine();
+
+        float_fixed_printer.decimal_precision = 5;
+        float_fixed_printer.ConvertFloatToString((0.123455f64).Cast<Float<Bits>>()).PrintLine();
+        float_fixed_printer.ConvertFloatToString((0.123454f64).Cast<Float<Bits>>()).PrintLine();
+    }
+
+    @test
+    func TestFloatScientificPrinter() {
+        var float_scientific_printer: FloatScientificPrinter<Float<Bits>>;
+        float_scientific_printer.ConvertFloatToString((3.1415926f64).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((-3.1415926f64).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((2102).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((-2102).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((0.823455f64).Cast<Float<Bits>>()).PrintLine();
+        float_scientific_printer.ConvertFloatToString((4000.123454f64).Cast<Float<Bits>>()).PrintLine();
+    }
+
+    @test
+    func TestFloatPinter() {
+        0.000000016.Cast<Float<Bits>>().ToString().PrintLine();
+        1000000.000000016.Cast<Float<Bits>>().ToString().PrintLine();
+        0.0016.Cast<Float<Bits>>().ToString().PrintLine();
     }
 }
 

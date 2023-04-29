@@ -49,6 +49,7 @@ class InterpreterLoweringVisitor {
         auto ir_block = ir::Block::create();
         ir_block->parent_function = ir_function;
         ir_builder->pushBlock(ir_block);
+        ir_builder->function_stack.push(ir_function);
         ir_function->blocks.push_back(ir_block);
 
         // 打印结果
@@ -66,16 +67,22 @@ class InterpreterLoweringVisitor {
                                    ir_builder->callMemberFunction(ir_result_value, "ToString", {});
                                ir_builder->callMemberFunction(ir_result_string, "Print", {});
                            }},
-                _symbol_result);
+                _symbol_printing_result);
 
             ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
+            ir_builder->function_stack.pop();
             ir_builder->popBlock();
         });
     }
 
     void operator()(const ast::VariableDeclaration& ast_variable_declaration) {
         auto wrap_function_guard = this->wrapCommandLineWithFunction();
-        _symbol_result = (*_statement_lowering_visitor)(ast_variable_declaration, true);
+        (*_statement_lowering_visitor)(ast_variable_declaration, true);
+    }
+
+    void operator()(const ast::Expression& ast_expression) {
+        auto wrap_function_guard = this->wrapCommandLineWithFunction();
+        _symbol_printing_result = (*_statement_lowering_visitor)(ast_expression);
     }
 
     void operator()(const ast::Blank) { return; }
@@ -94,11 +101,11 @@ class InterpreterLoweringVisitor {
     template <typename T>
     void operator()(const T& t) {
         auto wrap_function_guard = this->wrapCommandLineWithFunction();
-        _symbol_result = (*_statement_lowering_visitor)(t);
+        (*_statement_lowering_visitor)(t);
     }
 
    private:
-    Symbol _symbol_result = nullptr;
+    Symbol _symbol_printing_result = nullptr;
     std::shared_ptr<StatementLoweringVisitor> _statement_lowering_visitor = nullptr;
     static size_t _command_id;
     std::shared_ptr<Logger> logger;

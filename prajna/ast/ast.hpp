@@ -28,7 +28,6 @@ struct PrefixCall;
 struct Array;
 struct Template;
 struct TemplateStatement;
-struct DynamicCast;
 struct Module;
 
 struct Operator : SourceLocation {
@@ -102,10 +101,12 @@ struct StringLiteral : SourceLocation {
     std::string value;
 };
 
-struct Type;
 struct IdentifierPath;
 
-using TemplateArgument = boost::variant<Blank, boost::recursive_wrapper<Type>, IntLiteral>;
+typedef IdentifierPath Type;
+
+using TemplateArgument =
+    boost::variant<Blank, boost::recursive_wrapper<IdentifierPath>, IntLiteral>;
 
 struct TemplateArguments : SourceLocation, std::list<TemplateArgument> {};
 
@@ -126,35 +127,12 @@ struct Use : SourceLocation {
     boost::optional<Identifier> as_optional;
 };
 
-using PostfixTypeOperator = boost::variant<Operator, IntLiteral, Identifier>;
-
-struct FunctionType;
-
-// struct BaseType
-typedef boost::variant<Blank, IdentifierPath, boost::recursive_wrapper<FunctionType>> BasicType;
-
-struct Type : SourceLocation {
-    BasicType base_type;
-    std::list<PostfixTypeOperator> postfix_type_operators;
-};
-
-struct FunctionType : SourceLocation {
-    std::list<Type> paramter_types;
-    Type return_type;
-};
-
-using PostfixType = Type;
-
-struct SizeOf : SourceLocation {
-    Type type;
-};
-
-typedef boost::variant<
-    Blank, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral, Identifier,
-    IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix, boost::recursive_wrapper<Unary>,
-    boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
-    boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Array>, SizeOf,
-    boost::recursive_wrapper<KernelFunctionCall>, boost::recursive_wrapper<DynamicCast>>
+typedef boost::variant<Blank, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral,
+                       Identifier, IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix,
+                       boost::recursive_wrapper<Unary>, boost::recursive_wrapper<PostfixUnary>,
+                       boost::recursive_wrapper<Expression>, boost::recursive_wrapper<Expressions>,
+                       boost::recursive_wrapper<Array>,
+                       boost::recursive_wrapper<KernelFunctionCall>>
     Operand;
 
 struct Unary : SourceLocation {
@@ -358,11 +336,6 @@ struct KernelFunctionCall : SourceLocation {
     boost::optional<KernelFunctionCallOperation> operation;
 };
 
-struct DynamicCast : SourceLocation {
-    IdentifierPath identifier_path;
-    Expression pointer;
-};
-
 }  // namespace prajna::ast
 
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Module, name, statements)
@@ -394,17 +367,13 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotation_dict, interface, type,
                           functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, root_optional, identifiers)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixType, base_type, postfix_type_operators)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionType, paramter_types, return_type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Use, identifier_path, as_optional)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::SizeOf, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IntLiteralPostfix, int_literal, postfix)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FloatLiteralPostfix, float_literal, postfix)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, block_shape,
                           arguments)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCall, kernel_function, operation)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Array, values)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::DynamicCast, identifier_path, pointer)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateParameter, name, concept_optional)
 
 BOOST_FUSION_ADAPT_TPL_STRUCT((_T), (prajna::ast::Annotated)(_T), annotation_dict, statement)

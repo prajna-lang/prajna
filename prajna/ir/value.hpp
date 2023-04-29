@@ -427,6 +427,7 @@ class Block : public Value {
 
     void finalize() override {
         Value::finalize();
+        this->parent_function = nullptr;
         this->values.clear();
     }
 
@@ -488,6 +489,14 @@ class Function : public Value {
 
         function_cloner->functions.push_back(ir_new);
         return ir_new;
+    }
+
+    void finalize() override {
+        Value::finalize();
+        this->parent_module = nullptr;
+        this->function_type = nullptr;
+        this->parameters.clear();
+        this->blocks.clear();
     }
 
    public:
@@ -1733,7 +1742,7 @@ inline std::shared_ptr<ir::Function> getFunctionByName(
     std::list<std::shared_ptr<ir::Function>> function_list, std::string name) {
     auto iter_function = std::find_if(RANGE(function_list),
                                       [=](auto ir_function) { return ir_function->name == name; });
-    PRAJNA_ASSERT(iter_function != function_list.end());
+    PRAJNA_ASSERT(iter_function != function_list.end(), name);
     return *iter_function;
 }
 

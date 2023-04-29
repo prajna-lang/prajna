@@ -1,7 +1,7 @@
 template <T>
 struct Node {
     value: T;
-    next: Node<T> *;
+    next: __ptr<Node<T>>;
 }
 
 template <T>
@@ -20,18 +20,8 @@ implement Node<T>{
     }
 }
 
-template ArrayTp <T, Rank>{
-    implement T[Rank]{
-        func length2()->i64{
-            return Rank;
-        }
-    }
-}
-
-use ArrayTp<i64, 3>;
-
 template ptrTp <Type>{
-    implement Type* {
+    implement __ptr<Type> {
         func Test(){}
     }
 }
@@ -40,7 +30,7 @@ use ptrTp<i64>;
 
 template <Type, Length>
 struct MyArray {
-    data: Type[Length];
+    data: __array<Type, Length>;
 }
 
 @test
@@ -52,15 +42,11 @@ func Test(){
     root.next = &next_node;
     root.nextValue2();
 
-    var t: i64[3];
-    t.length2();
-    debug::Assert(t.length2() == 3);
-
-    var tt: i64*;
+    var tt: __ptr<i64>;
     tt.Test();
     root.nextValue();
 
     var tmp: MyArray<i64, 2>;
-    debug::Assert(root.nextValue() == 2.0);
+    test::Assert(root.nextValue() == 2.0);
 }
 

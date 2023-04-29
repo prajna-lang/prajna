@@ -15,9 +15,9 @@ tmp_str[3];
 tmp_str(3);
 //
 &3;
-var p:i8*;
-var g = __bit_cast<i8* ,f32>(p);
-var gg = __bit_cast<i64 ,f32*>(3);
+var p:__ptr<i8>;
+var g = __bit_cast<__ptr<i8> ,f32>(p);
+var gg = __bit_cast<i64 ,__ptr<f32>>(3);
 
 //
 var s0 = 3;
@@ -35,7 +35,7 @@ Tensor<i, 1>;
 Tensor<>;
 var s22 = 3034;
 s22::tmp();
-s22<<<tmp, tmp>>>(ttt);
+s22<|tmp, tmp|>(ttt);
 
 var bb0 = "Hi\n";
 bb0 - 2;

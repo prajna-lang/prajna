@@ -279,9 +279,9 @@ class ExpressionLoweringVisitor {
                 return ir_member;
             }
         }
-        // ir_lhs
 
-        logger->error(fmt::format("{} is not a member", member_name), ast_binary_operation.operand);
+        logger->error(fmt::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
+                      ast_binary_operation.operand);
         return nullptr;
     }
 
@@ -299,6 +299,7 @@ class ExpressionLoweringVisitor {
                 fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
         }
+        // 之所以没包装成模板函数, 是因为需要包装成属性过于复杂了. 这样反而比较简单
         if (is<ir::ArrayType>(ir_object->type)) {
             if (ir_arguments.size() > 1) {
                 logger->error("too many index arguments", ast_binary_operation.operand);
@@ -482,90 +483,18 @@ class ExpressionLoweringVisitor {
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
     }
 
-    std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
-        auto ir_type = boost::apply_visitor(
-            overloaded{[](auto x) -> std::shared_ptr<ir::Type> {
-                           PRAJNA_UNREACHABLE;
-                           return nullptr;
-                       },
-                       [=](ast::IdentifierPath ast_identifier_path) -> std::shared_ptr<ir::Type> {
-                           auto symbol_type = this->applyIdentifierPath(ast_identifier_path);
-
-                           if (auto ir_type = symbolGet<ir::Type>(symbol_type)) {
-                               return ir_type;
-                           }
-
-                           logger->error("the symbol is not a type", ast_postfix_type);
-
-                           return nullptr;
-                       },
-                       [=](ast::FunctionType ast_function_type) -> std::shared_ptr<ir::Type> {
-                           auto ir_return_type = this->applyType(ast_function_type.return_type);
-                           std::list<std::shared_ptr<ir::Type>> ir_parameter_types(
-                               ast_function_type.paramter_types.size());
-                           std::transform(
-                               RANGE(ast_function_type.paramter_types), ir_parameter_types.begin(),
-                               [=](ast::Type ast_type) { return this->applyType(ast_type); });
-
-                           return ir::FunctionType::create(ir_parameter_types, ir_return_type);
-                       }},
-            ast_postfix_type.base_type);
-
-        // @note 有数组类型后需要再处理一下
-        for (auto postfix_operator : ast_postfix_type.postfix_type_operators) {
-            boost::apply_visitor(
-                overloaded{[&ir_type](ast::Operator ast_star) {
-                               // parser 处理了
-                               PRAJNA_ASSERT(ast_star == ast::Operator("*"));
-                               ir_type = ir::PointerType::create(ir_type);
-                           },
-                           [&ir_type](ast::IntLiteral ast_int_literal) {
-                               ir_type = ir::ArrayType::create(ir_type, ast_int_literal.value);
-                           },
-                           [&ir_type, ir_builder = ir_builder](ast::Identifier ast_identifier) {
-                               auto symbol_const_int =
-                                   ir_builder->symbol_table->get(ast_identifier);
-                               auto ir_constant_int = symbolGet<ir::ConstantInt>(symbol_const_int);
-                               // parser 处理了
-                               PRAJNA_ASSERT(ir_constant_int);
-                               ir_type = ir::ArrayType::create(ir_type, ir_constant_int->value);
-                           }},
-                postfix_operator);
+    std::shared_ptr<ir::Type> applyType(ast::Type ast_type) {
+        auto symbol_type = this->applyIdentifierPath(ast_type);
+        auto ir_type = symbolGet<ir::Type>(symbol_type);
+        if (!ir_type) {
+            logger->error("the symbol is not a type", ast_type);
         }
-
-        PRAJNA_ASSERT(ir_type);
         return ir_type;
-    }  // namespace prajna::lowering
-
-    Symbol getTemplateArgumentSymbol(ast::TemplateArgument ast_template_argument) {
-        return boost::apply_visitor(
-            overloaded{[=](ast::Blank) -> Symbol {
-                           PRAJNA_UNREACHABLE;
-                           return nullptr;
-                       },
-                       [=](ast::Type ast_type) -> Symbol {
-                           // 并不是所有模板参数都是ir::Type, 还有Rank_这类数字的,
-                           // 后面可能还需要重构
-                           if (ast_type.postfix_type_operators.size() == 0 &&
-                               ast_type.base_type.type() == typeid(ast::IdentifierPath)) {
-                               auto ast_identifier_path =
-                                   boost::get<ast::IdentifierPath>(ast_type.base_type);
-                               return this->applyIdentifierPath(ast_identifier_path);
-                           }
-
-                           return this->applyType(ast_type);
-                       },
-                       [=](ast::IntLiteral ast_int_literal) -> Symbol {
-                           return ir::ConstantInt::create(ir_builder->getIndexType(),
-                                                          ast_int_literal.value);
-                       }},
-            ast_template_argument);
     }
 
-    std::shared_ptr<Template> createDynamicTemplate() {
-        auto dynamic_template = Template::create();
-
-        dynamic_template->generator = [symbol_table = this->ir_builder->symbol_table,
+    std::shared_ptr<TemplateStruct> createDynamicTemplate() {
+        auto template_dynamic = Template::create();
+        template_dynamic->generator = [symbol_table = this->ir_builder->symbol_table,
                                        logger = this->logger,
                                        this](std::list<Symbol> symbol_template_arguments,
                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
@@ -578,7 +507,9 @@ class ExpressionLoweringVisitor {
             return ir_interface_prototype->dynamic_type;
         };
 
-        return dynamic_template;
+        auto template_struct_dynamic = TemplateStruct::create();
+        template_struct_dynamic->template_struct_impl = template_dynamic;
+        return template_struct_dynamic;
     }
 
     std::list<Symbol> applyTemplateArguments(ast::TemplateArguments ast_template_arguments) {
@@ -589,17 +520,8 @@ class ExpressionLoweringVisitor {
                                PRAJNA_UNREACHABLE;
                                return nullptr;
                            },
-                           [=](ast::Type ast_type) -> Symbol {
-                               // 并不是所有模板参数都是ir::Type, 还有Rank_这类数字的,
-                               // 后面可能还需要重构
-                               if (ast_type.postfix_type_operators.size() == 0 &&
-                                   ast_type.base_type.type() == typeid(ast::IdentifierPath)) {
-                                   auto ast_identifier_path =
-                                       boost::get<ast::IdentifierPath>(ast_type.base_type);
-                                   return this->applyIdentifierPath(ast_identifier_path);
-                               }
-
-                               return this->applyType(ast_type);
+                           [=](ast::IdentifierPath ast_identifier_path) -> Symbol {
+                               return this->applyIdentifierPath(ast_identifier_path);
                            },
                            [=](ast::IntLiteral ast_int_literal) -> Symbol {
                                return ir::ConstantInt::create(ir_builder->getIndexType(),
@@ -624,9 +546,6 @@ class ExpressionLoweringVisitor {
         for (auto iter_ast_identifier = ast_identifier_path.identifiers.begin();
              iter_ast_identifier != ast_identifier_path.identifiers.end(); ++iter_ast_identifier) {
             std::string flag = iter_ast_identifier->identifier;
-            if (flag == "Pointer") {
-                int a = 0;
-            }
 
             symbol = boost::apply_visitor(
                 overloaded{
@@ -686,7 +605,8 @@ class ExpressionLoweringVisitor {
                                     // 如果获取到nullptr则说明实例化正在进行中,
                                     // 使用instantiating_type来获取相应类型
                                     if (auto ir_type = template_struct->instantiate(
-                                            symbol_template_arguments, ir_builder->module)) {
+                                            symbol_template_arguments, ir_builder->module,
+                                            ir_builder->instantiating_type_stack.size())) {
                                         return ir_type;
                                     } else {
                                         PRAJNA_ASSERT(ir_builder->instantiating_type_stack.size());
@@ -870,108 +790,6 @@ class ExpressionLoweringVisitor {
                           ast_binary_operation.operand);
         }
         return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
-    }
-
-    std::shared_ptr<ir::Value> operator()(ast::SizeOf ast_sizeof) {
-        auto ir_type = this->applyType(ast_sizeof.type);
-        return ir_builder->getIndexConstant(ir_type->bytes);
-    }
-
-    std::shared_ptr<ir::Value> operator()(ast::DynamicCast ast_dynamic_cast) {
-        auto symbol_target_type = this->applyIdentifierPath(ast_dynamic_cast.identifier_path);
-        if (auto ir_interface_prototype = symbolGet<ir::InterfacePrototype>(symbol_target_type)) {
-            auto ir_operand = (*this)(ast_dynamic_cast.pointer);
-            // if (!is<ir::PointerType>(ir_operand->type)) {
-            //     logger->error("not a pointer", ast_dynamic_cast.pointer);
-            // }
-            // auto ir_pointer_type = cast<ir::PointerType>(ir_operand->type);
-            // if (!is<ir::PointerType>(ir_operand)) {
-            //     logger->error("dynamic_cast operand type must be a poniter type",
-            //                   ast_dynamic_cast.pointer);
-            // }
-            if (!ir_builder->isPtrType(ir_operand->type)) {
-                logger->error("not a Pointer type", ast_dynamic_cast.pointer);
-            }
-            auto symbol_template_arguments = std::any_cast<std::list<lowering::Symbol>>(
-                ir_operand->type->template_arguments_any);
-            auto ir_value_type = symbolGet<ir::Type>(symbol_template_arguments.front());
-            auto iter_interface = std::find_if(RANGE(ir_value_type->interface_dict), [=](auto x) {
-                if (!x.second) return false;
-                return x.second->prototype == ir_interface_prototype;
-            });
-            auto ir_interface = iter_interface->second;
-            if (!ir_interface) {
-                logger->error(fmt::format("the interface {} is not implemented",
-                                          ir_interface_prototype->fullname),
-                              ast_dynamic_cast.pointer);
-            }
-            std::list<std::shared_ptr<ir::Value>> ir_arguments = {ir_operand};
-
-            return ir_builder->create<ir::Call>(ir_interface->dynamic_type_creator, ir_arguments);
-        }
-
-        if (auto ir_target_type = symbolGet<ir::Type>(symbol_target_type)) {
-            // auto ir_interface_prototype
-            auto ir_dynamic_object = (*this)(ast_dynamic_cast.pointer);
-            auto iter_interface_implement =
-                std::find_if(RANGE(ir_target_type->interface_dict), [=](auto x) {
-                    return x.second->prototype->dynamic_type == ir_dynamic_object->type;
-                });
-            if (iter_interface_implement == ir_target_type->interface_dict.end()) {
-                logger->error("invalid dynamic cast, operand is not a interface dynamic type",
-                              ast_dynamic_cast.pointer);
-            }
-            auto ir_interface_implement = iter_interface_implement->second;
-            auto ir_interface_prototype = ir_interface_implement->prototype;
-            // interface implement必然有一个函数, 我们通过该函数来判断dynamic
-            // type是否是某一个具体类型
-            PRAJNA_ASSERT(ir_interface_implement->functions.front());
-            auto ir_target_ptr_type = ir_builder->getPtrType(ir_target_type);
-            auto ir_ptr = ir_builder->create<ir::LocalVariable>(ir_target_ptr_type);
-            auto ir_interface_implement_function0 =
-                ir_interface_implement
-                    ->undef_this_pointer_functions[ir_interface_implement->functions.front()];
-
-            auto template_cast = symbolGet<Template>(ir_builder->getSymbolByPath(true, {"__cast"}));
-            auto ir_rawptr_to_i64_cast_function = symbolGet<ir::Value>(template_cast->instantiate(
-                {ir_interface_implement_function0->type, ir_builder->getIndexType()},
-                ir_builder->module));
-            auto ir_rawptr_i64_0 = ir_builder->create<ir::Call>(ir_rawptr_to_i64_cast_function,
-                                                                ir_interface_implement_function0);
-
-            auto ir_rawptr_i64_1 = ir_builder->create<ir::Call>(
-                ir_rawptr_to_i64_cast_function,
-                ir_builder->accessField(ir_dynamic_object,
-                                        ir_interface_implement->functions.front()->name + "/fp"));
-            auto ir_condition =
-                ir_builder->callBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
-            auto ir_if =
-                ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
-            ir_if->trueBlock()->parent_function = ir_builder->function_stack.top();
-            ir_if->falseBlock()->parent_function = ir_builder->function_stack.top();
-
-            ir_builder->pushBlock(ir_if->trueBlock());
-            ir_builder->create<ir::WriteVariableLiked>(
-                ir_builder->create<ir::Call>(
-                    ir_builder->GetImplementFunction(ir_target_ptr_type, "FromUndef"),
-                    std::list<std::shared_ptr<ir::Value>>{
-                        ir_builder->accessField(ir_dynamic_object, "object_pointer")}),
-                ir_ptr);
-            ir_builder->popBlock();
-
-            ir_builder->pushBlock(ir_if->falseBlock());
-            auto ir_nullptr =
-                ir_builder->create<ir::Call>(ir_builder->GetImplementFunction(ir_ptr->type, "Null"),
-                                             std::list<std::shared_ptr<ir::Value>>{});
-            ir_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
-            ir_builder->popBlock();
-
-            return ir_ptr;
-        }
-
-        logger->error("the dynamic_cast target type is invalid", ast_dynamic_cast.identifier_path);
-
-        return nullptr;
     }
 
    private:

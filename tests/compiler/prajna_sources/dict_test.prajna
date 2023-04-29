@@ -1,0 +1,7 @@
+@test
+func TestListDict() {
+    var list_dict: ListDict<i64, f32>;
+    list_dict.Insert(2, 3.1415);
+    var re = list_dict.Get(2);
+    re.ToString().Print();
+}

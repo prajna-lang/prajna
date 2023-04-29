@@ -10,44 +10,64 @@ func CeilPowerOf2(value: i64)->i64{
 
 template <ValueType>
 struct DynamicArray{
-    data: Pointer<ValueType>;
-    length: i64;
-    capacity: i64;
+    _data: Ptr<ValueType>;
+    _length: i64;
+    _capacity: i64;
 }
 
 template <ValueType>
 implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
     func Get(idx: i64)->ValueType{
-        return this.data.raw_ptr[idx];
+        return this._data.raw_ptr[idx];
     }
 
     func Set(idx: i64, value: ValueType){
-        this.data.raw_ptr[idx] = value;
+        this._data.raw_ptr[idx] = value;
+    }
+}
+
+template <ValueType>
+implement Initializable for DynamicArray<ValueType> {
+    func Initialize() {
+        this._length = 0;
+        this._capacity = 0;
     }
 }
 
 template <ValueType>
 implement DynamicArray<ValueType> {
     @static
-    func Create(length: i64)->DynamicArray<ValueType>{
+    func Create(_length: i64)->DynamicArray<ValueType>{
         var self: DynamicArray<ValueType>;
-        self.length = length;
-        self.capacity = CeilPowerOf2(length);
-        self.data = Pointer<ValueType>::Allocate(self.capacity);
+        self._length = _length;
+        self._capacity = CeilPowerOf2(_length);
+        self._data = Ptr<ValueType>::Allocate(self._capacity);
         return self;
     }
 
-    func PushBack(value: ValueType) {
-        if (this.length + 1 > this.capacity) {
-            var new_self = Create(this.length + 1);
-            for idx in 0 to this.length {
+    func Push(value: ValueType) {
+        if (this._length + 1 > this._capacity) {
+            var new_self = Create(this._length + 1);
+            for idx in 0 to this._length {
                 new_self[idx] = this[idx];
             }
             this = new_self;
         } else {
-            this.length = this.length + 1;
+            this._length = this._length + 1;
         }
 
-        this[this.length-1] = value;
+        this[this._length-1] = value;
+    }
+
+    func Length()->i64 {
+        return this._length;
+    }
+
+    func Capacity()->i64 {
+        return this._capacity;
+    }
+
+    func Pop() {
+        this._length = this._length - 1;
     }
 }

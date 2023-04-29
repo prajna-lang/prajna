@@ -530,34 +530,6 @@ class StatementLoweringVisitor {
         return ir_struct_type;
     }
 
-    void processInitializeCopyDestroyFunction(std::shared_ptr<ir::Type> ir_type,
-                                              std::shared_ptr<ir::Function> ir_function,
-                                              ast::Function ast_function) {
-        // 处理copy等回调函数
-        std::set<std::string> copy_destroy_callback_names = {"Initialize", "copy", "destroy"};
-        if (not copy_destroy_callback_names.count(ir_function->name)) return;
-
-        if (ir_function->annotation_dict.count("static") != 0) {
-            auto iter_static_annotation = std::find_if(
-                RANGE(ast_function.declaration.annotation_dict),
-                [](ast::Annotation ast_annotation) { return ast_annotation.name == "static"; });
-            logger->error(fmt::format("the {} function can not be static", ir_function->name),
-                          *iter_static_annotation);
-        }
-
-        if (not is<ir::VoidType>(ir_function->function_type->return_type)) {
-            logger->error(
-                fmt::format("the {} function return type must be void", ir_function->name),
-                ast_function.declaration.return_type_optional.get());
-        }
-        // this pointer argument
-        if (ir_function->function_type->parameter_types.size() != 1) {
-            logger->error(
-                fmt::format("the {} function should has no parameters", ir_function->name),
-                ast_function.declaration.parameters);
-        }
-    }
-
     Symbol operator()(ast::ImplementType ast_implement) {
         try {
             auto ir_type = expression_lowering_visitor->applyType(ast_implement.type);
@@ -627,7 +599,7 @@ class StatementLoweringVisitor {
             });
 
             // 需要前置, 因为函数会用的接口类型本身
-            if (!ir_interface_prototype->disable_dynamic_dispatch) {
+            if (!ir_interface_prototype->disable_dynamic) {
                 // 创建接口动态类型生成函数
                 ir_interface->dynamic_type_creator = ir_builder->createFunction(
                     std::string("dynamic_type_creator"),
@@ -643,7 +615,7 @@ class StatementLoweringVisitor {
                 // ir_interface->functions.push_back(ir_function);
             }
 
-            if (ir_interface_prototype->disable_dynamic_dispatch) {
+            if (ir_interface_prototype->disable_dynamic) {
                 return nullptr;
             }
 
@@ -756,6 +728,10 @@ class StatementLoweringVisitor {
             auto templates_symbol_table = SymbolTable::create(symbol_table);
             templates_symbol_table->name = getTemplateArgumentsPostify(symbol_template_arguments);
 
+            if (template_parameter_identifier_list.size() != symbol_template_arguments.size()) {
+                logger->error("template arguments size si not matched");
+            }
+
             for (auto [identifier, symbol] :
                  boost::combine(template_parameter_identifier_list, symbol_template_arguments)) {
                 templates_symbol_table->set(symbol, identifier);
@@ -800,17 +776,7 @@ class StatementLoweringVisitor {
                     auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
                         ast_template_statement.template_parameters);
 
-                    if (ast_implement_type_for_interface.type.postfix_type_operators.size()) {
-                        // 只能是原始的type, 因为是自动特化的
-                        logger->error("invalid template implement",
-                                      ast_implement_type_for_interface.type);
-                    }
-                    // TODO
-                    PRAJNA_ASSERT(ast_implement_type_for_interface.type.base_type.which() == 1);
-                    auto ast_identifier_path = boost::get<ast::IdentifierPath>(
-                        ast_implement_type_for_interface.type.base_type);
-                    // 只获取模板类, 不能带模板参数
-                    auto ast_template_struct = ast_identifier_path;
+                    auto ast_template_struct = ast_implement_type_for_interface.type;
                     ast_template_struct.identifiers.back().template_arguments_optional =
                         boost::none;
                     auto ir_symbol =
@@ -818,7 +784,7 @@ class StatementLoweringVisitor {
                     auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
                     if (template_struct == nullptr) {
                         logger->error("it's not a template struct but with template parameters",
-                                      ast_identifier_path);
+                                      ast_implement_type_for_interface.type);
                     }
 
                     auto template_ = Template::create();
@@ -833,16 +799,7 @@ class StatementLoweringVisitor {
                     auto template_parameter_identifier_list = getTemplateParametersIdentifiers(
                         ast_template_statement.template_parameters);
 
-                    if (ast_implement_type.type.postfix_type_operators.size()) {
-                        // 只能是原始的type, 因为是自动特化的
-                        logger->error("invalid template implement", ast_implement_type.type);
-                    }
-                    // TODO
-                    PRAJNA_ASSERT(ast_implement_type.type.base_type.which() == 1);
-                    auto ast_identifier_path =
-                        boost::get<ast::IdentifierPath>(ast_implement_type.type.base_type);
-                    // 只获取模板类, 不能带模板参数
-                    auto ast_template_struct = ast_identifier_path;
+                    auto ast_template_struct = ast_implement_type.type;
                     ast_template_struct.identifiers.back().template_arguments_optional =
                         boost::none;
                     auto ir_symbol =
@@ -850,7 +807,7 @@ class StatementLoweringVisitor {
                     auto template_struct = symbolGet<TemplateStruct>(ir_symbol);
                     if (template_struct == nullptr) {
                         logger->error("it's not a template struct but with template parameters",
-                                      ast_identifier_path);
+                                      ast_implement_type.type);
                     }
 
                     auto template_ = Template::create();
@@ -974,8 +931,8 @@ class StatementLoweringVisitor {
             }
             auto ir_constant_bit_size =
                 symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
-            if (!ir_constant_bit_size) {
-                logger->error("int bits should be a constant int");
+            if (!ir_constant_bit_size || ir_constant_bit_size->value <= 0) {
+                logger->error("int bits should be a positive constant int");
             }
             return ir::IntType::create(ir_constant_bit_size->value, is_signed);
         };
@@ -998,8 +955,8 @@ class StatementLoweringVisitor {
             }
             auto ir_constant_bit_size =
                 symbolGet<ir::ConstantInt>(symbol_template_arguments.front());
-            if (!ir_constant_bit_size) {
-                logger->error("int bits should be a constant int");
+            if (!ir_constant_bit_size || ir_constant_bit_size->value <= 0) {
+                logger->error("int bits should be a positive constant int");
             }
             auto bits = ir_constant_bit_size->value;
             // LLVM只支持float16/32/16,  bfloat需要另外的函数去实现, float128支持并不好, sin,
@@ -1056,10 +1013,90 @@ class StatementLoweringVisitor {
         return template_intrinsic;
     }
 
-    std::shared_ptr<Template> createBitCastTemplate() {
-        auto lowering_template = Template::create();
+    std::shared_ptr<TemplateStruct> createRawArrayTypeTemplate() {
+        auto template_raw_array = Template::create();
+        template_raw_array->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                         logger = this->logger](
+                                            std::list<Symbol> symbol_template_arguments,
+                                            std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 2) {
+                logger->error("should input 2 template argument");
+            }
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("should be a type");
+            }
 
-        lowering_template->generator = [symbol_table = this->ir_builder->symbol_table,
+            auto ir_constant_length = symbolGet<ir::ConstantInt>(symbol_template_arguments.back());
+            if (!ir_constant_length || ir_constant_length->value <= 0) {
+                logger->error("array length should be a positive constant int");
+            }
+
+            return ir::ArrayType::create(ir_type, ir_constant_length->value);
+        };
+
+        auto template_struct_raw_array = TemplateStruct::create();
+        template_struct_raw_array->template_struct_impl = template_raw_array;
+        return template_struct_raw_array;
+    }
+
+    std::shared_ptr<TemplateStruct> createRawPtrTypeTemplate() {
+        auto template_raw_ptr = Template::create();
+        template_raw_ptr->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                       logger = this->logger](
+                                          std::list<Symbol> symbol_template_arguments,
+                                          std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("should be a type");
+            }
+
+            return ir::PointerType::create(ir_type);
+        };
+
+        auto template_struct_raw_ptr = TemplateStruct::create();
+        template_struct_raw_ptr->template_struct_impl = template_raw_ptr;
+        return template_struct_raw_ptr;
+    }
+
+    std::shared_ptr<TemplateStruct> createFunctionTypeTemplate() {
+        auto template_function_type = Template::create();
+        template_function_type->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                             logger = this->logger](
+                                                std::list<Symbol> symbol_template_arguments,
+                                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() < 1) {
+                logger->error("should input at least 1 template argument");
+            }
+
+            std::list<std::shared_ptr<ir::Type>> ir_type_list;
+            std::transform(RANGE(symbol_template_arguments), std::back_inserter(ir_type_list),
+                           [=](auto symbol_template_argument) {
+                               auto ir_type = symbolGet<ir::Type>(symbol_template_argument);
+                               if (!ir_type) {
+                                   logger->error("should be types");
+                               }
+                               return ir_type;
+                           });
+
+            auto ir_parameter_list = ir_type_list;
+            ir_parameter_list.pop_back();
+            auto ir_return_type = ir_type_list.back();
+
+            return ir::FunctionType::create(ir_parameter_list, ir_return_type);
+        };
+
+        auto template_struct_function_type = TemplateStruct::create();
+        template_struct_function_type->template_struct_impl = template_function_type;
+        return template_struct_function_type;
+    }
+
+    std::shared_ptr<Template> createBitCastTemplate() {
+        auto template_bit_cast = Template::create();
+        template_bit_cast->generator = [symbol_table = this->ir_builder->symbol_table,
                                         logger = this->logger,
                                         this](std::list<Symbol> symbol_template_arguments,
                                               std::shared_ptr<ir::Module> ir_module) -> Symbol {
@@ -1078,7 +1115,7 @@ class StatementLoweringVisitor {
             auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::create({ir_source_type}, ir_target_type);
             auto ir_function = ir_tmp_builder->createFunction(
-                "__bit_cast<" + ir_source_type->fullname + ", " + ir_target_type->fullname + ">",
+                "__bit_cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BitCast>(
@@ -1086,7 +1123,169 @@ class StatementLoweringVisitor {
             return ir_function;
         };
 
-        return lowering_template;
+        return template_bit_cast;
+    }
+
+    std::shared_ptr<Template> createAsCastTemplate() {
+        auto template_as_cast = Template::create();
+        template_as_cast->generator = [symbol_table = this->ir_builder->symbol_table,
+                                       logger = this->logger,
+                                       this](std::list<Symbol> symbol_template_arguments,
+                                             std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 2) {
+                logger->error("should input 2 template argument");
+            }
+            auto ir_value_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_value_type) {
+                logger->error("the first template argument should be type");
+            }
+            auto ir_interface_prototype =
+                symbolGet<ir::InterfacePrototype>(symbol_template_arguments.back());
+            if (!ir_interface_prototype) {
+                logger->error("the second template argument should be a interface prototype");
+            }
+
+            auto iter_interface = std::find_if(RANGE(ir_value_type->interface_dict), [=](auto x) {
+                if (!x.second) return false;
+                return x.second->prototype == ir_interface_prototype;
+            });
+            if (iter_interface == ir_value_type->interface_dict.end()) {
+                logger->error(fmt::format("the interface {} is not implemented",
+                                          ir_interface_prototype->fullname));
+            }
+
+            auto ir_interface = iter_interface->second;
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_pointer_type = ir_tmp_builder->getPtrType(ir_value_type);
+            auto ir_function_type =
+                ir::FunctionType::create({ir_pointer_type}, ir_interface_prototype->dynamic_type);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__as" + getTemplateArgumentsPostify(symbol_template_arguments), ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::Call>(
+                ir_interface->dynamic_type_creator, ir_function->parameters));
+            return ir_function;
+        };
+
+        return template_as_cast;
+    }
+
+    std::shared_ptr<Template> createDynamicCastTemplate() {
+        auto template_dynamic_cast = Template::create();
+        template_dynamic_cast->generator = [symbol_table = this->ir_builder->symbol_table,
+                                            logger = this->logger,
+                                            this](std::list<Symbol> symbol_template_arguments,
+                                                  std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 2) {
+                logger->error("should input 2 template argument");
+            }
+
+            auto ir_interface_prototype =
+                symbolGet<ir::InterfacePrototype>(symbol_template_arguments.front());
+            if (!ir_interface_prototype) {
+                logger->error("the first template argument should be a interface prototype");
+            }
+            auto ir_target_value_type = symbolGet<ir::Type>(symbol_template_arguments.back());
+            if (!ir_target_value_type) {
+                logger->error("the second template argument should be type");
+            }
+
+            auto iter_interface_implement =
+                std::find_if(RANGE(ir_target_value_type->interface_dict),
+                             [=](auto x) { return x.second->prototype == ir_interface_prototype; });
+            if (iter_interface_implement == ir_target_value_type->interface_dict.end()) {
+                logger->error("invalid dynamic cast, operand is not a interface dynamic type");
+            }
+            auto ir_interface_implement = iter_interface_implement->second;
+            // interface implement必然有一个函数, 我们通过该函数来判断dynamic
+            // type是否是某一个具体类型
+            PRAJNA_ASSERT(ir_interface_implement->functions.front());
+
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_pointer_type = ir_tmp_builder->getPtrType(ir_target_value_type);
+            auto ir_function_type =
+                ir::FunctionType::create({ir_interface_prototype->dynamic_type}, ir_pointer_type);
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__dynamic_cast" + getTemplateArgumentsPostify(symbol_template_arguments),
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+
+            auto ir_target_ptr_type = ir_tmp_builder->getPtrType(ir_target_value_type);
+            auto ir_ptr = ir_tmp_builder->create<ir::LocalVariable>(ir_target_ptr_type);
+            auto ir_interface_implement_function0 =
+                ir_interface_implement
+                    ->undef_this_pointer_functions[ir_interface_implement->functions.front()];
+
+            auto template_cast =
+                symbolGet<Template>(ir_tmp_builder->getSymbolByPath(true, {"__cast"}));
+            auto ir_rawptr_to_i64_cast_function = symbolGet<ir::Value>(template_cast->instantiate(
+                {ir_interface_implement_function0->type, ir_tmp_builder->getIndexType()},
+                ir_tmp_builder->module));
+            auto ir_rawptr_i64_0 = ir_tmp_builder->create<ir::Call>(
+                ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
+
+            auto ir_dynamic_object = ir_function->parameters.front();
+            auto ir_rawptr_i64_1 = ir_tmp_builder->create<ir::Call>(
+                ir_rawptr_to_i64_cast_function,
+                ir_tmp_builder->accessField(
+                    ir_dynamic_object, ir_interface_implement->functions.front()->name + "/fp"));
+            auto ir_condition =
+                ir_tmp_builder->callBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
+            auto ir_if = ir_tmp_builder->create<ir::If>(ir_condition, ir::Block::create(),
+                                                        ir::Block::create());
+            ir_if->trueBlock()->parent_function = ir_tmp_builder->function_stack.top();
+            ir_if->falseBlock()->parent_function = ir_tmp_builder->function_stack.top();
+
+            ir_tmp_builder->pushBlock(ir_if->trueBlock());
+            ir_tmp_builder->create<ir::WriteVariableLiked>(
+                ir_tmp_builder->create<ir::Call>(
+                    ir_tmp_builder->GetImplementFunction(ir_target_ptr_type, "FromUndef"),
+                    std::list<std::shared_ptr<ir::Value>>{
+                        ir_tmp_builder->accessField(ir_dynamic_object, "object_pointer")}),
+                ir_ptr);
+            ir_tmp_builder->popBlock();
+
+            ir_tmp_builder->pushBlock(ir_if->falseBlock());
+            auto ir_nullptr = ir_tmp_builder->create<ir::Call>(
+                ir_tmp_builder->GetImplementFunction(ir_ptr->type, "Null"),
+                std::list<std::shared_ptr<ir::Value>>{});
+            ir_tmp_builder->create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
+            ir_tmp_builder->popBlock();
+            ir_tmp_builder->create<ir::Return>(ir_ptr);
+
+            return ir_function;
+        };
+
+        return template_dynamic_cast;
+    }
+
+    std::shared_ptr<Template> createSizeOfTemplate() {
+        auto template_sizeof = Template::create();
+        template_sizeof->generator = [symbol_table = this->ir_builder->symbol_table,
+                                      logger = this->logger,
+                                      this](std::list<Symbol> symbol_template_arguments,
+                                            std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("template argument should be type");
+            }
+
+            // 的确存在为零的情况, 比如没有字段的结构
+            // PRAJNA_ASSERT(ir_type->bytes > 0);
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type = ir::FunctionType::create({}, ir_builder->getIndexType());
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__sizeof" + getTemplateArgumentsPostify(symbol_template_arguments),
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->getIndexConstant(ir_type->bytes));
+            return ir_function;
+        };
+
+        return template_sizeof;
     }
 
     std::shared_ptr<Template> createCompareInstructionTemplate(std::string compare_operation_name) {
@@ -1377,11 +1576,26 @@ class StatementLoweringVisitor {
             this->createBitCastTemplate(), "__bit_cast");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createSizeOfTemplate(), "__sizeof");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createIntTypeTemplate(true), "Int");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createIntTypeTemplate(false), "Uint");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createFloatTypeTemplate(), "Float");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createRawArrayTypeTemplate(), "__array");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createRawPtrTypeTemplate(), "__ptr");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createFunctionTypeTemplate(), "Func");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createAsCastTemplate(), "__as");
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createDynamicCastTemplate(), "__dynamic_cast");
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createCastInstructionTemplate(), "__cast");
@@ -1427,17 +1641,17 @@ class StatementLoweringVisitor {
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createFloatTypeIntrinsicUnaryFunctionTemplate("cos"), "__cos");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("pow"), "__pow");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("pow", 2), "__pow");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp"), "__exp");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp", 2), "__exp");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp2"), "__exp2");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("exp2", 2), "__exp2");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log"), "__log");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log", 2), "__log");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log10"), "__log10");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log10", 2), "__log10");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
-            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log2"), "__log2");
+            this->createFloatTypeIntrinsicUnaryFunctionTemplate("log2", 2), "__log2");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             this->createFloatTypeIntrinsicUnaryFunctionTemplate("fabs"), "__fabs");
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
@@ -1485,47 +1699,25 @@ class StatementLoweringVisitor {
             expression_lowering_visitor->createDynamicTemplate(), "dynamic");
     }
 
-    Symbol operator()(ast::Pragma ast_pragma) {
-        if (ast_pragma.name == "error") {
-            std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-            logger->error(fmt::format("pragma error: {}", msg), ast_pragma);
-            return nullptr;
-        }
-        if (ast_pragma.name == "warning") {
-            std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-            logger->warning(fmt::format("pragma warning: {}", msg), ast_pragma);
-            return nullptr;
-        }
-        if (ast_pragma.name == "system") {
-            std::string command = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-            // TODO 需要处理下支持Jupyter的输出
-            std::system(command.c_str());
-            return nullptr;
-        }
-        if (ast_pragma.name == "stage0") {
-            this->stage0();
-            return nullptr;
-        }
-        if (ast_pragma.name == "stage1") {
-            this->stage1();
-            return nullptr;
-        }
-
-        logger->error("the pragma is undefined", ast_pragma);
-        return nullptr;
-    }
+    Symbol operator()(ast::Pragma ast_pragma);
 
     Symbol operator()(ast::InterfacePrototype ast_interface_prototype) {
         auto ir_interface_prototype = ir::InterfacePrototype::create();
         ir_builder->SetSymbolWithTemplateArgumentsPostify(ir_interface_prototype,
                                                           ast_interface_prototype.name);
 
-        ir_interface_prototype->disable_dynamic_dispatch = std::any_of(
+        ir_interface_prototype->disable_dynamic = std::any_of(
             RANGE(ast_interface_prototype.annotation_dict),
-            [](auto ast_annotation) { return ast_annotation.name == "disable_dynamic_dispatch"; });
+            [](auto ast_annotation) { return ast_annotation.name == "disable_dynamic"; });
 
-        if (!ir_interface_prototype->disable_dynamic_dispatch) {
+        if (!ir_interface_prototype->disable_dynamic) {
             ir_interface_prototype->dynamic_type = ir::StructType::create({});
+            // 我们通过dynamic<Interface>来获取接口所对应的类型, 需要将他们关联,
+            // 以便获取dynamic的实现
+            auto template_struct_dynamic = symbolGet<TemplateStruct>(
+                ir_builder->getSymbolByPath(true, {"_dynamic", "dynamic"}));
+            PRAJNA_ASSERT(template_struct_dynamic);
+            ir_interface_prototype->dynamic_type->template_struct = template_struct_dynamic;
         }
 
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
@@ -1540,7 +1732,7 @@ class StatementLoweringVisitor {
             ir_builder->module->functions.remove(ir_function);
         }
 
-        if (!ir_interface_prototype->disable_dynamic_dispatch) {
+        if (!ir_interface_prototype->disable_dynamic) {
             this->createInterfaceDynamicType(ir_interface_prototype);
         }
 

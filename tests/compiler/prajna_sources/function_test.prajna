@@ -19,21 +19,21 @@ func PrintHello(){
     "Hello\n".Print();
 }
 
-func Call(fun: func{()->void}*) {
+func Call(fun: __ptr<Func<void>>) {
     fun();
 }
 
 @test // @test表示函数的注解, 会被当做测试函数而执行
 func TestFunction(){
-    debug::Assert(Add(3, 7) == 10);
+    test::Assert(Add(3, 7) == 10);
     PrintHi();
     // fun_address表示存储printHi函数的变量, 其类型是函数"指针"类型,
     var fun_address = PrintHi;
     fun_address = PrintHello;
     fun_address();
 
-    debug::Assert(CallRecursively(4) == 0);
-    debug::Assert(CallRecursively(5) == 0);
+    test::Assert(CallRecursively(4) == 0);
+    test::Assert(CallRecursively(5) == 0);
 
 
     Call(PrintHi);

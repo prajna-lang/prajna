@@ -1,6 +1,5 @@
 struct String{
     darray: DynamicArray<char>;
-    size: i64;
 }
 
 implement operator::LinearIndex<char> for String {
@@ -15,21 +14,24 @@ implement operator::LinearIndex<char> for String {
 
 implement String{
     @static
-    func Create(size: i64)->String{
+    func Create(length: i64)->String{
         var str_re: String;
-        str_re.darray = DynamicArray<char>::Create(size+1);
-        str_re.size = size;
+        str_re.darray = DynamicArray<char>::Create(length);
         return str_re;
     }
 
+    func Length()->i64 {
+        return this.darray.Length();
+    }
+
     @static
-    func __from_char_ptr(cstr_ptr: char*)->String {
-        var str_size = 0;
-        while (cstr_ptr[str_size] != '\0'){
-            str_size = str_size + 1;
+    func __from_char_ptr(cstr_ptr: __ptr<char>)->String {
+        var length = 0;
+        while (cstr_ptr[length] != '\0'){
+            length = length + 1;
         }
-        var str_re = String::Create(str_size);
-        for i in 0 to str_re.size {
+        var str_re = String::Create(length);
+        for i in 0 to str_re.Length() {
             str_re.darray[i] = cstr_ptr[i];
         }
 
@@ -37,20 +39,23 @@ implement String{
     }
 
     func Print(){
-        this.darray[this.size] = '\0';
-        bindings::print_c(this.darray.data.raw_ptr);
+        this.darray.Push('\0');
+        bindings::print_c(this.darray._data.raw_ptr);
+        this.darray.Pop();
     }
 
-    func Append(v: char){
-        this.darray.PushBack('\0');
-        this.size = this.size + 1;
-        this.darray[this.size-1] = v;
+    func Push(v: char){
+        this.darray.Push(v);
+    }
+
+    func Pop(){
+        this.darray.Pop();
     }
 
     func PrintLine() {
-        var tmp = this;
-        tmp.Append('\n');
-        tmp.Print();
+        this.darray.Push('\n');
+        this.Print();
+        this.darray.Pop();
     }
 
     func ToString()->String{
@@ -58,42 +63,20 @@ implement String{
     }
 }
 
-implement reference_count::ReferenceCountable for String {
-    func Initialize(){
-        this.size = 0;
-        this.darray = DynamicArray<char>::Create(1);
-        this.darray[0] = '\0';
-    }
-
-    func RegisterReferenceCount(){
-
-    }
-
-    func DecrementReferenceCount(){
-
-    }
-
-    func IncrementReferenceCount(){
-
-    }
-}
-
-
 implement operator::Add<String> for String {
     func Add(str_re: String)->String{
-        var new_str = String::Create(this.size + str_re.size);
+        var new_str = String::Create(this.Length() + str_re.Length());
         var i = 0;
-        while (i < this.size){
+        while (i < this.Length()){
             new_str.darray[i] = this.darray[i];
             i = i + 1;
         }
         var j = 0;
-        while ( i < new_str.size ){
+        while ( i < new_str.Length() ){
             new_str.darray[i] = str_re.darray[j];
             j = j + 1;
             i = i + 1;
         }
-        // "hit11\n".Print();
 
         return new_str;
     }
@@ -101,11 +84,11 @@ implement operator::Add<String> for String {
 
 implement operator::Equal<String> for String{
     func Equal(rhs_str: String) -> bool{
-        if(this.size!=rhs_str.size) {
+        if(this.Length()!=rhs_str.Length()) {
             return false;
         }
         var i=0;
-        while(i<this.size){
+        while(i<this.Length()){
             if(rhs_str.darray[i]!=this.darray[i]) {
                 return false;
             }

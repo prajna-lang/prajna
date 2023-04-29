@@ -1,0 +1,170 @@
+
+template <Type>
+implement __ptr<Type> {
+    @static
+    func Allocate(size: i64)->__ptr<Type> {
+        return __bit_cast<__ptr<undef> ,__ptr<Type>>(bindings::malloc(size * __sizeof<Type>()));
+    }
+
+    @static
+    func New()->__ptr<Type>{
+        var t = __ptr<Type>::Allocate(1);
+        return t;
+    }
+
+    @static
+    func Null()->__ptr<Type> {
+        return __cast<i64, __ptr<Type>>(0);
+    }
+
+    func Free() {
+        bindings::free(__bit_cast<__ptr<Type>, __ptr<undef>>(this));
+    }
+
+    func _ToInt64()->i64{
+        return __cast<__ptr<Type>, i64>(this);
+    }
+}
+
+template <Type>
+implement operator::Equal<__ptr<Type>> for __ptr<Type> {
+    func Equal(operand: __ptr<Type>) -> bool {
+        return this._ToInt64() == operand._ToInt64();
+    }
+}
+
+
+template <Type>
+implement operator::NotEqual<__ptr<Type>> for __ptr<Type> {
+    func NotEqual(operand: __ptr<Type>) -> bool {
+        return !(this == operand);
+    }
+}
+
+
+
+template <Type>
+struct Ptr{
+    raw_ptr: __ptr<Type>;
+    // TODO 在激活多线程后将其换位
+    // 我们也可以使用外部的dict来存放计数器, 但是这样会增加索引的时间, 并且不利于和其他语言互操作.
+    // 在Ptr里增加个计数器不至于影响性能, 并且可以利用llvm对计数方法进行优化
+    _reference_counter: __ptr<i64>;
+}
+
+template <Type>
+implement Ptr<Type>{
+    @static
+    func Allocate(size: i64)->Ptr<Type>{
+        var self: Ptr<Type>;
+        self.raw_ptr =  __ptr<Type>::Allocate(size);
+        // self._reference_count; //不需要再次申请, Initialize的时候会产生.
+        *self._reference_counter = 1;
+        return self;
+    }
+
+    @static
+    func New()->Ptr<Type>{
+        var t = Allocate(1);
+        return t;
+    }
+
+    @static
+    func Null()->Ptr<Type>{
+        var self: Ptr<Type>;
+        self.raw_ptr = __ptr<Type>::Null();
+        return self;
+    }
+
+    func _ToInt64()->i64{
+        return __cast<__ptr<Type>, i64>(this.raw_ptr);
+    }
+
+    // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
+    func ToUndef()->Ptr<undef>{
+        var undef_ptr: Ptr<undef>;
+        undef_ptr.raw_ptr = __bit_cast<__ptr<Type> ,__ptr<undef>>(this.raw_ptr);
+        undef_ptr._reference_counter = this._reference_counter;
+        *undef_ptr._reference_counter = *undef_ptr._reference_counter + 1;
+        return undef_ptr;
+    }
+
+    @static
+    func FromUndef(undef_ptr: Ptr<undef>)->Ptr<Type>{
+        var self: Ptr<Type>;
+        self.raw_ptr = __bit_cast<__ptr<undef> ,__ptr<Type>>(undef_ptr.raw_ptr);
+        self._reference_counter = undef_ptr._reference_counter;
+        *self._reference_counter = *self._reference_counter + 1;
+        return self;
+    }
+
+    func IsNull()->bool{
+        return this._ToInt64() == 0;
+    }
+
+    func ReferenceCount()->i64 {
+        return *this._reference_counter;
+    }
+
+    template <Interface>
+    func As()->dynamic<Interface> {
+        return __as<Type, Interface>(this);
+    }
+}
+
+template <Type>
+implement operator::LinearIndex<Type> for Ptr<Type> {
+    func Get(index: i64)->Type {
+        return  this.raw_ptr[index];
+    }
+    func Set(index: i64, value: Type) {
+        this.raw_ptr[index] = value;
+    }
+}
+
+template <Type>
+implement ReferenceCountable for Ptr<Type> {
+    func RegisterReferenceCount() {
+        *this._reference_counter = 0;
+    }
+
+    func IncrementReferenceCount() {
+        // TODO 后面改为原子操作
+        *this._reference_counter = *this._reference_counter + 1;
+    }
+
+    func DecrementReferenceCount() {
+        *this._reference_counter = *this._reference_counter - 1;
+        if (*this._reference_counter == 0){
+            if (!this.IsNull()) {
+                this.raw_ptr.Free();
+                this._reference_counter.Free();
+            }
+        }
+    }
+}
+
+template <Type>
+implement Initializable for Ptr<Type> {
+    func Initialize() {
+        this.raw_ptr = __ptr<Type>::Null();
+        // 需要申请, 判断的时候需要用到
+        this._reference_counter = __ptr<i64>::New();
+        *this._reference_counter = 0;
+    }
+}
+
+template <Type>
+implement operator::Equal<Ptr<Type>> for Ptr<Type> {
+    func Equal(operand: Ptr<Type>) -> bool {
+        return this._ToInt64() == operand._ToInt64();
+    }
+}
+
+
+template <Type>
+implement operator::NotEqual<Ptr<Type>> for Ptr<Type> {
+    func NotEqual(operand: Ptr<Type>) -> bool {
+        return !(this == operand);
+    }
+}

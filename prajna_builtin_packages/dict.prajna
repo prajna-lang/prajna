@@ -1,0 +1,37 @@
+use list::List;
+
+template <Key, Value>
+struct KeyValue{
+    key: Key;
+    value: Value;
+}
+
+template <Key, Value>
+struct ListDict {
+    _key_value_list: List<KeyValue<Key, Value>>;
+}
+
+template <Key, Value>
+implement ListDict<Key, Value> {
+
+    func Get(key: Key)->Value {
+        var node =  this._key_value_list.Begin();
+        while (node != this._key_value_list.End()) {
+            if ((*node).value.key == key) {
+                return (*node).value.value;
+            }
+            node = (*node).next;
+        }
+
+        debug::Assert(false);
+        var tmp: Value;
+        return tmp;
+    }
+
+    func Insert(key: Key, value: Value) {
+        var key_value: KeyValue<Key, Value>;
+        key_value.key = key;
+        key_value.value = value;
+        this._key_value_list.PushFront(key_value);
+    }
+}

@@ -205,7 +205,7 @@ struct assign_to_attribute_from_iterators<prajna::ast::FloatLiteral, Iterator> {
         attr.first_position = get_source_position(first);
         attr.last_position = get_source_position(last);
 
-        qi::parse(first, last, float_type(), attr.value);
+        qi::parse(first, last, double_type(), attr.value);
     }
 };
 

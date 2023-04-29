@@ -25,6 +25,10 @@
 #include "prajna/ir/ir.hpp"
 #include "prajna/reference_count.hpp"
 
+extern "C" uint16_t __truncdfhf2(double);
+extern "C" uint16_t __floattihf(int64_t[2]);
+extern "C" uint16_t __floatuntihf(uint64_t[2]);
+
 namespace prajna {
 
 std::unordered_map<void *, std::atomic<int64_t>> ptr_count_dict;
@@ -234,6 +238,10 @@ void ExecutionEngine::bindBuiltinFunction() {
                         "::bindings::IncrementReferenceCount");
     this->bindCFunction(reinterpret_cast<void *>(DecrementReferenceCount),
                         "::bindings::DecrementReferenceCount");
+
+    this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
+    this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floattihf");
+    this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floatuntihf");
 
 #ifdef PRAJNA_WITH_GPU
     this->bindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");

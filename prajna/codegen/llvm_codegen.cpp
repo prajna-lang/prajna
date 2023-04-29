@@ -566,7 +566,7 @@ class LlvmCodegen {
                     {ir::CompareInstruction::Operation::ICMP_SLE, llvm::CmpInst::OtherOps::ICmp},
                 };
 
-            // clang-format off
+            // .clang-format off
             std::unordered_map<ir::CompareInstruction::Operation, llvm::ICmpInst::Predicate>
                 llvm_compare_predicator_dict = {
                     {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::Predicate::FCMP_FALSE},
@@ -596,7 +596,7 @@ class LlvmCodegen {
                     {ir::CompareInstruction::Operation::ICMP_SLT, llvm::CmpInst::Predicate::ICMP_SLT},
                     {ir::CompareInstruction::Operation::ICMP_SLE, llvm::CmpInst::Predicate::ICMP_SLE},
                 };
-            // clang-format on
+            // .clang-format on
             PRAJNA_ASSERT(llvm_compare_other_ops_dict.count(ir_compare_instruction->operation));
             PRAJNA_ASSERT(llvm_compare_predicator_dict.count(ir_compare_instruction->operation));
             auto llvm_compare_other_ops =

@@ -55,3 +55,25 @@ use serializable::Serializable;
 use serialize;
 
 use io::Input;
+
+struct Tmp{
+    v: i64;
+}
+
+implement Initializable for Tmp {
+    func Initialize() {
+        // "Hit".PrintLine();
+    }
+}
+
+
+
+struct Tmp2{
+    tmp: Tmp;
+}
+
+implement Initializable for Tmp2 {
+    func Initialize() {
+        // "Hit2".PrintLine();
+    }
+}

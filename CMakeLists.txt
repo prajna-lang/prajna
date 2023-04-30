@@ -68,6 +68,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+option(BUILD_SHARED_LIBS "Build shared libs" OFF) # 需要加入, 否则其并不是一个option
 option(PRAJNA_BUILD_TOOLS "Build Prajna tools" ON)
 option(PRAJNA_BUILD_EXAMPLES "Build Prajna examples" ON)
 option(PRAJNA_BUILD_TESTS "Build Prajna tests" ON)

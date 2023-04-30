@@ -39,4 +39,46 @@ func TestIndex() {
 @test
 func TestNested() {
     var p = Ptr<Ptr<i64>>::New();
+    var pp = p[0];
+    test::Assert(pp.ReferenceCount() == 1);
+    test::Assert(p[0].IsNull());
+    test::Assert(pp.ReferenceCount() == 2); //  应该是上一句产生了临时变量, 保持观察
+
+    p[0] = Ptr<i64>::New();
+}
+
+struct Tmp{
+    v: i64;
+}
+
+implement Initializable for Tmp {
+    func Initialize() {
+        "Hit".PrintLine();
+    }
+}
+
+implement ReferenceCountable for Tmp {
+    func IncrementReferenceCount() {
+        "inc tmp".PrintLine();
+    }
+
+    func DecrementReferenceCount() {
+        "dec tmp".PrintLine();
+    }
+}
+
+struct Tmp2{
+    tmp: Tmp;
+}
+
+implement Initializable for Tmp2 {
+    func Initialize() {
+        "Hit2".PrintLine();
+    }
+}
+
+
+@test
+func TestAllocate() {
+    var p_ts1 = Ptr<Tmp2>::New();
 }

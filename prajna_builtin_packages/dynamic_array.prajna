@@ -29,6 +29,7 @@ implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
 template <ValueType>
 implement Initializable for DynamicArray<ValueType> {
     func Initialize() {
+        this._data = Ptr<ValueType>::Null();
         this._length = 0;
         this._capacity = 0;
     }

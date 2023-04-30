@@ -21,6 +21,126 @@ class Compiler;
 
 namespace prajna::lowering {
 
+inline bool isInitializable(std::shared_ptr<ir::Type> ir_type) {
+    auto ir_interface_implement = ir_type->interface_dict["Initializable"];
+    return ir_interface_implement != nullptr;
+}
+
+inline bool hasInitializable(std::shared_ptr<ir::Type> ir_type) {
+    if (isInitializable(ir_type)) {
+        return true;
+    }
+
+    if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+        for (auto ir_field : ir_struct_type->fields) {
+            if (hasInitializable(ir_field->type)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+inline void initializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> ir_variable_liked,
+                                            std::shared_ptr<lowering::IrBuilder> ir_builder) {
+    auto ir_type = ir_variable_liked->type;
+    if (hasInitializable(ir_type)) {
+        if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
+            for (auto ir_field : is_struct_type->fields) {
+                if (hasInitializable(ir_field->type)) {
+                    auto ir_access_field =
+                        ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
+                    initializeVariableLikedCallback(ir_access_field, ir_builder);
+                }
+            }
+        }
+
+        if (isInitializable(ir_type)) {
+            auto ir_function = ir::getFunctionByName(
+                ir_type->interface_dict["Initializable"]->functions, "Initialize");
+            ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
+        };
+    }
+}
+
+inline bool isReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
+    auto ir_interface_implement = ir_type->interface_dict["ReferenceCountable"];
+    return ir_interface_implement != nullptr;
+}
+
+inline bool hasReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
+    if (isReferenceCountable(ir_type)) {
+        return true;
+    }
+
+    if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+        for (auto ir_field : ir_struct_type->fields) {
+            if (hasReferenceCountable(ir_field->type)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+inline void destroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
+                                         std::shared_ptr<lowering::IrBuilder> ir_builder) {
+    auto ir_type = ir_value->type;
+    if (hasReferenceCountable(ir_type)) {
+        auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_value);
+        // 和incresement的顺序是相反的,
+        if (isReferenceCountable(ir_type)) {
+            auto ir_function =
+                ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
+                                      "DecrementReferenceCount");
+            ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
+        };
+
+        if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
+            // 按声明相反的顺序处理
+            for (auto iter_field = is_struct_type->fields.rbegin();
+                 iter_field != is_struct_type->fields.rend(); ++iter_field) {
+                auto ir_field = *iter_field;
+                if (hasReferenceCountable(ir_field->type)) {
+                    auto ir_access_field =
+                        ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
+                    destroyVariableLikedCallback(ir_access_field, ir_builder);
+                }
+            }
+        }
+    }
+}
+
+/// @brief
+/// @param ir_value
+/// @param ir_builder
+/// @return
+inline void copyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
+                                      std::shared_ptr<lowering::IrBuilder> ir_builder) {
+    auto ir_type = ir_value->type;
+    if (hasReferenceCountable(ir_type)) {
+        auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_value);
+        if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+            for (auto ir_field : ir_struct_type->fields) {
+                if (hasReferenceCountable(ir_field->type)) {
+                    auto ir_access_field =
+                        ir_builder->create<ir::AccessField>(ir_variable_liked, ir_field);
+                    copyVariableLikedCallback(ir_access_field, ir_builder);
+                }
+            }
+        }
+
+        if (isReferenceCountable(ir_type)) {
+            auto ir_function =
+                ir::getFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
+                                      "IncrementReferenceCount");
+            ir_builder->callMemberFunction(ir_variable_liked, ir_function, {});
+        }
+    }
+}
+
 class StatementLoweringVisitor {
     StatementLoweringVisitor() = default;
 
@@ -1190,9 +1310,9 @@ class StatementLoweringVisitor {
                 logger->error("the second template argument should be type");
             }
 
-            auto iter_interface_implement =
-                std::find_if(RANGE(ir_target_value_type->interface_dict),
-                             [=](auto x) { return x.second->prototype == ir_interface_prototype; });
+            auto iter_interface_implement = std::find_if(
+                RANGE(ir_target_value_type->interface_dict),
+                [=](auto x) { return x.second && x.second->prototype == ir_interface_prototype; });
             if (iter_interface_implement == ir_target_value_type->interface_dict.end()) {
                 logger->error("invalid dynamic cast, operand is not a interface dynamic type");
             }
@@ -1560,6 +1680,80 @@ class StatementLoweringVisitor {
         return template_binary_operator;
     }
 
+    std::shared_ptr<Template> createInitializeTemplate() {
+        auto template_initialize = Template::create();
+        template_initialize->generator = [symbol_table = this->ir_builder->symbol_table,
+                                          logger = this->logger,
+                                          this](std::list<Symbol> symbol_template_arguments,
+                                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("template arguments should be type");
+            }
+
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type = ir::FunctionType::create({ir::PointerType::create(ir_type)},
+                                                             ir::VoidType::create());
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__initialize" + getTemplateArgumentsPostify(symbol_template_arguments),
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            // 标记新的IR, 防止递归初始化
+            ir_tmp_builder->create_callback = [](std::shared_ptr<ir::Value> ir_value) {
+                ir_value->annotation_dict["INSERTED_FLAG"].push_back("none");
+            };
+
+            // DeferencePointer不能重复使用, 故使用ThisWrapper来包装下
+            auto ir_this = ir_tmp_builder->create<ir::ThisWrapper>(ir_function->parameters.front());
+            initializeVariableLikedCallback(ir_this, ir_tmp_builder);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::VoidValue>());
+
+            return ir_function;
+        };
+
+        return template_initialize;
+    }
+
+    std::shared_ptr<Template> createDestroyTemplate() {
+        auto template_destroy = Template::create();
+        template_destroy->generator = [symbol_table = this->ir_builder->symbol_table,
+                                       logger = this->logger,
+                                       this](std::list<Symbol> symbol_template_arguments,
+                                             std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 1) {
+                logger->error("should input 1 template argument");
+            }
+            auto ir_type = symbolGet<ir::Type>(symbol_template_arguments.front());
+            if (!ir_type) {
+                logger->error("template arguments should be type");
+            }
+
+            auto ir_tmp_builder = IrBuilder::create(symbol_table, ir_module, logger);
+            auto ir_function_type = ir::FunctionType::create({ir::PointerType::create(ir_type)},
+                                                             ir::VoidType::create());
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__destroy" + getTemplateArgumentsPostify(symbol_template_arguments),
+                ir_function_type);
+            ir_tmp_builder->createTopBlockForFunction(ir_function);
+            // 标记新的IR, 防止递归初始化
+            ir_tmp_builder->create_callback = [](std::shared_ptr<ir::Value> ir_value) {
+                ir_value->annotation_dict["INSERTED_FLAG"].push_back("none");
+            };
+
+            // DeferencePointer不能重复使用, 故使用ThisWrapper来包装下
+            auto ir_this = ir_tmp_builder->create<ir::ThisWrapper>(ir_function->parameters.front());
+            destroyVariableLikedCallback(ir_this, ir_tmp_builder);
+            ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::VoidValue>());
+
+            return ir_function;
+        };
+
+        return template_destroy;
+    }
+
     void stage0() {
         auto bool_type = ir::BoolType::create();
         auto char_type = ir::CharType::create();
@@ -1697,6 +1891,12 @@ class StatementLoweringVisitor {
 
         ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
             expression_lowering_visitor->createDynamicTemplate(), "dynamic");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createInitializeTemplate(), "__initialize");
+
+        ir_builder->symbol_table->rootSymbolTable()->setWithAssigningName(
+            this->createDestroyTemplate(), "__destroy");
     }
 
     Symbol operator()(ast::Pragma ast_pragma);

@@ -9,3 +9,6 @@ target_link_libraries(prajna
     fmt
 )
 
+if (BUILD_SHARED_LIBS)
+    target_link_libraries(prajna ${CMAKE_DL_LIBS})
+endif()

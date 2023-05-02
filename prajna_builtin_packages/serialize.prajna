@@ -123,3 +123,14 @@ use EnablePrintable<bool>;
 use EnablePrintableBitsType<Int>;
 use EnablePrintableBitsType<Uint>;
 use EnablePrintableBitsType<Float>;
+
+template <Type, Dim>
+implement Array<Type, Dim> {
+        func Print() {
+            this.ToString().Print();
+        }
+
+        func PrintLine() {
+            this.ToString().PrintLine();
+        }
+}

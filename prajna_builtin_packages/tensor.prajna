@@ -133,3 +133,15 @@ implement Serializable for Tensor<Type, Dim> {
         return this._ToStringImpl(0, idx);
     }
 }
+
+
+template <Type, Dim>
+implement Tensor<Type, Dim> {
+        func Print() {
+            this.ToString().Print();
+        }
+
+        func PrintLine() {
+            this.ToString().PrintLine();
+        }
+}

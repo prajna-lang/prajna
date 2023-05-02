@@ -151,7 +151,8 @@ class StatementLoweringVisitor {
         std::shared_ptr<lowering::SymbolTable> symbol_table, std::shared_ptr<Logger> logger,
         std::shared_ptr<ir::Module> ir_module, std::shared_ptr<Compiler> compiler) {
         std::shared_ptr<StatementLoweringVisitor> self(new StatementLoweringVisitor);
-        if (!ir_module) ir_module = ir::Module::create();
+        PRAJNA_ASSERT(ir_module);
+        // if (!ir_module) ir_module = ir::Module::create();
         self->ir_builder = IrBuilder::create(symbol_table, ir_module, logger);
         self->logger = logger;
         self->compiler = compiler;
@@ -1905,6 +1906,10 @@ class StatementLoweringVisitor {
         auto ir_interface_prototype = ir::InterfacePrototype::create();
         ir_builder->SetSymbolWithTemplateArgumentsPostify(ir_interface_prototype,
                                                           ast_interface_prototype.name);
+
+        ir_builder->interface_prototype_processing = true;
+        auto guard =
+            function_guard::create([=]() { ir_builder->interface_prototype_processing = false; });
 
         ir_interface_prototype->disable_dynamic = std::any_of(
             RANGE(ast_interface_prototype.annotation_dict),

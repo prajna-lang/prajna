@@ -173,7 +173,7 @@ implement Initializable for Ptr<Type> {
         // 需要申请, 判断的时候需要用到
         this._reference_counter = __ptr<i64>::New();
         this.size = 0;
-        *this._reference_counter = 0;
+        *this._reference_counter = 1;
     }
 }
 

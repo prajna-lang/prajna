@@ -103,12 +103,3 @@ implement operator::NotEqual<String> for String{
          return !(this == rhs_str);
     }
 }
-
-func Print(ss: String){
-    ss.Print();
-}
-
-func PrintLine(ss: String) {
-    ss.PrintLine();
-}
-

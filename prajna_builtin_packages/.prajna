@@ -41,39 +41,18 @@ use _dynamic;
 use atomic;
 
 use dynamic_array::DynamicArray;
+
+
+use __str::String;
+use serializable::Serializable;
+use serialize;
+
 use tensor::Tensor;
 use tensor::Layout;
 use list::Node;
 use list::List;
 use dict::ListDict;
 
-use __str::String;
-use __str::Print;
-use __str::PrintLine;
-
-use serializable::Serializable;
-use serialize;
-
 use io::Input;
 
-struct Tmp{
-    v: i64;
-}
 
-implement Initializable for Tmp {
-    func Initialize() {
-        // "Hit".PrintLine();
-    }
-}
-
-
-
-struct Tmp2{
-    tmp: Tmp;
-}
-
-implement Initializable for Tmp2 {
-    func Initialize() {
-        // "Hit2".PrintLine();
-    }
-}

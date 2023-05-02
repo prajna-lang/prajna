@@ -8,13 +8,14 @@ std::shared_ptr<ir::Module> lower(std::shared_ptr<ast::Statements> ast,
                                   std::shared_ptr<SymbolTable> symbol_table,
                                   std::shared_ptr<Logger> logger,
                                   std::shared_ptr<Compiler> compiler, bool is_interpreter) {
+    auto ir_module = ir::Module::create();
     if (is_interpreter) {
         auto interpreter_visitor =
-            lowering::InterpreterLoweringVisitor::create(symbol_table, logger, compiler);
+            lowering::InterpreterLoweringVisitor::create(symbol_table, ir_module, logger, compiler);
         return interpreter_visitor->apply(ast);
     } else {
         auto statement_lowering_visitor =
-            StatementLoweringVisitor::create(symbol_table, logger, nullptr, compiler);
+            StatementLoweringVisitor::create(symbol_table, logger, ir_module, compiler);
         return statement_lowering_visitor->apply(ast);
     }
 }

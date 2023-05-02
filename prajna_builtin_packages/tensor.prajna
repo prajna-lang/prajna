@@ -45,7 +45,6 @@ implement Layout<Dim> {
     func Length()->i64{
         return this.shape[0] * this.stride[0];
     }
-
 }
 
 template <Type, Dim>
@@ -83,6 +82,34 @@ implement Tensor<Type, Dim> {
         self.data = Ptr<Type>::Allocate(self.layout.Length());
         return self;
     }
+
+    func Shape()->Array<i64, Dim> {
+        return this.layout.shape;
+    }
+
+
+    func _ToStringImpl(dim: i64, idx: Array<i64, Dim>)->String {
+        var idx_tmp = idx;
+        if (dim == Dim - 1) {
+            var str_re = "[";
+            for i in 0 to this.Shape()[dim] {
+                idx_tmp[dim] = i;
+                str_re  = str_re + this.At(idx_tmp).ToString() + ", ";
+            }
+            str_re.Push(']');
+            return str_re;
+        }
+
+        var str_re = "[";
+        for i in 0 to this.Shape()[dim] {
+            idx_tmp[dim] = i;
+            str_re = str_re + this._ToStringImpl(dim+1, idx_tmp);
+            str_re.Push(',');
+        }
+        str_re.Push(']');
+        return str_re;
+    }
+
 }
 
 template <Type, Dim>
@@ -93,5 +120,16 @@ implement operator::ArrayIndex<Type, Dim> for Tensor<Type, Dim> {
 
     func Set(idx: Array<i64, Dim>, value: Type){
         this.At(idx) = value;
+    }
+}
+
+template <Type, Dim>
+implement Serializable for Tensor<Type, Dim> {
+    func ToString()->String {
+        var idx: Array<i64, Dim>;
+        for i in 0 to Dim {
+            idx[i] = 0;
+        }
+        return this._ToStringImpl(0, idx);
     }
 }

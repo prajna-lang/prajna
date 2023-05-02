@@ -91,3 +91,35 @@ implement Serializable for Array<Type, Dim>{
     }
 }
 
+template EnablePrintable <T> {
+    implement T {
+        func Print() {
+            this.ToString().Print();
+        }
+
+        func PrintLine() {
+            this.ToString().PrintLine();
+        }
+    }
+}
+
+template EnablePrintableBitsType <Type> {
+    template <Bits>
+    implement Type<Bits> {
+        func Print() {
+            this.ToString().Print();
+        }
+
+        func PrintLine() {
+            this.ToString().PrintLine();
+        }
+    }
+}
+
+use EnablePrintable<char>;
+use EnablePrintable<bool>;
+
+
+use EnablePrintableBitsType<Int>;
+use EnablePrintableBitsType<Uint>;
+use EnablePrintableBitsType<Float>;

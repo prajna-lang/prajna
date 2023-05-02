@@ -606,7 +606,8 @@ class ExpressionLoweringVisitor {
                                     // 使用instantiating_type来获取相应类型
                                     if (auto ir_type = template_struct->instantiate(
                                             symbol_template_arguments, ir_builder->module,
-                                            ir_builder->instantiating_type_stack.size())) {
+                                            ir_builder->instantiating_type_stack.size() ||
+                                                ir_builder->interface_prototype_processing)) {
                                         return ir_type;
                                     } else {
                                         PRAJNA_ASSERT(ir_builder->instantiating_type_stack.size());

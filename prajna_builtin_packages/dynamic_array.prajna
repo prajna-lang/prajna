@@ -18,11 +18,11 @@ struct DynamicArray{
 template <ValueType>
 implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
     func Get(idx: i64)->ValueType{
-        return this._data.raw_ptr[idx];
+        return this._data[idx];
     }
 
     func Set(idx: i64, value: ValueType){
-        this._data.raw_ptr[idx] = value;
+        this._data[idx] = value;
     }
 }
 
@@ -56,6 +56,8 @@ implement DynamicArray<ValueType> {
         } else {
             this._length = this._length + 1;
         }
+
+        test::Assert(this._data.ReferenceCount() > 0);
 
         this[this._length-1] = value;
     }

@@ -211,7 +211,8 @@ class IrBuilder {
     }
 
     void instantiateTypeImplements(std::shared_ptr<ir::Type> ir_type) {
-        if (ir_type->template_struct) {
+        // module为nullptr时, 不会参与llvm的生成
+        if (ir_type->template_struct && this->module) {
             auto symbol_template_argument_list =
                 std::any_cast<std::list<Symbol>>(ir_type->template_arguments_any);
             ir_type->template_struct->instantiate(symbol_template_argument_list, this->module);
@@ -462,6 +463,8 @@ class IrBuilder {
     std::shared_ptr<ir::InterfaceImplement> current_implement_interface = nullptr;
     boost::optional<std::list<Symbol>> symbol_template_argument_list_optional;
     bool is_static_function = false;
+
+    bool interface_prototype_processing = false;
 };
 
 }  // namespace prajna::lowering

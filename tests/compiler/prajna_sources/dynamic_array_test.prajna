@@ -14,3 +14,12 @@ func TestMain(){
     test::Assert(darray.Length() == 66);
     test::Assert(darray.Capacity() == 128);
 }
+
+@test
+func TestDynamicArray() {
+    var darray : DynamicArray<f32>;
+    darray.Push(1.0);
+    darray.Push(10.0);
+    darray.Push(100.0);
+    test::Assert(darray[2] == 100.0);
+}

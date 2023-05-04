@@ -736,12 +736,55 @@ class StatementLoweringVisitor {
                 // ir_interface->functions.push_back(ir_function);
             }
 
+            // 是否每个interface prototpye的函数都被实现
+            auto is_matched_with_prototype =
+                [](std::shared_ptr<ir::FunctionType> ir_function_type0,
+                   std::shared_ptr<ir::FunctionType> ir_function_type1) {
+                    if (ir_function_type0->return_type != ir_function_type1->return_type) {
+                        return false;
+                    }
+                    auto iter0 = std::next(ir_function_type0->parameter_types.begin());
+                    auto iter1 = ir_function_type1->parameter_types.begin();
+                    for (; iter0 != ir_function_type0->parameter_types.end(); ++iter0, ++iter1) {
+                        if (*iter0 != *iter1) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                };
+
+            for (auto ir_function_prototype : ir_interface_prototype->functions) {
+                auto iter_function =
+                    std::find_if(RANGE(ir_interface->functions), [=](auto ir_function) {
+                        if (ir_function->name == ir_function_prototype->name) {
+                            if (is_matched_with_prototype(ir_function->function_type,
+                                                          ir_function_prototype->function_type)) {
+                                return true;
+                            } else {
+                                // 错误信息, 需要进一步精准到函数上
+                                logger->error("function type is not matched with interface",
+                                              ast_implement.interface);
+                            }
+                        }
+                        return false;
+                    });
+                if (iter_function == ir_interface->functions.end()) {
+                    logger->error("interface function is not implemented", ast_implement.interface);
+                }
+            }
+
             if (ir_interface_prototype->disable_dynamic) {
                 return nullptr;
             }
 
             // 包装一个undef this pointer的函数
             for (auto ir_function : ir_interface->functions) {
+                if (std::none_of(RANGE(ir_interface_prototype->functions),
+                                 [=](auto x) { return x->name == ir_function->name; })) {
+                    continue;
+                }
+
                 std::list<std::shared_ptr<ir::Type>> ir_undef_this_pointer_function_argument_types =
                     ir_function->function_type->parameter_types;
                 ir_undef_this_pointer_function_argument_types.front() =
@@ -784,6 +827,11 @@ class StatementLoweringVisitor {
                     ir_interface->dynamic_type_creator->parameters.front(), "ToUndef", {}),
                 ir_builder->accessField(ir_self, "object_pointer"));
             for (auto ir_function : ir_interface->functions) {
+                if (std::none_of(RANGE(ir_interface_prototype->functions),
+                                 [=](auto x) { return x->name == ir_function->name; })) {
+                    continue;
+                }
+
                 auto iter_field = std::find_if(
                     RANGE(ir_interface->prototype->dynamic_type->fields),
                     [=](auto ir_field) { return ir_field->name == ir_function->name + "/fp"; });

@@ -87,6 +87,8 @@ implement Finalizable for List<ValueType> {
 
 template <ValueType>
 implement ReferenceCountable for List<ValueType> {
+    func RegisterReferenceCount() {}
+
     func IncrementReferenceCount() {
         *this._reference_counter = *this._reference_counter + 1;
     }
@@ -94,8 +96,8 @@ implement ReferenceCountable for List<ValueType> {
     func DecrementReferenceCount() {
         *this._reference_counter = *this._reference_counter - 1;
         if (*this._reference_counter == 0){
-            // this.Finalize();
-            // this._reference_counter.Free();
+            this.Finalize();
+            this._reference_counter.Free();
         }
     }
 }

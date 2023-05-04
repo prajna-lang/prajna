@@ -59,6 +59,8 @@ implement Initializable for Tmp {
 }
 
 implement ReferenceCountable for Tmp {
+  func RegisterReferenceCount() {}
+
     func IncrementReferenceCount() {
         "inc tmp".PrintLine();
     }

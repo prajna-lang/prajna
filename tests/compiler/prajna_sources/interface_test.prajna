@@ -17,7 +17,6 @@ implement Say for SayHello{
     func say(){
         "Hello\n".Print();
     }
-
 }
 
 @test

@@ -28,13 +28,11 @@ if (UNIX AND NOT APPLE)
     # 不可设置C++的, 会导致头文件找不到
     # set(CMAKE_CXX_COMPILER_TARGET "${CMAKE_SYSTEM_PROCESSOR}-unknown-${CMAKE_SYSTEM_NAME}")
     message("prajna build target triple: ${CMAKE_C_COMPILER_TARGET}")
-
-    set(COMPILER_RT_DEFAULT_TARGET_ONLY ON)
-    set(LLVM_ENABLE_PROJECTS "compiler-rt")
-    set(COMPILER_RT_BUILD_BUILTINS ON)
 endif()
 
-# set(COMPILER_RT_BUILTINS_HIDE_SYMBOLS Off)
+set(COMPILER_RT_DEFAULT_TARGET_ONLY ON)
+set(COMPILER_RT_BUILD_BUILTINS ON)
+set(COMPILER_RT_BUILTINS_HIDE_SYMBOLS Off)
 add_subdirectory(third_party/llvm-project/llvm EXCLUDE_FROM_ALL)
 
 # 需要手动添加llvm的头文件路径

@@ -29,6 +29,10 @@ implement __ptr<Type> {
     func IsNull()->bool{
         return this._ToInt64() == 0;
     }
+
+    func IsValid()->bool {
+        return !this.IsNull();
+    }
 }
 
 template <Type>
@@ -112,6 +116,10 @@ implement Ptr<Type>{
 
     func IsNull()->bool{
         return this._ToInt64() == 0;
+    }
+
+    func IsValid()->bool {
+        return !this.IsNull();
     }
 
     func ReferenceCount()->i64 {

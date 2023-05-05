@@ -1,0 +1,13 @@
+use fs;
+
+@test
+func TestFs() {
+    var str_hello_world = "Hello World!";
+    {
+        fs::Write("fs_test.txt", str_hello_world);
+    }
+    {
+        var str = fs::Read("fs_test.txt");
+        debug::Assert(str == str_hello_world);
+    }
+}

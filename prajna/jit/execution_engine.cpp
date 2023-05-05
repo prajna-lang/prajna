@@ -8,6 +8,7 @@
 #endif
 
 #include <setjmp.h>
+#include <stdio.h>
 
 #include <algorithm>
 #include <atomic>
@@ -242,6 +243,14 @@ void ExecutionEngine::bindBuiltinFunction() {
     this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
     this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floattihf");
     this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floatuntihf");
+
+    this->bindCFunction(reinterpret_cast<void *>(fopen), "::fs::_c::fopen");
+    this->bindCFunction(reinterpret_cast<void *>(fclose), "::fs::_c::fclose");
+    this->bindCFunction(reinterpret_cast<void *>(fseek), "::fs::_c::fseek");
+    this->bindCFunction(reinterpret_cast<void *>(ftell), "::fs::_c::ftell");
+    this->bindCFunction(reinterpret_cast<void *>(fflush), "::fs::_c::fflush");
+    this->bindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
+    this->bindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
 
 #ifdef PRAJNA_WITH_GPU
     this->bindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");

@@ -28,6 +28,10 @@ use bindings;
 use debug;
 use test;
 
+func Assert(success: bool){
+    bindings::assert(success);
+}
+
 use array::Array;
 
 use __type;
@@ -55,4 +59,4 @@ use dict::ListDict;
 
 use io::Input;
 
-
+use fs;

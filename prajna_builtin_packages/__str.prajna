@@ -38,6 +38,10 @@ implement String{
         return str_re;
     }
 
+    func __CharPointer()->__ptr<char> {
+        return this.darray._data.raw_ptr;
+    }
+
     func Print(){
         this.darray.Push('\0');
         bindings::print_c(this.darray._data.raw_ptr);

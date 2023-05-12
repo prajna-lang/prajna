@@ -17,7 +17,7 @@ target_link_libraries(prajna_config_target
 )
 
 if (PRAJNA_WITH_GPU)
-target_compile_definitions(prajna_config_target INTERFACE PRAJNA_WITH_GPU)
+    target_compile_definitions(prajna_config_target INTERFACE PRAJNA_WITH_GPU)
 endif()
 
 target_compile_options(prajna_config_target

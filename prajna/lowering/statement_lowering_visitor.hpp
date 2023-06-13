@@ -401,7 +401,6 @@ class StatementLoweringVisitor {
                     this->ir_builder->popBlock();
                     this->ir_builder->function_stack.pop();
                     this->ir_builder->popSymbolTable();
-                    ir_function->is_declaration = false;
                 });
 
                 auto iter_argument = ir_function->parameters.begin();
@@ -439,7 +438,7 @@ class StatementLoweringVisitor {
                     }
                 }
             } else {
-                ir_function->is_declaration = true;
+                ir_function->blocks.clear();
             }
 
             ir_builder->is_static_function = false;

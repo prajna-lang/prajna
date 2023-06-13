@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <stack>
 
@@ -29,7 +30,6 @@ std::shared_ptr<ir::Module> makeCompatiableWithLlvm(std::shared_ptr<ir::Module> 
 
 std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module);
 
-// auto create = [=](auto )
 inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
     std::shared_ptr<ir::Module> ir_module) {
     auto ir_access_properties = utility::getValuesInModule<ir::AccessProperty>(ir_module);
@@ -140,6 +140,53 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             ir_kernel_function_call->finalize();
         }
     }
+
+    return ir_module;
+}
+
+inline std::shared_ptr<ir::Module> InlineFunction(std::shared_ptr<ir::Module> ir_module) {
+    std::multimap<std::shared_ptr<ir::Function>, ir::InstructionWithOperandIndex>
+        ir_instruct_with_id_multimap;
+    std::set<std::shared_ptr<ir::Function>> ir_external_function_set;
+    auto ir_instructions = utility::getValuesInModule<ir::Instruction>(ir_module);
+    for (auto ir_instruction : ir_instructions) {
+        for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
+            auto ir_operand = ir_instruction->operand(i);
+
+            if (auto ir_function = cast<ir::Function>(ir_operand)) {
+                if (!ir_function->IsDeclaration()) {
+                    ir_external_function_set.insert(ir_function);
+                    ir_instruct_with_id_multimap.insert(
+                        {ir_function, ir::InstructionWithOperandIndex{ir_instruction, i}});
+                }
+            }
+        }
+    }
+
+    auto function_cloner = ir::FunctionCloner::create(ir_module);
+    for (auto ir_external_function : ir_external_function_set) {
+        // function_cloner->shallow = true;
+        auto ir_new_function = ir_external_function->clone(function_cloner);
+
+        // avoid to duplicate symbol
+        ir_new_function->fullname = concatFullname(ir_module->fullname, ir_new_function->fullname);
+
+        auto ir_instruction_with_id_range =
+            ir_instruct_with_id_multimap.equal_range(ir_external_function);
+
+        for (auto iter = ir_instruction_with_id_range.first;
+             iter != ir_instruction_with_id_range.second; ++iter) {
+            auto ir_instruction_with_id = iter->second;
+            auto [ir_instruction, op_idx] = ir_instruction_with_id;
+            ir_instruction->operand(op_idx, ir_new_function);
+        }
+    }
+
+    // nvptx has already clone all depends functions
+    // for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+    //     if (not ir_module) continue;
+    //     InlineFunction(ir_sub_module);
+    // }
 
     return ir_module;
 }
@@ -255,9 +302,10 @@ inline std::shared_ptr<ir::Module> cloneExternalNvptxValue(std::shared_ptr<ir::M
 
     auto ir_kernel_function = ir_kernel_functions_list.front();
     auto function_cloner = ir::FunctionCloner::create(ir_nvptx_module);
+    // 会把生成的函数直接插入到module里
     ir_kernel_function->clone(function_cloner);
-
-    ir_nvptx_module->functions = function_cloner->functions;
+    // 移除原来的核函数
+    ir_nvptx_module->functions.remove(ir_kernel_function);
 
     return ir_module;
 }
@@ -334,36 +382,6 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
     return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
-    for (auto ir_function : ir_module->functions) {
-        if (ir_function->annotation_dict.count("intrinsic")) {
-            PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
-            auto intrinsic_function_name = ir_function->annotation_dict["intrinsic"].front();
-            auto ir_decl_function = ir::Function::create(ir_function->function_type);
-            ir_decl_function->fullname = intrinsic_function_name;
-            ir_decl_function->parent_module = ir_module;
-            ir_decl_function->is_declaration = true;
-            ir_module->functions.push_front(ir_decl_function);
-
-            PRAJNA_ASSERT(ir_function->blocks.empty());
-            auto ir_builder = lowering::IrBuilder::create();
-            ir_builder->createTopBlockForFunction(ir_function);
-            ir_builder->create<ir::Return>(
-                ir_builder->create<ir::Call>(ir_decl_function, ir_function->parameters));
-            ir_function->annotation_dict.erase("intrinsic");
-            ir_function->is_declaration = false;
-        }
-    }
-
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_module) continue;
-
-        WrapIntrinsicFunction(ir_sub_module);
-    }
-
-    return ir_module;
-}
-
 inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
     std::shared_ptr<ir::Module> ir_module) {
     auto ir_fors = utility::getValuesInModule<ir::For>(ir_module);
@@ -417,6 +435,34 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
                                                {ir_linear_index}),
                 "+", ir_array_first_variable),
             ir_array_index);
+    }
+
+    return ir_module;
+}
+
+inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->annotation_dict.count("intrinsic")) {
+            PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
+            auto intrinsic_function_name = ir_function->annotation_dict["intrinsic"].front();
+            auto ir_decl_function = ir::Function::create(ir_function->function_type);
+            ir_decl_function->fullname = intrinsic_function_name;
+            ir_decl_function->parent_module = ir_module;
+            ir_module->functions.push_front(ir_decl_function);
+
+            PRAJNA_ASSERT(ir_function->blocks.empty());
+            auto ir_builder = lowering::IrBuilder::create();
+            ir_builder->createTopBlockForFunction(ir_function);
+            ir_builder->create<ir::Return>(
+                ir_builder->create<ir::Call>(ir_decl_function, ir_function->parameters));
+            ir_function->annotation_dict.erase("intrinsic");
+        }
+    }
+
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_module) continue;
+
+        WrapIntrinsicFunction(ir_sub_module);
     }
 
     return ir_module;
@@ -477,6 +523,8 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     ir_module = convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     // 在sperateModule后面
+    // PRAJNA_ASSERT(verifyTree(ir_module));
+    // ir_module = InlineFunction(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = declareExternalFunction(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));

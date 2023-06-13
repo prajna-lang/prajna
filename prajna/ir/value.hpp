@@ -334,40 +334,23 @@ class ConstantArray : public Constant {
     }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<ConstantArray> ir_new(new ConstantArray(*this));
+        std::list<std::shared_ptr<Constant>> new_initialize_constants(
+            this->initialize_constants.size());
         std::transform(
-            RANGE(initialize_constants), std::back_inserter(ir_new->initialize_constants),
-            [=](auto ir_constant) { return cast<Constant>(ir_constant->clone(function_cloner)); });
-        return ir_new;
-    }
+            RANGE(this->initialize_constants), new_initialize_constants.begin(),
+            [=](auto ir_constant) {
+                PRAJNA_ASSERT(
+                    function_cloner->value_dict[ir_constant]);  // constant应该在前面就处理过;
+                return cast<Constant>(function_cloner->value_dict[ir_constant]);
+            });
 
-    std::list<std::shared_ptr<Constant>> initialize_constants;
-};
-
-class ConstantStruct : public Constant {
-   protected:
-    ConstantStruct() = default;
-
-   public:
-    static std::shared_ptr<ConstantStruct> create(
-        std::shared_ptr<Type> type,
-        std::unordered_map<std::string, std::shared_ptr<Constant>> fields) {
-        PRAJNA_ASSERT(type);
-        std::shared_ptr<ConstantStruct> self(new ConstantStruct);
-        self->type = type;
-        self->fileds = fields;
-        self->tag = "ConstantStruct";
-        return self;
-    };
-
-    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<ConstantStruct> ir_new(new ConstantStruct(*this));
+        std::shared_ptr<ConstantArray> ir_new =
+            ConstantArray::create(cast<ArrayType>(this->type), new_initialize_constants);
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
 
-   public:
-    std::unordered_map<std::string, std::shared_ptr<Constant>> fileds;
+    std::list<std::shared_ptr<Constant>> initialize_constants;
 };
 
 class Block : public Value {
@@ -463,33 +446,7 @@ class Function : public Value {
         return self;
     }
 
-    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<Function> ir_new(new Function(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-
-        ir_new->parent_module = function_cloner->module;
-        ir_new->parameters.clear();
-        std::transform(RANGE(parameters), std::back_inserter(ir_new->parameters),
-                       [=](auto ir_parameter) {
-                           auto ir_new_parameter = ir_parameter->clone(function_cloner);
-                           function_cloner->value_dict[ir_parameter] = ir_new_parameter;
-                           return ir_new_parameter;
-                       });
-
-        // 需要再开头, 因为函数有可能存在递归
-        ir_new->blocks.clear();
-        for (auto ir_block : blocks) {
-            if (not function_cloner->value_dict.count(ir_block)) {
-                ir_block->clone(function_cloner);
-            }
-
-            auto ir_new_block = cast<Block>(function_cloner->value_dict[ir_block]);
-            ir_new->blocks.push_back(ir_new_block);
-        }
-
-        function_cloner->functions.push_back(ir_new);
-        return ir_new;
-    }
+    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override;
 
     void finalize() override {
         Value::finalize();
@@ -499,8 +456,9 @@ class Function : public Value {
         this->blocks.clear();
     }
 
+    bool IsDeclaration() { return this->blocks.empty(); }
+
    public:
-    bool is_declaration = false;
     std::shared_ptr<FunctionType> function_type = nullptr;
     std::list<std::shared_ptr<Value>> parameters;
     std::list<std::shared_ptr<Block>> blocks;
@@ -1744,6 +1702,44 @@ inline std::shared_ptr<ir::Function> getFunctionByName(
                                       [=](auto ir_function) { return ir_function->name == name; });
     PRAJNA_ASSERT(iter_function != function_list.end(), name);
     return *iter_function;
+}
+
+inline std::shared_ptr<Value> Function::clone(std::shared_ptr<FunctionCloner> function_cloner) {
+    if (function_cloner->shallow && function_cloner->has_cloned) {
+        function_cloner->value_dict[shared_from_this()] = shared_from_this();
+        return shared_from_this();
+    }
+
+    if (function_cloner->shallow) {
+        function_cloner->has_cloned = true;
+    }
+
+    std::shared_ptr<Function> ir_new(new Function(*this));
+    function_cloner->value_dict[shared_from_this()] = ir_new;
+
+    ir_new->parent_module = function_cloner->module;
+    ir_new->parameters.clear();
+    std::transform(RANGE(parameters), std::back_inserter(ir_new->parameters),
+                   [=](auto ir_parameter) {
+                       auto ir_new_parameter = ir_parameter->clone(function_cloner);
+                       function_cloner->value_dict[ir_parameter] = ir_new_parameter;
+                       return ir_new_parameter;
+                   });
+
+    // 需要再开头, 因为函数有可能存在递归
+    ir_new->blocks.clear();
+    for (auto ir_block : blocks) {
+        if (not function_cloner->value_dict.count(ir_block)) {
+            ir_block->clone(function_cloner);
+        }
+
+        auto ir_new_block = cast<Block>(function_cloner->value_dict[ir_block]);
+        ir_new->blocks.push_back(ir_new_block);
+    }
+
+    // 在后面加入module, 否则顺序不对
+    function_cloner->module->functions.push_back(ir_new);
+    return ir_new;
 }
 
 }  // namespace prajna::ir

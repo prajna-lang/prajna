@@ -4,6 +4,10 @@ func input_c()->__ptr<char>;
 
 func assert(flag : bool);
 
+func Assert(flag: bool) {
+    assert(flag);
+}
+
 func malloc(bytes: i64)->__ptr<undef>;
 func free(pointer: __ptr<undef>);
 

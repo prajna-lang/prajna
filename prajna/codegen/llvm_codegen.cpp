@@ -169,7 +169,7 @@ class LlvmCodegen {
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            if (!ir_function->is_declaration) {
+            if (!ir_function->IsDeclaration()) {
                 this->emitFunction(ir_function, ir_target);
             }
         }
@@ -660,16 +660,6 @@ std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
 
     llvm_codegen->emitModule(ir_module, ir_target);
 
-#ifdef PRAJNA_ENABLE_LLVM_DUMP
-    ir_module->llvm_module->dump();
-#endif
-
-#ifdef PRAJNA_ENABLE_LLVM_VERIFY
-    auto verify_result = llvm::verifyModule(*ir_module->llvm_module, &llvm::errs());
-    // 总是返回false, 应该是llvm本身的问题
-    // PRAJNA_ASSERT(verify_result);
-#endif
-
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (ir_sub_module == nullptr) continue;
 
@@ -693,7 +683,6 @@ std::shared_ptr<ir::Module> llvmPass(std::shared_ptr<ir::Module> ir_module) {
 
     auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
     PRAJNA_ASSERT(JTMB);
-
     JTMB->setCPU("");
     JTMB->setRelocationModel(std::nullopt);
     JTMB->setCodeModel(std::nullopt);
@@ -702,49 +691,33 @@ std::shared_ptr<ir::Module> llvmPass(std::shared_ptr<ir::Module> ir_module) {
     auto TM = JTMB->createTargetMachine();
     PRAJNA_ASSERT(TM && TM.get());
 
-    llvm::OptimizationLevel OptLevel;
-
-    llvm::PipelineTuningOptions PTO;
-    // PTO.LoopUnrolling = UnrollLoops;
-    // PTO.LoopInterleaving = UnrollLoops;
-    // PTO.LoopVectorization = LoopVectorize;
-    // PTO.SLPVectorization = SLPVectorize;
-    // PTO.MergeFunctions = MergeFunctions;
-
-    llvm::PassBuilder PB(TM->get(), PTO);
-    llvm::LoopAnalysisManager LAM;
+    // Create the analysis managers.    llvm::LoopAnalysisManager LAM;
     llvm::FunctionAnalysisManager FAM;
     llvm::CGSCCAnalysisManager CGAM;
     llvm::ModuleAnalysisManager MAM;
-
-    FAM.registerPass([&] { return PB.buildDefaultAAPipeline(); });
-
-    auto llvm_module = ir_module->llvm_module;
-    llvm::Triple TargetTriple(llvm_module->getTargetTriple());
-    std::unique_ptr<llvm::TargetLibraryInfoImpl> TLII(
-        new llvm::TargetLibraryInfoImpl(TargetTriple));
-    FAM.registerPass([&] { return llvm::TargetLibraryAnalysis(*TLII); });
-
+    llvm::LoopAnalysisManager LAM;
+    llvm::PassBuilder PB(TM.get().get());
     PB.registerModuleAnalyses(MAM);
     PB.registerCGSCCAnalyses(CGAM);
     PB.registerFunctionAnalyses(FAM);
     PB.registerLoopAnalyses(LAM);
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-    llvm::ModulePassManager MPM;
+    llvm::ModulePassManager MPM =
+        PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3, true);
 
-    // MPM = PB.buildO0DefaultPipeline(OptLevel, /* PreLinkLTO */ false);
+    auto llvm_module = ir_module->llvm_module;
+    MPM.run(*llvm_module, MAM);
 
-    MPM = PB.buildPerModuleDefaultPipeline(OptLevel, false);
+#ifdef PRAJNA_ENABLE_LLVM_DUMP
+    ir_module->llvm_module->dump();
+#endif
 
-    // Upgrade all calls to old intrinsics first.
-    for (llvm::Module::iterator I = llvm_module->begin(), E = llvm_module->end(); I != E;)
-        llvm::UpgradeCallsToIntrinsic(&*I++);  // must be post-increment, as we remove
-
-    // TODO 存在bug
-    // MPM.run(*llvm_module, MAM);
-
-    // llvm_module->dump();
+#ifdef PRAJNA_ENABLE_LLVM_VERIFY
+    auto verify_result = llvm::verifyModule(*ir_module->llvm_module, &llvm::errs());
+    // 总是返回false, 应该是llvm本身的问题
+    // PRAJNA_ASSERT(verify_result);
+#endif
 
     return ir_module;
 }

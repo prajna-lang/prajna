@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <unordered_map>
@@ -56,6 +57,13 @@ void assert_c(bool t) {
         longjmp(buf, 1);
     }
 }
+
+float Clock() {
+    auto t = static_cast<float>(clock()) / CLOCKS_PER_SEC;
+    return t;
+}
+
+void Sleep(float t) { sleep(t); }
 
 llvm::ExitOnError exit_on_error;
 
@@ -251,6 +259,9 @@ void ExecutionEngine::bindBuiltinFunction() {
     this->bindCFunction(reinterpret_cast<void *>(fflush), "::fs::_c::fflush");
     this->bindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
     this->bindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
+
+    this->bindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
+    this->bindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");
 
 #ifdef PRAJNA_WITH_GPU
     this->bindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");

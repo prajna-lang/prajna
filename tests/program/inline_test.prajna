@@ -1,0 +1,13 @@
+#stage0; // 加入bool, char, void, undef类型
+#stage1; // 加入int, Float, __add等模板和操作
+
+use Int<64> as i64;
+
+func inc(v: i64) -> i64 {
+    return __add<i64>(v, 1);
+}
+
+func Main(){
+    var a = 3;
+    a = inc(a);
+}

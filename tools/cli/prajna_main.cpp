@@ -17,20 +17,24 @@
 int prajna_exe_main(int argc, char* argv[]) {
     cxxopts::Options options("prajna exe");
     options.allow_unrecognised_options().positional_help("program").custom_help("[options]");
-    options.add_options()("h,help", "prajna exe help")("program", "program file",
-                                                       cxxopts::value<std::string>());
+    options.add_options()("h,help", "prajna exe help")(
+        "program", "program file", cxxopts::value<std::string>())("without_builtin_lib",
+                                                                  "without builtin lib",
+                                                                  cxxopts::value<std::string>());
     options.parse_positional({"program"});
     auto result = options.parse(argc, argv);
 
     if (result.count("program")) {
         auto compiler = prajna::Compiler::create();
         auto program_path = std::filesystem::path(result["program"].as<std::string>());
-        if (std::filesystem::exists("prajna_builtin_packages")) {
-            compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
-        } else {
-            auto prajna_builtin_packages_directory =
-                prajna::ProgramLocation(argv[0]).parent_path() / "../prajna_builtin_packages";
-            compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
+        if (!result.count("without_builtin_lib")) {
+            if (std::filesystem::exists("prajna_builtin_packages")) {
+                compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+            } else {
+                auto prajna_builtin_packages_directory =
+                    prajna::ProgramLocation(argv[0]).parent_path() / "../prajna_builtin_packages";
+                compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
+            }
         }
         compiler->addPackageDirectoryPath(std::filesystem::current_path());
         compiler->executeProgram(program_path);

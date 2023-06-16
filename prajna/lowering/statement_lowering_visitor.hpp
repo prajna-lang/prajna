@@ -1039,8 +1039,7 @@ class StatementLoweringVisitor {
                 }
                 if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
                     if (ir_source_int_type->bits == ir_target_int_type->bits) {
-                        ir_tmp_builder->create<ir::Return>(ir_function->parameters.front());
-                        return ir_function;
+                        cast_operation = ir::CastInstruction::Operation::BitCast;
                     }
                     if (ir_source_int_type->bits > ir_target_int_type->bits) {
                         cast_operation = ir::CastInstruction::Operation::Trunc;

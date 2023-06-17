@@ -1651,9 +1651,7 @@ inline std::shared_ptr<Block> Value::getRootBlock() {
 
 inline void Value::finalize() {
     auto instruction_with_index_list_copy = this->instruction_with_index_list;
-    for (auto [ir_instruction, idx] : instruction_with_index_list_copy) {
-        ir_instruction->operand(idx, nullptr);
-    }
+    PRAJNA_ASSERT(this->instruction_with_index_list.size() == 0);
     this->detach();
 
     is_finalized = true;

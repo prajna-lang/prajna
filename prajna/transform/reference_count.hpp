@@ -42,7 +42,9 @@ inline std::shared_ptr<ir::Module> insertLocalVariableRegisterReferenceCount(
             ir_builder->pushBlock(ir_local_variable->parent_block);
             auto iter =
                 std::find(RANGE(ir_local_variable->parent_block->values), ir_local_variable);
-            ir_builder->inserter_iterator = iter;
+            PRAJNA_ASSERT(iter != ir_local_variable->parent_block->values.end());
+            // 应该在变量后面插入
+            ir_builder->inserter_iterator = std::next(iter);
 
             initializeVariableLikedCallback(ir_local_variable, ir_builder);
         }

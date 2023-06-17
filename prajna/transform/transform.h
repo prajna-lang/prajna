@@ -469,14 +469,16 @@ inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Mod
 }
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
+    convertThisWrapperToDeferencePointer(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertPropertyToFunctionCall(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
-    PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = insertReferenceCount(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = flatternBlock(ir_module);
+
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = removeValuesAfterReturn(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
@@ -492,12 +494,12 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(verifyTree(ir_module));
     ir_module = convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(verifyTree(ir_module));
+    convertThisWrapperToDeferencePointer(ir_module);
+    PRAJNA_ASSERT(verifyTree(ir_module));
     // ssa
     bool changed = true;
     while (changed) {
         changed = insertValueToBlock(ir_module);
-        PRAJNA_ASSERT(verifyTree(ir_module));
-        changed = convertThisWrapperToDeferencePointer(ir_module) || changed;
         PRAJNA_ASSERT(verifyTree(ir_module));
         changed = convertVariableToDeferencePointer(ir_module) || changed;
         PRAJNA_ASSERT(verifyTree(ir_module));

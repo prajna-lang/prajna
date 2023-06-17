@@ -1753,9 +1753,9 @@ class StatementLoweringVisitor {
                 ir_value->annotation_dict["INSERTED_FLAG"].push_back("none");
             };
 
-            // DeferencePointer不能重复使用, 故使用ThisWrapper来包装下
-            auto ir_this = ir_tmp_builder->create<ir::ThisWrapper>(ir_function->parameters.front());
-            initializeVariableLikedCallback(ir_this, ir_tmp_builder);
+            initializeVariableLikedCallback(
+                ir_tmp_builder->create<ir::DeferencePointer>(ir_function->parameters.front()),
+                ir_tmp_builder);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::VoidValue>());
 
             return ir_function;
@@ -1790,9 +1790,9 @@ class StatementLoweringVisitor {
                 ir_value->annotation_dict["INSERTED_FLAG"].push_back("none");
             };
 
-            // DeferencePointer不能重复使用, 故使用ThisWrapper来包装下
-            auto ir_this = ir_tmp_builder->create<ir::ThisWrapper>(ir_function->parameters.front());
-            destroyVariableLikedCallback(ir_this, ir_tmp_builder);
+            auto ir_object =
+                ir_tmp_builder->create<ir::DeferencePointer>(ir_function->parameters.front());
+            destroyVariableLikedCallback(ir_object, ir_tmp_builder);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::VoidValue>());
 
             return ir_function;

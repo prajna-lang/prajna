@@ -60,10 +60,7 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_block->insert(iter, ir_end_merge_label);
 
             iter = ir_block->values.erase(iter);
-            // ir_if, ir_if->true/falseBlock()会有循环依赖, 需要强制析构
-            ir_if->trueBlock()->finalize();   // 非必须
-            ir_if->falseBlock()->finalize();  // 非必须
-            ir_if->finalize();                // 必须的
+            ir_if->finalize();
 
             changed = true;
             continue;
@@ -94,9 +91,6 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             // ir_block->insert(iter, ir_label_after_loop);
 
             iter = ir_block->values.erase(iter);
-            // 会有循环依赖, 必须强制析构
-            ir_while->conditionBlock()->finalize();
-            ir_while->loopBlock()->finalize();
             ir_while->finalize();
 
             changed = true;
@@ -154,7 +148,6 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             }
             iter = ir_block->values.erase(iter);
 
-            ir_for->loopBlock()->finalize();
             ir_for->finalize();
 
             changed = true;

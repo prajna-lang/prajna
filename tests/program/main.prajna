@@ -1,9 +1,4 @@
-func inc(v: i64) -> i64{
-    return v + 1;
-}
 
 func Main(){
-    var a = 3 + 4;
-    a = inc(a);
     "Hello World\n".Print();
 }

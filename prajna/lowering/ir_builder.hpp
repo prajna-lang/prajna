@@ -36,7 +36,6 @@ class IrBuilder {
 
     std::shared_ptr<ir::ConstantInt> getIndexConstant(int64_t value) {
         auto ir_value = this->create<ir::ConstantInt>(getIndexType(), value);
-        this->insert(ir_value);
         return ir_value;
     }
 

@@ -798,25 +798,23 @@ class StatementLoweringVisitor {
                 ir_interface->undef_this_pointer_functions.insert(
                     {ir_function, ir_undef_this_pointer_function});
 
-                ir_undef_this_pointer_function->blocks.push_back(ir::Block::create());
-                ir_undef_this_pointer_function->blocks.back()->parent_function =
-                    ir_undef_this_pointer_function;
-                ir_builder->pushBlock(ir_undef_this_pointer_function->blocks.back());
+                ir_builder->createTopBlockForFunction(ir_undef_this_pointer_function);
                 // 将undef *的this pointer转为本身的指针类型
                 auto ir_this_pointer = ir_builder->create<ir::BitCast>(
                     ir_undef_this_pointer_function->parameters.front(),
                     ir_function->parameters.front()->type);
                 auto ir_arguments = ir_undef_this_pointer_function->parameters;
                 ir_arguments.front() = ir_this_pointer;
-                ir_builder->create<ir::Return>(
-                    ir_builder->create<ir::Call>(ir_function, ir_arguments));
+                auto ir_call = ir_builder->create<ir::Call>(ir_function, ir_arguments);
+                if (is<ir::VoidType>(ir_call->type)) {
+                    ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
+                } else {
+                    ir_builder->create<ir::Return>(ir_call);
+                }
                 ir_builder->popBlock();
             }
 
-            ir_interface->dynamic_type_creator->blocks.push_back(ir::Block::create());
-            ir_interface->dynamic_type_creator->blocks.back()->parent_function =
-                ir_interface->dynamic_type_creator;
-            ir_builder->pushBlock(ir_interface->dynamic_type_creator->blocks.back());
+            ir_builder->createTopBlockForFunction(ir_interface->dynamic_type_creator);
 
             auto ir_self =
                 ir_builder->create<ir::LocalVariable>(ir_interface->prototype->dynamic_type);
@@ -2032,10 +2030,7 @@ class StatementLoweringVisitor {
             ir_member_function->fullname = ir_function->fullname;
 
             // 这里还是使用类型IrBuilder
-            ir_member_function->blocks.push_back(ir::Block::create());
-            ir_member_function->blocks.back()->parent_function = ir_member_function;
-            ir_builder->pushBlock(ir_member_function->blocks.back());
-            ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
+            ir_builder->createTopBlockForFunction(ir_member_function);
 
             auto ir_this_pointer = ir_member_function->parameters.front();
             // 这里叫函数指针, 函数的类型就是函数指针
@@ -2049,7 +2044,11 @@ class StatementLoweringVisitor {
                     field_object_pointer),
                 "raw_ptr");
             auto ir_function_call = ir_builder->create<ir::Call>(ir_function_pointer, ir_arguments);
-            ir_builder->create<ir::Return>(ir_function_call);
+            if (!is<ir::VoidType>(ir_function_call->type)) {
+                ir_builder->create<ir::Return>(ir_function_call);
+            } else {
+                ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
+            }
 
             ir_interface->functions.push_back(ir_member_function);
         }

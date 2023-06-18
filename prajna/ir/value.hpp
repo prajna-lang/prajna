@@ -1071,15 +1071,7 @@ class Return : public Instruction {
             cast<Return>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Return)));
         self->operandResize(1);
         self->type = ir_value->type;
-        // 这里把void类型的值替换为, void值本身
-        if (is<VoidType>(ir_value->type)) {
-            auto ir_void = VoidValue::create();
-            auto iter = std::find(RANGE(ir_value->parent_block->values), ir_value);
-            ir_value->parent_block->insert(iter, ir_void);
-            self->value(ir_void);
-        } else {
-            self->value(ir_value);
-        }
+        self->value(ir_value);
         self->tag = "Return";
         return self;
     }

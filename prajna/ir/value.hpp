@@ -543,6 +543,7 @@ class Instruction : virtual public Value {
     };
 
     virtual void operand(size_t i, std::shared_ptr<Value> ir_value) {
+        PRAJNA_ASSERT(ir_value);
         PRAJNA_ASSERT(this->operandSize() > i);
 
         auto ir_old_value = this->operands[i];
@@ -561,7 +562,11 @@ class Instruction : virtual public Value {
         Value::finalize();
 
         for (size_t i = 0; i < operandSize(); ++i) {
-            this->operand(i, nullptr);
+            auto ir_old_value = this->operands[i];
+            if (ir_old_value) {
+                ir_old_value->instruction_with_index_list.remove(
+                    {cast<Instruction>(this->shared_from_this()), i});
+            }
         }
 
         this->operandResize(0);

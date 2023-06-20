@@ -12,43 +12,68 @@
 
 namespace prajna::transform {
 
-inline bool verifyTree(std::shared_ptr<ir::Module> ir_module) {
-    for (auto ir_function : ir_module->functions) {
-        // 只对展开blocks的函数完全工作, 没展开只检测到第一层的block
-        std::set<std::shared_ptr<ir::Value>> defined_values;
-        for (auto ir_block : ir_function->blocks) {
-            PRAJNA_ASSERT(ir_block->parent_function == ir_function);
-            for (auto ir_value : ir_block->values) {
-                PRAJNA_ASSERT(ir_value->parent_block == ir_block);
-                PRAJNA_ASSERT(defined_values.count(ir_value) == 0);
-                defined_values.insert(ir_value);
+inline void VerifyBlockImpl(std::shared_ptr<ir::Block> ir_block,
+                            std::set<std::shared_ptr<ir::Value>>& defined_values) {
+    for (auto ir_value : ir_block->values) {
+        PRAJNA_ASSERT(ir_value->parent_block == ir_block);
+        PRAJNA_ASSERT(defined_values.count(ir_value) == 0);
+        defined_values.insert(ir_value);
 
-                if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
-                    for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
-                        auto ir_operand = ir_instruction->operand(i);
-                        PRAJNA_ASSERT(ir_operand);
+        if (auto ir_block = cast<ir::Block>(ir_value)) {
+            VerifyBlockImpl(ir_block, defined_values);
+            continue;
+        }
 
-                        if (is<ir::Function>(ir_operand) or is<ir::GlobalVariable>(ir_operand) or
-                            is<ir::GlobalAlloca>(ir_operand) or is<ir::Parameter>(ir_operand)) {
-                            continue;
-                        }
+        if (auto ir_if = cast<ir::If>(ir_value)) {
+            VerifyBlockImpl(ir_if->trueBlock(), defined_values);
+            VerifyBlockImpl(ir_if->falseBlock(), defined_values);
+            continue;
+        }
 
-                        // block存在跳转的情况
-                        if (!is<ir::Block>(ir_operand)) {
-                            PRAJNA_ASSERT(defined_values.count(ir_operand) != 0);
-                        }
-                    }
+        if (auto ir_while = cast<ir::While>(ir_value)) {
+            VerifyBlockImpl(ir_while->loopBlock(), defined_values);
+            PRAJNA_ASSERT(ir_while->afterLabel()->parent_block == ir_block);
+            continue;
+        }
+
+        if (auto ir_for = cast<ir::For>(ir_value)) {
+            VerifyBlockImpl(ir_for->loopBlock(), defined_values);
+            PRAJNA_ASSERT(ir_for->afterLabel()->parent_block == ir_block);
+            continue;
+        }
+
+        if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
+            for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
+                auto ir_operand = ir_instruction->operand(i);
+                PRAJNA_ASSERT(ir_operand);
+
+                if (is<ir::Function>(ir_operand) or is<ir::GlobalVariable>(ir_operand) or
+                    is<ir::GlobalAlloca>(ir_operand) or is<ir::Parameter>(ir_operand)) {
+                    continue;
+                }
+
+                // block存在跳转的情况
+                if (!is<ir::Block>(ir_operand)) {
+                    PRAJNA_ASSERT(defined_values.count(ir_operand) != 0);
                 }
             }
         }
     }
+}
 
-    auto ir_blocks = utility::getValuesInModule<ir::Block>(ir_module);
-    for (auto ir_block : ir_blocks) {
-        for (auto ir_value : ir_block->values) {
-            PRAJNA_ASSERT(ir_value->parent_block == ir_block);
-            PRAJNA_ASSERT(!ir_value->isFinalized());
-        }
+inline void VerifyFunction(std::shared_ptr<ir::Function> ir_function) {
+    std::set<std::shared_ptr<ir::Value>> defined_values;
+    for (auto ir_block : ir_function->blocks) {
+        VerifyBlockImpl(ir_block, defined_values);
+    }
+}
+
+inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
+    std::set<std::string> global_names;
+    for (auto ir_function : ir_module->functions) {
+        PRAJNA_ASSERT(global_names.count(ir_function->fullname) == 0);
+        global_names.insert(ir_function->fullname);
+        VerifyFunction(ir_function);
     }
 
     for (auto ir_function : ir_module->functions) {
@@ -77,7 +102,8 @@ inline bool verifyTree(std::shared_ptr<ir::Module> ir_module) {
                     PRAJNA_ASSERT(std::find(RANGE(ir_operand->parent_block->values), ir_operand) !=
                                   ir_operand->parent_block->values.end());
 
-                    PRAJNA_ASSERT(ir_operand->getParentFunction() == ir_function);
+                    auto ir_function_tmp = ir_operand->getParentFunction();
+                    PRAJNA_ASSERT(ir_function_tmp == ir_function);
                 }
             }
         }

@@ -470,68 +470,68 @@ inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Mod
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     convertThisWrapperToDeferencePointer(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertForMultiDimToFor1Dim(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertPropertyToFunctionCall(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = insertReferenceCount(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = flatternBlock(ir_module);
 
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = removeValuesAfterReturn(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = extractGpuFor(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertKernelFunctionCallToKernelLaunch(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = flatternBlock(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertPropertyToFunctionCall(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertKernelFunctionOperandToAddress(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertGlobalVariableToPointer(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     convertThisWrapperToDeferencePointer(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     // ssa
     bool changed = true;
     while (changed) {
         changed = insertValueToBlock(ir_module);
-        PRAJNA_ASSERT(verifyTree(ir_module));
+        PRAJNA_ASSERT(VerifyModule(ir_module));
         changed = convertVariableToDeferencePointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
+        PRAJNA_ASSERT(VerifyModule(ir_module));
         changed = convertAccessFieldToGetStructElementPointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
+        PRAJNA_ASSERT(VerifyModule(ir_module));
         changed = convertIndexArrayToGetArrayElementPointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
+        PRAJNA_ASSERT(VerifyModule(ir_module));
         changed = convertIndexPointerToGetPointerElementPointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
+        PRAJNA_ASSERT(VerifyModule(ir_module));
         changed = convertGetAddressOfVaraibleLikedToPointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
+        PRAJNA_ASSERT(VerifyModule(ir_module));
     }
     // 需要全部转为Deference才能进行, 因为上面的转换是围绕其进行的
     changed = convertDeferencePointerToStoreAndLoadPointer(ir_module) || changed;
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     //
     ir_module = sperateModule(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = cloneExternalNvptxValue(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = defineKernelFunctionAddress(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertGlobalVariableToPointer(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     // 在sperateModule后面
-    // PRAJNA_ASSERT(verifyTree(ir_module));
+    // PRAJNA_ASSERT(VerifyModule(ir_module));
     // ir_module = InlineFunction(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = declareExternalFunction(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     WrapIntrinsicFunction(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     return ir_module;
 }
 }  // namespace prajna::transform

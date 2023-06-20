@@ -492,31 +492,21 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::While ast_while) {
-        auto ir_loop_before = ir::Label::create();
-        ir_builder->loop_before_label_stack.push(ir_loop_before);
-        auto ir_loop_after = ir::Label::create();
-        ir_builder->loop_after_label_stack.push(ir_loop_after);
-
         auto ir_condition_block = ir::Block::create();
         ir_condition_block->parent_function = ir_builder->function_stack.top();
         ir_builder->pushBlock(ir_condition_block);
-        // 把ir_loop_before插入到条件块的开头
-        ir_builder->insert(ir_loop_before);
         auto ir_condition = applyExpression(ast_while.condition);
         ir_builder->popBlock();
 
         auto ir_loop_block = ir::Block::create();
         ir_loop_block->parent_function = ir_builder->function_stack.top();
-        auto ir_while = ir_builder->create<ir::While>(ir_condition, ir_condition_block,
-                                                      ir_loop_block, ir_loop_before, ir_loop_after);
-
+        auto ir_while =
+            ir_builder->create<ir::While>(ir_condition, ir_condition_block, ir_loop_block);
+        ir_builder->loop_stack.push(ir_while);
         ir_builder->pushBlock(ir_while->loopBlock());
         (*this)(ast_while.body);
         ir_builder->popBlock();
-
-        ir_builder->loop_before_label_stack.pop();
-        ir_builder->insert(ir_builder->loop_after_label_stack.top());
-        ir_builder->loop_after_label_stack.pop();
+        ir_builder->loop_stack.pop();
 
         return ir_while;
     }
@@ -532,27 +522,24 @@ class StatementLoweringVisitor {
             logger->error("the last firt type are not matched", ast_for.first);
         }
 
-        auto ir_loop_before = ir::Label::create();
-        ir_builder->loop_before_label_stack.push(ir_loop_before);
-        auto ir_loop_after = ir::Label::create();
-        ir_builder->loop_after_label_stack.push(ir_loop_after);
-
         // 这里使用了局部值拷贝的方式来模仿右值, 因为ir_first/last_value不会被改变
         auto ir_first_value = ir_builder->cloneValue(ir_first);
         auto ir_last_value = ir_builder->cloneValue(ir_last);
         auto ir_loop_block = ir::Block::create();
         ir_loop_block->parent_function = ir_builder->function_stack.top();
         auto ir_index = ir_builder->create<ir::LocalVariable>(ir_last->type);
-        auto ir_for = ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value,
-                                                  ir_loop_block, ir_loop_before, ir_loop_after);
+        auto ir_for =
+            ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value, ir_loop_block);
         // 迭代变量应该在下一层迭代空间
         {
+            ir_builder->loop_stack.push(ir_for);
             ir_builder->pushSymbolTable();
             ir_builder->SetSymbol(ir_index, ast_for.index);
             ir_builder->pushBlock(ir_for->loopBlock());
             auto guard = function_guard::create([this]() {
                 this->ir_builder->popBlock();
                 this->ir_builder->popSymbolTable();
+                this->ir_builder->loop_stack.pop();
             });
             (*this)(ast_for.body);
         }
@@ -564,38 +551,21 @@ class StatementLoweringVisitor {
             ir_for->annotation_dict.insert({ast_annotation.name, values});
         }
 
-        PRAJNA_ASSERT(not ir_for->loopBlock()->parent_block);
-
-        ir_builder->loop_before_label_stack.pop();
-        ir_builder->insert(ir_builder->loop_after_label_stack.top());
-        ir_builder->loop_after_label_stack.pop();
-
         return ir_for;
     }
 
     Symbol operator()(ast::Break ast_break) {
-        if (not ir_builder->loop_after_label_stack.size()) {
+        if (not ir_builder->loop_stack.size()) {
             logger->error("break is outside of a loop", ast_break);
         }
-
-        return ir_builder->create<ir::JumpBranch>(ir_builder->loop_after_label_stack.top());
+        return ir_builder->create<ir::Break>(ir_builder->loop_stack.top());
     }
 
     Symbol operator()(ast::Continue ast_continue) {
-        if (not ir_builder->loop_before_label_stack.size()) {
+        if (not ir_builder->loop_stack.size()) {
             logger->error("continue is outside of a loop", ast_continue);
         }
-
-        auto ir_before_label = ir_builder->loop_before_label_stack.top();
-        if (auto ir_for =
-                cast<ir::For>(ir_before_label->instruction_with_index_list.front().instruction)) {
-            auto ir_i_and_1 = ir_builder->callBinaryOperator(ir_for->index(), "+",
-                                                             {ir_builder->getIndexConstant(1)});
-            ir_builder->create<ir::WriteVariableLiked>(ir_i_and_1, ir_for->index());
-            return ir_builder->create<ir::JumpBranch>(ir_builder->loop_before_label_stack.top());
-        } else {
-            return ir_builder->create<ir::JumpBranch>(ir_builder->loop_before_label_stack.top());
-        }
+        return ir_builder->create<ir::Continue>(ir_builder->loop_stack.top());
     }
 
     void createStructConstructor(std::shared_ptr<ir::StructType> ir_struct_type) {

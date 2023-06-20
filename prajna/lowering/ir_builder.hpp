@@ -453,8 +453,8 @@ class IrBuilder {
 
     std::stack<std::shared_ptr<ir::Function>> function_stack;
 
-    std::stack<std::shared_ptr<ir::Label>> loop_after_label_stack;
-    std::stack<std::shared_ptr<ir::Label>> loop_before_label_stack;
+    std::stack<std::shared_ptr<ir::Value>> loop_stack;
+
     std::stack<std::shared_ptr<ir::Block>> block_stack;
 
     ir::Block::iterator inserter_iterator;

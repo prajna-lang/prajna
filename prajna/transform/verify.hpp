@@ -32,13 +32,11 @@ inline void VerifyBlockImpl(std::shared_ptr<ir::Block> ir_block,
 
         if (auto ir_while = cast<ir::While>(ir_value)) {
             VerifyBlockImpl(ir_while->loopBlock(), defined_values);
-            PRAJNA_ASSERT(ir_while->afterLabel()->parent_block == ir_block);
             continue;
         }
 
         if (auto ir_for = cast<ir::For>(ir_value)) {
             VerifyBlockImpl(ir_for->loopBlock(), defined_values);
-            PRAJNA_ASSERT(ir_for->afterLabel()->parent_block == ir_block);
             continue;
         }
 

@@ -130,6 +130,8 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         return nullptr;
     }
 
+    std::list<std::shared_ptr<Value>>::iterator GetBlockIterator();
+
     std::shared_ptr<Block> getRootBlock();
 
     bool isFunction() { return getFunctionType() != nullptr; }
@@ -1317,16 +1319,12 @@ class While : public Instruction {
    public:
     static std::shared_ptr<While> create(std::shared_ptr<Value> ir_condition,
                                          std::shared_ptr<Block> ir_condition_block,
-                                         std::shared_ptr<Block> ir_true_block,
-                                         std::shared_ptr<Label> ir_before_label,
-                                         std::shared_ptr<Label> ir_after_label) {
+                                         std::shared_ptr<Block> ir_loop_block) {
         std::shared_ptr<While> self(new While);
-        self->operandResize(5);
+        self->operandResize(3);
         self->condition(ir_condition);
         self->conditionBlock(ir_condition_block);
-        self->loopBlock(ir_true_block);
-        self->beforeLabel(ir_before_label);
-        self->afterLabel(ir_after_label);
+        self->loopBlock(ir_loop_block);
         self->tag = "While";
         return self;
     }
@@ -1341,12 +1339,6 @@ class While : public Instruction {
 
     std::shared_ptr<Block> loopBlock() { return cast<Block>(this->operand(2)); }
     void loopBlock(std::shared_ptr<Block> ir_true_block) { this->operand(2, ir_true_block); }
-
-    std::shared_ptr<Label> beforeLabel() { return cast<Label>(this->operand(3)); }
-    void beforeLabel(std::shared_ptr<Label> ir_true_block) { this->operand(3, ir_true_block); }
-
-    std::shared_ptr<Label> afterLabel() { return cast<Label>(this->operand(4)); }
-    void afterLabel(std::shared_ptr<Label> ir_true_block) { this->operand(4, ir_true_block); }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<While> ir_new(new While(*this));
@@ -1366,18 +1358,14 @@ class For : public Instruction {
     static std::shared_ptr<For> create(std::shared_ptr<LocalVariable> ir_index,
                                        std::shared_ptr<Value> ir_first,
                                        std::shared_ptr<Value> ir_last,
-                                       std::shared_ptr<Block> ir_loop_block,
-                                       std::shared_ptr<Label> ir_before_label,
-                                       std::shared_ptr<Label> ir_after_label) {
+                                       std::shared_ptr<Block> ir_loop_block) {
         // std::shared_ptr<For> self(new For);
         std::shared_ptr<For> self(new For);
-        self->operandResize(6);
+        self->operandResize(4);
         self->index(ir_index);
         self->first(ir_first);
         self->last(ir_last);
         self->loopBlock(ir_loop_block);
-        self->beforeLabel(ir_before_label);
-        self->afterLabel(ir_after_label);
         self->tag = "For";
         return self;
     }
@@ -1394,12 +1382,6 @@ class For : public Instruction {
     std::shared_ptr<Block> loopBlock() { return cast<Block>(this->operand(3)); }
     void loopBlock(std::shared_ptr<Block> ir_loop_block) { this->operand(3, ir_loop_block); }
 
-    std::shared_ptr<Label> beforeLabel() { return cast<Label>(this->operand(4)); }
-    void beforeLabel(std::shared_ptr<Label> ir_true_block) { this->operand(4, ir_true_block); }
-
-    std::shared_ptr<Label> afterLabel() { return cast<Label>(this->operand(5)); }
-    void afterLabel(std::shared_ptr<Label> ir_true_block) { this->operand(5, ir_true_block); }
-
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<For> ir_new(new For(*this));
         function_cloner->value_dict[index()] = index()->clone(function_cloner);
@@ -1407,6 +1389,42 @@ class For : public Instruction {
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
+};
+
+class Break : public Instruction {
+   protected:
+    Break() = default;
+
+   public:
+    static std::shared_ptr<Break> create(std::shared_ptr<Value> loop) {
+        PRAJNA_ASSERT(is<While>(loop) || is<For>(loop));
+        std::shared_ptr<Break> self(new Break);
+        self->operandResize(1);
+        self->loop(loop);
+        self->tag = "Break";
+        return self;
+    }
+
+    std::shared_ptr<Value> loop() { return this->operand(0); }
+    void loop(std::shared_ptr<Value> ir_loop) { this->operand(0, ir_loop); }
+};
+
+class Continue : public Instruction {
+   protected:
+    Continue() = default;
+
+   public:
+    static std::shared_ptr<Continue> create(std::shared_ptr<Value> loop) {
+        PRAJNA_ASSERT(is<While>(loop) || is<For>(loop));
+        std::shared_ptr<Continue> self(new Continue);
+        self->operandResize(1);
+        self->loop(loop);
+        self->tag = "Continue";
+        return self;
+    }
+
+    std::shared_ptr<Value> loop() { return this->operand(0); }
+    void loop(std::shared_ptr<Value> ir_loop) { this->operand(0, ir_loop); }
 };
 
 /**
@@ -1644,6 +1662,12 @@ inline std::shared_ptr<Block> Value::getRootBlock() {
         root = root->parent_block;
     }
     return root;
+}
+
+inline std::list<std::shared_ptr<Value>>::iterator Value::GetBlockIterator() {
+    auto iter = std::find(RANGE(this->parent_block->values), this->shared_from_this());
+    PRAJNA_ASSERT(iter != this->parent_block->values.end());
+    return iter;
 }
 
 inline void Value::finalize() {

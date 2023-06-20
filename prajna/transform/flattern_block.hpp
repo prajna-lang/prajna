@@ -70,25 +70,50 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
 
             auto ir_label_loop = ir::Label::create();
             ir_while->loopBlock()->pushFront(ir_label_loop);
-            // auto ir_label_after_loop = ir::Label::create();
+            auto ir_label_after_loop = ir::Label::create();
             auto ir_condition_branch = ir::ConditionBranch::create(
-                ir_while->condition(), ir_label_loop, ir_while->afterLabel());
+                ir_while->condition(), ir_label_loop, ir_label_after_loop);
             ir_while->conditionBlock()->PushBack(ir_condition_branch);
 
-            auto ir_label_condition_entry = ir_while->beforeLabel();
+            auto ir_label_condition_entry = ir::Label::create();
             auto ir_jump_branch = ir::JumpBranch::create(ir_label_condition_entry);
             ir_while->loopBlock()->PushBack(ir_jump_branch);
 
             //在while开始的地方, 需要jump到conditionBlock(),
             auto ir_concat_branch = ir::JumpBranch::create(ir_label_condition_entry);
             ir_block->insert(iter, ir_concat_branch);
+            ir_block->insert(iter, ir_label_condition_entry);
+
             for (auto e : ir_while->conditionBlock()->values) {
                 ir_block->insert(iter, e);
             }
             for (auto e : ir_while->loopBlock()->values) {
                 ir_block->insert(iter, e);
             }
-            // ir_block->insert(iter, ir_label_after_loop);
+            ir_block->insert(iter, ir_label_after_loop);
+
+            auto ir_builder = lowering::IrBuilder::create();
+            ir_builder->pushBlock(ir_block);
+
+            for (auto [ir_instruction, op_idx] : clone(ir_while->instruction_with_index_list)) {
+                if (auto ir_break = cast<ir::Break>(ir_instruction)) {
+                    ir_builder->inserter_iterator = ir_break->GetBlockIterator();
+                    ir_builder->create<ir::JumpBranch>(ir_label_after_loop);
+                    utility::removeFromParent(ir_break);
+                    ir_break->finalize();
+                    continue;
+                }
+
+                if (auto ir_continue = cast<ir::Continue>(ir_instruction)) {
+                    ir_builder->inserter_iterator = ir_continue->GetBlockIterator();
+                    ir_builder->create<ir::JumpBranch>(ir_label_condition_entry);
+                    utility::removeFromParent(ir_continue);
+                    ir_continue->finalize();
+                    continue;
+                }
+
+                PRAJNA_UNREACHABLE;
+            }
 
             iter = ir_block->values.erase(iter);
             ir_while->finalize();
@@ -102,10 +127,6 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
 
             // 标注gpu的则在后面抽离,
             if (ir_for->annotation_dict.count("gpu")) {
-                // ir_for会被转换为核函数的调用, 不在存在分支了, 故需要移除While后面的afterLabel,
-                // beforeLabel无需处理, 因为其是加在conditionBlock里的,
-                utility::removeFromParent(ir_for->afterLabel());
-                ir_for->afterLabel()->finalize();
                 ++iter;
                 continue;
             }
@@ -119,7 +140,7 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
                                                                    ir_builder->getIndexConstant(1));
             auto ir_index_count = ir_builder->cloneValue(ir_first_sub_one);
 
-            auto ir_label_condition_entry = ir_for->beforeLabel();
+            auto ir_label_condition_entry = ir::Label::create();
             auto ir_concat_jump = ir_builder->create<ir::JumpBranch>(ir_label_condition_entry);
             ir_block->insert(iter, ir_label_condition_entry);
             auto ir_label_loop = ir::Label::create();
@@ -129,7 +150,7 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_builder->create<ir::WriteVariableLiked>(ir_index_count_add_one, ir_index_count);
             auto ir_condition =
                 ir_builder->callBinaryOperator(ir_index_count, "<", {ir_for->last()});
-            auto ir_label_after_loop = ir_for->afterLabel();
+            auto ir_label_after_loop = ir::Label::create();
             auto ir_condition_branch = ir_builder->create<ir::ConditionBranch>(
                 ir_condition, ir_label_loop, ir_label_after_loop);
 
@@ -146,8 +167,29 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             for (auto e : ir_for->loopBlock()->values) {
                 ir_block->insert(iter, e);
             }
-            iter = ir_block->values.erase(iter);
+            ir_block->insert(iter, ir_label_after_loop);
 
+            for (auto [ir_instruction, op_idx] : clone(ir_for->instruction_with_index_list)) {
+                if (auto ir_break = cast<ir::Break>(ir_instruction)) {
+                    ir_builder->inserter_iterator = ir_break->GetBlockIterator();
+                    ir_builder->create<ir::JumpBranch>(ir_label_after_loop);
+                    utility::removeFromParent(ir_break);
+                    ir_break->finalize();
+                    continue;
+                }
+
+                if (auto ir_continue = cast<ir::Continue>(ir_instruction)) {
+                    ir_builder->inserter_iterator = ir_continue->GetBlockIterator();
+                    ir_builder->create<ir::JumpBranch>(ir_label_condition_entry);
+                    utility::removeFromParent(ir_continue);
+                    ir_continue->finalize();
+                    continue;
+                }
+
+                PRAJNA_UNREACHABLE;
+            }
+
+            iter = ir_block->values.erase(iter);
             ir_for->finalize();
 
             changed = true;

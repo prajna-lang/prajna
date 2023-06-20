@@ -1319,7 +1319,7 @@ class While : public Instruction {
         self->operandResize(5);
         self->condition(ir_condition);
         self->conditionBlock(ir_condition_block);
-        self->trueBlock(ir_true_block);
+        self->loopBlock(ir_true_block);
         self->beforeLabel(ir_before_label);
         self->afterLabel(ir_after_label);
         self->tag = "While";
@@ -1335,7 +1335,7 @@ class While : public Instruction {
     }
 
     std::shared_ptr<Block> loopBlock() { return cast<Block>(this->operand(2)); }
-    void trueBlock(std::shared_ptr<Block> ir_true_block) { this->operand(2, ir_true_block); }
+    void loopBlock(std::shared_ptr<Block> ir_true_block) { this->operand(2, ir_true_block); }
 
     std::shared_ptr<Label> beforeLabel() { return cast<Label>(this->operand(3)); }
     void beforeLabel(std::shared_ptr<Label> ir_true_block) { this->operand(3, ir_true_block); }

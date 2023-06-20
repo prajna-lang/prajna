@@ -499,7 +499,6 @@ class StatementLoweringVisitor {
         ir_builder->popBlock();
 
         auto ir_loop_block = ir::Block::create();
-        ir_loop_block->parent_function = ir_builder->function_stack.top();
         auto ir_while =
             ir_builder->create<ir::While>(ir_condition, ir_condition_block, ir_loop_block);
         ir_builder->loop_stack.push(ir_while);
@@ -526,7 +525,6 @@ class StatementLoweringVisitor {
         auto ir_first_value = ir_builder->cloneValue(ir_first);
         auto ir_last_value = ir_builder->cloneValue(ir_last);
         auto ir_loop_block = ir::Block::create();
-        ir_loop_block->parent_function = ir_builder->function_stack.top();
         auto ir_index = ir_builder->create<ir::LocalVariable>(ir_last->type);
         auto ir_for =
             ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value, ir_loop_block);

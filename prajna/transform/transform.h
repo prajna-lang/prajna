@@ -39,9 +39,8 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
         ir_builder->pushBlock(ir_block);
         ir_builder->inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
 
-        auto instructions_with_index_set_copy = ir_access_property->instruction_with_index_list;
-
-        for (auto instruction_with_index : instructions_with_index_set_copy) {
+        bool unused = ir_access_property->instruction_with_index_list.empty();
+        for (auto instruction_with_index : clone(ir_access_property->instruction_with_index_list)) {
             auto ir_inst = instruction_with_index.instruction;
             size_t op_idx = instruction_with_index.operand_index;
 
@@ -65,7 +64,7 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
             }
         }
 
-        if (instructions_with_index_set_copy.empty()) {
+        if (unused) {
             auto ir_arguments = ir_access_property->arguments();
             ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
             auto ir_getter_call = ir_builder->create<ir::Call>(
@@ -367,9 +366,8 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
                     ir_decl_function->parent_module = ir_module;
                     ir_module->functions.push_front(ir_decl_function);
 
-                    auto instruction_with_index_list_copy =
-                        ir_function->instruction_with_index_list;
-                    for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
+                    for (auto [ir_instruction, op_idx] :
+                         clone(ir_function->instruction_with_index_list)) {
                         if (ir_instruction->getParentFunction()->parent_module == ir_module) {
                             ir_instruction->operand(op_idx, ir_decl_function);
                         }

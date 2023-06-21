@@ -1671,7 +1671,6 @@ inline std::list<std::shared_ptr<Value>>::iterator Value::GetBlockIterator() {
 }
 
 inline void Value::finalize() {
-    auto instruction_with_index_list_copy = this->instruction_with_index_list;
     PRAJNA_ASSERT(this->instruction_with_index_list.size() == 0);
     this->detach();
 

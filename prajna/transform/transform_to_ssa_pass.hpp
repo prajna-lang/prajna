@@ -54,8 +54,6 @@ inline bool convertThisWrapperToDeferencePointer(std::shared_ptr<ir::Module> ir_
         //
         auto ir_this_wrappers = utility::getValuesInFunction<ir::ThisWrapper>(ir_function);
 
-        // 可能需要重构, 应为"this;"这样的代码无意义, 也许应该取个右值.
-        PRAJNA_ASSERT(ir_this_wrappers.size() <= 1, "只可能成员函数开头加入一个");
         for (auto ir_this_wrapper : ir_this_wrappers) {
             // 改变使用它的
             changed = true;

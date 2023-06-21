@@ -219,6 +219,7 @@ class ConstantBool : public Constant {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<ConstantBool> ir_new(new ConstantBool(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
 
@@ -1284,8 +1285,6 @@ class If : public Instruction {
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<If> ir_new(new If(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        function_cloner->value_dict[trueBlock()] = trueBlock()->clone(function_cloner);
-        function_cloner->value_dict[falseBlock()] = falseBlock()->clone(function_cloner);
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1321,6 +1320,7 @@ class While : public Instruction {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<While> ir_new(new While(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1360,6 +1360,7 @@ class For : public Instruction {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<For> ir_new(new For(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1381,6 +1382,13 @@ class Break : public Instruction {
 
     std::shared_ptr<Value> loop() { return this->operand(0); }
     void loop(std::shared_ptr<Value> ir_loop) { this->operand(0, ir_loop); }
+
+    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+        std::shared_ptr<Break> ir_new(new Break(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
+        ir_new->cloneOperands(function_cloner);
+        return ir_new;
+    }
 };
 
 class Continue : public Instruction {
@@ -1399,6 +1407,13 @@ class Continue : public Instruction {
 
     std::shared_ptr<Value> loop() { return this->operand(0); }
     void loop(std::shared_ptr<Value> ir_loop) { this->operand(0, ir_loop); }
+
+    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+        std::shared_ptr<Continue> ir_new(new Continue(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
+        ir_new->cloneOperands(function_cloner);
+        return ir_new;
+    }
 };
 
 /**
@@ -1470,6 +1485,7 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<AccessProperty> ir_new(new AccessProperty(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }

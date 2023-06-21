@@ -10,6 +10,7 @@
 #include "prajna/parser/parse.h"
 #include "prajna/transform/extract_gpu_grid_pass.hpp"
 #include "prajna/transform/flattern_block.hpp"
+#include "prajna/transform/inline_function.hpp"
 #include "prajna/transform/reference_count.hpp"
 #include "prajna/transform/transform_pass.hpp"
 #include "prajna/transform/utility.hpp"
@@ -139,53 +140,6 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             ir_kernel_function_call->finalize();
         }
     }
-
-    return ir_module;
-}
-
-inline std::shared_ptr<ir::Module> InlineFunction(std::shared_ptr<ir::Module> ir_module) {
-    std::multimap<std::shared_ptr<ir::Function>, ir::InstructionWithOperandIndex>
-        ir_instruct_with_id_multimap;
-    std::set<std::shared_ptr<ir::Function>> ir_external_function_set;
-    auto ir_instructions = utility::getValuesInModule<ir::Instruction>(ir_module);
-    for (auto ir_instruction : ir_instructions) {
-        for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
-            auto ir_operand = ir_instruction->operand(i);
-
-            if (auto ir_function = cast<ir::Function>(ir_operand)) {
-                if (!ir_function->IsDeclaration()) {
-                    ir_external_function_set.insert(ir_function);
-                    ir_instruct_with_id_multimap.insert(
-                        {ir_function, ir::InstructionWithOperandIndex{ir_instruction, i}});
-                }
-            }
-        }
-    }
-
-    auto function_cloner = ir::FunctionCloner::create(ir_module);
-    for (auto ir_external_function : ir_external_function_set) {
-        // function_cloner->shallow = true;
-        auto ir_new_function = ir_external_function->clone(function_cloner);
-
-        // avoid to duplicate symbol
-        ir_new_function->fullname = concatFullname(ir_module->fullname, ir_new_function->fullname);
-
-        auto ir_instruction_with_id_range =
-            ir_instruct_with_id_multimap.equal_range(ir_external_function);
-
-        for (auto iter = ir_instruction_with_id_range.first;
-             iter != ir_instruction_with_id_range.second; ++iter) {
-            auto ir_instruction_with_id = iter->second;
-            auto [ir_instruction, op_idx] = ir_instruction_with_id;
-            ir_instruction->operand(op_idx, ir_new_function);
-        }
-    }
-
-    // nvptx has already clone all depends functions
-    // for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-    //     if (not ir_module) continue;
-    //     InlineFunction(ir_sub_module);
-    // }
 
     return ir_module;
 }
@@ -359,15 +313,24 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
 
             if (auto ir_function = cast<ir::Function>(ir_operand)) {
                 if (ir_function->parent_module != ir_module) {
-                    // 不会重复添加, 因为会置换所有的操作数
-                    auto ir_decl_function = ir::Function::create(ir_function->function_type);
-                    ir_decl_function->fullname = ir_function->fullname;
-                    ir_decl_function->name = ir_function->name;
-                    ir_decl_function->parent_module = ir_module;
-                    ir_module->functions.push_front(ir_decl_function);
+                    std::shared_ptr<ir::Function> ir_decl_function = nullptr;
+                    auto iter_fun = std::find_if(RANGE(ir_module->functions), [=](auto ir_x) {
+                        return ir_x->fullname == ir_function->fullname;
+                    });
+                    // 声明过了, 就不在声明了
+                    if (iter_fun != ir_module->functions.end()) {
+                        ir_decl_function = *iter_fun;
+                    } else {
+                        ir_decl_function = ir::Function::create(ir_function->function_type);
+                        ir_decl_function->fullname = ir_function->fullname;
+                        ir_decl_function->name = ir_function->name;
+                        ir_decl_function->parent_module = ir_module;
+                        ir_module->functions.push_front(ir_decl_function);
+                    }
 
-                    for (auto [ir_instruction, op_idx] :
-                         clone(ir_function->instruction_with_index_list)) {
+                    auto instruction_with_index_list_copy =
+                        ir_function->instruction_with_index_list;
+                    for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
                         if (ir_instruction->getParentFunction()->parent_module == ir_module) {
                             ir_instruction->operand(op_idx, ir_decl_function);
                         }
@@ -475,8 +438,9 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = insertReferenceCount(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
+    ir_module = InlineFunction(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = flatternBlock(ir_module);
-
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = removeValuesAfterReturn(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));

@@ -1631,6 +1631,7 @@ class StatementLoweringVisitor {
                 "__" + binary_operator_name +
                     getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BinaryOperator>(
                 binary_operation, ir_function->parameters.front(), ir_function->parameters.back()));

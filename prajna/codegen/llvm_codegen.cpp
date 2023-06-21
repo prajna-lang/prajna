@@ -412,9 +412,9 @@ class LlvmCodegen {
             PRAJNA_ASSERT(ir_store_pointer->value()->llvm_value);
             PRAJNA_ASSERT(ir_store_pointer->pointer()->llvm_value);
 
-            auto llvm_store_ptr =
-                new llvm::StoreInst(ir_store_pointer->value()->llvm_value,
-                                    ir_store_pointer->pointer()->llvm_value, "", llvm_basic_block);
+            auto llvm_store_ptr = new llvm::StoreInst(ir_store_pointer->value()->llvm_value,
+                                                      ir_store_pointer->pointer()->llvm_value,
+                                                      false, llvm_basic_block);
             ir_store_pointer->llvm_value = llvm_store_ptr;
             return;
         }

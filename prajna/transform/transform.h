@@ -440,15 +440,13 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = InlineFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = flatternBlock(ir_module);
-    PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = removeValuesAfterReturn(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = extractGpuFor(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertKernelFunctionCallToKernelLaunch(ir_module);
-    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = flatternBlock(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    ir_module = removeValuesAfterReturn(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertPropertyToFunctionCall(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));

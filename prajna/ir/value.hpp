@@ -578,20 +578,11 @@ class Instruction : virtual public Value {
         for (size_t i = 0; i < operands.size(); ++i) {
             auto ir_old = operands[i];
 
-            if (is<Function>(ir_old)) {
-                if (not function_cloner->value_dict[ir_old]) {
-                    ir_old->clone(function_cloner);
-                }
-            }
-
-            // JumpBranch/ConditionBranch的Block由于可能出现在后面而没被复制
-            // Block会处理上述情况
-            if (not function_cloner->value_dict.count(ir_old)) {
-                continue;
+            if (!function_cloner->value_dict[ir_old]) {
+                ir_old->clone(function_cloner);
             }
 
             operands[i] = nullptr;  // 置零以避免干扰原来的操作数
-            PRAJNA_ASSERT(function_cloner->value_dict.count(ir_old));
             auto ir_new = function_cloner->value_dict[ir_old];
             operand(i, ir_new);
         }
@@ -1209,13 +1200,6 @@ class ConditionBranch : public Instruction {
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<ConditionBranch> ir_new(new ConditionBranch(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        // 先设置value_dict避免递归
-        if (not function_cloner->value_dict.count(trueBlock())) {
-            auto ir_new_true_block = cast<Block>(trueBlock()->clone(function_cloner));
-        }
-        if (not function_cloner->value_dict.count(falseBlock())) {
-            auto ir_new_false_block = cast<Block>(falseBlock()->clone(function_cloner));
-        }
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1241,11 +1225,6 @@ class JumpBranch : public Instruction {
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<JumpBranch> ir_new(new JumpBranch(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        // 先设置value_dict避免递归
-        if (not function_cloner->value_dict.count(nextBlock())) {
-            auto ir_new_next_block = cast<Block>(nextBlock()->clone(function_cloner));
-        }
-
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1342,9 +1321,6 @@ class While : public Instruction {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<While> ir_new(new While(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-        function_cloner->value_dict[conditionBlock()] = conditionBlock()->clone(function_cloner);
-        function_cloner->value_dict[loopBlock()] = loopBlock()->clone(function_cloner);
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1384,8 +1360,6 @@ class For : public Instruction {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<For> ir_new(new For(*this));
-        function_cloner->value_dict[index()] = index()->clone(function_cloner);
-        function_cloner->value_dict[loopBlock()] = loopBlock()->clone(function_cloner);
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }

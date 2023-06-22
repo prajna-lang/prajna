@@ -81,8 +81,7 @@ implement Ptr<Type>{
 
     @static
     func New()->Ptr<Type>{
-        var t = Allocate(1);
-        return t;
+        return Allocate(1);
     }
 
     @static

@@ -210,7 +210,11 @@ class IrBuilder {
             return ir_variable_liked;
         } else {
             ir_variable_liked = this->create<ir::LocalVariable>(ir_value->type);
-            this->create<ir::WriteVariableLiked>(ir_value, ir_variable_liked);
+            ir_variable_liked->annotation_dict["DisableReferenceCount"];
+            auto ir_write_variable_liked =
+                this->create<ir::WriteVariableLiked>(ir_value, ir_variable_liked);
+            ir_write_variable_liked->annotation_dict["DisableReferenceCount"];
+
             return ir_variable_liked;
         }
     }

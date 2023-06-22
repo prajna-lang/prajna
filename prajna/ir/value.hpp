@@ -1750,4 +1750,9 @@ inline std::shared_ptr<Value> Function::clone(std::shared_ptr<FunctionCloner> fu
     return ir_new;
 }
 
+inline bool IsTerminated(std::shared_ptr<ir::Value> ir_value) {
+    return is<Return>(ir_value) || is<Break>(ir_value) || is<Continue>(ir_value) ||
+           is<JumpBranch>(ir_value) || is<ConditionBranch>(ir_value);
+}
+
 }  // namespace prajna::ir

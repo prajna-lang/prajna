@@ -470,6 +470,21 @@ inline void TopologicalSortFunction(std::shared_ptr<ir::Module> ir_module) {
     ir_module->functions.merge(ir_function_list);
 }
 
+inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->blocks.empty()) continue;
+
+        auto ir_top_block = ir_function->blocks.front();
+        auto ir_allocas = utility::getValuesInFunction<ir::Alloca>(ir_function);
+        for (auto ir_alloca : ir_allocas) {
+            if (ir_alloca->parent_block != ir_top_block) {
+                utility::removeFromParent(ir_alloca);
+                ir_top_block->pushFront(ir_alloca);
+            }
+        }
+    }
+}
+
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     convertThisWrapperToDeferencePointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
@@ -530,6 +545,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     WrapIntrinsicFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
+    TopAlloca(ir_module);
     return ir_module;
 }
 }  // namespace prajna::transform

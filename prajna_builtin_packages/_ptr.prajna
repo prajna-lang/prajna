@@ -154,11 +154,12 @@ implement ReferenceCountable for Ptr<Type> {
         *this._reference_counter = *this._reference_counter + 1;
     }
 
+        /// TODO: 需要进一步改善
     func DecrementReferenceCount() {
-        // 存在问题需要修复, 原则上不应该出现这种情况的
-        // if (this._reference_counter.IsNull()){
-        //     return;
-        // }
+
+        if (this._reference_counter.IsNull()){
+            return;
+        }
 
         *this._reference_counter = *this._reference_counter - 1;
         if (*this._reference_counter == 0){
@@ -168,8 +169,8 @@ implement ReferenceCountable for Ptr<Type> {
                 }
 
                 this.raw_ptr.Free();
-                this._reference_counter.Free();
-                // this = Ptr<Type>::Null(); // Destroy函数要小心, 避免递归调用
+                // this._reference_counter.Free(); // 循环里的变量会多次被destroy, 故不能释放
+                this.raw_ptr = __ptr<Type>::Null();
             }
         }
     }

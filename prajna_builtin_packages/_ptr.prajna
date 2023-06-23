@@ -133,9 +133,11 @@ implement Ptr<Type>{
 
 template <Type>
 implement operator::LinearIndex<Type> for Ptr<Type> {
+    @inline
     func Get(index: i64)->Type {
         return  this.raw_ptr[index];
     }
+    @inline
     func Set(index: i64, value: Type) {
         this.raw_ptr[index] = value;
     }

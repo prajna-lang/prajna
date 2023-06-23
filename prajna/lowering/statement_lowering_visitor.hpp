@@ -988,6 +988,7 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
             if (ir_source_type == ir_target_type) {
@@ -1136,6 +1137,7 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__" + intrinsic_name + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
             ir_tmp_builder->create<ir::Return>(
@@ -1250,6 +1252,8 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__bit_cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BitCast>(
                 ir_function->parameters.front(), ir_target_type));
@@ -1294,6 +1298,8 @@ class StatementLoweringVisitor {
                 ir::FunctionType::create({ir_pointer_type}, ir_interface_prototype->dynamic_type);
             auto ir_function = ir_tmp_builder->createFunction(
                 "__as" + getTemplateArgumentsPostify(symbol_template_arguments), ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::Call>(
                 ir_interface->dynamic_type_creator, ir_function->parameters));
@@ -1341,6 +1347,8 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__dynamic_cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
             auto ir_target_ptr_type = ir_tmp_builder->getPtrType(ir_target_value_type);
@@ -1413,6 +1421,8 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__sizeof" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->getIndexConstant(ir_type->bytes));
             return ir_function;
@@ -1512,6 +1522,7 @@ class StatementLoweringVisitor {
                 "__" + compare_operation_name +
                     getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CompareInstruction>(
                 compare_operation, ir_function->parameters.front(),
@@ -1683,6 +1694,8 @@ class StatementLoweringVisitor {
                 ir_function_name_prefix + is_neg_name +
                     getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             auto ir_constant_float = ir_tmp_builder->create<ir::ConstantFloat>(ir_float_type, 0.0);
             ir_constant_float->special_value = special_value;
@@ -1714,6 +1727,7 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__initialize" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             // 标记新的IR, 防止递归初始化
             ir_tmp_builder->create_callback = [](std::shared_ptr<ir::Value> ir_value) {
@@ -1751,6 +1765,7 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__destroy" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             // 标记新的IR, 防止递归初始化
             ir_tmp_builder->create_callback = [](std::shared_ptr<ir::Value> ir_value) {

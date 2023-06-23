@@ -1,13 +1,15 @@
 func Perf(array0: Ptr<i32>, array1: Ptr<i32>, array2: Ptr<i32>) {
-    for i in 0 to array0.size {
+    var i = 0;
+    while (i < array0.size){
         array2[i] = array0[i] + array1[i];
+        i = i + 1;
     }
 }
 
 
 
 func Main() {
-    var size = 10000000;
+    var size = 1000000000;
     var shape = [size];
 
     var array0 = Ptr<i32>::Allocate(size);
@@ -19,7 +21,7 @@ func Main() {
     Perf(array0, array1, array2);
 
     var t1 = chrono::Clock();
-    var gb_per_second = ((size * 4).Cast<f32>() / 1000000000.0) / (t1 - t0);
+    var gb_per_second = ((size * 4).Cast<f32>() / size.Cast<f32>()) / (t1 - t0);
 
     gb_per_second.ToString().Print();
     "GB/s".PrintLine();

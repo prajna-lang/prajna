@@ -66,6 +66,7 @@ inline bool flatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             continue;
         }
         if (auto ir_while = cast<ir::While>(*iter)) {
+            flatternBlockImpl(ir_while->conditionBlock());
             flatternBlockImpl(ir_while->loopBlock());
 
             auto ir_label_loop = ir::Label::create();

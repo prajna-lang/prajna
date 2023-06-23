@@ -526,10 +526,6 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    // 在sperateModule后面
-    // PRAJNA_ASSERT(VerifyModule(ir_module));
-    // ir_module = InlineFunction(ir_module);
-    PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = declareExternalFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     WrapIntrinsicFunction(ir_module);

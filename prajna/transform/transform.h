@@ -429,6 +429,47 @@ inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Mod
     return ir_module;
 }
 
+inline void TopologicalSortFunctionVisit(
+    std::shared_ptr<ir::Function> ir_function,
+    std::list<std::shared_ptr<ir::Function>> &ir_function_list,
+    std::set<std::shared_ptr<ir::Function>> &ir_gray_function_set) {
+    // 标记要访问的函数
+    ir_gray_function_set.insert(ir_function);
+    auto ir_instructions = utility::getValuesInFunction<ir::Instruction>(ir_function);
+    for (auto ir_instruction : ir_instructions) {
+        for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
+            auto ir_operand = ir_instruction->operand(i);
+            if (auto ir_tmp_function = cast<ir::Function>(ir_operand)) {
+                // 值排序同一个module里的函数
+                if (ir_tmp_function->parent_module == ir_function->parent_module) {
+                    // 没访问的进行深度搜索
+                    if (ir_gray_function_set.count(ir_tmp_function)) continue;
+
+                    TopologicalSortFunctionVisit(ir_tmp_function, ir_function_list,
+                                                 ir_gray_function_set);
+                }
+            }
+        }
+    }
+
+    // 完成搜索后插入函数
+    ir_function_list.push_back(ir_function);
+}
+
+inline void TopologicalSortFunction(std::shared_ptr<ir::Module> ir_module) {
+    std::list<std::shared_ptr<ir::Function>> ir_function_list;
+    std::set<std::shared_ptr<ir::Function>> ir_gray_function_set;
+    for (auto ir_function : ir_module->functions) {
+        if (ir_gray_function_set.count(ir_function)) continue;
+
+        TopologicalSortFunctionVisit(ir_function, ir_function_list, ir_gray_function_set);
+    }
+
+    ir_module->functions.remove_if(
+        [=](auto ir_function) { return std::count(RANGE(ir_function_list), ir_function); });
+    ir_module->functions.merge(ir_function_list);
+}
+
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     convertThisWrapperToDeferencePointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
@@ -437,6 +478,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     ir_module = convertPropertyToFunctionCall(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = insertReferenceCount(ir_module);
+    TopologicalSortFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ir_module = InlineFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));

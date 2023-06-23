@@ -1,6 +1,6 @@
-func Perf(array0: Ptr<i32>, array1: Ptr<i32>, array2: Ptr<i32>) {
+func Perf(array0: Tensor<i32, 1>, array1: Tensor<i32, 1>, array2: Tensor<i32, 1>) {
     var i = 0;
-    while (i < array0.size){
+    while (i < array0.Shape()[0]){
         array2[i] = array0[i] + array1[i];
         i = i + 1;
     }
@@ -12,9 +12,9 @@ func Main() {
     var size = 1000000000;
     var shape = [size];
 
-    var array0 = Ptr<i32>::Allocate(size);
-    var array1 = Ptr<i32>::Allocate(size);
-    var array2 = Ptr<i32>::Allocate(size);
+    var array0 = Tensor<i32, 1>::Create(shape);
+    var array1 = Tensor<i32, 1>::Create(shape);
+    var array2 = Tensor<i32, 1>::Create(shape);
 
     var t0 = chrono::Clock();
 

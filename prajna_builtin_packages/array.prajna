@@ -7,10 +7,12 @@ struct Array{
 
 template <Type, Length_>
 implement operator::LinearIndex<Type> for Array<Type, Length_> {
+    @inline
     func Get(idx: i64)->Type{
         return this.data[idx];
     }
 
+    @inline
     func Set(idx: i64, value: Type){
         this.data[idx] = value;
     }
@@ -18,11 +20,12 @@ implement operator::LinearIndex<Type> for Array<Type, Length_> {
 
 template <Type, Length_>
 implement Array<Type, Length_>{
-
+    @inline
     func Length()->i64{
         return Length_;
     }
 
+    @inline
     func Cumprod()->Type{
         var re = 1i64.Cast<Type>();
         for i in 0 to Length_{
@@ -32,6 +35,7 @@ implement Array<Type, Length_>{
     }
 
     @static
+    @inline
     func One()->Array<Type, Length_>{
         var tmp = 1i64.Cast<Type>();
         var re_one : Array<Type, Length_>;
@@ -44,6 +48,7 @@ implement Array<Type, Length_>{
 
 template <Type, Length_>
 implement operator::Add<Array<Type, Length_>> for Array<Type, Length_> {
+    @inline
     func Add(operand: Array<Type, Length_>)->Array<Type, Length_>{
         var re : Array<Type, Length_>;
         for i in 0 to this.Length() {
@@ -56,6 +61,7 @@ implement operator::Add<Array<Type, Length_>> for Array<Type, Length_> {
 
 template <Type, Length_>
 implement operator::Sub<Array<Type, Length_>> for Array<Type, Length_> {
+    @inline
     func Sub(operand: Array<Type, Length_>)->Array<Type, Length_>{
         var re : Array<Type, Length_>;
         for i in 0 to this.Length() {

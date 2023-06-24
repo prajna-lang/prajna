@@ -25,13 +25,26 @@ class Statements;
 
 namespace prajna::transform {
 
+template <typename Func>
+inline bool RecursiveTransformModule(std::shared_ptr<ir::Module> ir_module, Func fun) {
+    auto re = fun(ir_module);
+
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_module) continue;
+
+        fun(ir_sub_module);
+    }
+
+    return re;
+}
+
 std::shared_ptr<ir::Module> convertVariableToPointer(std::shared_ptr<ir::Module> ir_module);
 
 std::shared_ptr<ir::Module> makeCompatiableWithLlvm(std::shared_ptr<ir::Module> ir_module);
 
 std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module);
 
-inline void convertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module) {
+inline bool convertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module) {
     auto ir_access_properties = utility::getValuesInModule<ir::AccessProperty>(ir_module);
     for (auto ir_access_property : ir_access_properties) {
         auto ir_block = ir_access_property->parent_block;
@@ -75,11 +88,7 @@ inline void convertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
         ir_access_property->finalize();
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_module) continue;
-
-        convertPropertyToFunctionCall(ir_sub_module);
-    }
+    return !ir_access_properties.empty();
 }
 
 inline void convertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
@@ -376,9 +385,11 @@ inline void convertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
     }
 }
 
-inline void WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
+inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
+    bool re = false;
     for (auto ir_function : ir_module->functions) {
         if (ir_function->annotation_dict.count("intrinsic")) {
+            re = true;
             PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
             auto intrinsic_function_name = ir_function->annotation_dict["intrinsic"].front();
             auto ir_decl_function = ir::Function::create(ir_function->function_type);
@@ -395,11 +406,7 @@ inline void WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_module) continue;
-
-        WrapIntrinsicFunction(ir_sub_module);
-    }
+    return re;
 }
 
 inline void TopologicalSortFunctionVisit(
@@ -463,7 +470,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    convertPropertyToFunctionCall(ir_module);
+    RecursiveTransformModule(ir_module, convertPropertyToFunctionCall);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     insertReferenceCount(ir_module);
     TopologicalSortFunction(ir_module);
@@ -474,11 +481,11 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     extractGpuFor(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertKernelFunctionCallToKernelLaunch(ir_module);
-    flatternBlock(ir_module);
+    RecursiveTransformModule(ir_module, flatternBlock);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     removeValuesAfterReturn(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    convertPropertyToFunctionCall(ir_module);
+    RecursiveTransformModule(ir_module, convertPropertyToFunctionCall);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertKernelFunctionOperandToAddress(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
@@ -489,21 +496,27 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     // ssa
     bool changed = true;
     while (changed) {
-        changed = insertValueToBlock(ir_module);
+        changed = RecursiveTransformModule(ir_module, insertValueToBlock);
         PRAJNA_ASSERT(VerifyModule(ir_module));
-        changed = convertVariableToDeferencePointer(ir_module) || changed;
+        changed = RecursiveTransformModule(ir_module, convertVariableToDeferencePointer) || changed;
         PRAJNA_ASSERT(VerifyModule(ir_module));
-        changed = convertAccessFieldToGetStructElementPointer(ir_module) || changed;
+        changed =
+            RecursiveTransformModule(ir_module, convertAccessFieldToGetStructElementPointer) ||
+            changed;
         PRAJNA_ASSERT(VerifyModule(ir_module));
-        changed = convertIndexArrayToGetArrayElementPointer(ir_module) || changed;
+        changed = RecursiveTransformModule(ir_module, convertIndexArrayToGetArrayElementPointer) ||
+                  changed;
         PRAJNA_ASSERT(VerifyModule(ir_module));
-        changed = convertIndexPointerToGetPointerElementPointer(ir_module) || changed;
+        changed =
+            RecursiveTransformModule(ir_module, convertIndexPointerToGetPointerElementPointer) ||
+            changed;
         PRAJNA_ASSERT(VerifyModule(ir_module));
-        changed = convertGetAddressOfVaraibleLikedToPointer(ir_module) || changed;
+        changed = RecursiveTransformModule(ir_module, convertGetAddressOfVaraibleLikedToPointer) ||
+                  changed;
         PRAJNA_ASSERT(VerifyModule(ir_module));
     }
     // 需要全部转为Deference才能进行, 因为上面的转换是围绕其进行的
-    changed = convertDeferencePointerToStoreAndLoadPointer(ir_module) || changed;
+    RecursiveTransformModule(ir_module, convertDeferencePointerToStoreAndLoadPointer);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     //
     sperateModule(ir_module);
@@ -516,7 +529,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     declareExternalFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    WrapIntrinsicFunction(ir_module);
+    RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     TopAlloca(ir_module);
 

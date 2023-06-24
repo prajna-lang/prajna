@@ -226,7 +226,7 @@ inline std::list<std::shared_ptr<ir::Block>> splitBlock(std::shared_ptr<ir::Bloc
 
 }  // namespace
 
-inline void flatternBlock(std::shared_ptr<ir::Module> ir_module) {
+inline bool flatternBlock(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         // @note 后面可能需要重构, 目前假设只有一个block时才需要展开
         if (ir_function->blocks.size() != 1) continue;
@@ -241,11 +241,8 @@ inline void flatternBlock(std::shared_ptr<ir::Module> ir_module) {
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-
-        flatternBlock(ir_sub_module);
-    }
+    /// TODO 需要修复, 存在问题
+    return false;
 }
 
 }  // namespace prajna::transform

@@ -40,11 +40,6 @@ inline bool insertValueToBlock(std::shared_ptr<ir::Module> ir_module) {
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-        changed = insertValueToBlock(ir_sub_module) || changed;
-    }
-
     return changed;
 }
 
@@ -75,10 +70,6 @@ inline bool convertThisWrapperToDeferencePointer(std::shared_ptr<ir::Module> ir_
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-        changed = convertThisWrapperToDeferencePointer(ir_sub_module) || changed;
-    }
     return changed;
 }
 
@@ -117,10 +108,6 @@ inline bool convertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_mod
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-        changed = convertVariableToDeferencePointer(ir_sub_module) || changed;
-    }
     return changed;
 }
 
@@ -154,10 +141,6 @@ inline bool convertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Modu
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-        changed = convertAccessFieldToGetStructElementPointer(ir_sub_module) || changed;
-    }
     return changed;
 }
 
@@ -193,10 +176,6 @@ inline bool convertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Module
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-        changed = convertIndexArrayToGetArrayElementPointer(ir_sub_module) || changed;
-    }
     return changed;
 }
 
@@ -233,10 +212,6 @@ inline bool convertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Mo
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-        changed = convertIndexPointerToGetPointerElementPointer(ir_sub_module) || changed;
-    }
     return changed;
 }
 
@@ -268,10 +243,6 @@ inline bool convertGetAddressOfVaraibleLikedToPointer(std::shared_ptr<ir::Module
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-        changed = convertGetAddressOfVaraibleLikedToPointer(ir_sub_module) || changed;
-    }
     return changed;
 }
 
@@ -309,10 +280,6 @@ inline bool convertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
         }
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
-        changed = convertDeferencePointerToStoreAndLoadPointer(ir_sub_module) || changed;
-    }
     return changed;
 }
 

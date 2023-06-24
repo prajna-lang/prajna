@@ -31,8 +31,7 @@ std::shared_ptr<ir::Module> makeCompatiableWithLlvm(std::shared_ptr<ir::Module> 
 
 std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module);
 
-inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module) {
     auto ir_access_properties = utility::getValuesInModule<ir::AccessProperty>(ir_module);
     for (auto ir_access_property : ir_access_properties) {
         auto ir_block = ir_access_property->parent_block;
@@ -81,12 +80,9 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
 
         convertPropertyToFunctionCall(ir_sub_module);
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_kernel_function_calls =
             utility::getValuesInFunction<ir::KernelFunctionCall>(ir_function);
@@ -140,12 +136,9 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             ir_kernel_function_call->finalize();
         }
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_instructions = utility::getValuesInFunction<ir::Instruction>(ir_function);
 
@@ -181,11 +174,9 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
             }
         }
     }
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> convertGlobalVariableToPointer(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_global_variable : ir_module->global_variables) {
         auto ir_global_alloca = ir::GlobalAlloca::create(ir_global_variable->type);
         ir_global_alloca->name = ir_global_variable->name;
@@ -231,13 +222,10 @@ inline std::shared_ptr<ir::Module> convertGlobalVariableToPointer(
             }
         }
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> cloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
+inline void cloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
     if (ir_module->modules.count(ir::Target::nvptx) == 0) {
-        return ir_module;
     }
 
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
@@ -251,7 +239,7 @@ inline std::shared_ptr<ir::Module> cloneExternalNvptxValue(std::shared_ptr<ir::M
     PRAJNA_ASSERT(ir_kernel_functions_list.size() <= 1,
                   "两个以上后面重构, 每个核函数可能会有单独的module");
 
-    if (ir_kernel_functions_list.empty()) return ir_module;
+    if (ir_kernel_functions_list.empty()) return;
 
     auto ir_kernel_function = ir_kernel_functions_list.front();
     auto function_cloner = ir::FunctionCloner::create(ir_nvptx_module);
@@ -259,14 +247,10 @@ inline std::shared_ptr<ir::Module> cloneExternalNvptxValue(std::shared_ptr<ir::M
     ir_kernel_function->clone(function_cloner);
     // 移除原来的核函数
     ir_nvptx_module->functions.remove(ir_kernel_function);
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void defineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module) {
     if (ir_module->modules.count(ir::Target::nvptx) == 0) {
-        return ir_module;
     }
 
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
@@ -286,12 +270,10 @@ inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
             }
         }
     }
-
-    return ir_module;
 }
 
 // @brief 移除return后面的指令. 若不移除, 会存在未知错误
-inline std::shared_ptr<ir::Module> removeValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
+inline void removeValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         for (auto ir_block : ir_function->blocks) {
             auto iter_return = std::find_if(RANGE(ir_block->values), [](auto x) {
@@ -302,11 +284,9 @@ inline std::shared_ptr<ir::Module> removeValuesAfterReturn(std::shared_ptr<ir::M
             }
         }
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
+inline void declareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
     utility::each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
         for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
             auto ir_operand = ir_instruction->operand(i);
@@ -339,12 +319,9 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
             }
         }
     });
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
     auto ir_fors = utility::getValuesInModule<ir::For>(ir_module);
     for (auto ir_for : ir_fors) {
         auto ir_builder = lowering::IrBuilder::create();
@@ -397,11 +374,9 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
                 "+", ir_array_first_variable),
             ir_array_index);
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
+inline void WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         if (ir_function->annotation_dict.count("intrinsic")) {
             PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
@@ -425,8 +400,6 @@ inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Mod
 
         WrapIntrinsicFunction(ir_sub_module);
     }
-
-    return ir_module;
 }
 
 inline void TopologicalSortFunctionVisit(
@@ -488,28 +461,28 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     convertThisWrapperToDeferencePointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = convertForMultiDimToFor1Dim(ir_module);
+    convertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = convertPropertyToFunctionCall(ir_module);
+    convertPropertyToFunctionCall(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = insertReferenceCount(ir_module);
+    insertReferenceCount(ir_module);
     TopologicalSortFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = InlineFunction(ir_module);
+    InlineFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = extractGpuFor(ir_module);
+    extractGpuFor(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = convertKernelFunctionCallToKernelLaunch(ir_module);
-    ir_module = flatternBlock(ir_module);
+    convertKernelFunctionCallToKernelLaunch(ir_module);
+    flatternBlock(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = removeValuesAfterReturn(ir_module);
+    removeValuesAfterReturn(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = convertPropertyToFunctionCall(ir_module);
+    convertPropertyToFunctionCall(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = convertKernelFunctionOperandToAddress(ir_module);
+    convertKernelFunctionOperandToAddress(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = convertGlobalVariableToPointer(ir_module);
+    convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertThisWrapperToDeferencePointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
@@ -533,19 +506,21 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     changed = convertDeferencePointerToStoreAndLoadPointer(ir_module) || changed;
     PRAJNA_ASSERT(VerifyModule(ir_module));
     //
-    ir_module = sperateModule(ir_module);
+    sperateModule(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = cloneExternalNvptxValue(ir_module);
+    cloneExternalNvptxValue(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = defineKernelFunctionAddress(ir_module);
+    defineKernelFunctionAddress(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = convertGlobalVariableToPointer(ir_module);
+    convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    ir_module = declareExternalFunction(ir_module);
+    declareExternalFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     WrapIntrinsicFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     TopAlloca(ir_module);
+
     return ir_module;
 }
+
 }  // namespace prajna::transform

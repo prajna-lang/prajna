@@ -17,7 +17,7 @@ inline bool InlineCheck(std::shared_ptr<ir::Function> ir_function) {
 /// @brief 内联其他模块的函数, 这里只处理其他模块的, 本模块的函数内联由llvm完成,
 /// 目前仅考虑简单的情况, 后续还需要考虑把函数作为参数传递的高阶函数的优化,
 /// 把函数作为变量传递后调用的情况后续有需求再做处理, 因为只有编译时确定函数调用的才能内联
-inline std::shared_ptr<ir::Module> InlineFunction(std::shared_ptr<ir::Module> ir_module) {
+inline void InlineFunction(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         VerifyFunction(ir_function);
 
@@ -103,8 +103,5 @@ inline std::shared_ptr<ir::Module> InlineFunction(std::shared_ptr<ir::Module> ir
     //     if (not ir_module) continue;
     //     InlineFunction(ir_sub_module);
     // }
-
-    return ir_module;
 }
-
 }  // namespace prajna::transform

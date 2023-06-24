@@ -32,8 +32,7 @@ std::shared_ptr<lowering::IrBuilder> makeIRbuilder() {
     return ir_builder;
 }
 
-inline std::shared_ptr<ir::Module> insertLocalVariableRegisterReferenceCount(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void insertLocalVariableRegisterReferenceCount(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_local_variables = utility::getValuesInFunction<ir::LocalVariable>(ir_function);
         ir_local_variables.remove_if([](std::shared_ptr<ir::LocalVariable> ir_local_variable) {
@@ -52,8 +51,6 @@ inline std::shared_ptr<ir::Module> insertLocalVariableRegisterReferenceCount(
             initializeVariableLikedCallback(ir_local_variable, ir_builder);
         }
     }
-
-    return ir_module;
 }
 
 inline void insertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_block) {
@@ -98,22 +95,19 @@ inline void insertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_blo
     }
 }
 
-inline std::shared_ptr<ir::Module> insertLoacalVariableScopeDecrementReferenceCount(
+inline void insertLoacalVariableScopeDecrementReferenceCount(
     std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         for (auto ir_block : ir_function->blocks) {
             insertDestroyLocalVariableForBlock(ir_block);
         }
     }
-
-    return ir_module;
 }
 /// @brief
 /// @param ir_module
 /// @note 需要再destroyVariable前面执行
 /// @return
-inline std::shared_ptr<ir::Module> insertVariableIncrementReferenceCount(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void insertVariableIncrementReferenceCount(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_write_variable_likes =
             utility::getValuesInFunction<ir::WriteVariableLiked>(ir_function);
@@ -133,11 +127,9 @@ inline std::shared_ptr<ir::Module> insertVariableIncrementReferenceCount(
             copyVariableLikedCallback(ir_write_variable_liked->value(), ir_builder);
         }
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> insertDestroyForCall(std::shared_ptr<ir::Module> ir_module) {
+inline void insertDestroyForCall(std::shared_ptr<ir::Module> ir_module) {
     auto ir_calls = utility::getValuesInModule<ir::Call>(ir_module);
     for (auto ir_call : ir_calls) {
         if (lowering::hasReferenceCountable(ir_call->type)) {
@@ -176,11 +168,9 @@ inline std::shared_ptr<ir::Module> insertDestroyForCall(std::shared_ptr<ir::Modu
             }
         }
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> insertCopyForReturn(std::shared_ptr<ir::Module> ir_module) {
+inline void insertCopyForReturn(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_returns = utility::getValuesInFunction<ir::Return>(ir_function);
         for (auto ir_return : ir_returns) {
@@ -198,19 +188,16 @@ inline std::shared_ptr<ir::Module> insertCopyForReturn(std::shared_ptr<ir::Modul
             }
         }
     }
-
-    return ir_module;
 }
 
 }  // namespace
 
-inline std::shared_ptr<ir::Module> insertReferenceCount(std::shared_ptr<ir::Module> ir_module) {
-    ir_module = insertDestroyForCall(ir_module);  // 放在第一个, 否则插入的指令会影响
-    ir_module = insertLocalVariableRegisterReferenceCount(ir_module);
-    ir_module = insertVariableIncrementReferenceCount(ir_module);
-    ir_module = insertCopyForReturn(ir_module);
-    ir_module = insertLoacalVariableScopeDecrementReferenceCount(ir_module);
-    return ir_module;
+inline void insertReferenceCount(std::shared_ptr<ir::Module> ir_module) {
+    insertDestroyForCall(ir_module);  // 放在第一个, 否则插入的指令会影响
+    insertLocalVariableRegisterReferenceCount(ir_module);
+    insertVariableIncrementReferenceCount(ir_module);
+    insertCopyForReturn(ir_module);
+    insertLoacalVariableScopeDecrementReferenceCount(ir_module);
 }
 
 }  // namespace prajna::transform

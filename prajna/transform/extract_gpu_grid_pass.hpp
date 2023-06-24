@@ -150,7 +150,7 @@ inline auto convertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     return std::make_tuple(ir_kernel_function, ir_captured_variables_list);
 }
 
-inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_module) {
+inline void extractGpuFor(std::shared_ptr<ir::Module> ir_module) {
     auto ir_gpu_fors = utility::getValuesInModule<ir::For>(ir_module);
     ir_gpu_fors.remove_if([](std::shared_ptr<ir::For> ir_gpu_for) {
         return not ir_gpu_for->annotation_dict.count("gpu");
@@ -226,8 +226,6 @@ inline std::shared_ptr<ir::Module> extractGpuFor(std::shared_ptr<ir::Module> ir_
         ir_gpu_for->finalize();
         ++idx;
     }
-
-    return ir_module;
 }
 
 }  // namespace prajna::transform

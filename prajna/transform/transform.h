@@ -239,23 +239,19 @@ inline void cloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
 
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
 
-    std::list<std::shared_ptr<ir::Function>> ir_kernel_functions_list;
-    std::copy_if(RANGE(ir_nvptx_module->functions), std::back_inserter(ir_kernel_functions_list),
+    std::list<std::shared_ptr<ir::Function>> ir_kernel_function_list;
+    std::copy_if(RANGE(ir_nvptx_module->functions), std::back_inserter(ir_kernel_function_list),
                  [](std::shared_ptr<ir::Function> ir_function) {
                      return ir_function->annotation_dict.count("kernel");
                  });
 
-    PRAJNA_ASSERT(ir_kernel_functions_list.size() <= 1,
-                  "两个以上后面重构, 每个核函数可能会有单独的module");
-
-    if (ir_kernel_functions_list.empty()) return;
-
-    auto ir_kernel_function = ir_kernel_functions_list.front();
     auto function_cloner = ir::FunctionCloner::create(ir_nvptx_module);
-    // 会把生成的函数直接插入到module里
-    ir_kernel_function->clone(function_cloner);
-    // 移除原来的核函数
-    ir_nvptx_module->functions.remove(ir_kernel_function);
+    for (auto ir_kernel_function : ir_kernel_function_list) {
+        // 会把生成的函数直接插入到module里
+        ir_kernel_function->clone(function_cloner);
+        // 移除原来的核函数
+        ir_nvptx_module->functions.remove(ir_kernel_function);
+    }
 }
 
 inline void defineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module) {

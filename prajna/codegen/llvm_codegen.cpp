@@ -706,8 +706,7 @@ std::shared_ptr<ir::Module> llvmPass(std::shared_ptr<ir::Module> ir_module) {
     llvm::ModulePassManager MPM =
         PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3, true);
 
-    auto llvm_module = ir_module->llvm_module;
-    MPM.run(*llvm_module, MAM);
+    MPM.run(*ir_module->llvm_module, MAM);
 
 #ifdef PRAJNA_ENABLE_LLVM_DUMP
     ir_module->llvm_module->dump();

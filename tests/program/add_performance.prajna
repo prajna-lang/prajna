@@ -22,7 +22,7 @@ func Main() {
     Perf(array0, array1, array2);
 
     var t1 = chrono::Clock();
-    var gb_per_second = ((size * 4).Cast<f32>() / size.Cast<f32>()) / (t1 - t0);
+    var gb_per_second = ((size * 4).Cast<f32>()) / 1000000000.0 / (t1 - t0);
 
     gb_per_second.ToString().Print();
     "GB/s".PrintLine();

@@ -5,24 +5,31 @@ use gpu;
 func myKernel(tensor: gpu::Tensor<i64, 2>){
     var thread_idx = gpu::ThreadIndex();
     var block_idx = gpu::BlockIndex();
-    tensor[block_idx[1] * 1024 + block_idx[0] ,thread_idx[0]] = 113;
+    tensor[block_idx[0] + block_idx[1] * 1024, thread_idx[0]] = 113;
 }
 
 @test
 func TestKernel(){
-    var size = 1024 * 1024 * 64;
-    var BlockShape = [64, 1 ,1];
-    var GridShape = [1024, 1024, 1];
+    var block_shape = [64, 1 ,1];
+    var grid_shape = [1024, 1024 * 8, 1];
 
-    var shape = [1024 * 1024, 64];
+    var shape = [grid_shape[0] * grid_shape[1], block_shape[0]];
     var gpu_tensor = gpu::Tensor<i64, 2>::Create(shape);
 
     var t0 = chrono::Clock();
-    myKernel<|GridShape, BlockShape|>(gpu_tensor);
-    cuda::cudaDeviceSynchronize();
+    t0.PrintLine();
+
+    var epoch = 100;
+    for i in 0 to epoch {
+        myKernel<|grid_shape, block_shape|>(gpu_tensor);
+        cuda::cudaDeviceSynchronize();
+    }
     var t1 = chrono::Clock();
 
-    var gb_per_second = ((size * 8).Cast<f32>() / size.Cast<f32>()) / (t1 - t0);
+    t1.PrintLine();
+
+    var size = gpu_tensor.Shape()[0] * gpu_tensor.Shape()[1];
+    var gb_per_second = ((8 * size * epoch).Cast<f32>() / 1000000000.0) / (t1 - t0);
     gb_per_second.Print();
     "GB/s".PrintLine();
 }

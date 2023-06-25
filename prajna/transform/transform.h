@@ -30,7 +30,7 @@ inline bool RecursiveTransformModule(std::shared_ptr<ir::Module> ir_module, Func
     auto re = fun(ir_module);
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_module) continue;
+        if (not ir_sub_module) continue;
 
         fun(ir_sub_module);
     }
@@ -393,6 +393,8 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
             ir_decl_function->parent_module = ir_module;
             ir_module->functions.push_front(ir_decl_function);
 
+            ir_function->annotation_dict["inline"];
+
             PRAJNA_ASSERT(ir_function->blocks.empty());
             auto ir_builder = lowering::IrBuilder::create();
             ir_builder->createTopBlockForFunction(ir_function);
@@ -462,6 +464,7 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
 }
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
+    RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
     convertThisWrapperToDeferencePointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertForMultiDimToFor1Dim(ir_module);
@@ -471,18 +474,19 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     insertReferenceCount(ir_module);
     TopologicalSortFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    InlineFunction(ir_module);
-    PRAJNA_ASSERT(VerifyModule(ir_module));
     extractGpuFor(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
+    convertKernelFunctionOperandToAddress(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     convertKernelFunctionCallToKernelLaunch(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    RecursiveTransformModule(ir_module, InlineFunction);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, flatternBlock);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     removeValuesAfterReturn(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, convertPropertyToFunctionCall);
-    PRAJNA_ASSERT(VerifyModule(ir_module));
-    convertKernelFunctionOperandToAddress(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
@@ -524,7 +528,6 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     declareExternalFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     TopAlloca(ir_module);
 

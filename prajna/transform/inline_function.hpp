@@ -17,7 +17,8 @@ inline bool InlineCheck(std::shared_ptr<ir::Function> ir_function) {
 /// @brief 内联其他模块的函数, 这里只处理其他模块的, 本模块的函数内联由llvm完成,
 /// 目前仅考虑简单的情况, 后续还需要考虑把函数作为参数传递的高阶函数的优化,
 /// 把函数作为变量传递后调用的情况后续有需求再做处理, 因为只有编译时确定函数调用的才能内联
-inline void InlineFunction(std::shared_ptr<ir::Module> ir_module) {
+inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
+    bool re = false;
     for (auto ir_function : ir_module->functions) {
         VerifyFunction(ir_function);
 
@@ -27,9 +28,9 @@ inline void InlineFunction(std::shared_ptr<ir::Module> ir_module) {
             if (!ir_callee || ir_callee->IsDeclaration()) continue;
             if (!InlineCheck(ir_callee)) continue;
 
+            re = true;
             // 内联时, 函数的blocks不能展开
             PRAJNA_ASSERT(ir_callee->blocks.size() == 1);
-
             auto iter = std::find(RANGE(ir_call->parent_block->values), ir_call);
             auto function_cloner = ir::FunctionCloner::create(ir_module);
             function_cloner->shallow = true;
@@ -98,10 +99,7 @@ inline void InlineFunction(std::shared_ptr<ir::Module> ir_module) {
 
         VerifyFunction(ir_function);
     }
-    // nvptx has already clone all depends functions
-    // for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-    //     if (not ir_module) continue;
-    //     InlineFunction(ir_sub_module);
-    // }
+
+    return re;
 }
 }  // namespace prajna::transform

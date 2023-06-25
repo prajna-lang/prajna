@@ -1,0 +1,28 @@
+use gpu;
+
+@kernel
+@target("nvptx")
+func myKernel(tensor: gpu::Tensor<i64, 2>){
+    var thread_idx = gpu::ThreadIndex();
+    var block_idx = gpu::BlockIndex();
+    tensor[block_idx[1] * 1024 + block_idx[0] ,thread_idx[0]] = 113;
+}
+
+@test
+func TestKernel(){
+    var size = 1024 * 1024 * 64;
+    var BlockShape = [64, 1 ,1];
+    var GridShape = [1024, 1024, 1];
+
+    var shape = [1024 * 1024, 64];
+    var gpu_tensor = gpu::Tensor<i64, 2>::Create(shape);
+
+    var t0 = chrono::Clock();
+    myKernel<|GridShape, BlockShape|>(gpu_tensor);
+    cuda::cudaDeviceSynchronize();
+    var t1 = chrono::Clock();
+
+    var gb_per_second = ((size * 8).Cast<f32>() / size.Cast<f32>()) / (t1 - t0);
+    gb_per_second.Print();
+    "GB/s".PrintLine();
+}

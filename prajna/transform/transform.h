@@ -473,7 +473,6 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     InlineFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    PRAJNA_ASSERT(VerifyModule(ir_module));
     extractGpuFor(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertKernelFunctionCallToKernelLaunch(ir_module);

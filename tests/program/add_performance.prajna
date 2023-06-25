@@ -16,6 +16,7 @@ func Main() {
     var array1 = Tensor<i32, 1>::Create(shape);
     var array2 = Tensor<i32, 1>::Create(shape);
 
+    "start".PrintLine();
     var t0 = chrono::Clock();
 
     Perf(array0, array1, array2);

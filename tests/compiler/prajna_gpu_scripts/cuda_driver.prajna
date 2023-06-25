@@ -11,8 +11,7 @@ var max_thread_per_block: i32;
 test::Assert(cuda::cuDeviceGetAttribute(&max_thread_per_block, 1i32, 0i32) == 0i32);
 "Max thread: " + max_thread_per_block.ToString() + "\n";
 
-gpu::init();
+gpu::Init();
 
-"Max thread per block: " + gpu::maxThreadPerBlock0i64.ToString() + "\n";
-"multi processors count: " +  gpu::multiProcessorsCount0i64.ToString() + "\n";
-gpu::init();
+"Max thread per block: " + gpu::MaxThreadPerBlock(0).ToString() + "\n";
+"multi processors count: " +  gpu::MultiProcessorsCount(0).ToString() + "\n";

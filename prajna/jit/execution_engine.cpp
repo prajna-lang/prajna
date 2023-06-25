@@ -59,8 +59,8 @@ void assert_c(bool t) {
 }
 
 float Clock() {
-    auto t = static_cast<float>(clock()) / CLOCKS_PER_SEC;
-    return t;
+    return std::chrono::steady_clock::now().time_since_epoch().count() * 1.0 *
+           std::chrono::steady_clock::period::num / std::chrono::steady_clock::period::den;
 }
 
 void Sleep(float t) { sleep(t); }
@@ -266,6 +266,8 @@ void ExecutionEngine::bindBuiltinFunction() {
 #ifdef PRAJNA_WITH_GPU
     this->bindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");
     this->bindCFunction(reinterpret_cast<void *>(cuDeviceGetCount), "::cuda::cuDeviceGetCount");
+    this->bindCFunction(reinterpret_cast<void *>(cudaDeviceSynchronize),
+                        "::cuda::cudaDeviceSynchronize");
     this->bindCFunction(reinterpret_cast<void *>(cuDeviceGetAttribute),
                         "::cuda::cuDeviceGetAttribute");
     this->bindCFunction(reinterpret_cast<void *>(cuLaunchKernel), "::cuda::cuLaunchKernel");

@@ -57,6 +57,8 @@ use list::Node;
 use list::List;
 use dict::ListDict;
 
+use stack::Stack;
+
 use io::Input;
 
 use fs;

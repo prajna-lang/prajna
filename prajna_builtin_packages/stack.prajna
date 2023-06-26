@@ -1,0 +1,33 @@
+use list::List;
+
+template <ValueType>
+struct Stack {
+    _list: List<ValueType>;
+}
+
+template <ValueType>
+implement Stack<ValueType> {
+    func IsEmpty() -> bool {
+        return this._list.Begin() == this._list.End();
+    }
+
+    func Push(value: ValueType) {
+        this._list.PushBack(value);
+    }
+
+    func Pop()  {
+        if(this.IsEmpty()){
+            //TODO
+        }else{
+            this._list.PopBack();
+        }
+    }
+
+    func Top() -> ValueType {
+        if(this.IsEmpty()){
+            //TODO
+        }
+        var last_node = (*this._list.End()).prev;
+        return (*last_node).value;
+    }
+}

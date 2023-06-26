@@ -36,7 +36,6 @@ class IrBuilder {
 
     std::shared_ptr<ir::ConstantInt> getIndexConstant(int64_t value) {
         auto ir_value = this->create<ir::ConstantInt>(getIndexType(), value);
-        this->insert(ir_value);
         return ir_value;
     }
 
@@ -186,6 +185,12 @@ class IrBuilder {
     template <typename Value_, typename... Args_>
     std::shared_ptr<Value_> create(Args_&&... __args) {
         auto ir_value = Value_::create(std::forward<Args_>(__args)...);
+
+        if (auto ir_return = cast<ir::Return>(ir_value)) {
+            PRAJNA_ASSERT(ir_return->value()->type ==
+                          this->function_stack.top()->function_type->return_type);
+        }
+
         static_assert(std::is_base_of<ir::Value, Value_>::value);
         this->insert(ir_value);
         return ir_value;
@@ -205,7 +210,11 @@ class IrBuilder {
             return ir_variable_liked;
         } else {
             ir_variable_liked = this->create<ir::LocalVariable>(ir_value->type);
-            this->create<ir::WriteVariableLiked>(ir_value, ir_variable_liked);
+            ir_variable_liked->annotation_dict["DisableReferenceCount"];
+            auto ir_write_variable_liked =
+                this->create<ir::WriteVariableLiked>(ir_value, ir_variable_liked);
+            ir_write_variable_liked->annotation_dict["DisableReferenceCount"];
+
             return ir_variable_liked;
         }
     }
@@ -448,8 +457,8 @@ class IrBuilder {
 
     std::stack<std::shared_ptr<ir::Function>> function_stack;
 
-    std::stack<std::shared_ptr<ir::Label>> loop_after_label_stack;
-    std::stack<std::shared_ptr<ir::Label>> loop_before_label_stack;
+    std::stack<std::shared_ptr<ir::Value>> loop_stack;
+
     std::stack<std::shared_ptr<ir::Block>> block_stack;
 
     ir::Block::iterator inserter_iterator;

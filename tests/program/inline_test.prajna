@@ -1,0 +1,10 @@
+use Int<64> as i64;
+
+func inc(v: i64) -> i64 {
+    return v + 1;
+}
+
+func Main(){
+    var a = 3;
+    a = inc(a);
+}

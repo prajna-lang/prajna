@@ -28,13 +28,13 @@ if (UNIX AND NOT APPLE)
     # 不可设置C++的, 会导致头文件找不到
     # set(CMAKE_CXX_COMPILER_TARGET "${CMAKE_SYSTEM_PROCESSOR}-unknown-${CMAKE_SYSTEM_NAME}")
     message("prajna build target triple: ${CMAKE_C_COMPILER_TARGET}")
+
+    set(COMPILER_RT_DEFAULT_TARGET_ONLY ON)
+    set(COMPILER_RT_BUILD_BUILTINS ON)
+    set(COMPILER_RT_BUILTINS_HIDE_SYMBOLS Off)
 endif()
 
-set(COMPILER_RT_DEFAULT_TARGET_ONLY ON)
-set(COMPILER_RT_BUILD_BUILTINS ON)
-set(COMPILER_RT_BUILTINS_HIDE_SYMBOLS Off)
 add_subdirectory(third_party/llvm-project/llvm EXCLUDE_FROM_ALL)
-
 # 需要手动添加llvm的头文件路径
 add_library(llvm_include_dir INTERFACE)
 target_include_directories(llvm_include_dir
@@ -44,16 +44,6 @@ target_include_directories(llvm_include_dir
     INTERFACE
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/third_party/llvm-project/llvm/include>
     $<INSTALL_INTERFACE:include>
-)
-
-add_library(clang_include_dir INTERFACE)
-target_include_directories(clang_include_dir
-    INTERFACE ${PROJECT_SOURCE_DIR}/third_party/llvm-project/llvm/tools/clang/include
-    INTERFACE ${PROJECT_BINARY_DIR}/third_party/llvm-project/llvm/tools/clang/include
-)
-
-target_link_libraries(clang_include_dir
-    INTERFACE llvm_include_dir
 )
 
 add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
@@ -74,8 +64,9 @@ option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" OFF)
 option(PRAJNA_WITH_GPU "With CUDA" OFF)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_WITH_GPU "With CUDA" OFF)
-option(PRAAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
-option(PRAAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
+option(PRAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
+option(PRAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
+option(PRAJNA_DISABLE_ASSERTS "Disable Prajna ASSERTS" OFF)
 
 add_subdirectory(prajna)
 if (PRAJNA_WITH_JUPYTER)

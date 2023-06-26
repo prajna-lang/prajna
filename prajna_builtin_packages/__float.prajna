@@ -78,7 +78,7 @@ implement FloatFixedPrinter<FloatType> {
             return "0";
         }
 
-        while (tmp_integer > ten) {
+        while (tmp_integer > zero) {
             var cur_char =  (tmp_integer % ten).Cast<char>() + '0';
             char_list.PushFront(cur_char);
             tmp_integer = (tmp_integer / ten).Trunc();

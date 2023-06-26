@@ -51,4 +51,9 @@ inline std::filesystem::path ProgramLocation(const char* cstr_path) {
     return boost::dll::program_location().string();
 }
 
+template <typename Type>
+inline auto clone(Type t) -> std::decay_t<Type> {
+    return t;
+}
+
 }  // namespace prajna

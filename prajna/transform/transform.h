@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <stack>
 
@@ -9,6 +10,7 @@
 #include "prajna/parser/parse.h"
 #include "prajna/transform/extract_gpu_grid_pass.hpp"
 #include "prajna/transform/flattern_block.hpp"
+#include "prajna/transform/inline_function.hpp"
 #include "prajna/transform/reference_count.hpp"
 #include "prajna/transform/transform_pass.hpp"
 #include "prajna/transform/utility.hpp"
@@ -23,15 +25,26 @@ class Statements;
 
 namespace prajna::transform {
 
+template <typename Func>
+inline bool RecursiveTransformModule(std::shared_ptr<ir::Module> ir_module, Func fun) {
+    auto re = fun(ir_module);
+
+    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+        if (not ir_sub_module) continue;
+
+        fun(ir_sub_module);
+    }
+
+    return re;
+}
+
 std::shared_ptr<ir::Module> convertVariableToPointer(std::shared_ptr<ir::Module> ir_module);
 
 std::shared_ptr<ir::Module> makeCompatiableWithLlvm(std::shared_ptr<ir::Module> ir_module);
 
 std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module);
 
-// auto create = [=](auto )
-inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
-    std::shared_ptr<ir::Module> ir_module) {
+inline bool convertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module) {
     auto ir_access_properties = utility::getValuesInModule<ir::AccessProperty>(ir_module);
     for (auto ir_access_property : ir_access_properties) {
         auto ir_block = ir_access_property->parent_block;
@@ -39,9 +52,8 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
         ir_builder->pushBlock(ir_block);
         ir_builder->inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
 
-        auto instructions_with_index_set_copy = ir_access_property->instruction_with_index_list;
-
-        for (auto instruction_with_index : instructions_with_index_set_copy) {
+        bool unused = ir_access_property->instruction_with_index_list.empty();
+        for (auto instruction_with_index : clone(ir_access_property->instruction_with_index_list)) {
             auto ir_inst = instruction_with_index.instruction;
             size_t op_idx = instruction_with_index.operand_index;
 
@@ -65,7 +77,7 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
             }
         }
 
-        if (instructions_with_index_set_copy.empty()) {
+        if (unused) {
             auto ir_arguments = ir_access_property->arguments();
             ir_arguments.insert(ir_arguments.begin(), ir_access_property->thisPointer());
             auto ir_getter_call = ir_builder->create<ir::Call>(
@@ -76,17 +88,10 @@ inline std::shared_ptr<ir::Module> convertPropertyToFunctionCall(
         ir_access_property->finalize();
     }
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_module) continue;
-
-        convertPropertyToFunctionCall(ir_sub_module);
-    }
-
-    return ir_module;
+    return !ir_access_properties.empty();
 }
 
-inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_kernel_function_calls =
             utility::getValuesInFunction<ir::KernelFunctionCall>(ir_function);
@@ -140,12 +145,9 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionCallToKernelLaunch(
             ir_kernel_function_call->finalize();
         }
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_instructions = utility::getValuesInFunction<ir::Instruction>(ir_function);
 
@@ -181,11 +183,9 @@ inline std::shared_ptr<ir::Module> convertKernelFunctionOperandToAddress(
             }
         }
     }
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> convertGlobalVariableToPointer(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_global_variable : ir_module->global_variables) {
         auto ir_global_alloca = ir::GlobalAlloca::create(ir_global_variable->type);
         ir_global_alloca->name = ir_global_variable->name;
@@ -231,41 +231,31 @@ inline std::shared_ptr<ir::Module> convertGlobalVariableToPointer(
             }
         }
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> cloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
+inline void cloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
     if (ir_module->modules.count(ir::Target::nvptx) == 0) {
-        return ir_module;
     }
 
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
 
-    std::list<std::shared_ptr<ir::Function>> ir_kernel_functions_list;
-    std::copy_if(RANGE(ir_nvptx_module->functions), std::back_inserter(ir_kernel_functions_list),
+    std::list<std::shared_ptr<ir::Function>> ir_kernel_function_list;
+    std::copy_if(RANGE(ir_nvptx_module->functions), std::back_inserter(ir_kernel_function_list),
                  [](std::shared_ptr<ir::Function> ir_function) {
                      return ir_function->annotation_dict.count("kernel");
                  });
 
-    PRAJNA_ASSERT(ir_kernel_functions_list.size() <= 1,
-                  "两个以上后面重构, 每个核函数可能会有单独的module");
-
-    if (ir_kernel_functions_list.empty()) return ir_module;
-
-    auto ir_kernel_function = ir_kernel_functions_list.front();
     auto function_cloner = ir::FunctionCloner::create(ir_nvptx_module);
-    ir_kernel_function->clone(function_cloner);
-
-    ir_nvptx_module->functions = function_cloner->functions;
-
-    return ir_module;
+    for (auto ir_kernel_function : ir_kernel_function_list) {
+        // 会把生成的函数直接插入到module里
+        ir_kernel_function->clone(function_cloner);
+        // 移除原来的核函数
+        ir_nvptx_module->functions.remove(ir_kernel_function);
+    }
 }
 
-inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void defineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module) {
     if (ir_module->modules.count(ir::Target::nvptx) == 0) {
-        return ir_module;
     }
 
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
@@ -285,12 +275,10 @@ inline std::shared_ptr<ir::Module> defineKernelFunctionAddress(
             }
         }
     }
-
-    return ir_module;
 }
 
 // @brief 移除return后面的指令. 若不移除, 会存在未知错误
-inline std::shared_ptr<ir::Module> removeValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
+inline void removeValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         for (auto ir_block : ir_function->blocks) {
             auto iter_return = std::find_if(RANGE(ir_block->values), [](auto x) {
@@ -301,23 +289,29 @@ inline std::shared_ptr<ir::Module> removeValuesAfterReturn(std::shared_ptr<ir::M
             }
         }
     }
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
+inline void declareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
     utility::each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
         for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
             auto ir_operand = ir_instruction->operand(i);
 
             if (auto ir_function = cast<ir::Function>(ir_operand)) {
                 if (ir_function->parent_module != ir_module) {
-                    // 不会重复添加, 因为会置换所有的操作数
-                    auto ir_decl_function = ir::Function::create(ir_function->function_type);
-                    ir_decl_function->fullname = ir_function->fullname;
-                    ir_decl_function->name = ir_function->name;
-                    ir_decl_function->parent_module = ir_module;
-                    ir_module->functions.push_front(ir_decl_function);
+                    std::shared_ptr<ir::Function> ir_decl_function = nullptr;
+                    auto iter_fun = std::find_if(RANGE(ir_module->functions), [=](auto ir_x) {
+                        return ir_x->fullname == ir_function->fullname;
+                    });
+                    // 声明过了, 就不在声明了
+                    if (iter_fun != ir_module->functions.end()) {
+                        ir_decl_function = *iter_fun;
+                    } else {
+                        ir_decl_function = ir::Function::create(ir_function->function_type);
+                        ir_decl_function->fullname = ir_function->fullname;
+                        ir_decl_function->name = ir_function->name;
+                        ir_decl_function->parent_module = ir_module;
+                        ir_module->functions.push_front(ir_decl_function);
+                    }
 
                     auto instruction_with_index_list_copy =
                         ir_function->instruction_with_index_list;
@@ -330,42 +324,9 @@ inline std::shared_ptr<ir::Module> declareExternalFunction(std::shared_ptr<ir::M
             }
         }
     });
-
-    return ir_module;
 }
 
-inline std::shared_ptr<ir::Module> WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
-    for (auto ir_function : ir_module->functions) {
-        if (ir_function->annotation_dict.count("intrinsic")) {
-            PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
-            auto intrinsic_function_name = ir_function->annotation_dict["intrinsic"].front();
-            auto ir_decl_function = ir::Function::create(ir_function->function_type);
-            ir_decl_function->fullname = intrinsic_function_name;
-            ir_decl_function->parent_module = ir_module;
-            ir_decl_function->is_declaration = true;
-            ir_module->functions.push_front(ir_decl_function);
-
-            PRAJNA_ASSERT(ir_function->blocks.empty());
-            auto ir_builder = lowering::IrBuilder::create();
-            ir_builder->createTopBlockForFunction(ir_function);
-            ir_builder->create<ir::Return>(
-                ir_builder->create<ir::Call>(ir_decl_function, ir_function->parameters));
-            ir_function->annotation_dict.erase("intrinsic");
-            ir_function->is_declaration = false;
-        }
-    }
-
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_module) continue;
-
-        WrapIntrinsicFunction(ir_sub_module);
-    }
-
-    return ir_module;
-}
-
-inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
-    std::shared_ptr<ir::Module> ir_module) {
+inline void convertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
     auto ir_fors = utility::getValuesInModule<ir::For>(ir_module);
     for (auto ir_for : ir_fors) {
         auto ir_builder = lowering::IrBuilder::create();
@@ -418,70 +379,159 @@ inline std::shared_ptr<ir::Module> convertForMultiDimToFor1Dim(
                 "+", ir_array_first_variable),
             ir_array_index);
     }
+}
 
-    return ir_module;
+inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
+    bool re = false;
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->annotation_dict.count("intrinsic")) {
+            re = true;
+            PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
+            auto intrinsic_function_name = ir_function->annotation_dict["intrinsic"].front();
+            auto ir_decl_function = ir::Function::create(ir_function->function_type);
+            ir_decl_function->fullname = intrinsic_function_name;
+            ir_decl_function->parent_module = ir_module;
+            ir_module->functions.push_front(ir_decl_function);
+
+            ir_function->annotation_dict["inline"];
+
+            PRAJNA_ASSERT(ir_function->blocks.empty());
+            auto ir_builder = lowering::IrBuilder::create();
+            ir_builder->createTopBlockForFunction(ir_function);
+            ir_builder->create<ir::Return>(
+                ir_builder->create<ir::Call>(ir_decl_function, ir_function->parameters));
+            ir_function->annotation_dict.erase("intrinsic");
+        }
+    }
+
+    return re;
+}
+
+inline void TopologicalSortFunctionVisit(
+    std::shared_ptr<ir::Function> ir_function,
+    std::list<std::shared_ptr<ir::Function>> &ir_function_list,
+    std::set<std::shared_ptr<ir::Function>> &ir_gray_function_set) {
+    // 标记要访问的函数
+    ir_gray_function_set.insert(ir_function);
+    auto ir_instructions = utility::getValuesInFunction<ir::Instruction>(ir_function);
+    for (auto ir_instruction : ir_instructions) {
+        for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
+            auto ir_operand = ir_instruction->operand(i);
+            if (auto ir_tmp_function = cast<ir::Function>(ir_operand)) {
+                // 值排序同一个module里的函数
+                if (ir_tmp_function->parent_module == ir_function->parent_module) {
+                    // 没访问的进行深度搜索
+                    if (ir_gray_function_set.count(ir_tmp_function)) continue;
+
+                    TopologicalSortFunctionVisit(ir_tmp_function, ir_function_list,
+                                                 ir_gray_function_set);
+                }
+            }
+        }
+    }
+
+    // 完成搜索后插入函数
+    ir_function_list.push_back(ir_function);
+}
+
+inline void TopologicalSortFunction(std::shared_ptr<ir::Module> ir_module) {
+    std::list<std::shared_ptr<ir::Function>> ir_function_list;
+    std::set<std::shared_ptr<ir::Function>> ir_gray_function_set;
+    for (auto ir_function : ir_module->functions) {
+        if (ir_gray_function_set.count(ir_function)) continue;
+
+        TopologicalSortFunctionVisit(ir_function, ir_function_list, ir_gray_function_set);
+    }
+
+    ir_module->functions.remove_if(
+        [=](auto ir_function) { return std::count(RANGE(ir_function_list), ir_function); });
+    ir_module->functions.merge(ir_function_list);
+}
+
+inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->blocks.empty()) continue;
+
+        auto ir_top_block = ir_function->blocks.front();
+        auto ir_allocas = utility::getValuesInFunction<ir::Alloca>(ir_function);
+        for (auto ir_alloca : ir_allocas) {
+            if (ir_alloca->parent_block != ir_top_block) {
+                utility::removeFromParent(ir_alloca);
+                ir_top_block->pushFront(ir_alloca);
+            }
+        }
+    }
 }
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
-    ir_module = convertForMultiDimToFor1Dim(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = convertPropertyToFunctionCall(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = insertReferenceCount(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = flatternBlock(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = removeValuesAfterReturn(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = extractGpuFor(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = convertKernelFunctionCallToKernelLaunch(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = flatternBlock(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = convertPropertyToFunctionCall(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = convertKernelFunctionOperandToAddress(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = convertGlobalVariableToPointer(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
+    convertThisWrapperToDeferencePointer(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    convertForMultiDimToFor1Dim(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    RecursiveTransformModule(ir_module, convertPropertyToFunctionCall);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    insertReferenceCount(ir_module);
+    TopologicalSortFunction(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    extractGpuFor(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    convertKernelFunctionOperandToAddress(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    convertKernelFunctionCallToKernelLaunch(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    RecursiveTransformModule(ir_module, InlineFunction);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    RecursiveTransformModule(ir_module, flatternBlock);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    removeValuesAfterReturn(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    RecursiveTransformModule(ir_module, convertPropertyToFunctionCall);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    convertGlobalVariableToPointer(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    convertThisWrapperToDeferencePointer(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     // ssa
     bool changed = true;
     while (changed) {
-        changed = insertValueToBlock(ir_module);
-        PRAJNA_ASSERT(verifyTree(ir_module));
-        changed = convertThisWrapperToDeferencePointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
-        changed = convertVariableToDeferencePointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
-        changed = convertAccessFieldToGetStructElementPointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
-        changed = convertIndexArrayToGetArrayElementPointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
-        changed = convertIndexPointerToGetPointerElementPointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
-        changed = convertGetAddressOfVaraibleLikedToPointer(ir_module) || changed;
-        PRAJNA_ASSERT(verifyTree(ir_module));
+        changed = RecursiveTransformModule(ir_module, insertValueToBlock);
+        PRAJNA_ASSERT(VerifyModule(ir_module));
+        changed = RecursiveTransformModule(ir_module, convertVariableToDeferencePointer) || changed;
+        PRAJNA_ASSERT(VerifyModule(ir_module));
+        changed =
+            RecursiveTransformModule(ir_module, convertAccessFieldToGetStructElementPointer) ||
+            changed;
+        PRAJNA_ASSERT(VerifyModule(ir_module));
+        changed = RecursiveTransformModule(ir_module, convertIndexArrayToGetArrayElementPointer) ||
+                  changed;
+        PRAJNA_ASSERT(VerifyModule(ir_module));
+        changed =
+            RecursiveTransformModule(ir_module, convertIndexPointerToGetPointerElementPointer) ||
+            changed;
+        PRAJNA_ASSERT(VerifyModule(ir_module));
+        changed = RecursiveTransformModule(ir_module, convertGetAddressOfVaraibleLikedToPointer) ||
+                  changed;
+        PRAJNA_ASSERT(VerifyModule(ir_module));
     }
     // 需要全部转为Deference才能进行, 因为上面的转换是围绕其进行的
-    changed = convertDeferencePointerToStoreAndLoadPointer(ir_module) || changed;
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    RecursiveTransformModule(ir_module, convertDeferencePointerToStoreAndLoadPointer);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     //
-    ir_module = sperateModule(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = cloneExternalNvptxValue(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = defineKernelFunctionAddress(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = convertGlobalVariableToPointer(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    // 在sperateModule后面
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    ir_module = declareExternalFunction(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
-    WrapIntrinsicFunction(ir_module);
-    PRAJNA_ASSERT(verifyTree(ir_module));
+    sperateModule(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    cloneExternalNvptxValue(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    defineKernelFunctionAddress(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    convertGlobalVariableToPointer(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    declareExternalFunction(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    TopAlloca(ir_module);
+
     return ir_module;
 }
+
 }  // namespace prajna::transform

@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <unordered_map>
@@ -56,6 +57,13 @@ void assert_c(bool t) {
         longjmp(buf, 1);
     }
 }
+
+float Clock() {
+    return std::chrono::steady_clock::now().time_since_epoch().count() * 1.0 *
+           std::chrono::steady_clock::period::num / std::chrono::steady_clock::period::den;
+}
+
+void Sleep(float t) { sleep(t); }
 
 llvm::ExitOnError exit_on_error;
 
@@ -252,9 +260,14 @@ void ExecutionEngine::bindBuiltinFunction() {
     this->bindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
     this->bindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
 
+    this->bindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
+    this->bindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");
+
 #ifdef PRAJNA_WITH_GPU
     this->bindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");
     this->bindCFunction(reinterpret_cast<void *>(cuDeviceGetCount), "::cuda::cuDeviceGetCount");
+    this->bindCFunction(reinterpret_cast<void *>(cudaDeviceSynchronize),
+                        "::cuda::cudaDeviceSynchronize");
     this->bindCFunction(reinterpret_cast<void *>(cuDeviceGetAttribute),
                         "::cuda::cuDeviceGetAttribute");
     this->bindCFunction(reinterpret_cast<void *>(cuLaunchKernel), "::cuda::cuLaunchKernel");

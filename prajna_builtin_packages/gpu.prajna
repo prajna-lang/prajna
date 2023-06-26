@@ -44,11 +44,12 @@ interface AtProperty {
 
 template <Type, Dim>
 implement AtProperty<Type, Dim> for Tensor<Type, Dim>{
+    @inline
     func Get(idx: Array<i64, Dim>)->Type{
         var offset = this.layout.ArrayIndexToLinearIndex(idx);
         return this.data[offset];
     }
-
+    @inline
     func Set(idx: Array<i64, Dim>, value: Type){
         var offset = this.layout.ArrayIndexToLinearIndex(idx);
         this.data[offset] = value;
@@ -57,10 +58,12 @@ implement AtProperty<Type, Dim> for Tensor<Type, Dim>{
 
 template <Type, Dim>
 implement operator::ArrayIndex<Type, Dim> for Tensor<Type, Dim> {
+    @inline
     func Get(index: Array<i64, Dim>)->Type{
         return this.At(index);
     }
 
+    @inline
     func Set(index: Array<i64, Dim>, value: Type){
         this.At(index) = value;
     }
@@ -80,6 +83,12 @@ implement Tensor<Type, Dim> {
 
         return self;
     }
+
+    @inline
+    func Shape()->Array<i64, Dim> {
+        return this.layout.shape;
+    }
+
 
     func ToHost()->::Tensor<Type, Dim>{
         var host_tensor = ::Tensor<Type, Dim>::Create(this.layout.shape);
@@ -157,21 +166,25 @@ func __grid_shape_z()->u32;
 @intrinsic("llvm.nvvm.read.ptx.sreg.warpsize")
 func __warp_size()->u32;
 
+@inline
 @target("nvptx")
 func ThreadIndex()->Array<i64, 3> {
     return [__thread_idx_x().Cast<i64>(), __thread_idx_y().Cast<i64>(), __thread_idx_z().Cast<i64>()];
 }
 
+@inline
 @target("nvptx")
 func BlockShape()->Array<i64, 3> {
     return [__block_shape_x().Cast<i64>(), __block_shape_y().Cast<i64>(), __block_shape_z().Cast<i64>()];
 }
 
+@inline
 @target("nvptx")
 func BlockIndex()->Array<i64, 3> {
     return [__block_idx_x().Cast<i64>(), __block_idx_y().Cast<i64>(), __block_idx_z().Cast<i64>()];
 }
 
+@inline
 @target("nvptx")
 func GridShape()->Array<i64, 3> {
     return [__grid_shape_x().Cast<i64>(), __grid_shape_y().Cast<i64>(), __grid_shape_z().Cast<i64>()];

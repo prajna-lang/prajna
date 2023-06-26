@@ -17,7 +17,7 @@ target_link_libraries(prajna_config_target
 )
 
 if (PRAJNA_WITH_GPU)
-target_compile_definitions(prajna_config_target INTERFACE PRAJNA_WITH_GPU)
+    target_compile_definitions(prajna_config_target INTERFACE PRAJNA_WITH_GPU)
 endif()
 
 target_compile_options(prajna_config_target
@@ -31,6 +31,10 @@ if (NOT PRAJNA_WITH_JUPYTER)
     )
 endif()
 
+
+if (PRAJNA_DISABLE_ASSERTS)
+    target_compile_definitions(prajna_config_target INTERFACE PRAJNA_DISABLE_ASSERTS=1)
+endif()
 
 # 需要禁止一些函数才能很好工作, mac下不支持detect-leaks
 # 对于内存泄露来说, valgrind可能更加友好一点

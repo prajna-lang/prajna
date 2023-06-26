@@ -1,0 +1,2 @@
+func Clock()->f32;
+func Sleep(t: f32);

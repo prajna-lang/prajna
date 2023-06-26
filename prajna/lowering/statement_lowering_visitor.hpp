@@ -401,7 +401,6 @@ class StatementLoweringVisitor {
                     this->ir_builder->popBlock();
                     this->ir_builder->function_stack.pop();
                     this->ir_builder->popSymbolTable();
-                    ir_function->is_declaration = false;
                 });
 
                 auto iter_argument = ir_function->parameters.begin();
@@ -439,7 +438,7 @@ class StatementLoweringVisitor {
                     }
                 }
             } else {
-                ir_function->is_declaration = true;
+                ir_function->blocks.clear();
             }
 
             ir_builder->is_static_function = false;
@@ -493,31 +492,20 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::While ast_while) {
-        auto ir_loop_before = ir::Label::create();
-        ir_builder->loop_before_label_stack.push(ir_loop_before);
-        auto ir_loop_after = ir::Label::create();
-        ir_builder->loop_after_label_stack.push(ir_loop_after);
-
         auto ir_condition_block = ir::Block::create();
         ir_condition_block->parent_function = ir_builder->function_stack.top();
         ir_builder->pushBlock(ir_condition_block);
-        // 把ir_loop_before插入到条件块的开头
-        ir_builder->insert(ir_loop_before);
         auto ir_condition = applyExpression(ast_while.condition);
         ir_builder->popBlock();
 
         auto ir_loop_block = ir::Block::create();
-        ir_loop_block->parent_function = ir_builder->function_stack.top();
-        auto ir_while = ir_builder->create<ir::While>(ir_condition, ir_condition_block,
-                                                      ir_loop_block, ir_loop_before, ir_loop_after);
-
+        auto ir_while =
+            ir_builder->create<ir::While>(ir_condition, ir_condition_block, ir_loop_block);
+        ir_builder->loop_stack.push(ir_while);
         ir_builder->pushBlock(ir_while->loopBlock());
         (*this)(ast_while.body);
         ir_builder->popBlock();
-
-        ir_builder->loop_before_label_stack.pop();
-        ir_builder->insert(ir_builder->loop_after_label_stack.top());
-        ir_builder->loop_after_label_stack.pop();
+        ir_builder->loop_stack.pop();
 
         return ir_while;
     }
@@ -533,27 +521,23 @@ class StatementLoweringVisitor {
             logger->error("the last firt type are not matched", ast_for.first);
         }
 
-        auto ir_loop_before = ir::Label::create();
-        ir_builder->loop_before_label_stack.push(ir_loop_before);
-        auto ir_loop_after = ir::Label::create();
-        ir_builder->loop_after_label_stack.push(ir_loop_after);
-
         // 这里使用了局部值拷贝的方式来模仿右值, 因为ir_first/last_value不会被改变
         auto ir_first_value = ir_builder->cloneValue(ir_first);
         auto ir_last_value = ir_builder->cloneValue(ir_last);
         auto ir_loop_block = ir::Block::create();
-        ir_loop_block->parent_function = ir_builder->function_stack.top();
         auto ir_index = ir_builder->create<ir::LocalVariable>(ir_last->type);
-        auto ir_for = ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value,
-                                                  ir_loop_block, ir_loop_before, ir_loop_after);
+        auto ir_for =
+            ir_builder->create<ir::For>(ir_index, ir_first_value, ir_last_value, ir_loop_block);
         // 迭代变量应该在下一层迭代空间
         {
+            ir_builder->loop_stack.push(ir_for);
             ir_builder->pushSymbolTable();
             ir_builder->SetSymbol(ir_index, ast_for.index);
             ir_builder->pushBlock(ir_for->loopBlock());
             auto guard = function_guard::create([this]() {
                 this->ir_builder->popBlock();
                 this->ir_builder->popSymbolTable();
+                this->ir_builder->loop_stack.pop();
             });
             (*this)(ast_for.body);
         }
@@ -565,38 +549,21 @@ class StatementLoweringVisitor {
             ir_for->annotation_dict.insert({ast_annotation.name, values});
         }
 
-        PRAJNA_ASSERT(not ir_for->loopBlock()->parent_block);
-
-        ir_builder->loop_before_label_stack.pop();
-        ir_builder->insert(ir_builder->loop_after_label_stack.top());
-        ir_builder->loop_after_label_stack.pop();
-
         return ir_for;
     }
 
     Symbol operator()(ast::Break ast_break) {
-        if (not ir_builder->loop_after_label_stack.size()) {
+        if (not ir_builder->loop_stack.size()) {
             logger->error("break is outside of a loop", ast_break);
         }
-
-        return ir_builder->create<ir::JumpBranch>(ir_builder->loop_after_label_stack.top());
+        return ir_builder->create<ir::Break>(ir_builder->loop_stack.top());
     }
 
     Symbol operator()(ast::Continue ast_continue) {
-        if (not ir_builder->loop_before_label_stack.size()) {
+        if (not ir_builder->loop_stack.size()) {
             logger->error("continue is outside of a loop", ast_continue);
         }
-
-        auto ir_before_label = ir_builder->loop_before_label_stack.top();
-        if (auto ir_for =
-                cast<ir::For>(ir_before_label->instruction_with_index_list.front().instruction)) {
-            auto ir_i_and_1 = ir_builder->callBinaryOperator(ir_for->index(), "+",
-                                                             {ir_builder->getIndexConstant(1)});
-            ir_builder->create<ir::WriteVariableLiked>(ir_i_and_1, ir_for->index());
-            return ir_builder->create<ir::JumpBranch>(ir_builder->loop_before_label_stack.top());
-        } else {
-            return ir_builder->create<ir::JumpBranch>(ir_builder->loop_before_label_stack.top());
-        }
+        return ir_builder->create<ir::Continue>(ir_builder->loop_stack.top());
     }
 
     void createStructConstructor(std::shared_ptr<ir::StructType> ir_struct_type) {
@@ -799,25 +766,23 @@ class StatementLoweringVisitor {
                 ir_interface->undef_this_pointer_functions.insert(
                     {ir_function, ir_undef_this_pointer_function});
 
-                ir_undef_this_pointer_function->blocks.push_back(ir::Block::create());
-                ir_undef_this_pointer_function->blocks.back()->parent_function =
-                    ir_undef_this_pointer_function;
-                ir_builder->pushBlock(ir_undef_this_pointer_function->blocks.back());
+                ir_builder->createTopBlockForFunction(ir_undef_this_pointer_function);
                 // 将undef *的this pointer转为本身的指针类型
                 auto ir_this_pointer = ir_builder->create<ir::BitCast>(
                     ir_undef_this_pointer_function->parameters.front(),
                     ir_function->parameters.front()->type);
                 auto ir_arguments = ir_undef_this_pointer_function->parameters;
                 ir_arguments.front() = ir_this_pointer;
-                ir_builder->create<ir::Return>(
-                    ir_builder->create<ir::Call>(ir_function, ir_arguments));
+                auto ir_call = ir_builder->create<ir::Call>(ir_function, ir_arguments);
+                if (is<ir::VoidType>(ir_call->type)) {
+                    ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
+                } else {
+                    ir_builder->create<ir::Return>(ir_call);
+                }
                 ir_builder->popBlock();
             }
 
-            ir_interface->dynamic_type_creator->blocks.push_back(ir::Block::create());
-            ir_interface->dynamic_type_creator->blocks.back()->parent_function =
-                ir_interface->dynamic_type_creator;
-            ir_builder->pushBlock(ir_interface->dynamic_type_creator->blocks.back());
+            ir_builder->createTopBlockForFunction(ir_interface->dynamic_type_creator);
 
             auto ir_self =
                 ir_builder->create<ir::LocalVariable>(ir_interface->prototype->dynamic_type);
@@ -1023,6 +988,7 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
             if (ir_source_type == ir_target_type) {
@@ -1040,8 +1006,7 @@ class StatementLoweringVisitor {
                 }
                 if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
                     if (ir_source_int_type->bits == ir_target_int_type->bits) {
-                        ir_tmp_builder->create<ir::Return>(ir_function->parameters.front());
-                        return ir_function;
+                        cast_operation = ir::CastInstruction::Operation::BitCast;
                     }
                     if (ir_source_int_type->bits > ir_target_int_type->bits) {
                         cast_operation = ir::CastInstruction::Operation::Trunc;
@@ -1172,6 +1137,7 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__" + intrinsic_name + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
             ir_tmp_builder->create<ir::Return>(
@@ -1286,6 +1252,8 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__bit_cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BitCast>(
                 ir_function->parameters.front(), ir_target_type));
@@ -1330,6 +1298,8 @@ class StatementLoweringVisitor {
                 ir::FunctionType::create({ir_pointer_type}, ir_interface_prototype->dynamic_type);
             auto ir_function = ir_tmp_builder->createFunction(
                 "__as" + getTemplateArgumentsPostify(symbol_template_arguments), ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::Call>(
                 ir_interface->dynamic_type_creator, ir_function->parameters));
@@ -1377,6 +1347,8 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__dynamic_cast" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
 
             auto ir_target_ptr_type = ir_tmp_builder->getPtrType(ir_target_value_type);
@@ -1449,6 +1421,8 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__sizeof" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->getIndexConstant(ir_type->bytes));
             return ir_function;
@@ -1548,6 +1522,7 @@ class StatementLoweringVisitor {
                 "__" + compare_operation_name +
                     getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::CompareInstruction>(
                 compare_operation, ir_function->parameters.front(),
@@ -1667,6 +1642,7 @@ class StatementLoweringVisitor {
                 "__" + binary_operator_name +
                     getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::BinaryOperator>(
                 binary_operation, ir_function->parameters.front(), ir_function->parameters.back()));
@@ -1718,6 +1694,8 @@ class StatementLoweringVisitor {
                 ir_function_name_prefix + is_neg_name +
                     getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
+
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             auto ir_constant_float = ir_tmp_builder->create<ir::ConstantFloat>(ir_float_type, 0.0);
             ir_constant_float->special_value = special_value;
@@ -1749,15 +1727,16 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__initialize" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             // 标记新的IR, 防止递归初始化
             ir_tmp_builder->create_callback = [](std::shared_ptr<ir::Value> ir_value) {
                 ir_value->annotation_dict["INSERTED_FLAG"].push_back("none");
             };
 
-            // DeferencePointer不能重复使用, 故使用ThisWrapper来包装下
-            auto ir_this = ir_tmp_builder->create<ir::ThisWrapper>(ir_function->parameters.front());
-            initializeVariableLikedCallback(ir_this, ir_tmp_builder);
+            initializeVariableLikedCallback(
+                ir_tmp_builder->create<ir::DeferencePointer>(ir_function->parameters.front()),
+                ir_tmp_builder);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::VoidValue>());
 
             return ir_function;
@@ -1786,15 +1765,16 @@ class StatementLoweringVisitor {
             auto ir_function = ir_tmp_builder->createFunction(
                 "__destroy" + getTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
+            ir_function->annotation_dict["inline"];
             ir_tmp_builder->createTopBlockForFunction(ir_function);
             // 标记新的IR, 防止递归初始化
             ir_tmp_builder->create_callback = [](std::shared_ptr<ir::Value> ir_value) {
                 ir_value->annotation_dict["INSERTED_FLAG"].push_back("none");
             };
 
-            // DeferencePointer不能重复使用, 故使用ThisWrapper来包装下
-            auto ir_this = ir_tmp_builder->create<ir::ThisWrapper>(ir_function->parameters.front());
-            destroyVariableLikedCallback(ir_this, ir_tmp_builder);
+            auto ir_object =
+                ir_tmp_builder->create<ir::DeferencePointer>(ir_function->parameters.front());
+            destroyVariableLikedCallback(ir_object, ir_tmp_builder);
             ir_tmp_builder->create<ir::Return>(ir_tmp_builder->create<ir::VoidValue>());
 
             return ir_function;
@@ -2034,10 +2014,7 @@ class StatementLoweringVisitor {
             ir_member_function->fullname = ir_function->fullname;
 
             // 这里还是使用类型IrBuilder
-            ir_member_function->blocks.push_back(ir::Block::create());
-            ir_member_function->blocks.back()->parent_function = ir_member_function;
-            ir_builder->pushBlock(ir_member_function->blocks.back());
-            ir_builder->inserter_iterator = ir_builder->currentBlock()->values.end();
+            ir_builder->createTopBlockForFunction(ir_member_function);
 
             auto ir_this_pointer = ir_member_function->parameters.front();
             // 这里叫函数指针, 函数的类型就是函数指针
@@ -2051,7 +2028,11 @@ class StatementLoweringVisitor {
                     field_object_pointer),
                 "raw_ptr");
             auto ir_function_call = ir_builder->create<ir::Call>(ir_function_pointer, ir_arguments);
-            ir_builder->create<ir::Return>(ir_function_call);
+            if (!is<ir::VoidType>(ir_function_call->type)) {
+                ir_builder->create<ir::Return>(ir_function_call);
+            } else {
+                ir_builder->create<ir::Return>(ir_builder->create<ir::VoidValue>());
+            }
 
             ir_interface->functions.push_back(ir_member_function);
         }

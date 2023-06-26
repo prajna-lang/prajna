@@ -1,0 +1,29 @@
+func Perf(array0: Tensor<i32, 1>, array1: Tensor<i32, 1>, array2: Tensor<i32, 1>) {
+    var i = 0;
+    while (i < array0.Shape()[0]){
+        array2[i] = array0[i] + array1[i];
+        i = i + 1;
+    }
+}
+
+
+
+func Main() {
+    var size = 1000000000;
+    var shape = [size];
+
+    var array0 = Tensor<i32, 1>::Create(shape);
+    var array1 = Tensor<i32, 1>::Create(shape);
+    var array2 = Tensor<i32, 1>::Create(shape);
+
+    "start".PrintLine();
+    var t0 = chrono::Clock();
+
+    Perf(array0, array1, array2);
+
+    var t1 = chrono::Clock();
+    var gb_per_second = ((size * 4).Cast<f32>()) / 1000000000.0 / (t1 - t0);
+
+    gb_per_second.ToString().Print();
+    "GB/s".PrintLine();
+}

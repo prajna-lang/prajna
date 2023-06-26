@@ -19,6 +19,7 @@ implement Layout<Dim> {
         return self;
     }
 
+    @inline
     func LinearIndexToArrayIndex(offset: i64)->Array<i64, Dim>{
         var array_idx: Array<i64, Dim>;
         var remain = offset;
@@ -32,6 +33,7 @@ implement Layout<Dim> {
         return array_idx;
     }
 
+    @inline
     func ArrayIndexToLinearIndex(idx: Array<i64, Dim>)->i64{
         var offset = 0;
         var i =  Dim - 1;
@@ -42,6 +44,7 @@ implement Layout<Dim> {
         return offset;
     }
 
+    @inline
     func Length()->i64{
         return this.shape[0] * this.stride[0];
     }
@@ -54,6 +57,7 @@ struct Tensor {
 }
 
 template <Type, Dim>
+@disable_dynamic
 interface AtProperty {
     func Get(idx: Array<i64, Dim>)->Type;
     func Set(idx: Array<i64, Dim>, value: Type);
@@ -61,11 +65,13 @@ interface AtProperty {
 
 template <Type, Dim>
 implement AtProperty<Type, Dim> for Tensor<Type, Dim>{
+    @inline
     func Get(idx: Array<i64, Dim>)->Type{
         var offset = this.layout.ArrayIndexToLinearIndex(idx);
         return this.data.raw_ptr[offset];
     }
 
+    @inline
     func Set(idx: Array<i64, Dim>, value: Type){
         var offset = this.layout.ArrayIndexToLinearIndex(idx);
         this.data.raw_ptr[offset] = value;
@@ -83,6 +89,7 @@ implement Tensor<Type, Dim> {
         return self;
     }
 
+    @inline
     func Shape()->Array<i64, Dim> {
         return this.layout.shape;
     }
@@ -114,10 +121,12 @@ implement Tensor<Type, Dim> {
 
 template <Type, Dim>
 implement operator::ArrayIndex<Type, Dim> for Tensor<Type, Dim> {
+    @inline
     func Get(idx: Array<i64, Dim>)->Type{
         return this.At(idx);
     }
 
+    @inline
     func Set(idx: Array<i64, Dim>, value: Type){
         this.At(idx) = value;
     }

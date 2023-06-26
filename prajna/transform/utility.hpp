@@ -22,6 +22,7 @@ inline void eachValue(std::shared_ptr<ir::Block> ir_block,
         }
 
         if (auto ir_while = cast<ir::While>(ir_value)) {
+            eachValue(ir_while->conditionBlock(), callback);
             eachValue(ir_while->loopBlock(), callback);
         }
 

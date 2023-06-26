@@ -130,6 +130,8 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         return nullptr;
     }
 
+    std::list<std::shared_ptr<Value>>::iterator GetBlockIterator();
+
     std::shared_ptr<Block> getRootBlock();
 
     bool isFunction() { return getFunctionType() != nullptr; }
@@ -217,6 +219,7 @@ class ConstantBool : public Constant {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<ConstantBool> ir_new(new ConstantBool(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
 
@@ -334,40 +337,23 @@ class ConstantArray : public Constant {
     }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<ConstantArray> ir_new(new ConstantArray(*this));
+        std::list<std::shared_ptr<Constant>> new_initialize_constants(
+            this->initialize_constants.size());
         std::transform(
-            RANGE(initialize_constants), std::back_inserter(ir_new->initialize_constants),
-            [=](auto ir_constant) { return cast<Constant>(ir_constant->clone(function_cloner)); });
-        return ir_new;
-    }
+            RANGE(this->initialize_constants), new_initialize_constants.begin(),
+            [=](auto ir_constant) {
+                PRAJNA_ASSERT(
+                    function_cloner->value_dict[ir_constant]);  // constant应该在前面就处理过;
+                return cast<Constant>(function_cloner->value_dict[ir_constant]);
+            });
 
-    std::list<std::shared_ptr<Constant>> initialize_constants;
-};
-
-class ConstantStruct : public Constant {
-   protected:
-    ConstantStruct() = default;
-
-   public:
-    static std::shared_ptr<ConstantStruct> create(
-        std::shared_ptr<Type> type,
-        std::unordered_map<std::string, std::shared_ptr<Constant>> fields) {
-        PRAJNA_ASSERT(type);
-        std::shared_ptr<ConstantStruct> self(new ConstantStruct);
-        self->type = type;
-        self->fileds = fields;
-        self->tag = "ConstantStruct";
-        return self;
-    };
-
-    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<ConstantStruct> ir_new(new ConstantStruct(*this));
+        std::shared_ptr<ConstantArray> ir_new =
+            ConstantArray::create(cast<ArrayType>(this->type), new_initialize_constants);
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
 
-   public:
-    std::unordered_map<std::string, std::shared_ptr<Constant>> fileds;
+    std::list<std::shared_ptr<Constant>> initialize_constants;
 };
 
 class Block : public Value {
@@ -463,33 +449,7 @@ class Function : public Value {
         return self;
     }
 
-    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<Function> ir_new(new Function(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-
-        ir_new->parent_module = function_cloner->module;
-        ir_new->parameters.clear();
-        std::transform(RANGE(parameters), std::back_inserter(ir_new->parameters),
-                       [=](auto ir_parameter) {
-                           auto ir_new_parameter = ir_parameter->clone(function_cloner);
-                           function_cloner->value_dict[ir_parameter] = ir_new_parameter;
-                           return ir_new_parameter;
-                       });
-
-        // 需要再开头, 因为函数有可能存在递归
-        ir_new->blocks.clear();
-        for (auto ir_block : blocks) {
-            if (not function_cloner->value_dict.count(ir_block)) {
-                ir_block->clone(function_cloner);
-            }
-
-            auto ir_new_block = cast<Block>(function_cloner->value_dict[ir_block]);
-            ir_new->blocks.push_back(ir_new_block);
-        }
-
-        function_cloner->functions.push_back(ir_new);
-        return ir_new;
-    }
+    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override;
 
     void finalize() override {
         Value::finalize();
@@ -499,8 +459,9 @@ class Function : public Value {
         this->blocks.clear();
     }
 
+    bool IsDeclaration() { return this->blocks.empty(); }
+
    public:
-    bool is_declaration = false;
     std::shared_ptr<FunctionType> function_type = nullptr;
     std::list<std::shared_ptr<Value>> parameters;
     std::list<std::shared_ptr<Block>> blocks;
@@ -585,6 +546,7 @@ class Instruction : virtual public Value {
     };
 
     virtual void operand(size_t i, std::shared_ptr<Value> ir_value) {
+        PRAJNA_ASSERT(ir_value);
         PRAJNA_ASSERT(this->operandSize() > i);
 
         auto ir_old_value = this->operands[i];
@@ -603,7 +565,11 @@ class Instruction : virtual public Value {
         Value::finalize();
 
         for (size_t i = 0; i < operandSize(); ++i) {
-            this->operand(i, nullptr);
+            auto ir_old_value = this->operands[i];
+            if (ir_old_value) {
+                ir_old_value->instruction_with_index_list.remove(
+                    {cast<Instruction>(this->shared_from_this()), i});
+            }
         }
 
         this->operandResize(0);
@@ -613,20 +579,11 @@ class Instruction : virtual public Value {
         for (size_t i = 0; i < operands.size(); ++i) {
             auto ir_old = operands[i];
 
-            if (is<Function>(ir_old)) {
-                if (not function_cloner->value_dict[ir_old]) {
-                    ir_old->clone(function_cloner);
-                }
-            }
-
-            // JumpBranch/ConditionBranch的Block由于可能出现在后面而没被复制
-            // Block会处理上述情况
-            if (not function_cloner->value_dict.count(ir_old)) {
-                continue;
+            if (!function_cloner->value_dict[ir_old]) {
+                ir_old->clone(function_cloner);
             }
 
             operands[i] = nullptr;  // 置零以避免干扰原来的操作数
-            PRAJNA_ASSERT(function_cloner->value_dict.count(ir_old));
             auto ir_new = function_cloner->value_dict[ir_old];
             operand(i, ir_new);
         }
@@ -1113,15 +1070,7 @@ class Return : public Instruction {
             cast<Return>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Return)));
         self->operandResize(1);
         self->type = ir_value->type;
-        // 这里把void类型的值替换为, void值本身
-        if (is<VoidType>(ir_value->type)) {
-            auto ir_void = VoidValue::create();
-            auto iter = std::find(RANGE(ir_value->parent_block->values), ir_value);
-            ir_value->parent_block->insert(iter, ir_void);
-            self->value(ir_void);
-        } else {
-            self->value(ir_value);
-        }
+        self->value(ir_value);
         self->tag = "Return";
         return self;
     }
@@ -1252,13 +1201,6 @@ class ConditionBranch : public Instruction {
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<ConditionBranch> ir_new(new ConditionBranch(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        // 先设置value_dict避免递归
-        if (not function_cloner->value_dict.count(trueBlock())) {
-            auto ir_new_true_block = cast<Block>(trueBlock()->clone(function_cloner));
-        }
-        if (not function_cloner->value_dict.count(falseBlock())) {
-            auto ir_new_false_block = cast<Block>(falseBlock()->clone(function_cloner));
-        }
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1284,11 +1226,6 @@ class JumpBranch : public Instruction {
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<JumpBranch> ir_new(new JumpBranch(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        // 先设置value_dict避免递归
-        if (not function_cloner->value_dict.count(nextBlock())) {
-            auto ir_new_next_block = cast<Block>(nextBlock()->clone(function_cloner));
-        }
-
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1348,8 +1285,6 @@ class If : public Instruction {
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<If> ir_new(new If(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        function_cloner->value_dict[trueBlock()] = trueBlock()->clone(function_cloner);
-        function_cloner->value_dict[falseBlock()] = falseBlock()->clone(function_cloner);
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1362,16 +1297,12 @@ class While : public Instruction {
    public:
     static std::shared_ptr<While> create(std::shared_ptr<Value> ir_condition,
                                          std::shared_ptr<Block> ir_condition_block,
-                                         std::shared_ptr<Block> ir_true_block,
-                                         std::shared_ptr<Label> ir_before_label,
-                                         std::shared_ptr<Label> ir_after_label) {
+                                         std::shared_ptr<Block> ir_loop_block) {
         std::shared_ptr<While> self(new While);
-        self->operandResize(5);
+        self->operandResize(3);
         self->condition(ir_condition);
         self->conditionBlock(ir_condition_block);
-        self->trueBlock(ir_true_block);
-        self->beforeLabel(ir_before_label);
-        self->afterLabel(ir_after_label);
+        self->loopBlock(ir_loop_block);
         self->tag = "While";
         return self;
     }
@@ -1385,19 +1316,11 @@ class While : public Instruction {
     }
 
     std::shared_ptr<Block> loopBlock() { return cast<Block>(this->operand(2)); }
-    void trueBlock(std::shared_ptr<Block> ir_true_block) { this->operand(2, ir_true_block); }
-
-    std::shared_ptr<Label> beforeLabel() { return cast<Label>(this->operand(3)); }
-    void beforeLabel(std::shared_ptr<Label> ir_true_block) { this->operand(3, ir_true_block); }
-
-    std::shared_ptr<Label> afterLabel() { return cast<Label>(this->operand(4)); }
-    void afterLabel(std::shared_ptr<Label> ir_true_block) { this->operand(4, ir_true_block); }
+    void loopBlock(std::shared_ptr<Block> ir_true_block) { this->operand(2, ir_true_block); }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<While> ir_new(new While(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        function_cloner->value_dict[conditionBlock()] = conditionBlock()->clone(function_cloner);
-        function_cloner->value_dict[loopBlock()] = loopBlock()->clone(function_cloner);
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1411,18 +1334,14 @@ class For : public Instruction {
     static std::shared_ptr<For> create(std::shared_ptr<LocalVariable> ir_index,
                                        std::shared_ptr<Value> ir_first,
                                        std::shared_ptr<Value> ir_last,
-                                       std::shared_ptr<Block> ir_loop_block,
-                                       std::shared_ptr<Label> ir_before_label,
-                                       std::shared_ptr<Label> ir_after_label) {
+                                       std::shared_ptr<Block> ir_loop_block) {
         // std::shared_ptr<For> self(new For);
         std::shared_ptr<For> self(new For);
-        self->operandResize(6);
+        self->operandResize(4);
         self->index(ir_index);
         self->first(ir_first);
         self->last(ir_last);
         self->loopBlock(ir_loop_block);
-        self->beforeLabel(ir_before_label);
-        self->afterLabel(ir_after_label);
         self->tag = "For";
         return self;
     }
@@ -1439,16 +1358,59 @@ class For : public Instruction {
     std::shared_ptr<Block> loopBlock() { return cast<Block>(this->operand(3)); }
     void loopBlock(std::shared_ptr<Block> ir_loop_block) { this->operand(3, ir_loop_block); }
 
-    std::shared_ptr<Label> beforeLabel() { return cast<Label>(this->operand(4)); }
-    void beforeLabel(std::shared_ptr<Label> ir_true_block) { this->operand(4, ir_true_block); }
-
-    std::shared_ptr<Label> afterLabel() { return cast<Label>(this->operand(5)); }
-    void afterLabel(std::shared_ptr<Label> ir_true_block) { this->operand(5, ir_true_block); }
-
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<For> ir_new(new For(*this));
-        function_cloner->value_dict[index()] = index()->clone(function_cloner);
-        function_cloner->value_dict[loopBlock()] = loopBlock()->clone(function_cloner);
+        function_cloner->value_dict[shared_from_this()] = ir_new;
+        ir_new->cloneOperands(function_cloner);
+        return ir_new;
+    }
+};
+
+class Break : public Instruction {
+   protected:
+    Break() = default;
+
+   public:
+    static std::shared_ptr<Break> create(std::shared_ptr<Value> loop) {
+        PRAJNA_ASSERT(is<While>(loop) || is<For>(loop));
+        std::shared_ptr<Break> self(new Break);
+        self->operandResize(1);
+        self->loop(loop);
+        self->tag = "Break";
+        return self;
+    }
+
+    std::shared_ptr<Value> loop() { return this->operand(0); }
+    void loop(std::shared_ptr<Value> ir_loop) { this->operand(0, ir_loop); }
+
+    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+        std::shared_ptr<Break> ir_new(new Break(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
+        ir_new->cloneOperands(function_cloner);
+        return ir_new;
+    }
+};
+
+class Continue : public Instruction {
+   protected:
+    Continue() = default;
+
+   public:
+    static std::shared_ptr<Continue> create(std::shared_ptr<Value> loop) {
+        PRAJNA_ASSERT(is<While>(loop) || is<For>(loop));
+        std::shared_ptr<Continue> self(new Continue);
+        self->operandResize(1);
+        self->loop(loop);
+        self->tag = "Continue";
+        return self;
+    }
+
+    std::shared_ptr<Value> loop() { return this->operand(0); }
+    void loop(std::shared_ptr<Value> ir_loop) { this->operand(0, ir_loop); }
+
+    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+        std::shared_ptr<Continue> ir_new(new Continue(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1523,6 +1485,7 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<AccessProperty> ir_new(new AccessProperty(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->cloneOperands(function_cloner);
         return ir_new;
     }
@@ -1691,11 +1654,14 @@ inline std::shared_ptr<Block> Value::getRootBlock() {
     return root;
 }
 
+inline std::list<std::shared_ptr<Value>>::iterator Value::GetBlockIterator() {
+    auto iter = std::find(RANGE(this->parent_block->values), this->shared_from_this());
+    PRAJNA_ASSERT(iter != this->parent_block->values.end());
+    return iter;
+}
+
 inline void Value::finalize() {
-    auto instruction_with_index_list_copy = this->instruction_with_index_list;
-    for (auto [ir_instruction, idx] : instruction_with_index_list_copy) {
-        ir_instruction->operand(idx, nullptr);
-    }
+    PRAJNA_ASSERT(this->instruction_with_index_list.size() == 0);
     this->detach();
 
     is_finalized = true;
@@ -1744,6 +1710,49 @@ inline std::shared_ptr<ir::Function> getFunctionByName(
                                       [=](auto ir_function) { return ir_function->name == name; });
     PRAJNA_ASSERT(iter_function != function_list.end(), name);
     return *iter_function;
+}
+
+inline std::shared_ptr<Value> Function::clone(std::shared_ptr<FunctionCloner> function_cloner) {
+    if (function_cloner->shallow && function_cloner->has_cloned) {
+        function_cloner->value_dict[shared_from_this()] = shared_from_this();
+        return shared_from_this();
+    }
+
+    if (function_cloner->shallow) {
+        function_cloner->has_cloned = true;
+    }
+
+    std::shared_ptr<Function> ir_new(new Function(*this));
+    function_cloner->value_dict[shared_from_this()] = ir_new;
+
+    ir_new->parent_module = function_cloner->module;
+    ir_new->parameters.clear();
+    std::transform(RANGE(parameters), std::back_inserter(ir_new->parameters),
+                   [=](auto ir_parameter) {
+                       auto ir_new_parameter = ir_parameter->clone(function_cloner);
+                       function_cloner->value_dict[ir_parameter] = ir_new_parameter;
+                       return ir_new_parameter;
+                   });
+
+    // 需要再开头, 因为函数有可能存在递归
+    ir_new->blocks.clear();
+    for (auto ir_block : blocks) {
+        if (not function_cloner->value_dict.count(ir_block)) {
+            ir_block->clone(function_cloner);
+        }
+
+        auto ir_new_block = cast<Block>(function_cloner->value_dict[ir_block]);
+        ir_new->blocks.push_back(ir_new_block);
+    }
+
+    // 在后面加入module, 否则顺序不对
+    function_cloner->module->functions.push_back(ir_new);
+    return ir_new;
+}
+
+inline bool IsTerminated(std::shared_ptr<ir::Value> ir_value) {
+    return is<Return>(ir_value) || is<Break>(ir_value) || is<Continue>(ir_value) ||
+           is<JumpBranch>(ir_value) || is<ConditionBranch>(ir_value);
 }
 
 }  // namespace prajna::ir

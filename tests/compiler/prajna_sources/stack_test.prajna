@@ -1,0 +1,20 @@
+@test
+func TestMain() {
+    var stack:Stack<i64>;
+    test::Assert(stack.IsEmpty());
+
+    stack.Push(1);
+    stack.Push(2);
+    stack.Push(3);
+    test::Assert(!stack.IsEmpty());
+    test::Assert(stack.Top() == 3);
+
+    var value = stack.Pop();
+    test::Assert(value == 3);
+    test::Assert(stack.Top() == 2);
+
+    value = stack.Pop();
+    value = stack.Pop();
+    test::Assert(stack.IsEmpty());
+
+}

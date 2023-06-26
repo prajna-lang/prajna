@@ -73,8 +73,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(use, success_handler_function);
 
     variable_declaration.name("variable_declaration");
-    variable_declaration =
-        (tok.var > identifier) >> -(tok.colon > type) >> -(omit[tok.assign] > expr);
+    variable_declaration = annotation_dict >> (tok.var > identifier) >> -(tok.colon > type) >>
+                           -(omit[tok.assign] > expr);
     on_error<fail>(variable_declaration, error_handler_function);
     on_success(variable_declaration, success_handler_function);
 

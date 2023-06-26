@@ -235,9 +235,20 @@ inline void convertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
 
 inline void cloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
     if (ir_module->modules.count(ir::Target::nvptx) == 0) {
+        return;
     }
 
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
+
+    ir_module->global_allocas.remove_if([=](auto ir_global_alloca) -> bool {
+        if (ir_global_alloca->address_space == 3) {
+            ir_nvptx_module->global_allocas.push_back(ir_global_alloca);
+            ir_global_alloca->parent_module = ir_nvptx_module;
+            return true;
+        } else {
+            return false;
+        }
+    });
 
     std::list<std::shared_ptr<ir::Function>> ir_kernel_function_list;
     std::copy_if(RANGE(ir_nvptx_module->functions), std::back_inserter(ir_kernel_function_list),
@@ -463,6 +474,42 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
     }
 }
 
+inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::Module> ir_module) {
+    auto ir_shared_variable_list = utility::getValuesInModule<ir::LocalVariable>(ir_module);
+    ir_shared_variable_list.remove_if([](auto ir_local_variable) {
+        return ir_local_variable->annotation_dict.count("shared") == 0;
+    });
+
+    for (auto ir_shared_variable : ir_shared_variable_list) {
+        auto ir_global_alloca = ir::GlobalAlloca::create(ir_shared_variable->type);
+        ir_global_alloca->address_space = 3;  // nvptx shared memory
+        // 名字需要确认
+        ir_global_alloca->name = ir_shared_variable->name;
+        // TODO 名字后面需要处理
+        ir_global_alloca->fullname = ir_shared_variable->name;
+        ir_global_alloca->is_external = false;
+        ir_global_alloca->parent_module = ir_module;
+        ir_module->global_allocas.push_back(ir_global_alloca);
+
+        auto ir_builder = lowering::IrBuilder::create();
+        ir_builder->pushBlock(ir_shared_variable->parent_block);
+        // 在最开始插入就行, 留意AddressCast是不是统一转换一次就行了
+        ir_builder->inserter_iterator = ir_shared_variable->parent_block->values.begin();
+        auto ir_address_cast =
+            ir_builder->create<ir::CastInstruction>(ir::CastInstruction::Operation::AddrSpaceCast,
+                                                    ir_global_alloca, ir_global_alloca->type);
+        auto ir_deference_pointer = ir_builder->create<ir::DeferencePointer>(ir_address_cast);
+
+        for (auto [ir_instruction, op_idx] :
+             clone(ir_shared_variable->instruction_with_index_list)) {
+            ir_instruction->operand(op_idx, ir_deference_pointer);
+        }
+
+        utility::removeFromParent(ir_shared_variable);
+        ir_shared_variable->finalize();
+    }
+}
+
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
     PRAJNA_ASSERT(VerifyModule(ir_module));
@@ -490,6 +537,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     PRAJNA_ASSERT(VerifyModule(ir_module));
+    ConvertSharedMemoryLocalVariableToGlobalAlloca(ir_module);
     // ssa
     bool changed = true;
     while (changed) {

@@ -101,6 +101,13 @@ struct StringLiteral : SourceLocation {
     std::string value;
 };
 
+struct Annotation : SourceLocation {
+    Identifier name;
+    std::list<StringLiteral> values;
+};
+
+struct AnnotationDict : SourceLocation, std::list<Annotation> {};
+
 struct IdentifierPath;
 
 typedef IdentifierPath Type;
@@ -162,6 +169,7 @@ struct Array : SourceLocation {
 };
 
 struct VariableDeclaration : SourceLocation {
+    AnnotationDict annotation_dict;
     Identifier name;
     boost::optional<Type> type_optional;
     boost::optional<Expression> initialize_optional;
@@ -194,13 +202,6 @@ struct Pragma : SourceLocation {
     Identifier name;
     std::list<StringLiteral> values;
 };
-
-struct Annotation : SourceLocation {
-    Identifier name;
-    std::list<StringLiteral> values;
-};
-
-struct AnnotationDict : SourceLocation, std::list<Annotation> {};
 
 template <typename _T>
 struct Annotated {
@@ -345,7 +346,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::PostfixUnary, operand, operators)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::BinaryOperation, operator_, operand)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Assignment, left, right)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Expression, first, rest)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::VariableDeclaration, name, type_optional,
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::VariableDeclaration, annotation_dict, name, type_optional,
                           initialize_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::If, condition, then, else_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::While, condition, body)

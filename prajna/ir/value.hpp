@@ -955,14 +955,17 @@ class GlobalAlloca : public Instruction {
     }
 
     std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<GlobalAlloca> ir_new(new GlobalAlloca(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-        ir_new->cloneOperands(function_cloner);
-        return ir_new;
+        // std::shared_ptr<GlobalAlloca> ir_new(new GlobalAlloca(*this));
+        /// TODO 需要进一步处理
+        function_cloner->value_dict[shared_from_this()] = shared_from_this();
+        // ir_new->cloneOperands(function_cloner);
+        // return ir_new;
+        return shared_from_this();
     }
 
    public:
     bool is_external = false;
+    uint32_t address_space = 0;
     std::shared_ptr<Module> parent_module;
     // std::shared_ptr<GlobalVariable> link_to_global_variable = nullptr;
 };
@@ -1595,6 +1598,27 @@ class KernelFunctionCall : public Instruction {
 
         return arguments_re;
     }
+};
+
+class GpuSharedMemory : public Variable {
+   protected:
+    GpuSharedMemory() = default;
+
+   public:
+    std::shared_ptr<GpuSharedMemory> Create(std::shared_ptr<Type> ir_type) {
+        std::shared_ptr<GpuSharedMemory> self(new GpuSharedMemory);
+        self->type = ir_type;
+        self->tag = "GpuSharedMemory";
+        return self;
+    }
+
+    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+        std::shared_ptr<GpuSharedMemory> ir_new(new GpuSharedMemory(*this));
+        function_cloner->value_dict[shared_from_this()] = ir_new;
+        return ir_new;
+    }
+
+   private:
 };
 
 inline std::shared_ptr<Function> Value::getParentFunction() {

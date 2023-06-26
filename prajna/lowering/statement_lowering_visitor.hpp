@@ -262,6 +262,8 @@ class StatementLoweringVisitor {
         } else {
             ir_variable_liked = ir_builder->create<ir::LocalVariable>(ir_type);
         }
+        ir_variable_liked->annotation_dict =
+            this->applyAnnotations(ast_variable_declaration.annotation_dict);
         ir_builder->SetSymbol(ir_variable_liked, ast_variable_declaration.name);
 
         if (ir_initial_value) {
@@ -311,7 +313,8 @@ class StatementLoweringVisitor {
         return types;
     }
 
-    auto applyAnnotations(ast::AnnotationDict ast_annotations) {
+    std::unordered_map<std::string, std::list<std::string>> applyAnnotations(
+        ast::AnnotationDict ast_annotations) {
         std::unordered_map<std::string, std::list<std::string>> annotation_dict;
         for (auto ast_annotation : ast_annotations) {
             std::list<std::string> values;
@@ -548,6 +551,8 @@ class StatementLoweringVisitor {
                            [](ast::StringLiteral string_literal) { return string_literal.value; });
             ir_for->annotation_dict.insert({ast_annotation.name, values});
         }
+
+        ir_for->annotation_dict = applyAnnotations(ast_for.annotation_dict);
 
         return ir_for;
     }

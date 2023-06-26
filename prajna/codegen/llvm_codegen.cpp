@@ -350,7 +350,8 @@ class LlvmCodegen {
         // 事实上llvm::GlobalVariable其实获取一个个指针
         auto llvm_global_variable = new llvm::GlobalVariable(
             *(ir_global_alloca->parent_module->llvm_module), ir_value_type->llvm_type, false,
-            llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, ir_global_alloca->fullname);
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, ir_global_alloca->fullname,
+            nullptr, llvm::GlobalValue::NotThreadLocal, ir_global_alloca->address_space, false);
         if (!ir_global_alloca->is_external) {
             // @note 需要初始化, 否则符号会找到不到. 也就是说如果不初始化, 则其为external
             llvm_global_variable->setInitializer(llvm::UndefValue::get(ir_value_type->llvm_type));

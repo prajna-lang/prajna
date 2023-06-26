@@ -121,6 +121,7 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
             implement_is_processing[template_arguments] = true;
             struct_type_instance_dict[template_arguments] = symbolGet<ir::Type>(
                 template_struct_impl->instantiate(template_arguments, ir_module));
+            PRAJNA_ASSERT(struct_type_instance_dict[template_arguments]);
             struct_type_instance_dict[template_arguments]->template_struct =
                 this->shared_from_this();
             struct_type_instance_dict[template_arguments]->template_arguments_any =

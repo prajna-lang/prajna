@@ -465,7 +465,6 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
-    convertThisWrapperToDeferencePointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
@@ -490,7 +489,6 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     convertGlobalVariableToPointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    convertThisWrapperToDeferencePointer(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     // ssa
     bool changed = true;

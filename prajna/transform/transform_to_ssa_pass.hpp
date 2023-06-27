@@ -43,36 +43,6 @@ inline bool insertValueToBlock(std::shared_ptr<ir::Module> ir_module) {
     return changed;
 }
 
-inline bool convertThisWrapperToDeferencePointer(std::shared_ptr<ir::Module> ir_module) {
-    bool changed = false;
-    for (auto ir_function : ir_module->functions) {
-        //
-        auto ir_this_wrappers = utility::getValuesInFunction<ir::ThisWrapper>(ir_function);
-
-        for (auto ir_this_wrapper : ir_this_wrappers) {
-            // 改变使用它的
-            changed = true;
-            auto ir_deference_pointer =
-                ir::DeferencePointer::create(ir_this_wrapper->thisPointer());
-            auto iter = std::find(RANGE(ir_this_wrapper->parent_block->values), ir_this_wrapper);
-            ir_this_wrapper->parent_block->insert(iter, ir_deference_pointer);
-            for (auto instruction_with_index_list :
-                 clone(ir_this_wrapper->instruction_with_index_list)) {
-                auto ir_inst = instruction_with_index_list.instruction;
-                size_t op_idx = instruction_with_index_list.operand_index;
-
-                auto ir_block = ir_inst->parent_block;
-                ir_inst->operand(op_idx, ir_deference_pointer);
-            }
-
-            ir_this_wrapper->parent_block->remove(ir_this_wrapper);
-            ir_this_wrapper->finalize();
-        }
-    }
-
-    return changed;
-}
-
 inline bool convertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_module) {
     bool changed = false;
 

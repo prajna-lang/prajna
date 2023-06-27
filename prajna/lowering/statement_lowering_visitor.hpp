@@ -420,7 +420,7 @@ class StatementLoweringVisitor {
                 if (ir_builder->isBuildingMemberfunction()) {
                     auto ir_this_pointer =
                         symbolGet<ir::Value>(ir_builder->symbol_table->get("this-pointer"));
-                    auto ir_this = ir_builder->create<ir::ThisWrapper>(ir_this_pointer);
+                    auto ir_this = ir_builder->create<ir::DeferencePointer>(ir_this_pointer);
                     ir_builder->symbol_table->setWithAssigningName(ir_this, "this");
                 }
 

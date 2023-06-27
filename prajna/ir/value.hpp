@@ -593,34 +593,6 @@ class Instruction : virtual public Value {
     std::vector<std::shared_ptr<Value>> operands;
 };
 
-class ThisWrapper : virtual public VariableLiked, virtual public Instruction {
-   protected:
-    ThisWrapper() = default;
-
-   public:
-    static std::shared_ptr<ThisWrapper> create(std::shared_ptr<Value> ir_this_pointer) {
-        PRAJNA_ASSERT(ir_this_pointer);
-        std::shared_ptr<ThisWrapper> self(new ThisWrapper);
-        self->operandResize(1);
-        self->thisPointer(ir_this_pointer);
-        auto ir_pointer_type = cast<PointerType>(ir_this_pointer->type);
-        PRAJNA_ASSERT(ir_pointer_type);
-        self->type = ir_pointer_type->value_type;
-        self->tag = "ThisWrapper";
-        return self;
-    }
-
-    std::shared_ptr<Value> thisPointer() { return this->operand(0); }
-    void thisPointer(std::shared_ptr<Value> ir_this) { this->operand(0, ir_this); }
-
-    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<ThisWrapper> ir_new(new ThisWrapper(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-        ir_new->cloneOperands(function_cloner);
-        return ir_new;
-    }
-};
-
 /// @brief 用于访问结构体的字段, 最终会变为指针偏移的方式, Constant在lowering的时候就做单独处理
 class AccessField : virtual public VariableLiked, virtual public Instruction {
    protected:

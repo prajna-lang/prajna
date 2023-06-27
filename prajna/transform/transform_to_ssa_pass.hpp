@@ -271,7 +271,7 @@ inline bool convertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
                     utility::replaceInBlock(ir_write_variable_liked, ir_store);
                 } else {
                     auto ir_load = ir::LoadPointer::create(ir_pointer);
-                    ir_deference_pointer->parent_block->insert(iter_deference_pointer, ir_load);
+                    ir_inst->parent_block->insert(ir_inst->GetBlockIterator(), ir_load);
                     ir_inst->operand(op_idx, ir_load);
                 }
             }

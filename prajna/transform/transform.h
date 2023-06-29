@@ -102,7 +102,8 @@ inline void convertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             // auto ir_arguments = ir_kernel_function_call->parameters();
             auto ir_block = ir_kernel_function_call->parent_block;
 
-            auto ir_builder = lowering::IrBuilder::create();
+            auto ir_builder =
+                lowering::IrBuilder::create(ir_module->symbol_table, ir_module, nullptr);
             ir_builder->pushBlock(ir_block);
             ir_builder->inserter_iterator =
                 std::find(RANGE(ir_block->values), ir_kernel_function_call);
@@ -139,7 +140,17 @@ inline void convertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                 ir_builder->create<ir::GetAddressOfVariableLiked>(ir_array_index0),
                 ir::PointerType::create(ir::PointerType::create(ir::IntType::create(8, true))));
             ir_arguments.push_back(ir_array_address);
-            ir_builder->create<ir::Call>(ir_launch_function, ir_arguments);
+            auto ir_kernel_call = ir_builder->create<ir::Call>(ir_launch_function, ir_arguments);
+            auto ir_zero = ir_builder->getIndexConstant(0);
+            auto ir_condition = ir_builder->callBinaryOperator(ir_kernel_call, "!=", ir_zero);
+            auto ir_if =
+                ir_builder->create<ir::If>(ir_condition, ir::Block::create(), ir::Block::create());
+
+            ir_builder->pushBlock(ir_if->trueBlock());
+            auto ir_str = ir_builder->getString("Failed launch kernel: ret: ");
+            ir_builder->callMemberFunction(ir_str, "Print", {});
+            ir_builder->callMemberFunction(ir_kernel_call, "PrintLine", {});
+            ir_builder->popBlock();
 
             utility::removeFromParent(ir_kernel_function_call);
             ir_kernel_function_call->finalize();
@@ -409,8 +420,11 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
             PRAJNA_ASSERT(ir_function->blocks.empty());
             auto ir_builder = lowering::IrBuilder::create();
             ir_builder->createTopBlockForFunction(ir_function);
-            ir_builder->create<ir::Return>(
-                ir_builder->create<ir::Call>(ir_decl_function, ir_function->parameters));
+            auto ir_call = ir_builder->create<ir::Call>(ir_decl_function, ir_function->parameters);
+            if (!is<ir::VoidType>(ir_decl_function->function_type->return_type)) {
+                ir_builder->create<ir::Return>(ir_call);
+            }
+
             ir_function->annotation_dict.erase("intrinsic");
         }
     }

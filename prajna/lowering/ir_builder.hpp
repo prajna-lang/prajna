@@ -249,6 +249,32 @@ class IrBuilder {
         return nullptr;
     }
 
+    std::shared_ptr<ir::Value> getString(std::string str) {
+        // 最后需要补零, 以兼容C的字符串
+        auto char_string_size = str.size() + 1;
+        auto ir_char_string_type = ir::ArrayType::create(ir::CharType::create(), char_string_size);
+        std::list<std::shared_ptr<ir::Constant>> ir_inits(ir_char_string_type->size);
+        std::transform(RANGE(str), ir_inits.begin(),
+                       [=](char value) -> std::shared_ptr<ir::Constant> {
+                           return this->create<ir::ConstantChar>(value);
+                       });
+        // 末尾补零
+        ir_inits.back() = this->create<ir::ConstantChar>('\0');
+        auto ir_c_string_constant = this->create<ir::ConstantArray>(ir_char_string_type, ir_inits);
+        auto ir_c_string_variable = this->variableLikedNormalize(ir_c_string_constant);
+        auto ir_constant_zero = this->getIndexConstant(0);
+        auto ir_c_string_index0 =
+            this->create<ir::IndexArray>(ir_c_string_variable, ir_constant_zero);
+        auto ir_c_string_address = this->create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
+        ast::IdentifierPath ast_identifier_path;
+        auto string_symbol = this->getSymbolByPath(true, {"String"});
+        auto string_type = cast<ir::StructType>(symbolGet<ir::Type>(string_symbol));
+        auto ir_string_from_char_pat = this->GetImplementFunction(string_type, "__from_char_ptr");
+        // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
+        return this->create<ir::Call>(ir_string_from_char_pat,
+                                      std::list<std::shared_ptr<ir::Value>>{ir_c_string_address});
+    }
+
     std::shared_ptr<ir::AccessField> accessField(std::shared_ptr<ir::Value> ir_object,
                                                  std::string field_name) {
         auto ir_variable_liked = this->variableLikedNormalize(ir_object);

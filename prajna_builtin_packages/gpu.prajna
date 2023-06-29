@@ -166,6 +166,10 @@ func __grid_shape_z()->u32;
 @intrinsic("llvm.nvvm.read.ptx.sreg.warpsize")
 func __warp_size()->u32;
 
+@target("nvptx")
+@intrinsic("llvm.nvvm.barrier0")
+func BlockBarrier();
+
 @inline
 @target("nvptx")
 func ThreadIndex()->Array<i64, 3> {

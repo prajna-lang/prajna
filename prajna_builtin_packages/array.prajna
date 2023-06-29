@@ -24,26 +24,6 @@ implement Array<Type, Length_>{
     func Length()->i64{
         return Length_;
     }
-
-    @inline
-    func Cumprod()->Type{
-        var re = 1i64.Cast<Type>();
-        for i in 0 to Length_{
-            re = re * this[i];
-        }
-        return re;
-    }
-
-    @static
-    @inline
-    func One()->Array<Type, Length_>{
-        var tmp = 1i64.Cast<Type>();
-        var re_one : Array<Type, Length_>;
-        for i in 0 to re_one.Length() {
-            re_one[i] = tmp;
-        }
-        return re_one;
-    }
 }
 
 template <Type, Length_>

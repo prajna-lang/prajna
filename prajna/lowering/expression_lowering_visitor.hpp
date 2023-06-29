@@ -82,38 +82,8 @@ class ExpressionLoweringVisitor {
         return ir_builder->create<ir::ConstantChar>(ast_char_literal.value);
     }
 
-    /// @warning 这里后期返回封装好的string类值, 现在先放回一个 char vector
     std::shared_ptr<ir::Value> operator()(ast::StringLiteral ast_string_literal) {
-        // 最后需要补零, 以兼容C的字符串
-        auto char_string_size = ast_string_literal.value.size() + 1;
-        auto ir_char_string_type = ir::ArrayType::create(ir::CharType::create(), char_string_size);
-        std::list<std::shared_ptr<ir::Constant>> ir_inits(ir_char_string_type->size);
-        std::transform(RANGE(ast_string_literal.value), ir_inits.begin(),
-                       [=](char value) -> std::shared_ptr<ir::Constant> {
-                           return ir_builder->create<ir::ConstantChar>(value);
-                       });
-        // 末尾补零
-        ir_inits.back() = ir_builder->create<ir::ConstantChar>('\0');
-        auto ir_c_string_constant =
-            ir_builder->create<ir::ConstantArray>(ir_char_string_type, ir_inits);
-        auto ir_c_string_variable = ir_builder->variableLikedNormalize(ir_c_string_constant);
-        auto ir_constant_zero = ir_builder->getIndexConstant(0);
-        auto ir_c_string_index0 =
-            ir_builder->create<ir::IndexArray>(ir_c_string_variable, ir_constant_zero);
-        auto ir_c_string_address =
-            ir_builder->create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
-        ast::IdentifierPath ast_identifier_path;
-        ast_identifier_path.root_optional = ast::Operator("::");
-        ast_identifier_path.identifiers.resize(1);
-        ast_identifier_path.identifiers.front().identifier = "String";
-        auto string_type = cast<ir::StructType>(
-            symbolGet<ir::Type>(this->applyIdentifierPath(ast_identifier_path)));
-
-        auto ir_string_from_char_pat =
-            ir_builder->GetImplementFunction(string_type, "__from_char_ptr");
-        // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
-        return ir_builder->create<ir::Call>(
-            ir_string_from_char_pat, std::list<std::shared_ptr<ir::Value>>{ir_c_string_address});
+        return ir_builder->getString(ast_string_literal.value);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteral ast_int_literal) {

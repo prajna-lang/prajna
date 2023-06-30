@@ -593,13 +593,14 @@ class ExpressionLoweringVisitor {
                                     return tempate_->instantiate(symbol_template_arguments,
                                                                  ir_builder->module);
                                 }
+
+                                logger->error("not a template", iter_ast_identifier->identifier);
+
+                                return nullptr;
                             } catch (CompileError compile_error) {
                                 logger->note(*iter_ast_identifier);
                                 throw compile_error;
                             }
-
-                            PRAJNA_UNREACHABLE;
-                            return nullptr;
                         }
                     }},
                 symbol);

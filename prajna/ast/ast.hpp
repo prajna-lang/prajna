@@ -74,9 +74,6 @@ struct BoolLiteral : SourceLocation {
 
 struct IntLiteral : SourceLocation {
     int64_t value;
-
-    // TODO 后期再做处理, 我们先不处理
-    // boost::multiprecision::cpp_int mp_int_value;
 };
 
 struct IntLiteralPostfix : SourceLocation {

@@ -241,7 +241,6 @@ inline bool FlatternBlock(std::shared_ptr<ir::Module> ir_module) {
         }
     }
 
-    /// TODO 需要修复, 存在问题
     return false;
 }
 

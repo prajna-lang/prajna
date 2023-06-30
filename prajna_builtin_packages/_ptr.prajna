@@ -56,9 +56,6 @@ template <Type>
 struct Ptr{
     raw_ptr: __ptr<Type>;
     size: i64;
-    // TODO 在激活多线程后将其换位
-    // 我们也可以使用外部的dict来存放计数器, 但是这样会增加索引的时间, 并且不利于和其他语言互操作.
-    // 在Ptr里增加个计数器不至于影响性能, 并且可以利用llvm对计数方法进行优化
     _reference_counter: __ptr<i64>;
 }
 
@@ -150,11 +147,10 @@ implement ReferenceCountable for Ptr<Type> {
     }
 
     func IncrementReferenceCount() {
-        // TODO 后面改为原子操作
+        // TODO, 后面需要改为原子操作
         *this._reference_counter = *this._reference_counter + 1;
     }
 
-        /// TODO: 需要进一步改善
     func DecrementReferenceCount() {
 
         if (this._reference_counter.IsNull()){

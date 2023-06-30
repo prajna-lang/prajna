@@ -429,7 +429,6 @@ class StatementLoweringVisitor {
 
                 (*this)(ast_function.body_optional.get());
 
-                // TODO 返回型需要进一步处理
                 // void返回类型直接补一个Return即可, 让后端去优化冗余的指令
                 if (Is<ir::VoidType>(ir_function->function_type->return_type)) {
                     ir_builder->Create<ir::Return>(ir_builder->Create<ir::VoidValue>());

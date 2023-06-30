@@ -493,7 +493,6 @@ class IrBuilder {
     std::shared_ptr<Logger> logger = nullptr;
 
     std::stack<std::shared_ptr<ir::Type>> instantiating_type_stack;
-    /// TODO we should not build function inside a function which is builting.
     std::shared_ptr<ir::Type> current_implement_type = nullptr;
     std::shared_ptr<ir::InterfaceImplement> current_implement_interface = nullptr;
     boost::optional<std::list<Symbol>> symbol_template_argument_list_optional;

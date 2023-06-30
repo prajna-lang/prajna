@@ -16,17 +16,12 @@ implement Stack<ValueType> {
     }
 
     func Pop()  {
-        if(this.IsEmpty()){
-            //TODO
-        }else{
-            this._list.PopBack();
-        }
+        debug::Assert(!this.IsEmpty());
+        this._list.PopBack();
     }
 
     func Top() -> ValueType {
-        if(this.IsEmpty()){
-            //TODO
-        }
+        debug::Assert(!this.IsEmpty());
         var last_node = (*this._list.End()).prev;
         return (*last_node).value;
     }

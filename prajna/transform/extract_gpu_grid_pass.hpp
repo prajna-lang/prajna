@@ -20,7 +20,6 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         utility::CaptureExternalVariablesInBlock(ir_gpu_for->LoopBlock());
     // 将index, first, last
     ir_captured_variables_list.remove(ir_gpu_for->index());
-    // todo
     utility::RemoveFromParent(ir_gpu_for->index());
 
     std::list<std::shared_ptr<ir::Type>> ir_argument_types;

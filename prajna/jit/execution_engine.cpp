@@ -106,9 +106,6 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (not ir_sub_module) continue;
 
-        // @todo 没有核函数,则无需编译, 可优化为没有核函数调用则无需编译, 在transform优化,
-        // 先不做处理
-        // 这个步骤会消耗显卡内存, 后期优化尽量释放,
         if (std::none_of(RANGE(ir_sub_module->functions),
                          [](std::shared_ptr<ir::Function> ir_function) {
                              return ir_function->annotation_dict.count("kernel");
@@ -204,7 +201,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
             }
         }
 
-        // @todo 一旦释放, 核函数等对象就无效了, 后面需要再进一步优化
+        // TODO 一旦释放, 核函数等对象就无效了, 后面需要再进一步优化
         // cuCtxDestroy(cu_context);
     }
 #endif

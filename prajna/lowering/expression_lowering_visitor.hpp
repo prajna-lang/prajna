@@ -91,8 +91,6 @@ class ExpressionLoweringVisitor {
     };
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteralPostfix ast_int_literal_postfix) {
-        // -1表示位数和是否有符号尚未确定
-        // TODO需要进一步处理
         std::string postfix = ast_int_literal_postfix.postfix;
         auto value = ast_int_literal_postfix.int_literal.value;
         if (postfix == "i8") {
@@ -628,8 +626,6 @@ class ExpressionLoweringVisitor {
                 // template parameter could be a ConstantInt.
                 [ir_builder = this->ir_builder](std::shared_ptr<ir::ConstantInt> ir_constant_int)
                     -> std::shared_ptr<ir::Value> {
-                    // 需要在block里插入, 这才符合后面IR转换生成的规则
-                    // TODO 可以挪到transform里做这个事
                     PRAJNA_ASSERT(ir_constant_int->type == ir_builder->GetIndexType());
                     return ir_builder->GetIndexConstant(ir_constant_int->value);
                 },
@@ -695,7 +691,6 @@ class ExpressionLoweringVisitor {
             auto ir_block_shape = (*this)(ast_kernel_function_call.operation->block_shape);
             auto ir_arguments =
                 *cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
-            // TODO arguments
             auto ir_shape3_type = ir_builder->GetShape3Type();
             if (ir_grid_shape->type != ir_shape3_type) {
                 logger->Error("the grid dim type must be i64[3]",

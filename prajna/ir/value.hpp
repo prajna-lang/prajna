@@ -955,11 +955,8 @@ class GlobalAlloca : public Instruction {
     }
 
     std::shared_ptr<Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        // std::shared_ptr<GlobalAlloca> ir_new(new GlobalAlloca(*this));
-        /// TODO 需要进一步处理
+        // 全局的不拷贝
         function_cloner->value_dict[shared_from_this()] = shared_from_this();
-        // ir_new->CloneOperands(function_cloner);
-        // return ir_new;
         return shared_from_this();
     }
 
@@ -1511,9 +1508,7 @@ class Module : public Named, public std::enable_shared_from_this<Module> {
    public:
     static std::shared_ptr<Module> Create() {
         auto self = std::shared_ptr<Module>(new Module);
-        // @todo 后面需要进一步处理
         self->modules[ir::Target::nvptx] = std::shared_ptr<Module>(new Module);
-
         return self;
     }
 

@@ -84,5 +84,5 @@ use LogicalTypeTest<Uint<128>>;
 use RealNumberTypeTest<Float<16>>;
 use RealNumberTypeTest<Float<32>>;
 use RealNumberTypeTest<Float<64>>;
-// TODO 存在bug , 需要修复
+//  目前llvm对f128的支持并不完善
 // use RealNumberTypeTest<Float<128>>; // %存在问题,

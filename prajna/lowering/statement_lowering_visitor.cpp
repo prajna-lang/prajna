@@ -134,7 +134,6 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
             PRAJNA_ASSERT(symbol.which() != 0);
         }
 
-        /// TODO 并不清晰, 后面再处理
         ir_builder->symbol_table->Set(symbol,
                                       ast_import.identifier_path.identifiers.back().identifier);
 

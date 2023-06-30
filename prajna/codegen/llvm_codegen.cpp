@@ -55,7 +55,6 @@ class LlvmCodegen {
         }
 
         if (auto ir_bool_type = cast<ir::BoolType>(ir_type)) {
-            // TODO 要求使用1位整型来表示bool类型
             ir_bool_type->llvm_type = llvm::Type::getInt1Ty(static_llvm_context);
             return;
         }
@@ -447,11 +446,10 @@ class LlvmCodegen {
 
         if (auto ir_get_struct_element_pointer =
                 cast<ir::GetStructElementPointer>(ir_instruction)) {
-            // @todo 后续需要进一步处理, 看一下偏移地址的类型是否可以一直是64位的, 还是需要调整
             std::vector<llvm::Value *> llvm_idx_list(2);
             llvm_idx_list[0] =
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
-            // @warning 结构体的偏移下标必须使用32位整型
+            // 结构体的偏移下标必须使用32位整型
             llvm_idx_list[1] = llvm::ConstantInt::get(llvm::Type::getInt32Ty(static_llvm_context),
                                                       ir_get_struct_element_pointer->field->index);
 

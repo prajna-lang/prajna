@@ -236,6 +236,10 @@ class ExpressionLoweringVisitor {
             return ir::MemberFunctionWithThisPointer::create(ir_this_pointer, ir_member_function);
         }
 
+        if (!ir_lhs->type) {
+            this->logger->error("invalid object type to access member", ir_lhs->source_location);
+        }
+
         if (auto ir_member = ir_builder->accessMember(ir_lhs, member_name)) {
             return ir_member;
         }

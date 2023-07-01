@@ -1,3 +1,0 @@
-func Test(){
-    var a:i64 = 3i32;
-}

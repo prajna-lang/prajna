@@ -193,7 +193,7 @@ class StatementLoweringVisitor {
             ir_builder->symbol_table = pre_symbole_table;
 
         } catch (CompileError compile_error) {
-            logger->note(ast_module.name);
+            logger->Note(ast_module.name);
             throw compile_error;
         }
 

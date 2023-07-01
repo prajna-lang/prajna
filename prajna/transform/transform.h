@@ -498,7 +498,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_shared_variable->type);
         ir_global_alloca->address_space = 3;  // nvptx shared memory
         ir_global_alloca->name = ir_shared_variable->name;
-        ir_global_alloca->fullname = mangleNvvmName(ir_shared_variable->fullname);
+        ir_global_alloca->fullname = MangleNvvmName(ir_shared_variable->fullname);
         ir_global_alloca->is_external = false;
         ir_global_alloca->parent_module = ir_module;
         ir_module->global_allocas.push_back(ir_global_alloca);

@@ -137,8 +137,9 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_builder->inserter_iterator = iter;
 
             // 创建用于记录迭代的变量,
-            auto ir_first_sub_one = ir_builder->CallBinaryOperator(ir_for->first(), "-",
-                                                                   ir_builder->GetIndexConstant(1));
+            auto ir_first_sub_one = ir_builder->Create<ir::BinaryOperator>(
+                ir::BinaryOperator::Operation::Sub, ir_for->first(),
+                ir_builder->GetIndexConstant(1));
             auto ir_index_count = ir_builder->CloneValue(ir_first_sub_one);
 
             auto ir_label_condition_entry = ir::Label::Create();
@@ -146,11 +147,12 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_block->insert(iter, ir_label_condition_entry);
             auto ir_label_loop = ir::Label::Create();
             // insertCallMemmberFunction会插入ir_condition
-            auto ir_index_count_add_one = ir_builder->CallBinaryOperator(
-                ir_index_count, "+", {ir_builder->GetIndexConstant(1)});
+            auto ir_index_count_add_one = ir_builder->Create<ir::BinaryOperator>(
+                ir::BinaryOperator::Operation::Add, ir_index_count,
+                ir_builder->GetIndexConstant(1));
             ir_builder->Create<ir::WriteVariableLiked>(ir_index_count_add_one, ir_index_count);
-            auto ir_condition =
-                ir_builder->CallBinaryOperator(ir_index_count, "<", {ir_for->last()});
+            auto ir_condition = ir_builder->Create<ir::CompareInstruction>(
+                ir::CompareInstruction::Operation::ICMP_SLT, ir_index_count, ir_for->last());
             auto ir_label_after_loop = ir::Label::Create();
             auto ir_condition_branch = ir_builder->Create<ir::ConditionBranch>(
                 ir_condition, ir_label_loop, ir_label_after_loop);
@@ -230,7 +232,7 @@ inline bool FlatternBlock(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         std::list<std::shared_ptr<ir::Block>> blocks;
         for (auto ir_block : ir_function->blocks) {
-            flatternBlockImpl(ir_block);
+            FlatternBlockImpl(ir_block);
             blocks.merge(splitBlock(ir_block));
         }
 

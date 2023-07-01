@@ -228,13 +228,14 @@ inline std::list<std::shared_ptr<ir::Block>> splitBlock(std::shared_ptr<ir::Bloc
 
 inline bool FlatternBlock(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
-        // @note 后面可能需要重构, 目前假设只有一个block时才需要展开
-        if (ir_function->blocks.size() != 1) continue;
+        std::list<std::shared_ptr<ir::Block>> blocks;
+        for (auto ir_block : ir_function->blocks) {
+            flatternBlockImpl(ir_block);
+            blocks.merge(splitBlock(ir_block));
+        }
 
-        auto ir_top_block = ir_function->blocks.front();
-        FlatternBlockImpl(ir_top_block);
-        // 分离成标准ssa的block形式
-        ir_function->blocks = splitBlock(ir_top_block);
+        ir_function->blocks = blocks;
+
         for (auto ir_block : ir_function->blocks) {
             ir_block->parent_function = ir_function;
             ir_block->parent_block = nullptr;

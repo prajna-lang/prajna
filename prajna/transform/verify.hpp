@@ -31,6 +31,7 @@ inline void VerifyBlockImpl(std::shared_ptr<ir::Block> ir_block,
         }
 
         if (auto ir_while = cast<ir::While>(ir_value)) {
+            VerifyBlockImpl(ir_while->ConditionBlock(), defined_values);
             VerifyBlockImpl(ir_while->LoopBlock(), defined_values);
             continue;
         }

@@ -29,8 +29,6 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
             if (!InlineCheck(ir_callee)) continue;
 
             re = true;
-            // 内联时, 函数的blocks不能展开
-            PRAJNA_ASSERT(ir_callee->blocks.size() == 1);
             auto iter = std::find(RANGE(ir_call->parent_block->values), ir_call);
             auto function_cloner = ir::FunctionCloner::Create(ir_module);
             function_cloner->shallow = true;

@@ -9,6 +9,8 @@ func Perf(array0: Tensor<i32, 1>, array1: Tensor<i32, 1>, array2: Tensor<i32, 1>
 
 
 func Main() {
+    "enter main".PrintLine();
+
     var size = 1000000000;
     var shape = [size];
 

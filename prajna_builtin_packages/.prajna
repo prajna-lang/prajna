@@ -28,18 +28,14 @@ use bindings::Assert;
 use debug;
 use test;
 
-// func Assert(success: bool){
-    // bindings::assert(success);
-// }
-
 use array::Array;
 
-use __type;
-use __float::FloatFixedPrinter;
-use __float::FloatScientificPrinter;
-use __int;
+use primitive_type;
+use float::FloatFixedPrinter;
+use float::FloatScientificPrinter;
+use int;
 
-use _ptr::Ptr;
+use ptr::Ptr;
 use dynamic;
 
 use atomic;
@@ -47,7 +43,7 @@ use atomic;
 use dynamic_array::DynamicArray;
 
 
-use __str::String;
+use string::String;
 use serializable::Serializable;
 use serialize;
 

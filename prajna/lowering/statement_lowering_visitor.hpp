@@ -1951,8 +1951,8 @@ class StatementLoweringVisitor {
             ir_interface_prototype->dynamic_type = ir::StructType::Create({});
             // 我们通过dynamic<Interface>来获取接口所对应的类型, 需要将他们关联,
             // 以便获取dynamic的实现
-            auto template_struct_dynamic = SymbolGet<TemplateStruct>(
-                ir_builder->GetSymbolByPath(true, {"Dynamic", "Dynamic"}));
+            auto template_struct_dynamic =
+                SymbolGet<TemplateStruct>(ir_builder->GetSymbolByPath(true, {"Dynamic"}));
             PRAJNA_ASSERT(template_struct_dynamic);
             ir_interface_prototype->dynamic_type->template_struct = template_struct_dynamic;
         }

@@ -682,7 +682,10 @@ class ExpressionLoweringVisitor {
     std::shared_ptr<ir::Value> operator()(ast::KernelFunctionCall ast_kernel_function_call) {
         auto ir_function = (*this)(ast_kernel_function_call.kernel_function);
         if (ast_kernel_function_call.operation) {
-            // TODO 核函数必须有判断@kernel
+            if (ir_function->annotation_dict.count("kernel") == 0) {
+                logger->Error("not a valid kernel function",
+                              ast_kernel_function_call.kernel_function);
+            }
             auto ir_function_type = ir_function->GetFunctionType();
             if (ir_function_type == nullptr) {
                 logger->Error("not callable", ast_kernel_function_call.kernel_function);

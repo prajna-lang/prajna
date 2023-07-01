@@ -1552,7 +1552,6 @@ class KernelFunctionCall : public Instruction {
         self->Function(ir_function_value);
         auto ir_function_type = ir_function_value->GetFunctionType();
         PRAJNA_ASSERT(ir_function_type);
-        // TODO 后期需要坐下处理, 需要是kernel函数合法, 禁止在host函数里对device函数进行赋值等操作.
         self->GridShape(ir_grid_shape);
         self->BlockShape(ir_block_shape);
 

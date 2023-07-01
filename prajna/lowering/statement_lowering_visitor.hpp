@@ -193,7 +193,8 @@ class StatementLoweringVisitor {
             ir_builder->symbol_table = pre_symbole_table;
 
         } catch (CompileError compile_error) {
-            /// TODO 需要进一步处理, Compiler的error计数并未生效;
+            logger->note(ast_module.name);
+            throw compile_error;
         }
 
         return symbol_table;

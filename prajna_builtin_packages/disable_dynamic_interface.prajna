@@ -1,6 +1,5 @@
 @disable_dynamic
 interface ReferenceCountable {
-    func RegisterReferenceCount();
     func IncrementReferenceCount();
     func DecrementReferenceCount();
 }

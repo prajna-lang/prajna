@@ -25,7 +25,6 @@
 #include "prajna/compiler/compiler.h"
 #include "prajna/exception.hpp"
 #include "prajna/ir/ir.hpp"
-#include "prajna/reference_count.hpp"
 
 extern "C" uint16_t __truncdfhf2(double);
 extern "C" uint16_t __floattihf(int64_t[2]);
@@ -235,15 +234,6 @@ void ExecutionEngine::BindBuiltinFunction() {
 
     this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print_c");
     this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input_c");
-
-    this->BindCFunction(reinterpret_cast<void *>(RegisterReferenceCount),
-                        "::bindings::RegisterReferenceCount");
-    this->BindCFunction(reinterpret_cast<void *>(GetReferenceCount),
-                        "::bindings::GetReferenceCount");
-    this->BindCFunction(reinterpret_cast<void *>(IncrementReferenceCount),
-                        "::bindings::IncrementReferenceCount");
-    this->BindCFunction(reinterpret_cast<void *>(DecrementReferenceCount),
-                        "::bindings::DecrementReferenceCount");
 
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floattihf");

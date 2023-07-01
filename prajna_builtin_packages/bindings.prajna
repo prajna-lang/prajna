@@ -12,8 +12,3 @@ func malloc(bytes: i64)->__ptr<undef>;
 func free(pointer: __ptr<undef>);
 
 func getchar()->char;
-
-func RegisterReferenceCount(pointer: __ptr<undef>);
-func GetReferenceCount(pointer: __ptr<undef>)->i64;
-func IncrementReferenceCount(pointer: __ptr<undef>);
-func DecrementReferenceCount(pointer: __ptr<undef>);

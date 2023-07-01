@@ -76,10 +76,9 @@ implement Tensor<Type, Dim> {
         var self: Tensor<Type, Dim>;
         self.layout = Layout<Dim>::Create(shape);
 
+        // TODO : 内存管理需要修复
         var bytes = self.layout.Length() * __sizeof<Type>();
         cuda::cuMemAlloc(__bit_cast<__ptr<__ptr<Type>> ,__ptr<__ptr<i8> > >(&self.data), bytes);
-        bindings::RegisterReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(self.data));
-        bindings::IncrementReferenceCount(__bit_cast<__ptr<Type> ,__ptr<undef>>(self.data));
 
         return self;
     }

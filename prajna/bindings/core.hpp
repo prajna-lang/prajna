@@ -1,7 +1,5 @@
 #pragma once
 
-#include "prajna/reference_count.hpp"
-
 namespace prajna {
 inline namespace interoperation {
 
@@ -84,23 +82,23 @@ class Tensor {
         auto bytes = self.layout.Length() * sizeof(Type_);
         self.data = reinterpret_cast<Type_*>(malloc(bytes));
 
-        RegisterReferenceCount(self.data);
-        IncrementReferenceCount(self.data);
+        // RegisterReferenceCount(self.data);
+        // IncrementReferenceCount(self.data);
 
         return self;
     }
 
     Tensor(const Tensor& ts) : data(ts.data), layout(ts.layout) {
-        IncrementReferenceCount(this->data);
+        // IncrementReferenceCount(this->data);
     }
 
     ~Tensor() {
-        DecrementReferenceCount(this->data);
-        if (this->data) {
-            if (GetReferenceCount(this->data) == 0) {
-                free(this->data);
-            }
-        }
+        // DecrementReferenceCount(this->data);
+        // if (this->data) {
+        //     if (GetReferenceCount(this->data) == 0) {
+        //         free(this->data);
+        //     }
+        // }
     }
 
     const Type_& at(Array<i64, Dim_> idx) const {

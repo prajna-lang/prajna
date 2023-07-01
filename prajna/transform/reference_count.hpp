@@ -32,7 +32,7 @@ std::shared_ptr<lowering::IrBuilder> MakeIRbuilder() {
     return ir_builder;
 }
 
-inline void InsertLocalVariableRegisterReferenceCount(std::shared_ptr<ir::Module> ir_module) {
+inline void InsertLocalVariableInitialize(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         auto ir_local_variables = utility::GetValuesInFunction<ir::LocalVariable>(ir_function);
         ir_local_variables.remove_if([](std::shared_ptr<ir::LocalVariable> ir_local_variable) {
@@ -194,7 +194,7 @@ inline void InsertCopyForReturn(std::shared_ptr<ir::Module> ir_module) {
 
 inline void InsertReferenceCount(std::shared_ptr<ir::Module> ir_module) {
     InsertDestroyForCall(ir_module);  // 放在第一个, 否则插入的指令会影响
-    InsertLocalVariableRegisterReferenceCount(ir_module);
+    InsertLocalVariableInitialize(ir_module);
     InsertVariableIncrementReferenceCount(ir_module);
     InsertCopyForReturn(ir_module);
     InsertLoacalVariableScopeDecrementReferenceCount(ir_module);

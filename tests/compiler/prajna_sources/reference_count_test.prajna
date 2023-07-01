@@ -1,19 +1,18 @@
 
 struct TestA {
     data: __ptr<undef>;
-
     data2: Ptr<i64>;
+    _reference_counter: __ptr<i64>;
 }
 
 implement ReferenceCountable for TestA {
     func RegisterReferenceCount(){
-        bindings::RegisterReferenceCount(this.data);
+        *this._reference_counter = 0;
     }
 
     func DecrementReferenceCount(){
-        bindings::DecrementReferenceCount(this.data);
-
-        var ref_count = bindings::GetReferenceCount(this.data);
+        *this._reference_counter = *this._reference_counter - 1;
+        var ref_count = *this._reference_counter;
         if (ref_count == 0 ){
             if (__cast<__ptr<undef>, i64>(this.data) == 0) {
                 bindings::free(this.data);
@@ -23,14 +22,16 @@ implement ReferenceCountable for TestA {
     }
 
     func IncrementReferenceCount(){
-        bindings::IncrementReferenceCount(this.data);
-        var ref_count = bindings::GetReferenceCount(this.data);
+        *this._reference_counter = *this._reference_counter + 1;
+        var ref_count = *this._reference_counter;
     }
 }
 
 implement Initializable for TestA {
     func Initialize(){
         this.data = __cast<i64, __ptr<undef>>(0);
+        this._reference_counter = __ptr<i64>::New();
+        *this._reference_counter = 1;
     }
 }
 
@@ -50,19 +51,19 @@ implement TestA {
 func TestMemoryManager(){
     var a : TestA;
     var a1 = TestA::Create(10); // 调用copy函数, 然后调用destroy函数
-    test::Assert(bindings::GetReferenceCount(a1.data) == 1);
+    test::Assert(*a1._reference_counter == 1);
 
     var a2 = a1; // 调用copy函数
-    test::Assert(bindings::GetReferenceCount(a1.data) == 2);
+    test::Assert(*a1._reference_counter == 2);
 
     {
         var sub_a0 = a1; // 变量拷贝, 调用copy函数
-        test::Assert(bindings::GetReferenceCount(a1.data) == 3);
+        test::Assert(*a1._reference_counter == 3);
 
         TestA::Create(100); // 调用destroy 函数
     }
 
-    test::Assert(bindings::GetReferenceCount(a1.data) == 2);
+    test::Assert(*a1._reference_counter == 2);
 }
 
 implement Ptr<i64> {

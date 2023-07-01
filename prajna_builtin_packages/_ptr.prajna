@@ -147,7 +147,6 @@ implement ReferenceCountable for Ptr<Type> {
     }
 
     func IncrementReferenceCount() {
-        // TODO, 后面需要改为原子操作
         *this._reference_counter = *this._reference_counter + 1;
     }
 

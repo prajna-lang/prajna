@@ -470,7 +470,6 @@ class ExpressionLoweringVisitor {
                                        logger = this->logger,
                                        this](std::list<Symbol> symbol_template_arguments,
                                              std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
             PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
 
             auto ir_interface_prototype =
@@ -615,8 +614,6 @@ class ExpressionLoweringVisitor {
                     return ir_value;
                 },
                 [=](std::shared_ptr<ir::Type> ir_type) -> std::shared_ptr<ir::Value> {
-                    /// TODO 需要重构, var t = Tensor<i64, 3>;也会被认为正确, 存在误导,
-                    /// 后面看怎么处理
                     if (ir_type->constructor == nullptr) {
                         logger->Error(fmt::format("{} has no constructor", ir_type->fullname),
                                       ast_identifier_path);

@@ -1119,7 +1119,6 @@ class StatementLoweringVisitor {
                                          logger = this->logger](
                                             std::list<Symbol> symbol_template_arguments,
                                             std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            // TODO
             if (symbol_template_arguments.size() != 1) {
                 logger->Error("should input 1 template argument");
             }
@@ -1959,7 +1958,6 @@ class StatementLoweringVisitor {
         }
 
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
-            ///  TODO function_type and name , 下面的代码会导致函数重复
             ir_builder->PushSymbolTable();
             auto guard = function_guard::Create([=]() { this->ir_builder->PopSymbolTable(); });
             ir_builder->symbol_table->name = ir_interface_prototype->name;

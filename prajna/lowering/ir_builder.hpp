@@ -335,7 +335,6 @@ class IrBuilder {
             {"!", "Not"}, {"+", "Positive"}, {"-", "Negative"}};
         PRAJNA_ASSERT(unary_operator_map.count(unary_operator_name));
 
-        // TODO binary_operator_name的前缀有问题
         auto unary_operator_interface_name =
             unary_operator_map[unary_operator_name] + "<" + ir_type->fullname + ">";
         if (auto ir_interface_implement = ir_type->interface_dict[unary_operator_interface_name]) {
@@ -363,7 +362,6 @@ class IrBuilder {
             {"/", "Divide"},       {"%", "Remaind"},   {"&", "And"},
             {"|", "Or"},           {"^", "Xor"},       {"!", "Not"}};
 
-        // TODO binary_operator_name的前缀有问题
         if (auto ir_interface_implement =
                 ir_type->interface_dict[binary_operator_map[binary_operator_name] + "<" +
                                         ir_type->fullname + ">"]) {

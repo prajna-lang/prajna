@@ -613,13 +613,6 @@ class ExpressionLoweringVisitor {
                 [](std::shared_ptr<ir::Value> ir_value) -> std::shared_ptr<ir::Value> {
                     return ir_value;
                 },
-                [=](std::shared_ptr<ir::Type> ir_type) -> std::shared_ptr<ir::Value> {
-                    if (ir_type->constructor == nullptr) {
-                        logger->Error(fmt::format("{} has no constructor", ir_type->fullname),
-                                      ast_identifier_path);
-                    }
-                    return ir_type->constructor;
-                },
                 // template parameter could be a ConstantInt.
                 [ir_builder = this->ir_builder](std::shared_ptr<ir::ConstantInt> ir_constant_int)
                     -> std::shared_ptr<ir::Value> {

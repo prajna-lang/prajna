@@ -571,36 +571,8 @@ class StatementLoweringVisitor {
         return ir_builder->Create<ir::Continue>(ir_builder->loop_stack.top());
     }
 
-    void CreateStructConstructor(std::shared_ptr<ir::StructType> ir_struct_type) {
-        auto ir_fields = ir_struct_type->fields;
-        std::list<std::shared_ptr<ir::Type>> ir_constructor_arg_types(ir_fields.size());
-        std::transform(RANGE(ir_fields), ir_constructor_arg_types.begin(),
-                       [](auto ir_field) { return ir_field->type; });
-        auto ir_constructor_type =
-            ir::FunctionType::Create(ir_constructor_arg_types, ir_struct_type);
-        auto ir_constructor = ir::Function::Create(ir_constructor_type);
-        ir_constructor_type->function = ir_constructor;
-        ir_struct_type->constructor = ir_constructor;
-        ir_constructor->name = ConcatFullname(ir_struct_type->fullname, "constructor");
-        ir_constructor->fullname = ir_constructor->name;
-        ir_constructor->parent_module = ir_builder->module;
-        ir_builder->module->functions.push_back(ir_constructor);
-
-        ir_builder->CreateTopBlockForFunction(ir_constructor);
-
-        auto ir_variable = ir_builder->Create<ir::LocalVariable>(ir_struct_type);
-        for (auto [ir_field, ir_parameter] :
-             boost::combine(ir_fields, ir_constructor->parameters)) {
-            auto ir_access_field = ir_builder->Create<ir::AccessField>(ir_variable, ir_field);
-            ir_builder->Create<ir::WriteVariableLiked>(ir_parameter, ir_access_field);
-        }
-        ir_builder->Create<ir::Return>(ir_variable);
-        ir_builder->PopBlock();
-        ir_builder->function_stack.pop();
-    }
-
-    std::shared_ptr<ir::Type> ApplyType(ast::Type ast_postfix_type) {
-        return expression_lowering_visitor->ApplyType(ast_postfix_type);
+    std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
+        return expression_lowering_visitor->applyType(ast_postfix_type);
     }
 
     Symbol operator()(ast::Struct ast_struct) {
@@ -616,7 +588,6 @@ class StatementLoweringVisitor {
             });
         ir_struct_type->fields = ir_fields;
         ir_struct_type->Update();
-        this->CreateStructConstructor(ir_struct_type);
 
         ir_builder->instantiating_type_stack.pop();
 

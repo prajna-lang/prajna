@@ -31,7 +31,9 @@ implement NestedMemberFunction {
 
 @test
 func TestStructAndImplement(){
-    var mike = People("Mike", 18);
+    var mike: People;
+    mike.name = "Mike";
+    mike.age = 18;
     // "."索引成员函数
     mike.SayHi();
     // 注意域成员都是通过::来索引的

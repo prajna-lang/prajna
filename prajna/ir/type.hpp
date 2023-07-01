@@ -57,7 +57,6 @@ class Type : public Named {
    public:
     // @ref https://llvm.org/docs/LangRef.html#langref-datalayout bytes是多少可参阅datalyout的描述
     size_t bytes = 0;
-    std::shared_ptr<Function> constructor = nullptr;
 
     std::unordered_map<std::string, std::shared_ptr<Function>> function_dict;
     std::unordered_map<std::string, std::any> template_any_dict;

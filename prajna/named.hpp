@@ -15,24 +15,23 @@ inline std::string ConcatFullname(std::string base_name, std::string name) {
     return base_name + "::" + name;
 }
 
-// TODO 需要做进一步处理
 inline std::string MangleNvvmName(std::string name) {
     std::string str_re;
     for (auto iter = name.begin(); iter != name.end(); ++iter) {
         switch (*iter) {
             case ':':
-                str_re.push_back('_');
+                str_re.append("_N_");
                 continue;
             case '<':
-                str_re.append("_");
+                str_re.append("T_");
                 continue;
             case '>':
-                str_re.append("_");
+                str_re.append("T_");
             case ',':
-                str_re.append("_");
+                str_re.append("_C_");
                 continue;
             case ' ':
-                str_re.append("_");
+                str_re.append("_S_");
                 continue;
         }
         str_re.push_back(*iter);

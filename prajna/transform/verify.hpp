@@ -107,18 +107,6 @@ inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
         }
     }
 
-    auto ir_instructions = utility::GetValuesInModule<ir::Call>(ir_module);
-    for (auto ir_instruction : ir_instructions) {
-        for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-            auto ir_operand = ir_instruction->operand(i);
-            if (Is<ir::Function>(ir_operand)) {
-                for (auto [ir_inst_cur, op_idx] : Clone(ir_operand->instruction_with_index_list)) {
-                    // TODO,  目前extractGpu无法通过, 后续修复
-                    // PRAJNA_ASSERT(ir_inst_cur->getParentFunction());
-                }
-            }
-        }
-    }
     return true;
 }
 

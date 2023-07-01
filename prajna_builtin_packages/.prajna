@@ -40,7 +40,7 @@ use __float::FloatScientificPrinter;
 use __int;
 
 use _ptr::Ptr;
-use _dynamic;
+use dynamic;
 
 use atomic;
 

@@ -1923,7 +1923,7 @@ class StatementLoweringVisitor {
             "__inf_negative");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            expression_lowering_visitor->CreateDynamicTemplate(), "dynamic");
+            expression_lowering_visitor->CreateDynamicTemplate(), "Dynamic");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateInitializeTemplate(), "__initialize");
@@ -1952,7 +1952,7 @@ class StatementLoweringVisitor {
             // 我们通过dynamic<Interface>来获取接口所对应的类型, 需要将他们关联,
             // 以便获取dynamic的实现
             auto template_struct_dynamic = SymbolGet<TemplateStruct>(
-                ir_builder->GetSymbolByPath(true, {"_dynamic", "dynamic"}));
+                ir_builder->GetSymbolByPath(true, {"Dynamic", "Dynamic"}));
             PRAJNA_ASSERT(template_struct_dynamic);
             ir_interface_prototype->dynamic_type->template_struct = template_struct_dynamic;
         }

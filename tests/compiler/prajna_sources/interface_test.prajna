@@ -25,7 +25,7 @@ func TestDynamicDispatch(){
     say_hi.say();
     test::Assert(!say_hi.IsNull());
 
-    var say: dynamic<Say> = say_hi.As<Say>();
+    var say: Dynamic<Say> = say_hi.As<Say>();
     say.say();
 
     var say_hello = Ptr<SayHello>::New();

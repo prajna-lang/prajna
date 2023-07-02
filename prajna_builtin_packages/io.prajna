@@ -1,4 +1,4 @@
 func Input()->String{
-    var c_str_ptr = bindings::input_c();
+    var c_str_ptr = bindings::input();
     return String::__from_char_ptr(c_str_ptr);
 }

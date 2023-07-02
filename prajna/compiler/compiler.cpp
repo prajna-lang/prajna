@@ -122,6 +122,8 @@ void Compiler::ExecuteCodeInRelp(std::string script_code) {
         }
     } catch (CompileError error) {
         ///  编译器需要继续执行其他指令
+    } catch (RuntimeError error) {
+        /// 捕获runtime错误
     }
 }
 

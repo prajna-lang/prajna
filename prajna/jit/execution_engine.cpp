@@ -47,17 +47,16 @@ inline void checkCudaErrors(bool re) { PRAJNA_ASSERT(re == 0); }
 
 jmp_buf buf;
 
-void c_jmp_exit() { longjmp(buf, 1); }
-void print_c(char *c_str) { print_callback(std::string(c_str)); }
+void print_c(const char *c_str) { print_callback(std::string(c_str)); }
 char *input_c() { return input_callback(); }
-void assert_c(bool t) {
-    if (!t) {
-        printf("%s\n", "Prajna runtime error");
-        longjmp(buf, 1);
-    }
+void exit_c(int64_t ret_code) {
+    std::string msg = "exit " + std::to_string(ret_code) + "\n";
+    print_c(msg.c_str());
+    longjmp(buf, 1);
 }
 
 float Clock() {
+    // steady_clock是统计物理世界的时间
     return std::chrono::steady_clock::now().time_since_epoch().count() * 1.0 *
            std::chrono::steady_clock::period::num / std::chrono::steady_clock::period::den;
 }
@@ -225,15 +224,14 @@ void ExecutionEngine::CatchRuntimeError() {
     }
 }
 
-void ExecutionEngine::BindBuiltinFunction() {
-    this->BindCFunction(reinterpret_cast<void *>(c_jmp_exit), "::bindings::jmp_exit_c");
-    this->BindCFunction(reinterpret_cast<void *>(assert_c), "::bindings::assert");
+void ExecutionEngine::bindBuiltinFunction() {
+    this->BindCFunction(reinterpret_cast<void *>(exit_c), "::bindings::exit");
     this->BindCFunction(reinterpret_cast<void *>(malloc), "::bindings::malloc");
     this->BindCFunction(reinterpret_cast<void *>(free), "::bindings::free");
     this->BindCFunction(reinterpret_cast<void *>(getchar), "::bindings::getchar");
 
-    this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print_c");
-    this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input_c");
+    this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print");
+    this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input");
 
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floattihf");

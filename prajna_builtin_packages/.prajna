@@ -24,13 +24,13 @@ use disable_dynamic_interface::ReferenceCountable;
 use disable_dynamic_interface::Initializable;
 use disable_dynamic_interface::Finalizable;
 
-use bindings::Assert;
+use primitive_type;
+use bindings;
 use debug;
 use test;
 
 use array::Array;
 
-use primitive_type;
 use float::FloatFixedPrinter;
 use float::FloatScientificPrinter;
 use int;

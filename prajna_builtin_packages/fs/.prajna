@@ -5,7 +5,7 @@ func Write(filename: String , buffer: String) {
         mode.Push('\0');
         filename.Push('\0');
         var stream = _c::fopen(filename.__CharPointer() , mode.__CharPointer());
-        Assert(stream.IsValid());
+        debug::Assert(stream.IsValid());
         _c::fwrite(buffer.__CharPointer(), 1, buffer.Length(), stream);
         _c::fclose(stream);
 }
@@ -16,7 +16,7 @@ func Read(filename: String)->String {
         filename.Push('\0');
         var stream = _c::fopen(filename.__CharPointer() , mode.__CharPointer());
         filename.Pop();
-        Assert(stream.IsValid());
+        debug::Assert(stream.IsValid());
 
         _c::fseek(stream, 0, 2i32);
         var length = _c::ftell(stream);

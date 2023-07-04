@@ -21,15 +21,15 @@ struct PrintFileName {
 
 class CompilerSourceTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
-    auto compiler = Compiler::create();
+    auto compiler = Compiler::Create();
     std::string prajna_source_path = GetParam();
-    compiler->addPackageDirectoryPath(".");
+    compiler->AddPackageDirectoryPath(".");
     auto t0 = std::chrono::high_resolution_clock::now();
-    compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+    compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
     auto t1 = std::chrono::high_resolution_clock::now();
     fmt::print("compiling cost time: {}ms\n",
                std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
-    compiler->runTests(prajna_source_path);
+    compiler->RunTests(prajna_source_path);
     auto t2 = std::chrono::high_resolution_clock::now();
     fmt::print("execution cost time: {}ms\n",
                std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
@@ -37,8 +37,8 @@ TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
 
 class CompilerScriptTests : public testing::TestWithParam<std::string> {};
 TEST_P(CompilerScriptTests, TestScriptFromDirectory) {
-    auto compiler = Compiler::create();
-    compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+    auto compiler = Compiler::Create();
+    compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
     std::string prajna_script_path = GetParam();
     std::ifstream ifs(prajna_script_path);
     while (ifs.good()) {
@@ -46,25 +46,25 @@ TEST_P(CompilerScriptTests, TestScriptFromDirectory) {
         std::getline(ifs, code);
         // 修复//注释的问题
         code.append("\n");
-        compiler->executeCodeInRelp(code);
+        compiler->ExecuteCodeInRelp(code);
         std::cout << std::endl;
     }
 }
 
 // class CompilerErrorSourceTests : public testing::TestWithParam<std::string> {};
 // TEST_P(CompilerErrorSourceTests, TestSourceFromDirectory) {
-//     auto compiler = Compiler::create();
+//     auto compiler = Compiler::Create();
 //     std::string prajna_source_path = GetParam();
-//     compiler->addPackageDirectoryPath(".");
-//     compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+//     compiler->AddPackageDirectoryPath(".");
+//     compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
 //     EXPECT_THROW(compiler->compileProgram(prajna_source_path, false), prajna::CompileError);
 // }
 
 // class CompilerErrorScriptTests : public testing::TestWithParam<std::string> {};
 // TEST_P(CompilerErrorScriptTests, TestScriptFromDirectory) {
-//     auto compiler = Compiler::create();
-//     compiler->addPackageDirectoryPath(".");
-//     compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+//     auto compiler = Compiler::Create();
+//     compiler->AddPackageDirectoryPath(".");
+//     compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
 //     std::string prajna_script_path = GetParam();
 //     std::ifstream ifs(prajna_script_path);
 //     while (ifs.good()) {
@@ -72,7 +72,7 @@ TEST_P(CompilerScriptTests, TestScriptFromDirectory) {
 //         std::getline(ifs, code);
 //         // 修复//注释的问题
 //         code.append("\n");
-//         compiler->executeCodeInRelp(code);
+//         compiler->ExecuteCodeInRelp(code);
 //         std::cout << std::endl;
 //     }
 // }

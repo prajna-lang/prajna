@@ -11,12 +11,12 @@ class Named {
     std::string fullname = "";
 };
 
-inline std::string concatFullname(std::string base_name, std::string name) {
+inline std::string ConcatFullname(std::string base_name, std::string name) {
     return base_name + "::" + name;
 }
 
 // TODO 需要做进一步处理
-inline std::string mangleNvvmName(std::string name) {
+inline std::string MangleNvvmName(std::string name) {
     std::string str_re;
     for (auto iter = name.begin(); iter != name.end(); ++iter) {
         switch (*iter) {

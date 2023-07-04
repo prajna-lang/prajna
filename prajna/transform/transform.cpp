@@ -5,7 +5,7 @@
 
 namespace prajna::transform {
 
-std::shared_ptr<ir::Module> sperateModule(std::shared_ptr<ir::Module> ir_module) {
+std::shared_ptr<ir::Module> SperateModule(std::shared_ptr<ir::Module> ir_module) {
     for (auto iter_function = ir_module->functions.begin();
          iter_function != ir_module->functions.end();) {
         auto ir_function = *iter_function;

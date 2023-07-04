@@ -6,7 +6,7 @@
 
 namespace prajna::lowering {
 
-std::string symbolGetName(Symbol symbol) {
+std::string SymbolGetName(Symbol symbol) {
     return boost::apply_visitor(
         overloaded{[](auto x) { return x->name; }, [](std::nullptr_t) { return std::string(); },
                    [](std::shared_ptr<ir::ConstantInt> ir_constant_int) {
@@ -15,18 +15,18 @@ std::string symbolGetName(Symbol symbol) {
         symbol);
 }
 
-std::string symbolGetFullname(Symbol symbol) {
+std::string SymbolGetFullname(Symbol symbol) {
     return boost::apply_visitor(
         overloaded{
             [](auto x) { return x->fullname; }, [](std::nullptr_t) { return std::string(); },
             [](std::shared_ptr<ir::ConstantInt> ir_constant_int) {
                 return std::to_string(ir_constant_int->value);
             },
-            [](std::shared_ptr<SymbolTable> symbol_table) { return symbol_table->fullname(); }},
+            [](std::shared_ptr<SymbolTable> symbol_table) { return symbol_table->Fullname(); }},
         symbol);
 }
 
-void symbolSetName(std::string name, Symbol symbol) {
+void SymbolSetName(std::string name, Symbol symbol) {
     boost::apply_visitor(
         overloaded{[](std::string name, auto x) { x->name = name; },
                    [](std::string, std::nullptr_t) { PRAJNA_UNREACHABLE; },
@@ -36,7 +36,7 @@ void symbolSetName(std::string name, Symbol symbol) {
         boost::variant<std::string>(name), symbol);
 }
 
-void symbolSetFullname(std::string fullname, Symbol symbol) {
+void SymbolSetFullname(std::string fullname, Symbol symbol) {
     boost::apply_visitor(
         overloaded{
             [](std::string fullname, auto x) { x->fullname = fullname; },
@@ -48,9 +48,9 @@ void symbolSetFullname(std::string fullname, Symbol symbol) {
         boost::variant<std::string>(fullname), symbol);
 }
 
-void SymbolTable::setWithAssigningName(Symbol value, const std::string& name) {
-    symbolSetName(name, value);
-    symbolSetFullname(this->fullname() + "::" + name, value);
+void SymbolTable::SetWithAssigningName(Symbol value, const std::string& name) {
+    SymbolSetName(name, value);
+    SymbolSetFullname(this->Fullname() + "::" + name, value);
     current_symbol_dict[name] = value;
 }
 

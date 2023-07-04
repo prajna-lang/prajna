@@ -25,14 +25,14 @@ namespace fmt {
 // @ref https://fmt.dev/latest/api.html#formatting-user-defined-types
 template <>
 struct formatter<prajna::LogLevel> {
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+    constexpr auto Parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
         auto it = ctx.begin(), end = ctx.end();
         if (it != end && *it != '}') throw format_error("invalid format");
         return it;
     }
 
     template <typename FormatContext>
-    auto format(const prajna::LogLevel& level, FormatContext& ctx) const -> decltype(ctx.out()) {
+    auto Format(const prajna::LogLevel& level, FormatContext& ctx) const -> decltype(ctx.out()) {
         // ctx.out() is an output iterator to write to.
         switch (level) {
             case prajna::LogLevel::info:
@@ -59,13 +59,13 @@ class Logger {
     Logger() = default;
 
    public:
-    static std::shared_ptr<Logger> create(std::string code) {
+    static std::shared_ptr<Logger> Create(std::string code) {
         std::shared_ptr<Logger> self(new Logger);
         boost::split(self->_code_lines, code, boost::is_any_of("\n"));
         return self;
     }
 
-    void log(std::string message, ast::SourcePosition first_position,
+    void Log(std::string message, ast::SourcePosition first_position,
              ast::SourcePosition last_position, std::string prompt, std::string locator_ascii_color,
              bool throw_error) {
         std::string what_message;
@@ -117,46 +117,46 @@ class Logger {
         }
     }
 
-    void error(std::string message, ast::SourcePosition first_position,
+    void Error(std::string message, ast::SourcePosition first_position,
                ast::SourcePosition last_position, std::string locator_ascii_color) {
         auto error_prompt = fmt::format("{}", fmt::styled("error", fmt::fg(fmt::color::red)));
-        this->log(message, first_position, last_position, error_prompt, locator_ascii_color, true);
+        this->Log(message, first_position, last_position, error_prompt, locator_ascii_color, true);
     }
 
-    void error(std::string message) {
+    void Error(std::string message) {
         fmt::print("{}: {}\n", fmt::styled("error", fmt::fg(fmt::color::red)), message);
         throw CompileError();
     }
 
-    void error(std::string message, ast::SourcePosition first_position) {
+    void Error(std::string message, ast::SourcePosition first_position) {
         auto last_position = first_position;
         last_position.column = first_position.column + 1;
-        error(message, first_position, last_position, std::string(BLU));
+        Error(message, first_position, last_position, std::string(BLU));
     }
 
-    void error(std::string message, ast::SourceLocation source_location) {
-        error(message, source_location.first_position, source_location.last_position,
+    void Error(std::string message, ast::SourceLocation source_location) {
+        Error(message, source_location.first_position, source_location.last_position,
               std::string(BLU));
     }
 
-    void error(std::string message, ast::Operand ast_operand) {
-        boost::apply_visitor([=](auto x) { this->error(message, x); }, ast_operand);
+    void Error(std::string message, ast::Operand ast_operand) {
+        boost::apply_visitor([=](auto x) { this->Error(message, x); }, ast_operand);
     }
 
-    void warning(std::string message, ast::SourceLocation source_location) {
+    void Warning(std::string message, ast::SourceLocation source_location) {
         auto warning_prompt =
             fmt::format("{}", fmt::styled("warning", fmt::fg(fmt::color::orange)));
-        this->log(message, source_location.first_position, source_location.last_position,
+        this->Log(message, source_location.first_position, source_location.last_position,
                   warning_prompt, std::string(BLU), false);
     }
 
-    void warning(std::string message, ast::Operand ast_operand) {
-        boost::apply_visitor([=](auto x) { this->warning(message, x); }, ast_operand);
+    void Warning(std::string message, ast::Operand ast_operand) {
+        boost::apply_visitor([=](auto x) { this->Warning(message, x); }, ast_operand);
     }
 
-    void note(ast::SourceLocation source_location) {
+    void Note(ast::SourceLocation source_location) {
         auto warning_prompt = fmt::format("{}", fmt::styled("note", fmt::fg(fmt::color::gray)));
-        this->log("", source_location.first_position, source_location.last_position, warning_prompt,
+        this->Log("", source_location.first_position, source_location.last_position, warning_prompt,
                   std::string(""), false);
     }
 

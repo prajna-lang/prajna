@@ -51,13 +51,13 @@ int prajna_repl_main(int argc, char* argv[]) {
 
     Term::terminal << "Prajna 0.0.0, all copyrights @ \"www.github.com/matazure\"" << std::endl;
 
-    auto compiler = prajna::Compiler::create();
+    auto compiler = prajna::Compiler::Create();
     if (std::filesystem::exists("prajna_builtin_packages")) {
-        compiler->compileBuiltinSourceFiles("prajna_builtin_packages");
+        compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
     } else {
         auto prajna_builtin_packages_directory =
             prajna::ProgramLocation(argv[0]).parent_path() / "../prajna_builtin_packages";
-        compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
+        compiler->CompileBuiltinSourceFiles(prajna_builtin_packages_directory);
     }
 
     Term::terminal.setOptions({Term::Option::NoClearScreen, Term::Option::SignalKeys,
@@ -91,7 +91,7 @@ int prajna_repl_main(int argc, char* argv[]) {
             code_line.insert(std::prev(code_line.end()), ';');
         }
         // code_line.push_back('\n'); // 自带\n
-        compiler->executeCodeInRelp(code_line);
+        compiler->ExecuteCodeInRelp(code_line);
 
         std::cout << "\n";
     }

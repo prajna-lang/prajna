@@ -38,27 +38,27 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
     Compiler() = default;
 
    public:
-    static std::shared_ptr<Compiler> create();
+    static std::shared_ptr<Compiler> Create();
 
-    void compileBuiltinSourceFiles(std::string builtin_sources_dir);
+    void CompileBuiltinSourceFiles(std::string builtin_sources_dir);
 
-    std::shared_ptr<ir::Module> compileCode(std::string code,
+    std::shared_ptr<ir::Module> CompileCode(std::string code,
                                             std::shared_ptr<lowering::SymbolTable> symbol_table,
                                             std::string file_name, bool is_interpreter);
 
-    void bindBuiltinFunctions();
+    void BindBuiltinFunctions();
 
-    void executeCodeInRelp(std::string command_line_code);
+    void ExecuteCodeInRelp(std::string command_line_code);
 
-    size_t getSymbolValue(std::string symbol_name);
+    size_t GetSymbolValue(std::string symbol_name);
 
-    void runTests(std::filesystem::path prajna_source_package_path);
+    void RunTests(std::filesystem::path prajna_source_package_path);
 
-    void executeProgram(std::filesystem::path program_path);
+    void ExecuteProgram(std::filesystem::path program_path);
 
-    void executateMainFunction();
+    void ExecutateMainFunction();
 
-    void addPackageDirectoryPath(std::string package_directory);
+    void AddPackageDirectoryPath(std::string package_directory);
 
     ~Compiler();
 
@@ -67,7 +67,7 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
      * @param[in] prajna_source_dir
      * @param[in]
      */
-    std::shared_ptr<ir::Module> compileProgram(std::filesystem::path prajna_source_file,
+    std::shared_ptr<ir::Module> CompileProgram(std::filesystem::path prajna_source_file,
                                                bool is_interpreter);
 
    public:

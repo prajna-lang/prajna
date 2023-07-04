@@ -33,7 +33,7 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
    public:
     using Generator = std::function<Symbol(std::list<Symbol>, std::shared_ptr<ir::Module>)>;
 
-    static std::shared_ptr<Template> create() {
+    static std::shared_ptr<Template> Create() {
         std::shared_ptr<Template> self(new Template);
         return self;
     };
@@ -76,7 +76,7 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
                 this->generator(symbol_template_arguments, ir_module);
 
             if (auto ir_interface_prototype =
-                    symbolGet<ir::InterfacePrototype>(_instance_dict[symbol_template_arguments])) {
+                    SymbolGet<ir::InterfacePrototype>(_instance_dict[symbol_template_arguments])) {
                 ir_interface_prototype->template_interface = this->shared_from_this();
                 ir_interface_prototype->template_arguments = symbol_template_arguments;
             }
@@ -103,13 +103,13 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
     TemplateStruct() = default;
 
    public:
-    static std::shared_ptr<TemplateStruct> create() {
+    static std::shared_ptr<TemplateStruct> Create() {
         std::shared_ptr<TemplateStruct> self(new TemplateStruct);
-        self->template_struct_impl = Template::create();
+        self->template_struct_impl = Template::Create();
         return self;
     }
 
-    std::shared_ptr<ir::Type> instantiate(std::list<Symbol> template_arguments,
+    std::shared_ptr<ir::Type> Instantiate(std::list<Symbol> template_arguments,
                                           std::shared_ptr<ir::Module> ir_module,
                                           bool inside_struct = false) {
         // imlement_is_processing会确保 struct 实例化, implement实例化顺序执行, 而不产生递归
@@ -119,7 +119,7 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
 
         if (!implement_is_processing[template_arguments]) {
             implement_is_processing[template_arguments] = true;
-            struct_type_instance_dict[template_arguments] = symbolGet<ir::Type>(
+            struct_type_instance_dict[template_arguments] = SymbolGet<ir::Type>(
                 template_struct_impl->instantiate(template_arguments, ir_module));
             PRAJNA_ASSERT(struct_type_instance_dict[template_arguments]);
             struct_type_instance_dict[template_arguments]->template_struct =
@@ -149,10 +149,10 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
     std::unordered_map<std::list<Symbol>, std::shared_ptr<ir::Type>> struct_type_instance_dict;
 };
 
-inline std::string getTemplateArgumentsPostify(std::list<Symbol> symbol_list) {
+inline std::string GetTemplateArgumentsPostify(std::list<Symbol> symbol_list) {
     std::string re = "<";
     for (auto iter = symbol_list.begin(); iter != symbol_list.end(); ++iter) {
-        re.append(symbolGetFullname(*iter));
+        re.append(SymbolGetFullname(*iter));
         if (std::next(iter) == symbol_list.end()) {
             break;
         }

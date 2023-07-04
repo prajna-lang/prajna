@@ -28,7 +28,7 @@ bool parse(std::string code, prajna::ast::Statements& ast, std::string file_name
         return boost::spirit::qi::phrase_parse(iter, end, statement_grammar, skip,
                                                boost::spirit::qi::skip_flag::postskip, ast);
     } catch (InvalidEscapeChar lexer_error) {
-        logger->error("invalid escape char", lexer_error.source_position);
+        logger->Error("invalid escape char", lexer_error.source_position);
         return false;
     }
 }

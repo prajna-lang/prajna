@@ -18,7 +18,7 @@ namespace prajna {
 
 namespace {
 
-inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
+inline std::shared_ptr<lowering::SymbolTable> CreateSymbolTableTree(
     std::shared_ptr<lowering::SymbolTable> root_symbol_table,
     std::string prajna_source_package_path) {
     auto source_file_path_string =
@@ -36,17 +36,17 @@ inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
         }
 
         symbol_table_source_path /= std::filesystem::path(path_part);
-        if (symbol_table_tree->has(path_part)) {
+        if (symbol_table_tree->Has(path_part)) {
             auto tmp_symbol_table_tree =
-                lowering::symbolGet<lowering::SymbolTable>(symbol_table_tree->get(path_part));
+                lowering::SymbolGet<lowering::SymbolTable>(symbol_table_tree->Get(path_part));
             if (tmp_symbol_table_tree) {
                 symbol_table_tree = tmp_symbol_table_tree;
                 continue;
             }
         }
 
-        auto new_symbol_table = lowering::SymbolTable::create(symbol_table_tree);
-        symbol_table_tree->set(new_symbol_table, path_part);
+        auto new_symbol_table = lowering::SymbolTable::Create(symbol_table_tree);
+        symbol_table_tree->Set(new_symbol_table, path_part);
         new_symbol_table->directory_path = symbol_table_source_path;
         new_symbol_table->name = path_part;
         symbol_table_tree = new_symbol_table;
@@ -57,27 +57,27 @@ inline std::shared_ptr<lowering::SymbolTable> createSymbolTableTree(
 
 }  // namespace
 
-std::shared_ptr<Compiler> Compiler::create() {
+std::shared_ptr<Compiler> Compiler::Create() {
     ir::global_context = ir::GlobalContext(64);
     std::shared_ptr<Compiler> self(new Compiler);
-    self->_symbol_table = lowering::SymbolTable::create(nullptr);
+    self->_symbol_table = lowering::SymbolTable::Create(nullptr);
     self->jit_engine = std::make_shared<jit::ExecutionEngine>();
-    self->jit_engine->bindBuiltinFunction();
+    self->jit_engine->BindBuiltinFunction();
     return self;
 }
 
-void Compiler::compileBuiltinSourceFiles(std::string builtin_sources_dir) {
-    this->addPackageDirectoryPath(builtin_sources_dir);
-    this->compileProgram(".prajna", false);
+void Compiler::CompileBuiltinSourceFiles(std::string builtin_sources_dir) {
+    this->AddPackageDirectoryPath(builtin_sources_dir);
+    this->CompileProgram(".prajna", false);
 }
 
-std::shared_ptr<ir::Module> Compiler::compileCode(
+std::shared_ptr<ir::Module> Compiler::CompileCode(
     std::string code, std::shared_ptr<lowering::SymbolTable> symbol_table, std::string file_name,
     bool is_interpreter) {
     // interpreter模式时候, lowering会直接执行函数, 故这里开始就捕获异常
-    jit_engine->catchRuntimeError();
+    jit_engine->CatchRuntimeError();
 
-    this->logger = Logger::create(code);
+    this->logger = Logger::Create(code);
     auto ast = prajna::parser::parse(code, file_name, logger);
     PRAJNA_ASSERT(ast);
     auto ir_lowering_module =
@@ -90,25 +90,25 @@ std::shared_ptr<ir::Module> Compiler::compileCode(
         ir_sub_module->fullname = ir_sub_module->name;
     }
     auto ir_ssa_module = prajna::transform::transform(ir_lowering_module);
-    auto ir_codegen_module = prajna::codegen::llvmCodegen(ir_ssa_module, ir::Target::host);
-    auto ir_llvm_optimize_module = prajna::codegen::llvmPass(ir_codegen_module);
+    auto ir_codegen_module = prajna::codegen::LlvmCodegen(ir_ssa_module, ir::Target::host);
+    auto ir_llvm_optimize_module = prajna::codegen::LlvmPass(ir_codegen_module);
 
     for (auto [ir_target, ir_sub_module] : ir_codegen_module->modules) {
         if (ir_sub_module && ir_sub_module->llvm_module) {
-            prajna::codegen::llvmPass(ir_sub_module);
+            prajna::codegen::LlvmPass(ir_sub_module);
         }
     }
 
-    jit_engine->addIRModule(ir_llvm_optimize_module);
+    jit_engine->AddIRModule(ir_llvm_optimize_module);
 
     return ir_lowering_module;
 }
 
-void Compiler::executeCodeInRelp(std::string script_code) {
+void Compiler::ExecuteCodeInRelp(std::string script_code) {
     try {
         static int command_id = 0;
 
-        auto ir_module = this->compileCode(script_code, _symbol_table,
+        auto ir_module = this->CompileCode(script_code, _symbol_table,
                                            ":cmd" + std::to_string(command_id++), true);
         if (not ir_module) return;
 
@@ -116,7 +116,7 @@ void Compiler::executeCodeInRelp(std::string script_code) {
         for (auto ir_function : ir_module->functions) {
             if (ir_function->annotation_dict.count("\\command")) {
                 auto fun_fullname = ir_function->fullname;
-                auto fun_ptr = reinterpret_cast<void (*)(void)>(getSymbolValue(fun_fullname));
+                auto fun_ptr = reinterpret_cast<void (*)(void)>(GetSymbolValue(fun_fullname));
                 fun_ptr();
             }
         }
@@ -125,28 +125,28 @@ void Compiler::executeCodeInRelp(std::string script_code) {
     }
 }
 
-void Compiler::executeProgram(std::filesystem::path program_path) {
+void Compiler::ExecuteProgram(std::filesystem::path program_path) {
     this->settings.print_result = false;
     bool is_script = program_path.extension() == ".prajnascript";
-    auto ir_module = compileProgram(program_path, is_script);
+    auto ir_module = CompileProgram(program_path, is_script);
     if (is_script) {
         for (auto ir_function : ir_module->functions) {
             if (ir_function->annotation_dict.count("\\command")) {
                 auto fun_fullname = ir_function->fullname;
-                auto fun_ptr = reinterpret_cast<void (*)(void)>(getSymbolValue(fun_fullname));
+                auto fun_ptr = reinterpret_cast<void (*)(void)>(GetSymbolValue(fun_fullname));
                 fun_ptr();
             }
         }
     } else {
-        executateMainFunction();
+        ExecutateMainFunction();
     }
 }
 
-void Compiler::executateMainFunction() {
+void Compiler::ExecutateMainFunction() {
     std::set<std::shared_ptr<ir::Function>> main_functions;
 
-    this->_symbol_table->each([=, &main_functions](lowering::Symbol symbol) {
-        if (auto ir_value = lowering::symbolGet<ir::Value>(symbol)) {
+    this->_symbol_table->Each([=, &main_functions](lowering::Symbol symbol) {
+        if (auto ir_value = lowering::SymbolGet<ir::Value>(symbol)) {
             if (auto ir_function = cast<ir::Function>(ir_value)) {
                 if (ir_function->name == "Main") {
                     main_functions.insert(ir_function);
@@ -154,8 +154,8 @@ void Compiler::executateMainFunction() {
                         return;
                     }
 
-                    auto function_pointer = getSymbolValue(ir_function->fullname);
-                    jit_engine->catchRuntimeError();
+                    auto function_pointer = GetSymbolValue(ir_function->fullname);
+                    jit_engine->CatchRuntimeError();
                     reinterpret_cast<void (*)(void)>(function_pointer)();
                 }
             }
@@ -163,22 +163,22 @@ void Compiler::executateMainFunction() {
     });
 
     if (main_functions.empty()) {
-        logger->error("the main function is not found");
+        logger->Error("the main function is not found");
     }
 
     if (main_functions.size() >= 2) {
-        logger->error("the main function is duplicate");
+        logger->Error("the main function is duplicate");
         for (auto ir_function : main_functions) {
-            logger->note(ir_function->source_location);
+            logger->Note(ir_function->source_location);
         }
     }
 }
 
-size_t Compiler::getSymbolValue(std::string symbol_name) {
-    return this->jit_engine->getValue(symbol_name);
+size_t Compiler::GetSymbolValue(std::string symbol_name) {
+    return this->jit_engine->GetValue(symbol_name);
 }
 
-void Compiler::addPackageDirectoryPath(std::string package_directory) {
+void Compiler::AddPackageDirectoryPath(std::string package_directory) {
     if (!std::filesystem::is_directory(std::filesystem::path(package_directory))) {
         auto error_message = fmt::format("{} is not a valid package directory",
                                          fmt::styled(package_directory, fmt::fg(fmt::color::red)));
@@ -188,18 +188,18 @@ void Compiler::addPackageDirectoryPath(std::string package_directory) {
     package_directories.push_back(std::filesystem::path(package_directory));
 }
 
-void Compiler::runTests(std::filesystem::path prajna_source_package_path) {
-    auto ir_module = this->compileProgram(prajna_source_package_path, false);
+void Compiler::RunTests(std::filesystem::path prajna_source_package_path) {
+    auto ir_module = this->CompileProgram(prajna_source_package_path, false);
     for (auto ir_function : ir_module->functions) {
         if (ir_function->annotation_dict.count("test")) {
-            auto function_pointer = getSymbolValue(ir_function->fullname);
-            jit_engine->catchRuntimeError();
+            auto function_pointer = GetSymbolValue(ir_function->fullname);
+            jit_engine->CatchRuntimeError();
             reinterpret_cast<void (*)(void)>(function_pointer)();
         }
     }
 }
 
-std::shared_ptr<ir::Module> Compiler::compileProgram(
+std::shared_ptr<ir::Module> Compiler::CompileProgram(
     std::filesystem::path prajna_source_package_path, bool is_interpreter) {
     std::filesystem::path prajna_source_path;
     std::filesystem::path prajna_directory_path;
@@ -214,42 +214,42 @@ std::shared_ptr<ir::Module> Compiler::compileProgram(
     }
 
     if (prajna_source_path.empty()) {
-        logger->error(
+        logger->Error(
             fmt::format("{} is invalid program file\n", prajna_source_package_path.string()));
         throw CompileError();
         return nullptr;
     }
 
-    auto current_symbol_table = createSymbolTableTree(_symbol_table, prajna_source_package_path);
+    auto current_symbol_table = CreateSymbolTableTree(_symbol_table, prajna_source_package_path);
     current_symbol_table->directory_path =
         prajna_directory_path / current_symbol_table->directory_path;
 
     std::ifstream ifs(prajna_source_path.string());
     if (ifs.good()) {
         std::string code((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-        return this->compileCode(code, current_symbol_table, prajna_source_path.string(),
+        return this->CompileCode(code, current_symbol_table, prajna_source_path.string(),
                                  is_interpreter);
     } else {
-        logger->error("invalid program");
+        logger->Error("invalid program");
         return nullptr;
     }
 }
 
 Compiler::~Compiler() {
-    this->_symbol_table->each([](lowering::Symbol symbol) {
+    this->_symbol_table->Each([](lowering::Symbol symbol) {
         boost::apply_visitor(
             overloaded{[](auto) {},
                        [](std::shared_ptr<ir::Module> ir_module) {
                            auto ir_values =
-                               transform::utility::getValuesInModule<ir::Value>(ir_module);
+                               transform::utility::GetValuesInModule<ir::Value>(ir_module);
                            for (auto ir_value : ir_values) {
-                               ir_value->finalize();
+                               ir_value->Finalize();
                            }
                        }},
             symbol);
     });
 
-    this->_symbol_table->finalize();
+    this->_symbol_table->Finalize();
 }
 
 }  // namespace prajna

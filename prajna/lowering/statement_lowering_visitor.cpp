@@ -15,7 +15,7 @@ namespace prajna::lowering {
 
 using std::filesystem::path;
 
-std::optional<path> getPackagePath(path directory_path, std::string identifier) {
+std::optional<path> GetPackagePath(path directory_path, std::string identifier) {
     if (std::filesystem::exists(directory_path / path(identifier + ".prajna"))) {
         return directory_path / path(identifier + ".prajna");
     } else {
@@ -38,7 +38,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
     try {
         Symbol symbol;
         if (ast_import.identifier_path.root_optional) {
-            symbol = ir_builder->symbol_table->rootSymbolTable();
+            symbol = ir_builder->symbol_table->RootSymbolTable();
         } else {
             symbol = ir_builder->symbol_table;
         }
@@ -62,22 +62,22 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                         return nullptr;
                     },
                     [=, &is_first_module](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
-                        auto symbol = symbol_table->get(identifier);
+                        auto symbol = symbol_table->Get(identifier);
                         if (symbol.which() != 0) {
                             return symbol;
                         } else {
-                            auto new_symbol_table = lowering::SymbolTable::create(symbol_table);
-                            symbol_table->set(new_symbol_table, identifier);
+                            auto new_symbol_table = lowering::SymbolTable::Create(symbol_table);
+                            symbol_table->Set(new_symbol_table, identifier);
                             new_symbol_table->directory_path =
                                 symbol_table->directory_path / path(identifier);
                             new_symbol_table->name = identifier;
 
                             auto package_path_optional =
-                                getPackagePath(symbol_table->directory_path, identifier);
+                                GetPackagePath(symbol_table->directory_path, identifier);
 
                             if (package_path_optional) {
-                                auto new_symbol_table = lowering::SymbolTable::create(symbol_table);
-                                symbol_table->set(new_symbol_table, identifier);
+                                auto new_symbol_table = lowering::SymbolTable::Create(symbol_table);
+                                symbol_table->Set(new_symbol_table, identifier);
                                 new_symbol_table->directory_path =
                                     symbol_table->directory_path / path(identifier);
                                 new_symbol_table->name = identifier;
@@ -87,7 +87,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                                     PRAJNA_ASSERT(ifs.good());
                                     std::string code((std::istreambuf_iterator<char>(ifs)),
                                                      std::istreambuf_iterator<char>());
-                                    this->compiler->compileCode(code, new_symbol_table,
+                                    this->compiler->CompileCode(code, new_symbol_table,
                                                                 package_path.string(), false);
                                 }
                                 return new_symbol_table;
@@ -96,13 +96,13 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                                 if (is_first_module) {
                                     for (auto package_directory : compiler->package_directories) {
                                         auto global_package_path_option =
-                                            getPackagePath(package_directory, identifier);
+                                            GetPackagePath(package_directory, identifier);
                                         if (global_package_path_option) {
-                                            auto new_symbol_table = lowering::SymbolTable::create(
+                                            auto new_symbol_table = lowering::SymbolTable::Create(
                                                 compiler->_symbol_table);
-                                            compiler->_symbol_table->set(new_symbol_table,
+                                            compiler->_symbol_table->Set(new_symbol_table,
                                                                          identifier);
-                                            symbol_table->set(new_symbol_table, identifier);
+                                            symbol_table->Set(new_symbol_table, identifier);
                                             new_symbol_table->directory_path =
                                                 package_directory / path(identifier);
                                             new_symbol_table->name = identifier;
@@ -113,7 +113,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                                                 std::string code(
                                                     (std::istreambuf_iterator<char>(ifs)),
                                                     std::istreambuf_iterator<char>());
-                                                this->compiler->compileCode(code, new_symbol_table,
+                                                this->compiler->CompileCode(code, new_symbol_table,
                                                                             package_path.string(),
                                                                             false);
                                             }
@@ -122,7 +122,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                                     }
                                 }
 
-                                logger->error("module is not found",
+                                logger->Error("module is not found",
                                               iter_ast_identifier->identifier);
                                 return nullptr;
                             }
@@ -135,18 +135,18 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         }
 
         /// TODO 并不清晰, 后面再处理
-        ir_builder->symbol_table->set(symbol,
+        ir_builder->symbol_table->Set(symbol,
                                       ast_import.identifier_path.identifiers.back().identifier);
 
         if (ast_import.identifier_path.identifiers.back().template_arguments_optional) {
             auto symbol_template_arguments =
-                this->expression_lowering_visitor->applyTemplateArguments(
+                this->expression_lowering_visitor->ApplyTemplateArguments(
                     ast_import.identifier_path.identifiers.back()
                         .template_arguments_optional.get());
-            if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
+            if (auto template_struct = SymbolGet<TemplateStruct>(symbol)) {
                 // 如果获取到nullptr则说明实例化正在进行中,
                 // 使用instantiating_type来获取相应类型
-                if (auto ir_type = template_struct->instantiate(symbol_template_arguments,
+                if (auto ir_type = template_struct->Instantiate(symbol_template_arguments,
                                                                 ir_builder->module)) {
                     symbol = ir_type;
                 } else {
@@ -154,18 +154,18 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                     symbol = ir_builder->instantiating_type_stack.top();
                 }
             }
-            if (auto tempate_ = symbolGet<Template>(symbol)) {
+            if (auto tempate_ = SymbolGet<Template>(symbol)) {
                 symbol = tempate_->instantiate(symbol_template_arguments, ir_builder->module);
             }
         }
 
         if (ast_import.as_optional) {
-            ir_builder->symbol_table->set(symbol, ast_import.as_optional.get());
+            ir_builder->symbol_table->Set(symbol, ast_import.as_optional.get());
         }
 
         return symbol;
     } catch (CompileError compile_error) {
-        logger->note(ast_import.identifier_path);
+        logger->Note(ast_import.identifier_path);
         throw compile_error;
     }
 }
@@ -173,12 +173,12 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
 Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
     if (ast_pragma.name == "error") {
         std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-        logger->error(fmt::format("pragma error: {}", msg), ast_pragma);
+        logger->Error(fmt::format("pragma error: {}", msg), ast_pragma);
         return nullptr;
     }
     if (ast_pragma.name == "warning") {
         std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-        logger->warning(fmt::format("pragma warning: {}", msg), ast_pragma);
+        logger->Warning(fmt::format("pragma warning: {}", msg), ast_pragma);
         return nullptr;
     }
     if (ast_pragma.name == "system") {
@@ -191,15 +191,15 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
         return nullptr;
     }
     if (ast_pragma.name == "stage0") {
-        this->stage0();
+        this->Stage0();
         return nullptr;
     }
     if (ast_pragma.name == "stage1") {
-        this->stage1();
+        this->Stage1();
         return nullptr;
     }
 
-    logger->error("the pragma is undefined", ast_pragma);
+    logger->Error("the pragma is undefined", ast_pragma);
     return nullptr;
 }
 

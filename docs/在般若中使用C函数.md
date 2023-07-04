@@ -9,13 +9,13 @@
 下面我们绑定了操作文件所需的C函数.
 
 ```c++
-    this->bindCFunction(reinterpret_cast<void *>(fopen), "::fs::_c::fopen");
-    this->bindCFunction(reinterpret_cast<void*>(fclose), "::fs::_c::fclose");
-    this->bindCFunction(reinterpret_cast<void *>(fseek), "::fs::_c::fseek");
-    this->bindCFunction(reinterpret_cast<void *>(ftell), "::fs::_c::ftell");
-    this->bindCFunction(reinterpret_cast<void*>(fflush), "::fs::_c::fflush");
-    this->bindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
-    this->bindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
+    this->BindCFunction(reinterpret_cast<void *>(fopen), "::fs::_c::fopen");
+    this->BindCFunction(reinterpret_cast<void*>(fclose), "::fs::_c::fclose");
+    this->BindCFunction(reinterpret_cast<void *>(fseek), "::fs::_c::fseek");
+    this->BindCFunction(reinterpret_cast<void *>(ftell), "::fs::_c::ftell");
+    this->BindCFunction(reinterpret_cast<void*>(fflush), "::fs::_c::fflush");
+    this->BindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
+    this->BindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
 ```
 
 ## 在Prajna里声明函数

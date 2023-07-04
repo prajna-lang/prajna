@@ -12,13 +12,13 @@ namespace prajna::parser::grammar {
 namespace {
 
 template <typename Iterator_>
-inline ast::SourcePosition getFirstIteratorPosition(Iterator_ first_iter) {
+inline ast::SourcePosition GetFirstIteratorPosition(Iterator_ first_iter) {
     auto pos = first_iter->begin().get_position();
     return ast::SourcePosition{pos.line, pos.column, pos.file};
 }
 
 template <typename Iterator_>
-inline ast::SourcePosition getLastIteratorPosition(Iterator_ first_iter, Iterator_ last_iter) {
+inline ast::SourcePosition GetLastIteratorPosition(Iterator_ first_iter, Iterator_ last_iter) {
     auto iter = first_iter;
     auto iter_tmp = iter;
     // 存在iter > last_iter的情况, 匹配annotations的时候就存在, 因为他们会匹配"空"的,
@@ -45,7 +45,7 @@ struct ErrorHandler {
     /// @param what
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ error_iter,
                     boost::spirit::info what) const {
-        auto last_pos1 = getLastIteratorPosition(first_iter, error_iter);
+        auto last_pos1 = GetLastIteratorPosition(first_iter, error_iter);
         auto last_pos2 = last_pos1;
         last_pos2.column = last_pos1.column + 1;
 
@@ -53,7 +53,7 @@ struct ErrorHandler {
         ss << what;
 
         std::string rule_name = what.tag == "token_def" ? ss.str() : "\"" + what.tag + "\"";
-        logger->error(fmt::format("expect a {}", rule_name), last_pos1, last_pos2, BLUB);
+        logger->Error(fmt::format("expect a {}", rule_name), last_pos1, last_pos2, BLUB);
     }
 
    private:
@@ -68,8 +68,8 @@ struct SuccessHandler {
 
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
                     ast::SourceLocation& ast_source_location) const {
-        ast_source_location.first_position = getFirstIteratorPosition(first_iter);
-        ast_source_location.last_position = getLastIteratorPosition(first_iter, last_iter);
+        ast_source_location.first_position = GetFirstIteratorPosition(first_iter);
+        ast_source_location.last_position = GetLastIteratorPosition(first_iter, last_iter);
     }
 
     void operator()(Iterator_ first_iter, Iterator_ input_last_iter, Iterator_ last_iter,
@@ -127,10 +127,10 @@ struct SuccessHandler {
         boost::spirit::qi::skip_over(last_iter, input_last_iter, skipper);
 
         if (last_iter != input_last_iter) {
-            auto pos1 = getFirstIteratorPosition(last_iter);
+            auto pos1 = GetFirstIteratorPosition(last_iter);
             auto pos2 = pos1;
             pos2.column = pos1.column + 1;
-            logger->error("expect a \"statement\"", pos1, pos2, REDB);
+            logger->Error("expect a \"statement\"", pos1, pos2, REDB);
         }
     }
 

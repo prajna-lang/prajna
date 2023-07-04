@@ -40,7 +40,7 @@ struct Property {
     std::shared_ptr<ir::Function> set_function;
     std::shared_ptr<ir::Function> get_function;
 
-    static std::shared_ptr<Property> create() { return std::shared_ptr<Property>(new Property); }
+    static std::shared_ptr<Property> Create() { return std::shared_ptr<Property>(new Property); }
 };
 
 using AnnotationDict = std::unordered_map<std::string, std::list<std::string>>;
@@ -75,7 +75,7 @@ class NullType : public Type {
     NullType() = default;
 
    public:
-    static std::shared_ptr<NullType> create() {
+    static std::shared_ptr<NullType> Create() {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_null_type = cast<NullType>(ir_type)) {
                 return ir_null_type;
@@ -104,7 +104,7 @@ class FloatType : public RealNumberType {
     FloatType() = default;
 
    public:
-    static std::shared_ptr<FloatType> create(int64_t bits) {
+    static std::shared_ptr<FloatType> Create(int64_t bits) {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_float_type = cast<FloatType>(ir_type)) {
                 if (ir_float_type->bits == bits) {
@@ -131,11 +131,11 @@ class IntType : public RealNumberType {
     IntType() = default;
 
    public:
-    static std::shared_ptr<IntType> create(int64_t bits, bool is_signed) {
+    static std::shared_ptr<IntType> Create(int64_t bits, bool is_signed) {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_int_type = cast<IntType>(ir_type)) {
                 // 不能和char和bool混了
-                if (is<ir::CharType>(ir_type) || is<ir::BoolType>(ir_type)) {
+                if (Is<ir::CharType>(ir_type) || Is<ir::BoolType>(ir_type)) {
                     continue;
                 }
 
@@ -164,7 +164,7 @@ class BoolType : public IntType {
     BoolType() = default;
 
    public:
-    static std::shared_ptr<BoolType> create() {
+    static std::shared_ptr<BoolType> Create() {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_bool_type = cast<BoolType>(ir_type)) {
                 return ir_bool_type;
@@ -190,7 +190,7 @@ class CharType : public IntType {
     CharType() = default;
 
    public:
-    static std::shared_ptr<CharType> create() {
+    static std::shared_ptr<CharType> Create() {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_char_type = cast<CharType>(ir_type)) {
                 return ir_char_type;
@@ -214,7 +214,7 @@ class VoidType : public Type {
     VoidType() = default;
 
    public:
-    static std::shared_ptr<VoidType> create() {
+    static std::shared_ptr<VoidType> Create() {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_void_type = cast<VoidType>(ir_type)) {
                 return ir_void_type;
@@ -235,7 +235,7 @@ class UndefType : public Type {
     UndefType() = default;
 
    public:
-    static std::shared_ptr<UndefType> create() {
+    static std::shared_ptr<UndefType> Create() {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_undef_type = cast<UndefType>(ir_type)) {
                 return ir_undef_type;
@@ -257,7 +257,7 @@ class FunctionType : public Type {
 
    public:
     /// @note 考虑函数指针的情况, 同一个函数类型指向不同函数地址是存在且必须的(分发的实现)
-    static std::shared_ptr<FunctionType> create(std::list<std::shared_ptr<Type>> ir_parameter_types,
+    static std::shared_ptr<FunctionType> Create(std::list<std::shared_ptr<Type>> ir_parameter_types,
                                                 std::shared_ptr<Type> return_type) {
         // @note 不同函数的, 函数类型不应该是用一个指针, 下面的代码更适合判断动态分发的时候使用
         for (auto ir_type : global_context.created_types) {
@@ -303,8 +303,8 @@ class PointerType : public Type {
     PointerType() = default;
 
    public:
-    static std::shared_ptr<PointerType> create(std::shared_ptr<Type> value_type) {
-        PRAJNA_ASSERT(not is<VoidType>(value_type));
+    static std::shared_ptr<PointerType> Create(std::shared_ptr<Type> value_type) {
+        PRAJNA_ASSERT(not Is<VoidType>(value_type));
 
         for (auto ir_type : global_context.created_types) {
             if (auto ir_pointer_type = cast<PointerType>(ir_type)) {
@@ -332,7 +332,7 @@ class ArrayType : public Type {
     ArrayType() = default;
 
    public:
-    static std::shared_ptr<ArrayType> create(std::shared_ptr<Type> value_type, size_t size) {
+    static std::shared_ptr<ArrayType> Create(std::shared_ptr<Type> value_type, size_t size) {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_array_type = cast<ArrayType>(ir_type)) {
                 if (ir_array_type->value_type == value_type && ir_array_type->size == size) {
@@ -361,7 +361,7 @@ class Field {
     Field() = default;
 
    public:
-    static std::shared_ptr<Field> create(std::string name, std::shared_ptr<Type> type) {
+    static std::shared_ptr<Field> Create(std::string name, std::shared_ptr<Type> type) {
         std::shared_ptr<Field> self(new Field);
         self->name = name;
         self->type = type;
@@ -380,21 +380,21 @@ class StructType : public Type {
 
    public:
     // StructType应该直接用name获取, 其是否相等的判断取决于是否是相同的struct,而不是类型相等
-    static std::shared_ptr<StructType> create(std::list<std::shared_ptr<Field>> fields) {
+    static std::shared_ptr<StructType> Create(std::list<std::shared_ptr<Field>> fields) {
         // 每次取得都不是同一个类型
         std::shared_ptr<StructType> self(new StructType);
         self->fields = fields;
         global_context.created_types.push_back(self);
         self->name = "PleaseDefineStructTypeName";
         self->fullname = "PleaseDefineStructTypeFullname";
-        self->update();
+        self->Update();
 
         return self;
     }
 
-    static std::shared_ptr<StructType> create() { return create({}); }
+    static std::shared_ptr<StructType> Create() { return Create({}); }
 
-    void update() {
+    void Update() {
         this->bytes = 0;
         int64_t i = 0;
         for (auto& ir_field : this->fields) {
@@ -412,7 +412,7 @@ class InterfacePrototype : public Named {
     InterfacePrototype() = default;
 
    public:
-    static std::shared_ptr<InterfacePrototype> create() {
+    static std::shared_ptr<InterfacePrototype> Create() {
         std::shared_ptr<InterfacePrototype> self(new InterfacePrototype);
 
         self->name = "PleaseDefineInterfacePrototypeName";
@@ -437,7 +437,7 @@ class InterfaceImplement : public Named {
     InterfaceImplement() = default;
 
    public:
-    static std::shared_ptr<InterfaceImplement> create() {
+    static std::shared_ptr<InterfaceImplement> Create() {
         std::shared_ptr<InterfaceImplement> self(new InterfaceImplement);
 
         self->name = "PleaseDefineInterfaceImplementName";

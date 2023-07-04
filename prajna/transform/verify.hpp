@@ -25,33 +25,33 @@ inline void VerifyBlockImpl(std::shared_ptr<ir::Block> ir_block,
         }
 
         if (auto ir_if = cast<ir::If>(ir_value)) {
-            VerifyBlockImpl(ir_if->trueBlock(), defined_values);
-            VerifyBlockImpl(ir_if->falseBlock(), defined_values);
+            VerifyBlockImpl(ir_if->TrueBlock(), defined_values);
+            VerifyBlockImpl(ir_if->FalseBlock(), defined_values);
             continue;
         }
 
         if (auto ir_while = cast<ir::While>(ir_value)) {
-            VerifyBlockImpl(ir_while->loopBlock(), defined_values);
+            VerifyBlockImpl(ir_while->LoopBlock(), defined_values);
             continue;
         }
 
         if (auto ir_for = cast<ir::For>(ir_value)) {
-            VerifyBlockImpl(ir_for->loopBlock(), defined_values);
+            VerifyBlockImpl(ir_for->LoopBlock(), defined_values);
             continue;
         }
 
         if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
-            for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
+            for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 auto ir_operand = ir_instruction->operand(i);
                 PRAJNA_ASSERT(ir_operand);
 
-                if (is<ir::Function>(ir_operand) or is<ir::GlobalVariable>(ir_operand) or
-                    is<ir::GlobalAlloca>(ir_operand) or is<ir::Parameter>(ir_operand)) {
+                if (Is<ir::Function>(ir_operand) or Is<ir::GlobalVariable>(ir_operand) or
+                    Is<ir::GlobalAlloca>(ir_operand) or Is<ir::Parameter>(ir_operand)) {
                     continue;
                 }
 
                 // block存在跳转的情况
-                if (!is<ir::Block>(ir_operand)) {
+                if (!Is<ir::Block>(ir_operand)) {
                     PRAJNA_ASSERT(defined_values.count(ir_operand) != 0);
                 }
             }
@@ -75,44 +75,44 @@ inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
     }
 
     for (auto ir_function : ir_module->functions) {
-        auto ir_instructions = utility::getValuesInFunction<ir::Instruction>(ir_function);
+        auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
         for (auto ir_instruction : ir_instructions) {
-            if (is<ir::For>(ir_instruction)) {
+            if (Is<ir::For>(ir_instruction)) {
                 continue;
             }
 
-            for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
+            for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 auto ir_operand = ir_instruction->operand(i);
 
                 PRAJNA_ASSERT(ir_operand);
 
                 if (ir_operand) {
-                    if (is<ir::Function>(ir_operand) or is<ir::GlobalVariable>(ir_operand) or
-                        is<ir::GlobalAlloca>(ir_operand) or is<ir::Parameter>(ir_operand)) {
+                    if (Is<ir::Function>(ir_operand) or Is<ir::GlobalVariable>(ir_operand) or
+                        Is<ir::GlobalAlloca>(ir_operand) or Is<ir::Parameter>(ir_operand)) {
                         continue;
                     }
 
                     // 如果是While For等Block则直接放回, 其无法溯源到跟函数
-                    if (ir_operand->getRootBlock()->instruction_with_index_list.size() > 0) {
+                    if (ir_operand->GetRootBlock()->instruction_with_index_list.size() > 0) {
                         continue;
                     }
 
                     PRAJNA_ASSERT(std::find(RANGE(ir_operand->parent_block->values), ir_operand) !=
                                   ir_operand->parent_block->values.end());
 
-                    auto ir_function_tmp = ir_operand->getParentFunction();
+                    auto ir_function_tmp = ir_operand->GetParentFunction();
                     PRAJNA_ASSERT(ir_function_tmp == ir_function);
                 }
             }
         }
     }
 
-    auto ir_instructions = utility::getValuesInModule<ir::Call>(ir_module);
+    auto ir_instructions = utility::GetValuesInModule<ir::Call>(ir_module);
     for (auto ir_instruction : ir_instructions) {
-        for (size_t i = 0; i < ir_instruction->operandSize(); ++i) {
+        for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->operand(i);
-            if (is<ir::Function>(ir_operand)) {
-                for (auto [ir_inst_cur, op_idx] : clone(ir_operand->instruction_with_index_list)) {
+            if (Is<ir::Function>(ir_operand)) {
+                for (auto [ir_inst_cur, op_idx] : Clone(ir_operand->instruction_with_index_list)) {
                     // TODO,  目前extractGpu无法通过, 后续修复
                     // PRAJNA_ASSERT(ir_inst_cur->getParentFunction());
                 }

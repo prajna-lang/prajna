@@ -16,15 +16,15 @@ class ExecutionEngine {
    public:
     ExecutionEngine();
 
-    size_t getValue(std::string name);
+    size_t GetValue(std::string name);
 
-    void addIRModule(std::shared_ptr<ir::Module> ir_module);
+    void AddIRModule(std::shared_ptr<ir::Module> ir_module);
 
-    void bindCFunction(void* fun_ptr, std::string mangle_name);
+    void BindCFunction(void* fun_ptr, std::string mangle_name);
 
-    void catchRuntimeError();
+    void CatchRuntimeError();
 
-    void bindBuiltinFunction();
+    void BindBuiltinFunction();
 
    private:
     std::unique_ptr<llvm::orc::LLJIT> _up_lljit;

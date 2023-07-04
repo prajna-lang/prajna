@@ -30,7 +30,7 @@ class ExpressionLoweringVisitor {
     ExpressionLoweringVisitor() = default;
 
    public:
-    static std::shared_ptr<ExpressionLoweringVisitor> create(std::shared_ptr<IrBuilder> ir_builder,
+    static std::shared_ptr<ExpressionLoweringVisitor> Create(std::shared_ptr<IrBuilder> ir_builder,
                                                              std::shared_ptr<Logger> logger) {
         std::shared_ptr<ExpressionLoweringVisitor> self(new ExpressionLoweringVisitor);
         self->logger = logger;
@@ -39,7 +39,7 @@ class ExpressionLoweringVisitor {
     };
 
    public:
-    bool isIdentifier(ast::IdentifierPath ast_identifier_path) {
+    bool IsIdentifier(ast::IdentifierPath ast_identifier_path) {
         if (ast_identifier_path.root_optional) {
             return false;
         }
@@ -52,23 +52,23 @@ class ExpressionLoweringVisitor {
         return !identifier_with_template_parameters.template_arguments_optional;
     }
 
-    bool isIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
+    bool IsIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
         ast::IdentifierPath ast_identifier_path;
         ast_identifier_path.identifiers = {ast_identifier_with_template_parameters};
-        return this->isIdentifier(ast_identifier_path);
+        return this->IsIdentifier(ast_identifier_path);
     }
 
-    ast::Identifier getIdentifier(ast::IdentifierPath ast_identifier_path) {
+    ast::Identifier GetIdentifier(ast::IdentifierPath ast_identifier_path) {
         return ast_identifier_path.identifiers.front().identifier;
     }
 
-    ast::Identifier getIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
+    ast::Identifier GetIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
         ast::IdentifierPath ast_identifier_path;
         ast_identifier_path.identifiers = {ast_identifier_with_template_parameters};
-        return this->getIdentifier(ast_identifier_path);
+        return this->GetIdentifier(ast_identifier_path);
     }
 
-    std::shared_ptr<ir::Value> apply(ast::Expression ast_expression) {
+    std::shared_ptr<ir::Value> Apply(ast::Expression ast_expression) {
         PRAJNA_ASSERT(this);
         return (*this)(ast_expression);
     }
@@ -79,15 +79,15 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::CharLiteral ast_char_literal) {
-        return ir_builder->create<ir::ConstantChar>(ast_char_literal.value);
+        return ir_builder->Create<ir::ConstantChar>(ast_char_literal.value);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::StringLiteral ast_string_literal) {
-        return ir_builder->getString(ast_string_literal.value);
+        return ir_builder->GetString(ast_string_literal.value);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteral ast_int_literal) {
-        return ir_builder->getIndexConstant(ast_int_literal.value);
+        return ir_builder->GetIndexConstant(ast_int_literal.value);
     };
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteralPostfix ast_int_literal_postfix) {
@@ -96,60 +96,60 @@ class ExpressionLoweringVisitor {
         std::string postfix = ast_int_literal_postfix.postfix;
         auto value = ast_int_literal_postfix.int_literal.value;
         if (postfix == "i8") {
-            auto ir_type = ir::IntType::create(8, true);
-            return ir_builder->create<ir::ConstantInt>(ir_type, value);
+            auto ir_type = ir::IntType::Create(8, true);
+            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
         }
         if (postfix == "i16") {
-            auto ir_type = ir::IntType::create(16, true);
-            return ir_builder->create<ir::ConstantInt>(ir_type, value);
+            auto ir_type = ir::IntType::Create(16, true);
+            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
         }
         if (postfix == "i32") {
-            auto ir_type = ir::IntType::create(32, true);
-            return ir_builder->create<ir::ConstantInt>(ir_type, value);
+            auto ir_type = ir::IntType::Create(32, true);
+            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
         }
         if (postfix == "i64") {
-            auto ir_type = ir::IntType::create(64, true);
-            return ir_builder->create<ir::ConstantInt>(ir_type, value);
+            auto ir_type = ir::IntType::Create(64, true);
+            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
         }
         if (postfix == "u8") {
-            auto ir_type = ir::IntType::create(8, false);
-            return ir_builder->create<ir::ConstantInt>(ir_type, value);
+            auto ir_type = ir::IntType::Create(8, false);
+            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
         }
         if (postfix == "u16") {
-            auto ir_type = ir::IntType::create(16, false);
-            return ir_builder->create<ir::ConstantInt>(ir_type, value);
+            auto ir_type = ir::IntType::Create(16, false);
+            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
         }
         if (postfix == "u32") {
-            auto ir_type = ir::IntType::create(32, false);
-            return ir_builder->create<ir::ConstantInt>(ir_type, value);
+            auto ir_type = ir::IntType::Create(32, false);
+            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
         }
         if (postfix == "u64") {
-            auto ir_type = ir::IntType::create(64, false);
-            return ir_builder->create<ir::ConstantInt>(ir_type, value);
+            auto ir_type = ir::IntType::Create(64, false);
+            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
         }
 
-        auto ir_float = createFloatLiteralPostfix(postfix, static_cast<double>(value));
+        auto ir_float = CreateFloatLiteralPostfix(postfix, static_cast<double>(value));
         if (ir_float) {
             return ir_float;
         }
 
-        logger->error(fmt::format("{} is invalid number postfix", postfix),
+        logger->Error(fmt::format("{} is invalid number postfix", postfix),
                       ast_int_literal_postfix.postfix);
         return nullptr;
     };
 
-    std::shared_ptr<ir::Value> createFloatLiteralPostfix(std::string postfix, double value) {
+    std::shared_ptr<ir::Value> CreateFloatLiteralPostfix(std::string postfix, double value) {
         if (postfix == "f16") {
-            auto ir_type = ir::FloatType::create(16);
-            return ir_builder->create<ir::ConstantFloat>(ir_type, value);
+            auto ir_type = ir::FloatType::Create(16);
+            return ir_builder->Create<ir::ConstantFloat>(ir_type, value);
         }
         if (postfix == "f32") {
-            auto ir_type = ir::FloatType::create(32);
-            return ir_builder->create<ir::ConstantFloat>(ir_type, value);
+            auto ir_type = ir::FloatType::Create(32);
+            return ir_builder->Create<ir::ConstantFloat>(ir_type, value);
         }
         if (postfix == "f64") {
-            auto ir_type = ir::FloatType::create(64);
-            return ir_builder->create<ir::ConstantFloat>(ir_type, value);
+            auto ir_type = ir::FloatType::Create(64);
+            return ir_builder->Create<ir::ConstantFloat>(ir_type, value);
         }
 
         return nullptr;
@@ -159,54 +159,54 @@ class ExpressionLoweringVisitor {
         std::string postfix = ast_float_literal_postfix.postfix;
         auto value = ast_float_literal_postfix.float_literal.value;
 
-        auto ir_float = createFloatLiteralPostfix(postfix, value);
+        auto ir_float = CreateFloatLiteralPostfix(postfix, value);
         if (ir_float) {
             return ir_float;
         } else {
-            logger->error(fmt::format("{} is invalid number postfix", postfix),
+            logger->Error(fmt::format("{} is invalid number postfix", postfix),
                           ast_float_literal_postfix.postfix);
             return nullptr;
         }
     };
 
     std::shared_ptr<ir::Value> operator()(ast::FloatLiteral ast_float_literal) {
-        auto ir_float_type = ir::FloatType::create(32);
-        return ir_builder->create<ir::ConstantFloat>(ir_float_type, ast_float_literal.value);
+        auto ir_float_type = ir::FloatType::Create(32);
+        return ir_builder->Create<ir::ConstantFloat>(ir_float_type, ast_float_literal.value);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::BoolLiteral ast_bool_literal) {
-        return ir_builder->create<ir::ConstantBool>(ast_bool_literal.value);
+        return ir_builder->Create<ir::ConstantBool>(ast_bool_literal.value);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::Identifier ast_identifier) {
-        if (!ir_builder->symbol_table->has(ast_identifier)) {
-            logger->error(fmt::format("{} not found", ast_identifier), ast_identifier);
+        if (!ir_builder->symbol_table->Has(ast_identifier)) {
+            logger->Error(fmt::format("{} not found", ast_identifier), ast_identifier);
         }
 
-        auto symbol = ir_builder->symbol_table->get(ast_identifier);
-        if (!symbolIs<ir::Value>(symbol)) {
+        auto symbol = ir_builder->symbol_table->Get(ast_identifier);
+        if (!SymbolIs<ir::Value>(symbol)) {
             PRAJNA_UNREACHABLE;
-            logger->error(fmt::format("{} is not a valid value"), ast_identifier);
+            logger->Error(fmt::format("{} is not a valid value"), ast_identifier);
         }
 
-        return symbolGet<ir::Value>(symbol);
+        return SymbolGet<ir::Value>(symbol);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::Expression ast_expresion) {
         auto ir_lhs = applyOperand(ast_expresion.first);
         ir_lhs->source_location = ast_expresion;
         for (auto optoken_and_rhs : ast_expresion.rest) {
-            ir_lhs = applyBinaryOperation(ir_lhs, optoken_and_rhs);
+            ir_lhs = ApplyBinaryOperation(ir_lhs, optoken_and_rhs);
             ir_lhs->source_location = optoken_and_rhs;
         }
         return ir_lhs;
     }
 
-    std::shared_ptr<ir::Value> applyBinaryOperationAccessMember(
+    std::shared_ptr<ir::Value> ApplyBinaryOperationAccessMember(
         std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
         if (ast_binary_operation.operand.type() != typeid(ast::IdentifierPath)) {
             PRAJNA_UNREACHABLE;
-            logger->error("access operand must be a identifier path", ast_binary_operation);
+            logger->Error("access operand must be a identifier path", ast_binary_operation);
         }
 
         auto identifier_path = boost::get<ast::IdentifierPath>(ast_binary_operation.operand);
@@ -215,29 +215,29 @@ class ExpressionLoweringVisitor {
 
         // 模板函数
         if (identifier_path.identifiers.front().template_arguments_optional) {
-            ir_builder->instantiateTypeImplements(ir_lhs->type);
+            ir_builder->InstantiateTypeImplements(ir_lhs->type);
             if (!ir_lhs->type->template_any_dict.count(member_name)) {
-                logger->error("invalid template", ast_binary_operation.operand);
+                logger->Error("invalid template", ast_binary_operation.operand);
             }
             auto lowering_member_function_template = std::any_cast<std::shared_ptr<Template>>(
                 ir_lhs->type->template_any_dict[member_name]);
 
-            auto symbol_template_arguments = this->applyTemplateArguments(
+            auto symbol_template_arguments = this->ApplyTemplateArguments(
                 *identifier_path.identifiers.front().template_arguments_optional);
 
             auto ir_member_function = cast<ir::Function>(
-                symbolGet<ir::Value>(lowering_member_function_template->instantiate(
+                SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
                     symbol_template_arguments, ir_builder->module)));
             PRAJNA_ASSERT(ir_member_function);
 
-            auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_lhs);
+            auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_lhs);
             auto ir_this_pointer =
-                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-            return ir::MemberFunctionWithThisPointer::create(ir_this_pointer, ir_member_function);
+                ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+            return ir::MemberFunctionWithThisPointer::Create(ir_this_pointer, ir_member_function);
         }
 
         if (!ir_lhs->type) {
-            this->logger->error("invalid object type to access member", ir_lhs->source_location);
+            this->logger->Error("invalid object type to access member", ir_lhs->source_location);
         }
 
         if (auto ir_member = ir_builder->accessMember(ir_lhs, member_name)) {
@@ -245,75 +245,75 @@ class ExpressionLoweringVisitor {
         }
 
         // 语法糖, ptr类型会寻找raw_ptr的成员函数
-        if (ir_builder->isPtrType(ir_lhs->type)) {
-            auto ir_raw_ptr = ir_builder->accessField(ir_lhs, "raw_ptr");
-            auto ir_object = ir_builder->create<ir::DeferencePointer>(ir_raw_ptr);
+        if (ir_builder->IsPtrType(ir_lhs->type)) {
+            auto ir_raw_ptr = ir_builder->AccessField(ir_lhs, "raw_ptr");
+            auto ir_object = ir_builder->Create<ir::DeferencePointer>(ir_raw_ptr);
             if (auto ir_member =
-                    this->applyBinaryOperationAccessMember(ir_object, ast_binary_operation)) {
+                    this->ApplyBinaryOperationAccessMember(ir_object, ast_binary_operation)) {
                 return ir_member;
             }
         }
 
-        logger->error(fmt::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
+        logger->Error(fmt::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
                       ast_binary_operation.operand);
         return nullptr;
     }
 
-    std::shared_ptr<ir::Value> applyBinaryOperationIndexArray(
+    std::shared_ptr<ir::Value> ApplyBinaryOperationIndexArray(
         std::shared_ptr<ir::Value> ir_object, ast::BinaryOperation ast_binary_operation) {
-        auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_object);
+        auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_object);
         auto ir_arguments =
             *cast<ir::ValueCollection>(this->applyOperand(ast_binary_operation.operand));
         if (ir_arguments.empty()) {
-            logger->error("index should have one argument at least", ast_binary_operation.operand);
+            logger->Error("index should have one argument at least", ast_binary_operation.operand);
         }
         auto ir_index = ir_arguments.front();
-        if (ir_index->type != ir_builder->getIndexType()) {
-            logger->error(
+        if (ir_index->type != ir_builder->GetIndexType()) {
+            logger->Error(
                 fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
         }
         // 之所以没包装成模板函数, 是因为需要包装成属性过于复杂了. 这样反而比较简单
-        if (is<ir::ArrayType>(ir_object->type)) {
+        if (Is<ir::ArrayType>(ir_object->type)) {
             if (ir_arguments.size() > 1) {
-                logger->error("too many index arguments", ast_binary_operation.operand);
+                logger->Error("too many index arguments", ast_binary_operation.operand);
             }
-            return ir_builder->create<ir::IndexArray>(ir_variable_liked, ir_index);
+            return ir_builder->Create<ir::IndexArray>(ir_variable_liked, ir_index);
         }
-        if (is<ir::PointerType>(ir_object->type)) {
+        if (Is<ir::PointerType>(ir_object->type)) {
             if (ir_arguments.size() > 1) {
-                logger->error("too many index arguments", ast_binary_operation.operand);
+                logger->Error("too many index arguments", ast_binary_operation.operand);
             }
-            return ir_builder->create<ir::IndexPointer>(ir_variable_liked, ir_index);
+            return ir_builder->Create<ir::IndexPointer>(ir_variable_liked, ir_index);
         }
 
-        if (auto ir_linear_index_property = ir_builder->getLinearIndexProperty(ir_object->type)) {
+        if (auto ir_linear_index_property = ir_builder->GetLinearIndexProperty(ir_object->type)) {
             auto ir_this_pointer =
-                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+                ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             auto ir_access_property =
-                ir_builder->create<ir::AccessProperty>(ir_this_pointer, ir_linear_index_property);
+                ir_builder->Create<ir::AccessProperty>(ir_this_pointer, ir_linear_index_property);
             ir_access_property->arguments({ir_index});
             return ir_access_property;
         }
 
-        if (auto ir_array_index_property = ir_builder->getArrayIndexProperty(ir_object->type)) {
+        if (auto ir_array_index_property = ir_builder->GetArrayIndexProperty(ir_object->type)) {
             auto ast_arguments = boost::get<ast::Expressions>(ast_binary_operation.operand);
-            auto ir_array_argument = this->applyArray(ast_arguments);
+            auto ir_array_argument = this->ApplyArray(ast_arguments);
 
             auto ir_this_pointer =
-                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+                ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             auto ir_access_property =
-                ir_builder->create<ir::AccessProperty>(ir_this_pointer, ir_array_index_property);
+                ir_builder->Create<ir::AccessProperty>(ir_this_pointer, ir_array_index_property);
             ir_access_property->arguments({ir_array_argument});
             return ir_access_property;
         }
 
-        logger->error("the object has not a \"[\" property", ast_binary_operation);
+        logger->Error("the object has not a \"[\" property", ast_binary_operation);
 
         return nullptr;
     }
 
-    std::shared_ptr<ir::Value> applyBinaryOperationCall(std::shared_ptr<ir::Value> ir_lhs,
+    std::shared_ptr<ir::Value> ApplyBinaryOperationCall(std::shared_ptr<ir::Value> ir_lhs,
                                                         ast::BinaryOperation ast_binary_operaton) {
         auto ir_arguments = *cast<ir::ValueCollection>(applyOperand(ast_binary_operaton.operand));
         PRAJNA_ASSERT(ast_binary_operaton.operand.type() == typeid(ast::Expressions));
@@ -321,7 +321,7 @@ class ExpressionLoweringVisitor {
         if (auto ir_member_function = cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
             auto ir_function_type = ir_member_function->function_prototype->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
-                logger->error(
+                logger->Error(
                     fmt::format(
                         "the arguments size is not matched, require {} argument, but give {}",
                         ir_function_type->parameter_types.size() - 1, ir_arguments.size()),
@@ -334,19 +334,19 @@ class ExpressionLoweringVisitor {
                                     ir_function_type->parameter_types.end()),
                                 ast_expressions)) {
                 if (ir_argument->type != ir_parameter_type) {
-                    logger->error("the argument type is not matched", ast_expression);
+                    logger->Error("the argument type is not matched", ast_expression);
                 }
             }
 
             ir_arguments.insert(ir_arguments.begin(), ir_member_function->this_pointer);
-            return ir_builder->create<ir::Call>(ir_member_function->function_prototype,
+            return ir_builder->Create<ir::Call>(ir_member_function->function_prototype,
                                                 ir_arguments);
         }
 
-        if (ir_lhs->isFunction()) {
-            auto ir_function_type = ir_lhs->getFunctionType();
+        if (ir_lhs->IsFunction()) {
+            auto ir_function_type = ir_lhs->GetFunctionType();
             if (ir_arguments.size() != ir_function_type->parameter_types.size()) {
-                logger->error(
+                logger->Error(
                     fmt::format(
                         "the arguments size is not matched, require {} argument, but give {}",
                         ir_function_type->parameter_types.size(), ir_arguments.size()),
@@ -355,10 +355,10 @@ class ExpressionLoweringVisitor {
             for (auto [ir_argument, ir_parameter_type, ast_experssion] :
                  boost::combine(ir_arguments, ir_function_type->parameter_types, ast_expressions)) {
                 if (ir_argument->type != ir_parameter_type) {
-                    logger->error("the argument type is not matched", ast_expressions);
+                    logger->Error("the argument type is not matched", ast_expressions);
                 }
             }
-            return ir_builder->create<ir::Call>(ir_lhs, ir_arguments);
+            return ir_builder->Create<ir::Call>(ir_lhs, ir_arguments);
         }
 
         if (auto ir_access_property = cast<ir::AccessProperty>(ir_lhs)) {
@@ -366,7 +366,7 @@ class ExpressionLoweringVisitor {
             auto ir_getter_function_type =
                 ir_access_property->property->get_function->function_type;
             if (ir_arguments.size() != ir_getter_function_type->parameter_types.size() - 1) {
-                logger->error(
+                logger->Error(
                     fmt::format("the property arguments size is not matched, require {} argument, "
                                 "but give {}",
                                 ir_getter_function_type->parameter_types.size() - 1,
@@ -381,7 +381,7 @@ class ExpressionLoweringVisitor {
                                     ir_getter_function_type->parameter_types.end()),
                                 ast_expressions)) {
                 if (ir_argument->type != ir_parameter_type) {
-                    logger->error("the argument type is not matched", ast_expression);
+                    logger->Error("the argument type is not matched", ast_expression);
                 }
             }
 
@@ -392,23 +392,23 @@ class ExpressionLoweringVisitor {
             return ir_access_property;
         }
 
-        logger->error("not a valid callable", ast_binary_operaton);
+        logger->Error("not a valid callable", ast_binary_operaton);
         return nullptr;
     }
 
-    std::shared_ptr<ir::Value> applyBinaryOperation(std::shared_ptr<ir::Value> ir_lhs,
+    std::shared_ptr<ir::Value> ApplyBinaryOperation(std::shared_ptr<ir::Value> ir_lhs,
                                                     ast::BinaryOperation ast_binary_operation) {
         if (ast_binary_operation.operator_ == ast::Operator(".")) {
-            return this->applyBinaryOperationAccessMember(ir_lhs, ast_binary_operation);
+            return this->ApplyBinaryOperationAccessMember(ir_lhs, ast_binary_operation);
         }
         if (ast_binary_operation.operator_ == ast::Operator("(")) {
-            return this->applyBinaryOperationCall(ir_lhs, ast_binary_operation);
+            return this->ApplyBinaryOperationCall(ir_lhs, ast_binary_operation);
         }
         if (ast_binary_operation.operator_ == ast::Operator("[")) {
-            return this->applyBinaryOperationIndexArray(ir_lhs, ast_binary_operation);
+            return this->ApplyBinaryOperationIndexArray(ir_lhs, ast_binary_operation);
         } else {
             // 将其余的运算都转换为函数调用
-            return this->convertBinaryOperationToCallFunction(ir_lhs, ast_binary_operation);
+            return this->ConvertBinaryOperationToCallFunction(ir_lhs, ast_binary_operation);
         }
 
         PRAJNA_UNREACHABLE;
@@ -425,49 +425,49 @@ class ExpressionLoweringVisitor {
         return ir_values;
     }
 
-    std::shared_ptr<ir::Value> applyUnaryOperatorDereferencePointer(
+    std::shared_ptr<ir::Value> ApplyUnaryOperatorDereferencePointer(
         std::shared_ptr<ir::Value> ir_operand) {
-        return ir_builder->create<ir::DeferencePointer>(ir_operand);
+        return ir_builder->Create<ir::DeferencePointer>(ir_operand);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::Unary ast_unary) {
         auto ir_operand = this->applyOperand(ast_unary.operand);
         if (ast_unary.operator_ == ast::Operator("*")) {
-            return this->applyUnaryOperatorDereferencePointer(ir_operand);
+            return this->ApplyUnaryOperatorDereferencePointer(ir_operand);
         }
         if (ast_unary.operator_ == ast::Operator("&")) {
             auto ir_variable_liked = cast<ir::VariableLiked>(ir_operand);
             if (ir_variable_liked == nullptr) {
-                logger->error("only could get the address of a VariableLiked", ast_unary);
+                logger->Error("only could get the address of a VariableLiked", ast_unary);
             }
-            return ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+            return ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         }
 
-        auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_operand);
+        auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_operand);
         auto unary_operator_name = ast_unary.operator_.string_token;
         auto ir_function =
-            ir_builder->getUnaryOperator(ir_variable_liked->type, unary_operator_name);
+            ir_builder->GetUnaryOperator(ir_variable_liked->type, unary_operator_name);
         if (not ir_function) {
-            logger->error("unary operator not found", ast_unary.operator_);
+            logger->Error("unary operator not found", ast_unary.operator_);
         }
 
-        auto ir_this_pointer = ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+        auto ir_this_pointer = ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         std::list<std::shared_ptr<ir::Value>> ir_arguemnts;
         ir_arguemnts.push_back(ir_this_pointer);
-        return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
+        return ir_builder->Create<ir::Call>(ir_function, ir_arguemnts);
     }
 
-    std::shared_ptr<ir::Type> applyType(ast::Type ast_type) {
-        auto symbol_type = this->applyIdentifierPath(ast_type);
-        auto ir_type = symbolGet<ir::Type>(symbol_type);
+    std::shared_ptr<ir::Type> ApplyType(ast::Type ast_type) {
+        auto symbol_type = this->ApplyIdentifierPath(ast_type);
+        auto ir_type = SymbolGet<ir::Type>(symbol_type);
         if (!ir_type) {
-            logger->error("the symbol is not a type", ast_type);
+            logger->Error("the symbol is not a type", ast_type);
         }
         return ir_type;
     }
 
-    std::shared_ptr<TemplateStruct> createDynamicTemplate() {
-        auto template_dynamic = Template::create();
+    std::shared_ptr<TemplateStruct> CreateDynamicTemplate() {
+        auto template_dynamic = Template::Create();
         template_dynamic->generator = [symbol_table = this->ir_builder->symbol_table,
                                        logger = this->logger,
                                        this](std::list<Symbol> symbol_template_arguments,
@@ -476,17 +476,17 @@ class ExpressionLoweringVisitor {
             PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
 
             auto ir_interface_prototype =
-                symbolGet<ir::InterfacePrototype>(symbol_template_arguments.front());
+                SymbolGet<ir::InterfacePrototype>(symbol_template_arguments.front());
             PRAJNA_ASSERT(ir_interface_prototype);
             return ir_interface_prototype->dynamic_type;
         };
 
-        auto template_struct_dynamic = TemplateStruct::create();
+        auto template_struct_dynamic = TemplateStruct::Create();
         template_struct_dynamic->template_struct_impl = template_dynamic;
         return template_struct_dynamic;
     }
 
-    std::list<Symbol> applyTemplateArguments(ast::TemplateArguments ast_template_arguments) {
+    std::list<Symbol> ApplyTemplateArguments(ast::TemplateArguments ast_template_arguments) {
         std::list<Symbol> symbol_template_arguments;
         for (auto ast_template_argument : ast_template_arguments) {
             auto symbol_template_argument = boost::apply_visitor(
@@ -495,10 +495,10 @@ class ExpressionLoweringVisitor {
                                return nullptr;
                            },
                            [=](ast::IdentifierPath ast_identifier_path) -> Symbol {
-                               return this->applyIdentifierPath(ast_identifier_path);
+                               return this->ApplyIdentifierPath(ast_identifier_path);
                            },
                            [=](ast::IntLiteral ast_int_literal) -> Symbol {
-                               return ir::ConstantInt::create(ir_builder->getIndexType(),
+                               return ir::ConstantInt::Create(ir_builder->GetIndexType(),
                                                               ast_int_literal.value);
                            }},
                 ast_template_argument);
@@ -508,10 +508,10 @@ class ExpressionLoweringVisitor {
         return symbol_template_arguments;
     }
 
-    Symbol applyIdentifierPath(ast::IdentifierPath ast_identifier_path) {
+    Symbol ApplyIdentifierPath(ast::IdentifierPath ast_identifier_path) {
         Symbol symbol;
         if (ast_identifier_path.root_optional) {
-            symbol = ir_builder->symbol_table->rootSymbolTable();
+            symbol = ir_builder->symbol_table->RootSymbolTable();
         } else {
             symbol = ir_builder->symbol_table;
         }
@@ -528,7 +528,7 @@ class ExpressionLoweringVisitor {
                         return nullptr;
                     },
                     [=](std::shared_ptr<ir::Value> ir_value) -> Symbol {
-                        logger->error("not a valid scope access", *iter_ast_identifier);
+                        logger->Error("not a valid scope access", *iter_ast_identifier);
                         return nullptr;
                     },
                     [=](std::shared_ptr<ir::Type> ir_type) -> Symbol {
@@ -537,10 +537,10 @@ class ExpressionLoweringVisitor {
                             auto lowering_member_function_template =
                                 std::any_cast<std::shared_ptr<Template>>(
                                     ir_type->template_any_dict[static_function_identifier]);
-                            auto symbol_template_argumen_list = this->applyTemplateArguments(
+                            auto symbol_template_argumen_list = this->ApplyTemplateArguments(
                                 *iter_ast_identifier->template_arguments_optional);
                             auto ir_function = cast<ir::Function>(
-                                symbolGet<ir::Value>(lowering_member_function_template->instantiate(
+                                SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
                                     symbol_template_argumen_list, ir_builder->module)));
                             PRAJNA_ASSERT(ir_function);
                             return ir_function;
@@ -549,7 +549,7 @@ class ExpressionLoweringVisitor {
                         auto ir_static_fun =
                             ir_builder->GetImplementFunction(ir_type, static_function_identifier);
                         if (ir_static_fun == nullptr) {
-                            logger->error(
+                            logger->Error(
                                 fmt::format("the static function {} is not exit in type {}",
                                             static_function_identifier, ir_type->fullname),
                                 static_function_identifier);
@@ -562,9 +562,9 @@ class ExpressionLoweringVisitor {
                         return nullptr;
                     },
                     [=](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
-                        auto symbol = symbol_table->get(iter_ast_identifier->identifier);
+                        auto symbol = symbol_table->Get(iter_ast_identifier->identifier);
                         if (symbol.which() == 0) {
-                            logger->error("the symbol is not found",
+                            logger->Error("the symbol is not found",
                                           iter_ast_identifier->identifier);
                         }
 
@@ -572,13 +572,13 @@ class ExpressionLoweringVisitor {
                             return symbol;
                         } else {
                             try {
-                                auto symbol_template_arguments = this->applyTemplateArguments(
+                                auto symbol_template_arguments = this->ApplyTemplateArguments(
                                     *iter_ast_identifier->template_arguments_optional);
 
-                                if (auto template_struct = symbolGet<TemplateStruct>(symbol)) {
+                                if (auto template_struct = SymbolGet<TemplateStruct>(symbol)) {
                                     // 如果获取到nullptr则说明实例化正在进行中,
                                     // 使用instantiating_type来获取相应类型
-                                    if (auto ir_type = template_struct->instantiate(
+                                    if (auto ir_type = template_struct->Instantiate(
                                             symbol_template_arguments, ir_builder->module,
                                             ir_builder->instantiating_type_stack.size() ||
                                                 ir_builder->interface_prototype_processing)) {
@@ -589,16 +589,16 @@ class ExpressionLoweringVisitor {
                                     }
                                 }
 
-                                if (auto tempate_ = symbolGet<Template>(symbol)) {
+                                if (auto tempate_ = SymbolGet<Template>(symbol)) {
                                     return tempate_->instantiate(symbol_template_arguments,
                                                                  ir_builder->module);
                                 }
 
-                                logger->error("not a template", iter_ast_identifier->identifier);
+                                logger->Error("not a template", iter_ast_identifier->identifier);
 
                                 return nullptr;
                             } catch (CompileError compile_error) {
-                                logger->note(*iter_ast_identifier);
+                                logger->Note(*iter_ast_identifier);
                                 throw compile_error;
                             }
                         }
@@ -610,7 +610,7 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::IdentifierPath ast_identifier_path) {
-        auto symbol = this->applyIdentifierPath(ast_identifier_path);
+        auto symbol = this->ApplyIdentifierPath(ast_identifier_path);
         return boost::apply_visitor(
             overloaded{
                 [](std::shared_ptr<ir::Value> ir_value) -> std::shared_ptr<ir::Value> {
@@ -620,7 +620,7 @@ class ExpressionLoweringVisitor {
                     /// TODO 需要重构, var t = Tensor<i64, 3>;也会被认为正确, 存在误导,
                     /// 后面看怎么处理
                     if (ir_type->constructor == nullptr) {
-                        logger->error(fmt::format("{} has no constructor", ir_type->fullname),
+                        logger->Error(fmt::format("{} has no constructor", ir_type->fullname),
                                       ast_identifier_path);
                     }
                     return ir_type->constructor;
@@ -630,49 +630,49 @@ class ExpressionLoweringVisitor {
                     -> std::shared_ptr<ir::Value> {
                     // 需要在block里插入, 这才符合后面IR转换生成的规则
                     // TODO 可以挪到transform里做这个事
-                    PRAJNA_ASSERT(ir_constant_int->type == ir_builder->getIndexType());
-                    return ir_builder->getIndexConstant(ir_constant_int->value);
+                    PRAJNA_ASSERT(ir_constant_int->type == ir_builder->GetIndexType());
+                    return ir_builder->GetIndexConstant(ir_constant_int->value);
                 },
                 [=](auto x) {
-                    logger->error(fmt::format("use invalid symbol as a value"),
+                    logger->Error(fmt::format("use invalid symbol as a value"),
                                   ast_identifier_path);
                     return nullptr;
                 }},
             symbol);
     }
 
-    std::shared_ptr<ir::Value> applyArray(std::list<ast::Expression> ast_array_values) {
+    std::shared_ptr<ir::Value> ApplyArray(std::list<ast::Expression> ast_array_values) {
         // 获取数组类型
         PRAJNA_ASSERT(ast_array_values.size() > 0);
         auto ir_first_value = this->applyOperand(ast_array_values.front());
         auto ir_value_type = ir_first_value->type;
         std::list<Symbol> symbol_template_arguments;
         symbol_template_arguments.push_back(ir_value_type);
-        symbol_template_arguments.push_back(ir_builder->getIndexConstant(ast_array_values.size()));
+        symbol_template_arguments.push_back(ir_builder->GetIndexConstant(ast_array_values.size()));
 
-        auto symbol_array = ir_builder->symbol_table->get("Array");
+        auto symbol_array = ir_builder->symbol_table->Get("Array");
         PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
                       "system libs is bad");
-        auto array_template = symbolGet<TemplateStruct>(symbol_array);
+        auto array_template = SymbolGet<TemplateStruct>(symbol_array);
         auto ir_array_type =
-            array_template->instantiate(symbol_template_arguments, ir_builder->module);
+            array_template->Instantiate(symbol_template_arguments, ir_builder->module);
 
-        auto ir_array_tmp = ir_builder->create<ir::LocalVariable>(ir_array_type);
-        auto ir_index_property = ir_builder->getLinearIndexProperty(ir_array_type);
+        auto ir_array_tmp = ir_builder->Create<ir::LocalVariable>(ir_array_type);
+        auto ir_index_property = ir_builder->GetLinearIndexProperty(ir_array_type);
         PRAJNA_VERIFY(ir_index_property, "Array index property is missing");
         size_t i = 0;
         for (auto ast_array_value : ast_array_values) {
             auto ir_value = this->applyOperand(ast_array_value);
             if (ir_value->type != ir_value_type) {
-                logger->error("the array element type are not the same", ast_array_value);
+                logger->Error("the array element type are not the same", ast_array_value);
             }
-            auto ir_index = ir_builder->getIndexConstant(i);
+            auto ir_index = ir_builder->GetIndexConstant(i);
             auto ir_array_tmp_this_pointer =
-                ir_builder->create<ir::GetAddressOfVariableLiked>(ir_array_tmp);
-            auto ir_access_property = ir_builder->create<ir::AccessProperty>(
+                ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_tmp);
+            auto ir_access_property = ir_builder->Create<ir::AccessProperty>(
                 ir_array_tmp_this_pointer, ir_index_property);
             ir_access_property->arguments({ir_index});
-            ir_builder->create<ir::WriteProperty>(ir_value, ir_access_property);
+            ir_builder->Create<ir::WriteProperty>(ir_value, ir_access_property);
             ++i;
         }
 
@@ -680,34 +680,34 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::Array ast_array) {
-        return applyArray(ast_array.values);
+        return ApplyArray(ast_array.values);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::KernelFunctionCall ast_kernel_function_call) {
         auto ir_function = (*this)(ast_kernel_function_call.kernel_function);
         if (ast_kernel_function_call.operation) {
             // TODO 核函数必须有判断@kernel
-            auto ir_function_type = ir_function->getFunctionType();
+            auto ir_function_type = ir_function->GetFunctionType();
             if (ir_function_type == nullptr) {
-                logger->error("not callable", ast_kernel_function_call.kernel_function);
+                logger->Error("not callable", ast_kernel_function_call.kernel_function);
             }
             auto ir_grid_shape = (*this)(ast_kernel_function_call.operation->grid_shape);
             auto ir_block_shape = (*this)(ast_kernel_function_call.operation->block_shape);
             auto ir_arguments =
                 *cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
             // TODO arguments
-            auto ir_shape3_type = ir_builder->getShape3Type();
+            auto ir_shape3_type = ir_builder->GetShape3Type();
             if (ir_grid_shape->type != ir_shape3_type) {
-                logger->error("the grid dim type must be i64[3]",
+                logger->Error("the grid dim type must be i64[3]",
                               ast_kernel_function_call.operation->grid_shape);
             }
             if (ir_block_shape->type != ir_shape3_type) {
-                logger->error("the block dim type must be i64[3]",
+                logger->Error("the block dim type must be i64[3]",
                               ast_kernel_function_call.operation->block_shape);
             }
 
             if (ir_arguments.size() != ir_function_type->parameter_types.size()) {
-                logger->error(
+                logger->Error(
                     fmt::format("the arguments size is not matched, require {} "
                                 "argument, but give {}",
                                 ir_function_type->parameter_types.size(), ir_arguments.size()),
@@ -718,10 +718,10 @@ class ExpressionLoweringVisitor {
                  boost::combine(ir_arguments, ir_function_type->parameter_types,
                                 ast_kernel_function_call.operation->arguments)) {
                 if (ir_argument->type != ir_parameter_type) {
-                    logger->error("the argument type is not matched", ast_argument);
+                    logger->Error("the argument type is not matched", ast_argument);
                 }
             }
-            return ir_builder->create<ir::KernelFunctionCall>(ir_function, ir_grid_shape,
+            return ir_builder->Create<ir::KernelFunctionCall>(ir_function, ir_grid_shape,
                                                               ir_block_shape, ir_arguments);
 
         } else {
@@ -743,29 +743,29 @@ class ExpressionLoweringVisitor {
         return boost::apply_visitor(*this, ast_operand);
     }
 
-    std::shared_ptr<ir::Value> convertBinaryOperationToCallFunction(
+    std::shared_ptr<ir::Value> ConvertBinaryOperationToCallFunction(
         std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
         // 会把binary operator转换为成员函数的调用
-        auto ir_variable_liked = ir_builder->variableLikedNormalize(ir_lhs);
+        auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_lhs);
         auto binary_operator_name = ast_binary_operation.operator_.string_token;
         auto ir_function =
-            ir_builder->getBinaryOperator(ir_variable_liked->type, binary_operator_name);
+            ir_builder->GetBinaryOperator(ir_variable_liked->type, binary_operator_name);
         if (not ir_function) {
-            logger->error(
+            logger->Error(
                 fmt::format("{} operator not found", ast_binary_operation.operator_.string_token),
                 ast_binary_operation.operator_);
         }
-        auto ir_this_pointer = ir_builder->create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+        auto ir_this_pointer = ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         std::list<std::shared_ptr<ir::Value>> ir_arguemnts(2);
         ir_arguemnts.front() = ir_this_pointer;
         ir_arguemnts.back() = this->applyOperand(ast_binary_operation.operand);
         if (ir_arguemnts.back()->type != ir_function->function_type->parameter_types.back()) {
-            logger->error(fmt::format("the types {}, {} are not matched",
+            logger->Error(fmt::format("the types {}, {} are not matched",
                                       ir_function->function_type->parameter_types.back()->fullname,
                                       ir_arguemnts.back()->type->fullname),
                           ast_binary_operation.operand);
         }
-        return ir_builder->create<ir::Call>(ir_function, ir_arguemnts);
+        return ir_builder->Create<ir::Call>(ir_function, ir_arguemnts);
     }
 
    private:

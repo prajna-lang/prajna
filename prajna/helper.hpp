@@ -24,7 +24,7 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 class function_guard {
    public:
-    static std::unique_ptr<function_guard> create(std::function<void()> func) {
+    static std::unique_ptr<function_guard> Create(std::function<void()> func) {
         auto self = std::unique_ptr<function_guard>(new function_guard);
         self->_todo = func;
         return self;
@@ -43,7 +43,7 @@ auto cast(std::shared_ptr<SrcType_> ir_src) -> std::shared_ptr<DstType_> {
 }
 
 template <typename DstType_, typename SrcType_>
-bool is(std::shared_ptr<SrcType_> ir_src) {
+bool Is(std::shared_ptr<SrcType_> ir_src) {
     return cast<DstType_, SrcType_>(ir_src) != nullptr;
 }
 
@@ -52,7 +52,7 @@ inline std::filesystem::path ProgramLocation(const char* cstr_path) {
 }
 
 template <typename Type>
-inline auto clone(Type t) -> std::decay_t<Type> {
+inline auto Clone(Type t) -> std::decay_t<Type> {
     return t;
 }
 

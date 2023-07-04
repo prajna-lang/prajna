@@ -40,23 +40,23 @@ class CompareInstruction : public Instruction {
         ICMP_SLE
     };
 
-    static std::shared_ptr<CompareInstruction> create(Operation operation,
+    static std::shared_ptr<CompareInstruction> Create(Operation operation,
                                                       std::shared_ptr<ir::Value> ir_operand0,
                                                       std::shared_ptr<ir::Value> ir_operand1) {
         std::shared_ptr<Self> self(new Self);
         self->operation = operation;
-        self->operandResize(2);
+        self->OperandResize(2);
         self->operand(0, ir_operand0);
         self->operand(1, ir_operand1);
-        self->type = ir::BoolType::create();
+        self->type = ir::BoolType::Create();
         self->tag = "CompareInstruction";
         return self;
     }
 
-    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+    std::shared_ptr<Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Self> ir_new(new Self(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        ir_new->cloneOperands(function_cloner);
+        ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
 
@@ -92,13 +92,13 @@ class BinaryOperator : public Instruction {
         FRem
     };
 
-    static std::shared_ptr<BinaryOperator> create(Operation operation,
+    static std::shared_ptr<BinaryOperator> Create(Operation operation,
                                                   std::shared_ptr<ir::Value> ir_operand0,
                                                   std::shared_ptr<ir::Value> ir_operand1) {
         std::shared_ptr<Self> self(new Self);
         PRAJNA_ASSERT(ir_operand0->type == ir_operand1->type);
         self->operation = operation;
-        self->operandResize(2);
+        self->OperandResize(2);
         self->operand(0, ir_operand0);
         self->operand(1, ir_operand1);
         self->type = ir_operand0->type;
@@ -106,10 +106,10 @@ class BinaryOperator : public Instruction {
         return self;
     }
 
-    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+    std::shared_ptr<Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Self> ir_new(new Self(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        ir_new->cloneOperands(function_cloner);
+        ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
 
@@ -140,22 +140,22 @@ class CastInstruction : public Instruction {
         AddrSpaceCast
     };
 
-    static std::shared_ptr<CastInstruction> create(Operation operation,
+    static std::shared_ptr<CastInstruction> Create(Operation operation,
                                                    std::shared_ptr<Value> ir_operand,
                                                    std::shared_ptr<Type> ir_type) {
         std::shared_ptr<CastInstruction> self(new CastInstruction);
         self->operation = operation;
-        self->operandResize(1);
+        self->OperandResize(1);
         self->operand(0, ir_operand);
         self->type = ir_type;
         self->tag = "CastInstruction";
         return self;
     };
 
-    std::shared_ptr<Value> clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+    std::shared_ptr<Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Self> ir_new(new Self(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
-        ir_new->cloneOperands(function_cloner);
+        ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
 

@@ -39,12 +39,12 @@ class LlvmCodegen {
     LlvmCodegen() {}
 
    public:
-    static std::shared_ptr<LlvmCodegen> create() {
+    static std::shared_ptr<LlvmCodegen> Create() {
         std::shared_ptr<LlvmCodegen> self(new LlvmCodegen);
         return self;
     }
 
-    void emitType(std::shared_ptr<ir::Type> ir_type) {
+    void EmitType(std::shared_ptr<ir::Type> ir_type) {
         if (ir_type->llvm_type) return;
 
         // 对于不完备的类型, codegen时选择跳过
@@ -100,23 +100,23 @@ class LlvmCodegen {
             std::transform(ir_function_type->parameter_types.begin(),
                            ir_function_type->parameter_types.end(), llvm_argument_types.begin(),
                            [=](std::shared_ptr<ir::Type> ir_type) {
-                               this->emitType(ir_type);
+                               this->EmitType(ir_type);
                                PRAJNA_ASSERT(ir_type->llvm_type);
                                return ir_type->llvm_type;
                            });
-            this->emitType(ir_function_type->return_type);
+            this->EmitType(ir_function_type->return_type);
             ir_function_type->llvm_type = llvm::FunctionType::get(
                 ir_function_type->return_type->llvm_type, llvm_argument_types, false);
             return;
         }
         if (auto ir_pointer_type = cast<ir::PointerType>(ir_type)) {
-            this->emitType(ir_pointer_type->value_type);
+            this->EmitType(ir_pointer_type->value_type);
             ir_pointer_type->llvm_type =
                 llvm::PointerType::get(ir_pointer_type->value_type->llvm_type, 0);
             return;
         }
         if (auto ir_array_type = cast<ir::ArrayType>(ir_type)) {
-            this->emitType(ir_array_type->value_type);
+            this->EmitType(ir_array_type->value_type);
             ir_array_type->llvm_type =
                 llvm::ArrayType::get(ir_array_type->value_type->llvm_type, ir_array_type->size);
             return;
@@ -128,7 +128,7 @@ class LlvmCodegen {
             std::vector<llvm::Type *> llvm_types(ir_struct_type->fields.size());
             std::transform(ir_struct_type->fields.begin(), ir_struct_type->fields.end(),
                            llvm_types.begin(), [=](std::shared_ptr<ir::Field> field) {
-                               this->emitType(field->type);
+                               this->EmitType(field->type);
                                return field->type->llvm_type;
                            });
             llvm_struct_type->setBody(llvm_types, true);
@@ -143,7 +143,7 @@ class LlvmCodegen {
         PRAJNA_TODO;
     }
 
-    void emitModule(std::shared_ptr<ir::Module> ir_module, ir::Target ir_target) {
+    void EmitModule(std::shared_ptr<ir::Module> ir_module, ir::Target ir_target) {
         PRAJNA_ASSERT(!ir_module->llvm_module);
         ir_module->llvm_module = new llvm::Module(ir_module->name, static_llvm_context);
         if (ir_target == ir::Target::nvptx) {
@@ -151,11 +151,11 @@ class LlvmCodegen {
         }
 
         for (auto ir_global_alloca : ir_module->global_allocas) {
-            this->emitGlobalAlloca(ir_global_alloca);
+            this->EmitGlobalAlloca(ir_global_alloca);
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            this->emitFunctionDeclaration(ir_function, ir_target);
+            this->EmitFunctionDeclaration(ir_function, ir_target);
             if (ir_function->annotation_dict.count("kernel")) {
                 auto md_node = llvm::MDNode::get(
                     static_llvm_context, {llvm::ValueAsMetadata::get(ir_function->llvm_value),
@@ -170,14 +170,14 @@ class LlvmCodegen {
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
             if (!ir_function->IsDeclaration()) {
-                this->emitFunction(ir_function, ir_target);
+                this->EmitFunction(ir_function, ir_target);
             }
         }
     }
 
-    void emitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
+    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
         auto function_fullname = ir_target == ir::Target::nvptx
-                                     ? mangleNvvmName(ir_function->fullname)
+                                     ? MangleNvvmName(ir_function->fullname)
                                      : ir_function->fullname;
 
         PRAJNA_ASSERT(ir_function->function_type->llvm_type);
@@ -189,7 +189,7 @@ class LlvmCodegen {
         ir_function->llvm_value = llvm_fun;
     }
 
-    void emitFunction(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
+    void EmitFunction(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
         llvm::Function *llvm_fun = static_cast<llvm::Function *>(ir_function->llvm_value);
         PRAJNA_ASSERT(llvm_fun);
         PRAJNA_ASSERT(ir_function->parameters.size() == llvm_fun->arg_size());
@@ -201,11 +201,11 @@ class LlvmCodegen {
         }
 
         for (auto block : ir_function->blocks) {
-            emitBlock(block, ir_target);
+            EmitBlock(block, ir_target);
         }
     }
 
-    void emitBlock(std::shared_ptr<ir::Block> ir_block, ir::Target ir_target) {
+    void EmitBlock(std::shared_ptr<ir::Block> ir_block, ir::Target ir_target) {
         PRAJNA_ASSERT(ir_block && ir_block->parent_function);
 
         if (ir_block->llvm_value != nullptr) {
@@ -218,24 +218,24 @@ class LlvmCodegen {
             static_cast<llvm::Function *>(ir_block->parent_function->llvm_value), nullptr);
 
         for (auto ir_value : ir_block->values) {
-            emitValue(ir_value, ir_target);
+            EmitValue(ir_value, ir_target);
         }
     }
 
-    void emitValue(std::shared_ptr<ir::Value> ir_value, ir::Target ir_target) {
-        if (is<ir::Parameter>(ir_value) || is<ir::Function>(ir_value)) {
+    void EmitValue(std::shared_ptr<ir::Value> ir_value, ir::Target ir_target) {
+        if (Is<ir::Parameter>(ir_value) || Is<ir::Function>(ir_value)) {
             return;
         }
 
         if (auto ir_constant = cast<ir::Constant>(ir_value)) {
-            emitConstant(ir_constant, ir_target);
+            EmitConstant(ir_constant, ir_target);
             return;
         }
 
         PRAJNA_ASSERT(ir_value->llvm_value == nullptr);
 
         if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
-            emitInstruction(ir_instruction, ir_target);
+            EmitInstruction(ir_instruction, ir_target);
             return;
         }
 
@@ -247,7 +247,7 @@ class LlvmCodegen {
         PRAJNA_ASSERT(false, ir_value->tag);
     }
 
-    void emitConstant(std::shared_ptr<ir::Constant> ir_constant, ir::Target ir_target) {
+    void EmitConstant(std::shared_ptr<ir::Constant> ir_constant, ir::Target ir_target) {
         if (ir_constant->llvm_value) {
             return;
         }
@@ -343,7 +343,7 @@ class LlvmCodegen {
         PRAJNA_TODO;
     }
 
-    void emitGlobalAlloca(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) {
+    void EmitGlobalAlloca(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) {
         auto ir_value_type = cast<ir::PointerType>(ir_global_alloca->type)->value_type;
         PRAJNA_ASSERT(ir_value_type && ir_value_type->llvm_type);
         PRAJNA_ASSERT(ir_global_alloca->parent_module->llvm_module);
@@ -359,24 +359,24 @@ class LlvmCodegen {
         ir_global_alloca->llvm_value = llvm_global_variable;
     }
 
-    void emitInstruction(std::shared_ptr<ir::Instruction> ir_instruction, ir::Target ir_target) {
+    void EmitInstruction(std::shared_ptr<ir::Instruction> ir_instruction, ir::Target ir_target) {
         auto llvm_basic_block =
             static_cast<llvm::BasicBlock *>(ir_instruction->parent_block->llvm_value);
         PRAJNA_ASSERT(llvm_basic_block);
 
         if (auto ir_call = cast<ir::Call>(ir_instruction)) {
-            auto ir_function_type = ir_call->function()->getFunctionType();
-            std::vector<llvm::Value *> llvm_arguments(ir_call->argumentSize());
+            auto ir_function_type = ir_call->Function()->GetFunctionType();
+            std::vector<llvm::Value *> llvm_arguments(ir_call->ArgumentSize());
             for (size_t i = 0; i < llvm_arguments.size(); ++i) {
-                llvm_arguments[i] = ir_call->argument(i)->llvm_value;
+                llvm_arguments[i] = ir_call->Argument(i)->llvm_value;
                 PRAJNA_ASSERT(llvm_arguments[i]);
             }
-            PRAJNA_ASSERT(ir_call->function()->getFunctionType()->llvm_type);
-            PRAJNA_ASSERT(ir_call->function()->llvm_value);
+            PRAJNA_ASSERT(ir_call->Function()->GetFunctionType()->llvm_type);
+            PRAJNA_ASSERT(ir_call->Function()->llvm_value);
             ir_call->llvm_value = llvm::CallInst::Create(
                 static_cast<llvm::FunctionType *>(
-                    ir_call->function()->getFunctionType()->llvm_type),
-                ir_call->function()->llvm_value, llvm_arguments, "", llvm_basic_block);
+                    ir_call->Function()->GetFunctionType()->llvm_type),
+                ir_call->Function()->llvm_value, llvm_arguments, "", llvm_basic_block);
             return;
         }
 
@@ -422,25 +422,25 @@ class LlvmCodegen {
 
         if (auto ir_condition_branch = cast<ir::ConditionBranch>(ir_instruction)) {
             // 需要处理, 因为true/falseBlock在ir_condition_branch的后面
-            this->emitBlock(ir_condition_branch->trueBlock(), ir_target);
-            this->emitBlock(ir_condition_branch->falseBlock(), ir_target);
-            PRAJNA_ASSERT(ir_condition_branch->trueBlock()->llvm_value);
-            PRAJNA_ASSERT(ir_condition_branch->falseBlock()->llvm_value);
+            this->EmitBlock(ir_condition_branch->TrueBlock(), ir_target);
+            this->EmitBlock(ir_condition_branch->FalseBlock(), ir_target);
+            PRAJNA_ASSERT(ir_condition_branch->TrueBlock()->llvm_value);
+            PRAJNA_ASSERT(ir_condition_branch->FalseBlock()->llvm_value);
             PRAJNA_ASSERT(ir_condition_branch->condition()->llvm_value);
             ir_condition_branch->llvm_value = llvm::BranchInst::Create(
-                static_cast<llvm::BasicBlock *>(ir_condition_branch->trueBlock()->llvm_value),
-                static_cast<llvm::BasicBlock *>(ir_condition_branch->falseBlock()->llvm_value),
+                static_cast<llvm::BasicBlock *>(ir_condition_branch->TrueBlock()->llvm_value),
+                static_cast<llvm::BasicBlock *>(ir_condition_branch->FalseBlock()->llvm_value),
                 ir_condition_branch->condition()->llvm_value, llvm_basic_block);
             return;
         }
         if (auto ir_jump_branch = cast<ir::JumpBranch>(ir_instruction)) {
             PRAJNA_ASSERT(ir_jump_branch->parent_block->parent_function ==
-                          ir_jump_branch->nextBlock()->parent_function);
+                          ir_jump_branch->NextBlock()->parent_function);
 
-            this->emitBlock(ir_jump_branch->nextBlock(), ir_target);
-            PRAJNA_ASSERT(ir_jump_branch->nextBlock()->llvm_value);
+            this->EmitBlock(ir_jump_branch->NextBlock(), ir_target);
+            PRAJNA_ASSERT(ir_jump_branch->NextBlock()->llvm_value);
             ir_jump_branch->llvm_value = llvm::BranchInst::Create(
-                static_cast<llvm::BasicBlock *>(ir_jump_branch->nextBlock()->llvm_value),
+                static_cast<llvm::BasicBlock *>(ir_jump_branch->NextBlock()->llvm_value),
                 llvm_basic_block);
             return;
         }
@@ -650,16 +650,16 @@ class LlvmCodegen {
     }
 };
 
-std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
+std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module,
                                         ir::Target ir_target) {
-    auto llvm_codegen = LlvmCodegen::create();
+    auto llvm_codegen = LlvmCodegen::Create();
 
     // emit type
     for (auto type : ir::global_context.created_types) {
-        llvm_codegen->emitType(type);
+        llvm_codegen->EmitType(type);
     }
 
-    llvm_codegen->emitModule(ir_module, ir_target);
+    llvm_codegen->EmitModule(ir_module, ir_target);
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (ir_sub_module == nullptr) continue;
@@ -672,13 +672,13 @@ std::shared_ptr<ir::Module> llvmCodegen(std::shared_ptr<ir::Module> ir_module,
             continue;
         }
 
-        llvmCodegen(ir_sub_module, ir_target);
+        LlvmCodegen(ir_sub_module, ir_target);
     }
 
     return ir_module;
 }
 
-std::shared_ptr<ir::Module> llvmPass(std::shared_ptr<ir::Module> ir_module) {
+std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
 

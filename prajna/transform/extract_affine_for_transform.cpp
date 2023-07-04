@@ -9,7 +9,7 @@ namespace prajna::transform {
 /// @brief 将变量及其
 class ExtractAffineLoopPass : public FunctionPass {
    public:
-    bool runOnFunction(std::shared_ptr<ir::Function> ir_function) override {
+    bool RunOnFunction(std::shared_ptr<ir::Function> ir_function) override {
         for (auto block : ir_function->blocks) {
             auto for_block = cast<ir::For>(block);
             if (!for_block) continue;

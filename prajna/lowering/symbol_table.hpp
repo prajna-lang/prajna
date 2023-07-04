@@ -33,13 +33,13 @@ using Symbol = boost::variant<std::nullptr_t, std::shared_ptr<ir::Value>, std::s
                               std::shared_ptr<ir::ConstantInt>>;
 
 template <typename _T>
-inline bool symbolIs(Symbol symbol) {
+inline bool SymbolIs(Symbol symbol) {
     return symbol.type() == typeid(std::shared_ptr<_T>);
 }
 
 template <typename _T>
-inline auto symbolGet(Symbol symbol) -> std::shared_ptr<_T> {
-    if (symbolIs<_T>(symbol)) {
+inline auto SymbolGet(Symbol symbol) -> std::shared_ptr<_T> {
+    if (SymbolIs<_T>(symbol)) {
         return boost::get<std::shared_ptr<_T>>(symbol);
     } else {
         return nullptr;
@@ -52,50 +52,50 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
     SymbolTable(std::shared_ptr<SymbolTable> parent) : parent_symbol_table(parent) {}
 
    public:
-    static std::shared_ptr<SymbolTable> create(std::shared_ptr<SymbolTable> parent_symbol_table) {
+    static std::shared_ptr<SymbolTable> Create(std::shared_ptr<SymbolTable> parent_symbol_table) {
         std::shared_ptr<SymbolTable> self(new SymbolTable(parent_symbol_table));
         return self;
     }
 
-    void set(Symbol value, const std::string& name) { current_symbol_dict[name] = value; }
+    void Set(Symbol value, const std::string& name) { current_symbol_dict[name] = value; }
 
-    void setWithAssigningName(Symbol value, const std::string& name);
+    void SetWithAssigningName(Symbol value, const std::string& name);
 
-    Symbol get(const std::string& name) {
+    Symbol Get(const std::string& name) {
         if (current_symbol_dict.count(name) > 0) return current_symbol_dict[name];
 
         if (parent_symbol_table) {
-            auto par_re = parent_symbol_table->get(name);
+            auto par_re = parent_symbol_table->Get(name);
             if (par_re.which() != 0) return par_re;
         }
 
         return nullptr;
     }
 
-    bool currentTableHas(const std::string& name) {
+    bool CurrentTableHas(const std::string& name) {
         return current_symbol_dict.count(name) > 0 ? true : false;
     }
 
-    bool has(const std::string& name) {
-        auto symbol = this->get(name);
+    bool Has(const std::string& name) {
+        auto symbol = this->Get(name);
         return symbol.which() == 0 ? false : true;
     }
 
-    void each(std::function<void(Symbol)> callback) {
+    void Each(std::function<void(Symbol)> callback) {
         for (auto [key, symbol] : current_symbol_dict) {
             boost::apply_visitor(overloaded{[callback](auto x) { callback(x); },
                                             [callback](std::shared_ptr<SymbolTable> symbol_table) {
-                                                symbol_table->each(callback);
+                                                symbol_table->Each(callback);
                                             }},
                                  symbol);
         }
     }
 
-    void finalize() {
+    void Finalize() {
         for (auto [key, symbol] : current_symbol_dict) {
             boost::apply_visitor(overloaded{[](auto) {},
                                             [](std::shared_ptr<SymbolTable> symbol_table) {
-                                                symbol_table->finalize();
+                                                symbol_table->Finalize();
                                             }},
                                  symbol);
         }
@@ -104,7 +104,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
         current_symbol_dict.clear();
     }
 
-    std::shared_ptr<SymbolTable> rootSymbolTable() {
+    std::shared_ptr<SymbolTable> RootSymbolTable() {
         std::shared_ptr<SymbolTable> root_symbol_table = shared_from_this();
         while (root_symbol_table->parent_symbol_table) {
             root_symbol_table = root_symbol_table->parent_symbol_table;
@@ -113,14 +113,14 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
         return root_symbol_table;
     }
 
-    std::string fullname() {
+    std::string Fullname() {
         if (!parent_symbol_table) {
             return this->name;
         } else {
             if (!this->name.empty()) {
-                return concatFullname(parent_symbol_table->fullname(), this->name);
+                return ConcatFullname(parent_symbol_table->Fullname(), this->name);
             } else {
-                return parent_symbol_table->fullname();
+                return parent_symbol_table->Fullname();
             }
         }
     }
@@ -132,12 +132,12 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
     std::unordered_map<std::string, Symbol> current_symbol_dict;
 };
 
-std::string symbolGetName(Symbol symbol);
+std::string SymbolGetName(Symbol symbol);
 
-std::string symbolGetFullname(Symbol symbol);
+std::string SymbolGetFullname(Symbol symbol);
 
-void symbolSetName(std::string name, Symbol symbol);
+void SymbolSetName(std::string name, Symbol symbol);
 
-void symbolSetFullname(std::string fullname, Symbol symbol);
+void SymbolSetFullname(std::string fullname, Symbol symbol);
 
 }  // namespace prajna::lowering

@@ -29,7 +29,7 @@ class Layout {
     Array<i64, Dim_> stride;
 
    public:
-    static Layout create(Array<i64, Dim_> shape) {
+    static Layout Create(Array<i64, Dim_> shape) {
         Layout<Dim_> self;
         self.shape = shape;
         auto i = Dim_ - 1;
@@ -77,9 +77,9 @@ class Tensor {
     Tensor() = default;
 
    public:
-    static Tensor<Type_, Dim_> create(Array<i64, Dim_> shape) {
+    static Tensor<Type_, Dim_> Create(Array<i64, Dim_> shape) {
         Tensor<Type_, Dim_> self;
-        self.layout = Layout<Dim_>::create(shape);
+        self.layout = Layout<Dim_>::Create(shape);
 
         auto bytes = self.layout.Length() * sizeof(Type_);
         self.data = reinterpret_cast<Type_*>(malloc(bytes));
@@ -125,7 +125,7 @@ class Tensor {
         return this->at(idx);
     }
 
-    Array<i64, Dim_> shape() const { return layout.shape; }
+    Array<i64, Dim_> Shape() const { return layout.shape; }
 };
 
 }  // namespace interoperation

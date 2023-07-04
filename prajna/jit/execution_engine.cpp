@@ -87,13 +87,13 @@ ExecutionEngine::ExecutionEngine() {
     _up_lljit = std::move(*expect_up_lljit);
 }
 
-size_t ExecutionEngine::getValue(std::string name) {
+size_t ExecutionEngine::GetValue(std::string name) {
     auto expect_symbol = _up_lljit->lookup(name);
     PRAJNA_ASSERT(expect_symbol);
     return expect_symbol->getValue();
 }
 
-void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
+void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
     // host
     auto up_llvm_module = std::unique_ptr<llvm::Module>(ir_module->llvm_module);
     llvm::orc::ThreadSafeModule llvm_orc_thread_module(std::move(up_llvm_module),
@@ -195,10 +195,10 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
 
         for (auto ir_function : ir_sub_module->functions) {
             if (ir_function->annotation_dict.count("kernel")) {
-                auto kernel_fun_address_name = getKernelFunctionAddressName(ir_function);
+                auto kernel_fun_address_name = GetKernelFunctionAddressName(ir_function);
                 auto test_kernel_fun =
-                    reinterpret_cast<CUfunction *>(this->getValue(kernel_fun_address_name));
-                std::string function_name = mangleNvvmName(ir_function->fullname);
+                    reinterpret_cast<CUfunction *>(this->GetValue(kernel_fun_address_name));
+                std::string function_name = MangleNvvmName(ir_function->fullname);
                 cu_re = cuModuleGetFunction(test_kernel_fun, cu_module, function_name.c_str());
                 PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
             }
@@ -210,7 +210,7 @@ void ExecutionEngine::addIRModule(std::shared_ptr<ir::Module> ir_module) {
 #endif
 }
 
-void ExecutionEngine::bindCFunction(void *fun_ptr, std::string mangle_name) {
+void ExecutionEngine::BindCFunction(void *fun_ptr, std::string mangle_name) {
     _up_lljit->getMainJITDylib().addGenerator(
         cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
             _up_lljit->getDataLayout().getGlobalPrefix())));
@@ -222,60 +222,60 @@ void ExecutionEngine::bindCFunction(void *fun_ptr, std::string mangle_name) {
     exit_on_error(_up_lljit->getMainJITDylib().define(fun_symbol));
 }
 
-void ExecutionEngine::catchRuntimeError() {
+void ExecutionEngine::CatchRuntimeError() {
     auto error = setjmp(buf);
     if (error != 0) {
         throw RuntimeError();
     }
 }
 
-void ExecutionEngine::bindBuiltinFunction() {
-    this->bindCFunction(reinterpret_cast<void *>(c_jmp_exit), "::bindings::jmp_exit_c");
-    this->bindCFunction(reinterpret_cast<void *>(assert_c), "::bindings::assert");
-    this->bindCFunction(reinterpret_cast<void *>(malloc), "::bindings::malloc");
-    this->bindCFunction(reinterpret_cast<void *>(free), "::bindings::free");
-    this->bindCFunction(reinterpret_cast<void *>(getchar), "::bindings::getchar");
+void ExecutionEngine::BindBuiltinFunction() {
+    this->BindCFunction(reinterpret_cast<void *>(c_jmp_exit), "::bindings::jmp_exit_c");
+    this->BindCFunction(reinterpret_cast<void *>(assert_c), "::bindings::assert");
+    this->BindCFunction(reinterpret_cast<void *>(malloc), "::bindings::malloc");
+    this->BindCFunction(reinterpret_cast<void *>(free), "::bindings::free");
+    this->BindCFunction(reinterpret_cast<void *>(getchar), "::bindings::getchar");
 
-    this->bindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print_c");
-    this->bindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input_c");
+    this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print_c");
+    this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input_c");
 
-    this->bindCFunction(reinterpret_cast<void *>(RegisterReferenceCount),
+    this->BindCFunction(reinterpret_cast<void *>(RegisterReferenceCount),
                         "::bindings::RegisterReferenceCount");
-    this->bindCFunction(reinterpret_cast<void *>(GetReferenceCount),
+    this->BindCFunction(reinterpret_cast<void *>(GetReferenceCount),
                         "::bindings::GetReferenceCount");
-    this->bindCFunction(reinterpret_cast<void *>(IncrementReferenceCount),
+    this->BindCFunction(reinterpret_cast<void *>(IncrementReferenceCount),
                         "::bindings::IncrementReferenceCount");
-    this->bindCFunction(reinterpret_cast<void *>(DecrementReferenceCount),
+    this->BindCFunction(reinterpret_cast<void *>(DecrementReferenceCount),
                         "::bindings::DecrementReferenceCount");
 
-    this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
-    this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floattihf");
-    this->bindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floatuntihf");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floattihf");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floatuntihf");
 
-    this->bindCFunction(reinterpret_cast<void *>(fopen), "::fs::_c::fopen");
-    this->bindCFunction(reinterpret_cast<void *>(fclose), "::fs::_c::fclose");
-    this->bindCFunction(reinterpret_cast<void *>(fseek), "::fs::_c::fseek");
-    this->bindCFunction(reinterpret_cast<void *>(ftell), "::fs::_c::ftell");
-    this->bindCFunction(reinterpret_cast<void *>(fflush), "::fs::_c::fflush");
-    this->bindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
-    this->bindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
+    this->BindCFunction(reinterpret_cast<void *>(fopen), "::fs::_c::fopen");
+    this->BindCFunction(reinterpret_cast<void *>(fclose), "::fs::_c::fclose");
+    this->BindCFunction(reinterpret_cast<void *>(fseek), "::fs::_c::fseek");
+    this->BindCFunction(reinterpret_cast<void *>(ftell), "::fs::_c::ftell");
+    this->BindCFunction(reinterpret_cast<void *>(fflush), "::fs::_c::fflush");
+    this->BindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
+    this->BindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
 
-    this->bindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
-    this->bindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");
+    this->BindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
+    this->BindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");
 
 #ifdef PRAJNA_WITH_GPU
-    this->bindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");
-    this->bindCFunction(reinterpret_cast<void *>(cuDeviceGetCount), "::cuda::cuDeviceGetCount");
-    this->bindCFunction(reinterpret_cast<void *>(cudaDeviceSynchronize),
+    this->BindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");
+    this->BindCFunction(reinterpret_cast<void *>(cuDeviceGetCount), "::cuda::cuDeviceGetCount");
+    this->BindCFunction(reinterpret_cast<void *>(cudaDeviceSynchronize),
                         "::cuda::cudaDeviceSynchronize");
-    this->bindCFunction(reinterpret_cast<void *>(cuDeviceGetAttribute),
+    this->BindCFunction(reinterpret_cast<void *>(cuDeviceGetAttribute),
                         "::cuda::cuDeviceGetAttribute");
-    this->bindCFunction(reinterpret_cast<void *>(cuLaunchKernel), "::cuda::cuLaunchKernel");
-    this->bindCFunction(reinterpret_cast<void *>(cudaSetDevice), "::cuda::cudaSetDevice");
-    this->bindCFunction(reinterpret_cast<void *>(::cudaMemcpy), "::cuda::cudaMemcpy");
+    this->BindCFunction(reinterpret_cast<void *>(cuLaunchKernel), "::cuda::cuLaunchKernel");
+    this->BindCFunction(reinterpret_cast<void *>(cudaSetDevice), "::cuda::cudaSetDevice");
+    this->BindCFunction(reinterpret_cast<void *>(::cudaMemcpy), "::cuda::cudaMemcpy");
     // cudaMalloc是一个重载函数, 故重新包装了一下
-    this->bindCFunction(reinterpret_cast<void *>(cudaMalloc), "::cuda::cudaMalloc");
-    this->bindCFunction(reinterpret_cast<void *>(::cuMemAlloc), "::cuda::cuMemAlloc");
+    this->BindCFunction(reinterpret_cast<void *>(cudaMalloc), "::cuda::cudaMalloc");
+    this->BindCFunction(reinterpret_cast<void *>(::cuMemAlloc), "::cuda::cuMemAlloc");
 #endif
 }
 

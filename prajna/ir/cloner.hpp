@@ -17,7 +17,7 @@ class FunctionCloner {
     FunctionCloner() = default;
 
    public:
-    static std::shared_ptr<ir::FunctionCloner> create(std::shared_ptr<ir::Module> ir_module) {
+    static std::shared_ptr<ir::FunctionCloner> Create(std::shared_ptr<ir::Module> ir_module) {
         std::shared_ptr<ir::FunctionCloner> self(new FunctionCloner);
         self->module = ir_module;
         return self;

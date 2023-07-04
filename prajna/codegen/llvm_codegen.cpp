@@ -22,6 +22,8 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/ValueHandle.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/IRReader/IRReader.h"
+#include "llvm/Linker/Linker.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/Debug.h"
 #include "prajna/helper.hpp"
@@ -716,6 +718,18 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     // 总是返回false, 应该是llvm本身的问题
     // PRAJNA_ASSERT(verify_result);
 #endif
+
+    auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
+    if (ir_nvptx_module && ir_nvptx_module->llvm_module) {
+        llvm::Linker linker(*ir_nvptx_module->llvm_module);
+        llvm::SMDiagnostic err;
+        auto uq_llvm_libdevice_module = llvm::parseIRFile(
+            "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc", err, static_llvm_context);
+        PRAJNA_ASSERT(uq_llvm_libdevice_module);
+        linker.linkInModule(std::move(uq_llvm_libdevice_module));
+
+        prajna::codegen::LlvmPass(ir_nvptx_module);
+    }
 
     return ir_module;
 }

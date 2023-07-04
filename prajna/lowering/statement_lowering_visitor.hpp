@@ -571,8 +571,8 @@ class StatementLoweringVisitor {
         return ir_builder->Create<ir::Continue>(ir_builder->loop_stack.top());
     }
 
-    std::shared_ptr<ir::Type> applyType(ast::Type ast_postfix_type) {
-        return expression_lowering_visitor->applyType(ast_postfix_type);
+    std::shared_ptr<ir::Type> ApplyType(ast::Type ast_postfix_type) {
+        return expression_lowering_visitor->ApplyType(ast_postfix_type);
     }
 
     Symbol operator()(ast::Struct ast_struct) {

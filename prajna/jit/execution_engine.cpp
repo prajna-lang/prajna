@@ -224,7 +224,7 @@ void ExecutionEngine::CatchRuntimeError() {
     }
 }
 
-void ExecutionEngine::bindBuiltinFunction() {
+void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(exit_c), "::bindings::exit");
     this->BindCFunction(reinterpret_cast<void *>(malloc), "::bindings::malloc");
     this->BindCFunction(reinterpret_cast<void *>(free), "::bindings::free");

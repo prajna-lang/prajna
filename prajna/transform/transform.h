@@ -488,6 +488,19 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
     }
 }
 
+inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_module) {
+    auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
+    if (!ir_nvptx_module) return;
+
+    std::list<ir::Function> ir_llvm_intrinsics;
+    std::map<std::string, std::string> name_map = {{"llvm.sin.f32", "__nv_sinf"}};
+    for (auto ir_function : ir_nvptx_module->functions) {
+        if (name_map.count(ir_function->fullname)) {
+            ir_function->fullname = name_map[ir_function->fullname];
+        }
+    };
+}
+
 inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::Module> ir_module) {
     auto ir_shared_variable_list = utility::GetValuesInModule<ir::LocalVariable>(ir_module);
     ir_shared_variable_list.remove_if([](auto ir_local_variable) {
@@ -586,8 +599,10 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     DeclareExternalFunction(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    PRAJNA_ASSERT(VerifyModule(ir_module));
     TopAlloca(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
+    ConvertLLVMIntrinsicToNVVMLibdevice(ir_module);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
 
     return ir_module;
 }

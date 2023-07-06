@@ -12,8 +12,8 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
    public:
     PrajnaXeusInterpreter(std::string prajna_builtin_packages_directory) {
         xeus::register_interpreter(this);
-        compiler = prajna::Compiler::create();
-        compiler->compileBuiltinSourceFiles(prajna_builtin_packages_directory);
+        compiler = prajna::Compiler::Create();
+        compiler->CompileBuiltinSourceFiles(prajna_builtin_packages_directory);
     }
 
     virtual ~PrajnaXeusInterpreter() = default;
@@ -44,7 +44,7 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
             code_line.push_back(';');
         }
         code_line.push_back('\n');
-        compiler->executeCodeInRelp(code_line);
+        compiler->ExecuteCodeInRelp(code_line);
 
         // auto slider = new xw::slider<double>;
         // slider->display();

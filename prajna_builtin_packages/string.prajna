@@ -38,7 +38,7 @@ implement String{
         return str_re;
     }
 
-    func __CharPointer()->__ptr<char> {
+    func CStringRawPointer()->__ptr<char> {
         return this.darray._data.raw_ptr;
     }
 

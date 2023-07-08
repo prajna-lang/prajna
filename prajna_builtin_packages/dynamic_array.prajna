@@ -65,6 +65,10 @@ implement DynamicArray<ValueType> {
         return this._length;
     }
 
+    func Back()->ValueType {
+        return this[this.Length() - 1];
+    }
+
     func Capacity()->i64 {
         return this._capacity;
     }

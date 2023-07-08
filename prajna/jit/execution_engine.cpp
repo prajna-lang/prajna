@@ -17,10 +17,12 @@
 #include <fstream>
 #include <unordered_map>
 
+#include "boost/dll/shared_library.hpp"
 #include "llvm/ExecutionEngine/JITLink/JITLinkMemoryManager.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
+#include "llvm/Support/DynamicLibrary.h"
 #include "prajna/assert.hpp"
 #include "prajna/compiler/compiler.h"
 #include "prajna/exception.hpp"
@@ -62,6 +64,19 @@ float Clock() {
 }
 
 void Sleep(float t) { sleep(t); }
+
+llvm::sys::DynamicLibrary __load_dynamic_library(char *lib_name) {
+    auto dl = llvm::sys::DynamicLibrary::getLibrary(lib_name);
+    return dl;
+}
+
+void *__get_symbol(llvm::sys::DynamicLibrary dl, char *symbol_name) {
+    return dl.getAddressOfSymbol(symbol_name);
+}
+
+void __close_dynamic_library(llvm::sys::DynamicLibrary dl) {
+    llvm::sys::DynamicLibrary::closeLibrary(dl);
+}
 
 llvm::ExitOnError exit_on_error;
 
@@ -247,6 +262,12 @@ void ExecutionEngine::BindBuiltinFunction() {
 
     this->BindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
     this->BindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");
+
+    this->BindCFunction(reinterpret_cast<void *>(__load_dynamic_library),
+                        "::__load_dynamic_library");
+    this->BindCFunction(reinterpret_cast<void *>(__get_symbol), "::__get_symbol");
+    this->BindCFunction(reinterpret_cast<void *>(__close_dynamic_library),
+                        "::__close_dynamic_library");
 
 #ifdef PRAJNA_WITH_GPU
     this->BindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");

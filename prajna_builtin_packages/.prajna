@@ -60,3 +60,9 @@ use io::Input;
 use fs;
 
 use chrono;
+
+
+
+func __load_dynamic_library(lib_name: __ptr<char>)->i64;
+func __get_symbol(lib: i64, symbol_name: __ptr<char>)->i64;
+func __close_dynamic_library(lib: i64);

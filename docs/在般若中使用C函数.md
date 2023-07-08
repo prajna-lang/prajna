@@ -51,9 +51,9 @@ func Write(filename: String , buffer: String) {
         var mode = "wb+";
         mode.Push('\0');
         filename.Push('\0');
-        var stream = _c::fopen(filename.__CharPointer() , mode.__CharPointer());
+        var stream = _c::fopen(filename.CStringRawPointer() , mode.CStringRawPointer());
         Assert(stream.IsValid());
-        _c::fwrite(buffer.__CharPointer(), 1, buffer.Length(), stream);
+        _c::fwrite(buffer.CStringRawPointer(), 1, buffer.Length(), stream);
         _c::fclose(stream);
 }
 
@@ -61,7 +61,7 @@ func Read(filename: String)->String {
         var mode = "rb";
         mode.Push('\0');
         filename.Push('\0');
-        var stream = _c::fopen(filename.__CharPointer() , mode.__CharPointer());
+        var stream = _c::fopen(filename.CStringRawPointer() , mode.CStringRawPointer());
         filename.Pop();
         Assert(stream.IsValid());
 
@@ -69,7 +69,7 @@ func Read(filename: String)->String {
         var length = _c::ftell(stream);
         _c::fseek(stream, 0, 0i32);
         var buffer = String::Create(length);
-        _c::fread(buffer.__CharPointer(), 1, buffer.Length(), stream);
+        _c::fread(buffer.CStringRawPointer(), 1, buffer.Length(), stream);
         _c::fclose(stream);
         return buffer;
 }

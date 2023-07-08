@@ -26,6 +26,7 @@ use disable_dynamic_interface::Finalizable;
 
 use primitive_type;
 use bindings;
+use bindings::exit;
 use debug;
 use test;
 

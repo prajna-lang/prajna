@@ -16,12 +16,12 @@ implement String{
     @static
     func Create(length: i64)->String{
         var str_re: String;
-        str_re.darray = DynamicArray<char>::Create(length);
+        str_re.darray = DynamicArray<char>::Create(length+1);
         return str_re;
     }
 
     func Length()->i64 {
-        return this.darray.Length();
+        return this.darray.Length() - 1;
     }
 
     @static
@@ -39,6 +39,7 @@ implement String{
     }
 
     func CStringRawPointer()->__ptr<char> {
+        this[this.Length()] = '\0';
         return this.darray._data.raw_ptr;
     }
 

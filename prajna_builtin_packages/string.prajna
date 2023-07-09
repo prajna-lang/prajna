@@ -44,17 +44,17 @@ implement String{
     }
 
     func Print(){
-        this.darray.Push('\0');
-        bindings::print(this.darray._data.raw_ptr);
-        this.darray.Pop();
+        bindings::print(this.CStringRawPointer());
     }
 
     func Push(v: char){
-        this.darray.Push(v);
+        this[this.Length()] = v;
+        this.darray.Push('\0');
     }
 
     func Pop(){
         this.darray.Pop();
+        this[this.Length()] = '\0';
     }
 
     func PrintLine() {

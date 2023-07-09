@@ -58,9 +58,9 @@ implement String{
     }
 
     func PrintLine() {
-        this.darray.Push('\n');
+        this.Push('\n');
         this.Print();
-        this.darray.Pop();
+        this.Pop();
     }
 
     func ToString()->String{

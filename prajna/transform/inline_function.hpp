@@ -58,11 +58,11 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
 
             auto ir_returns = utility::GetValuesInFunction<ir::Return>(ir_new_callee);
             bool has_return =
-                !ir_returns.empty() && !Is<ir::VoidValue>(ir_returns.front()->value());
+                !ir_returns.empty() && !Is<ir::VoidValue>(ir_returns.front()->Value());
             std::shared_ptr<ir::LocalVariable> ir_return_variable = nullptr;
             for (auto ir_return : ir_returns) {
-                if (Is<ir::VoidValue>(ir_return->value())) {
-                    auto ir_void = ir_return->value();
+                if (Is<ir::VoidValue>(ir_return->Value())) {
+                    auto ir_void = ir_return->Value();
                     utility::RemoveFromParent(ir_return);
                     ir_return->Finalize();
                     utility::RemoveFromParent(ir_void);
@@ -75,7 +75,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
                     auto ir_return_iter = ir_return->GetBlockIterator();
                     ir_return_builder->PushBlock(ir_return->parent_block);
                     ir_return_builder->inserter_iterator = ir_return_iter;
-                    ir_return_builder->Create<ir::WriteVariableLiked>(ir_return->value(),
+                    ir_return_builder->Create<ir::WriteVariableLiked>(ir_return->Value(),
                                                                       ir_return_variable);
                     utility::RemoveFromParent(ir_return);
                     ir_return->Finalize();

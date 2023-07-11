@@ -182,7 +182,7 @@ inline std::list<ir::Target> GetTargets(std::shared_ptr<ir::Function> ir_functio
 
     std::list<ir::Target> ir_target_list;
     std::transform(RANGE(target_string_list), std::inserter(ir_target_list, ir_target_list.begin()),
-                   [](auto x) { return ir::stringToTarget(x); });
+                   [](auto x) { return ir::StringToTarget(x); });
     return ir_target_list;
 }
 

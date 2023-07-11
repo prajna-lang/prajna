@@ -290,7 +290,7 @@ class ExpressionLoweringVisitor {
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             auto ir_access_property =
                 ir_builder->Create<ir::AccessProperty>(ir_this_pointer, ir_linear_index_property);
-            ir_access_property->arguments({ir_index});
+            ir_access_property->Arguments({ir_index});
             return ir_access_property;
         }
 
@@ -302,7 +302,7 @@ class ExpressionLoweringVisitor {
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             auto ir_access_property =
                 ir_builder->Create<ir::AccessProperty>(ir_this_pointer, ir_array_index_property);
-            ir_access_property->arguments({ir_array_argument});
+            ir_access_property->Arguments({ir_array_argument});
             return ir_access_property;
         }
 
@@ -386,7 +386,7 @@ class ExpressionLoweringVisitor {
             // 移除, 在末尾插入, 应为参数应该在属性访问的前面
             ir_access_property->parent_block->values.remove(ir_access_property);
             ir_builder->currentBlock()->values.push_back(ir_access_property);
-            ir_access_property->arguments(ir_arguments);
+            ir_access_property->Arguments(ir_arguments);
             return ir_access_property;
         }
 
@@ -657,7 +657,7 @@ class ExpressionLoweringVisitor {
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_tmp);
             auto ir_access_property = ir_builder->Create<ir::AccessProperty>(
                 ir_array_tmp_this_pointer, ir_index_property);
-            ir_access_property->arguments({ir_index});
+            ir_access_property->Arguments({ir_index});
             ir_builder->Create<ir::WriteProperty>(ir_value, ir_access_property);
             ++i;
         }

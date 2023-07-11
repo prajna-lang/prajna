@@ -383,7 +383,7 @@ class LlvmCodegen {
 
         if (auto ir_return = cast<ir::Return>(ir_instruction)) {
             auto llvm_return = llvm::ReturnInst::Create(
-                static_llvm_context, ir_return->value()->llvm_value, llvm_basic_block);
+                static_llvm_context, ir_return->Value()->llvm_value, llvm_basic_block);
             return;
         }
         if (auto ir_alloca = cast<ir::Alloca>(ir_instruction)) {
@@ -402,20 +402,20 @@ class LlvmCodegen {
 
         if (auto ir_load_pointer = cast<ir::LoadPointer>(ir_instruction)) {
             PRAJNA_ASSERT(ir_load_pointer->type->llvm_type);
-            PRAJNA_ASSERT(ir_load_pointer->pointer()->llvm_value);
+            PRAJNA_ASSERT(ir_load_pointer->Pointer()->llvm_value);
             auto llvm_load_ptr =
                 new llvm::LoadInst(ir_load_pointer->type->llvm_type,
-                                   ir_load_pointer->pointer()->llvm_value, "", llvm_basic_block);
+                                   ir_load_pointer->Pointer()->llvm_value, "", llvm_basic_block);
             ir_load_pointer->llvm_value = llvm_load_ptr;
             return;
         }
 
         if (auto ir_store_pointer = cast<ir::StorePointer>(ir_instruction)) {
-            PRAJNA_ASSERT(ir_store_pointer->value()->llvm_value);
-            PRAJNA_ASSERT(ir_store_pointer->pointer()->llvm_value);
+            PRAJNA_ASSERT(ir_store_pointer->Value()->llvm_value);
+            PRAJNA_ASSERT(ir_store_pointer->Pointer()->llvm_value);
 
-            auto llvm_store_ptr = new llvm::StoreInst(ir_store_pointer->value()->llvm_value,
-                                                      ir_store_pointer->pointer()->llvm_value,
+            auto llvm_store_ptr = new llvm::StoreInst(ir_store_pointer->Value()->llvm_value,
+                                                      ir_store_pointer->Pointer()->llvm_value,
                                                       false, llvm_basic_block);
             ir_store_pointer->llvm_value = llvm_store_ptr;
             return;
@@ -427,11 +427,11 @@ class LlvmCodegen {
             this->EmitBlock(ir_condition_branch->FalseBlock(), ir_target);
             PRAJNA_ASSERT(ir_condition_branch->TrueBlock()->llvm_value);
             PRAJNA_ASSERT(ir_condition_branch->FalseBlock()->llvm_value);
-            PRAJNA_ASSERT(ir_condition_branch->condition()->llvm_value);
+            PRAJNA_ASSERT(ir_condition_branch->Condition()->llvm_value);
             ir_condition_branch->llvm_value = llvm::BranchInst::Create(
                 static_cast<llvm::BasicBlock *>(ir_condition_branch->TrueBlock()->llvm_value),
                 static_cast<llvm::BasicBlock *>(ir_condition_branch->FalseBlock()->llvm_value),
-                ir_condition_branch->condition()->llvm_value, llvm_basic_block);
+                ir_condition_branch->Condition()->llvm_value, llvm_basic_block);
             return;
         }
         if (auto ir_jump_branch = cast<ir::JumpBranch>(ir_instruction)) {
@@ -456,12 +456,12 @@ class LlvmCodegen {
                                                       ir_get_struct_element_pointer->field->index);
 
             auto ir_pointer_type =
-                cast<ir::PointerType>(ir_get_struct_element_pointer->pointer()->type);
+                cast<ir::PointerType>(ir_get_struct_element_pointer->Pointer()->type);
             PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
-            PRAJNA_ASSERT(ir_get_struct_element_pointer->pointer()->llvm_value);
+            PRAJNA_ASSERT(ir_get_struct_element_pointer->Pointer()->llvm_value);
             ir_get_struct_element_pointer->llvm_value = llvm::GetElementPtrInst::Create(
                 ir_pointer_type->value_type->llvm_type,
-                ir_get_struct_element_pointer->pointer()->llvm_value, llvm_idx_list, "",
+                ir_get_struct_element_pointer->Pointer()->llvm_value, llvm_idx_list, "",
                 llvm_basic_block);
             return;
         }
@@ -470,14 +470,14 @@ class LlvmCodegen {
             std::vector<llvm::Value *> llvm_idx_list(2);
             llvm_idx_list[0] =
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
-            llvm_idx_list[1] = ir_get_array_element_pointer->index()->llvm_value;
+            llvm_idx_list[1] = ir_get_array_element_pointer->IndexVariable()->llvm_value;
             auto ir_pointer_type =
-                cast<ir::PointerType>(ir_get_array_element_pointer->pointer()->type);
+                cast<ir::PointerType>(ir_get_array_element_pointer->Pointer()->type);
             PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
-            PRAJNA_ASSERT(ir_get_array_element_pointer->pointer()->llvm_value);
+            PRAJNA_ASSERT(ir_get_array_element_pointer->Pointer()->llvm_value);
             ir_get_array_element_pointer->llvm_value =
                 llvm::GetElementPtrInst::Create(ir_pointer_type->value_type->llvm_type,
-                                                ir_get_array_element_pointer->pointer()->llvm_value,
+                                                ir_get_array_element_pointer->Pointer()->llvm_value,
                                                 llvm_idx_list, "", llvm_basic_block);
             return;
         }
@@ -485,12 +485,12 @@ class LlvmCodegen {
         if (auto ir_get_pointer_element_pointer =
                 cast<ir::GetPointerElementPointer>(ir_instruction)) {
             std::vector<llvm::Value *> llvm_idx_list(1);
-            llvm_idx_list[0] = ir_get_pointer_element_pointer->index()->llvm_value;
+            llvm_idx_list[0] = ir_get_pointer_element_pointer->IndexVariable()->llvm_value;
             PRAJNA_ASSERT(ir_get_pointer_element_pointer->type->llvm_type);
-            PRAJNA_ASSERT(ir_get_pointer_element_pointer->pointer()->llvm_value);
+            PRAJNA_ASSERT(ir_get_pointer_element_pointer->Pointer()->llvm_value);
             auto llvm_pointer = new llvm::LoadInst(
                 ir_get_pointer_element_pointer->type->llvm_type,
-                ir_get_pointer_element_pointer->pointer()->llvm_value, "", llvm_basic_block);
+                ir_get_pointer_element_pointer->Pointer()->llvm_value, "", llvm_basic_block);
             auto ir_pointer_type = cast<ir::PointerType>(ir_get_pointer_element_pointer->type);
             PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
             ir_get_pointer_element_pointer->llvm_value =
@@ -500,10 +500,10 @@ class LlvmCodegen {
         }
 
         if (auto ir_bit_cast = cast<ir::BitCast>(ir_instruction)) {
-            PRAJNA_ASSERT(ir_bit_cast->value()->llvm_value);
+            PRAJNA_ASSERT(ir_bit_cast->Value()->llvm_value);
             PRAJNA_ASSERT(ir_bit_cast->type->llvm_type);
             ir_bit_cast->llvm_value =
-                new llvm::BitCastInst(ir_bit_cast->value()->llvm_value,
+                new llvm::BitCastInst(ir_bit_cast->Value()->llvm_value,
                                       ir_bit_cast->type->llvm_type, "", llvm_basic_block);
             return;
         }

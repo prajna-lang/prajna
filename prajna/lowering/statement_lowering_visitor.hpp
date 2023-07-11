@@ -331,7 +331,7 @@ class StatementLoweringVisitor {
         PRAJNA_ASSERT(!Is<ir::VoidType>(ir_type));
         auto ir_last_value = ir_block->values.back();
         if (auto ir_return = cast<ir::Return>(ir_last_value)) {
-            return ir_return->value() && ir_return->value()->type == ir_type;
+            return ir_return->Value() && ir_return->Value()->type == ir_type;
         }
         if (auto ir_if = cast<ir::If>(ir_last_value)) {
             auto re = this->AllBranchIsTerminated(ir_if->TrueBlock(), ir_type) &&

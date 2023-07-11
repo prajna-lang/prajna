@@ -178,7 +178,7 @@ class IrBuilder {
         auto ir_index = this->GetIndexConstant(index);
         auto ir_access_property =
             this->Create<ir::AccessProperty>(ir_array_tmp_this_pointer, ir_index_property);
-        ir_access_property->arguments({ir_index});
+        ir_access_property->Arguments({ir_index});
         return this->Create<ir::WriteProperty>(ir_value, ir_access_property);
     }
 
@@ -187,7 +187,7 @@ class IrBuilder {
         auto ir_value = Value_::Create(std::forward<Args_>(__args)...);
 
         if (auto ir_return = cast<ir::Return>(ir_value)) {
-            PRAJNA_ASSERT(ir_return->value()->type ==
+            PRAJNA_ASSERT(ir_return->Value()->type ==
                           this->function_stack.top()->function_type->return_type);
         }
 

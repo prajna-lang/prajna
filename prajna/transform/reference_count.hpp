@@ -124,7 +124,7 @@ inline void InsertVariableIncrementReferenceCount(std::shared_ptr<ir::Module> ir
             ir_builder->inserter_iterator = iter;
             DestroyVariableLikedCallback(ir_write_variable_liked->variable(), ir_builder);
 
-            CopyVariableLikedCallback(ir_write_variable_liked->value(), ir_builder);
+            CopyVariableLikedCallback(ir_write_variable_liked->Value(), ir_builder);
         }
     }
 }
@@ -176,7 +176,7 @@ inline void InsertCopyForReturn(std::shared_ptr<ir::Module> ir_module) {
         for (auto ir_return : ir_returns) {
             if (lowering::HasReferenceCountable(ir_return->type)) {
                 // 如果是Call则不做操作, 和insertDestroyForCall里的逻辑对应
-                if (Is<ir::Call>(ir_return->value())) {
+                if (Is<ir::Call>(ir_return->Value())) {
                     continue;
                 }
 
@@ -184,7 +184,7 @@ inline void InsertCopyForReturn(std::shared_ptr<ir::Module> ir_module) {
                 ir_builder->PushBlock(ir_return->parent_block);
                 auto iter = std::find(RANGE(ir_return->parent_block->values), ir_return);
                 ir_builder->inserter_iterator = iter;
-                CopyVariableLikedCallback(ir_return->value(), ir_builder);
+                CopyVariableLikedCallback(ir_return->Value(), ir_builder);
             }
         }
     }

@@ -19,13 +19,13 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     auto ir_captured_variables_list =
         utility::CaptureExternalVariablesInBlock(ir_gpu_for->LoopBlock());
     // 将index, first, last
-    ir_captured_variables_list.remove(ir_gpu_for->index());
-    utility::RemoveFromParent(ir_gpu_for->index());
+    ir_captured_variables_list.remove(ir_gpu_for->IndexVariable());
+    utility::RemoveFromParent(ir_gpu_for->IndexVariable());
 
     std::list<std::shared_ptr<ir::Type>> ir_argument_types;
     // 加入first和last
-    ir_argument_types.push_back(ir_gpu_for->first()->type);
-    ir_argument_types.push_back(ir_gpu_for->last()->type);
+    ir_argument_types.push_back(ir_gpu_for->First()->type);
+    ir_argument_types.push_back(ir_gpu_for->Last()->type);
     std::transform(RANGE(ir_captured_variables_list), std::back_inserter(ir_argument_types),
                    [=](std::shared_ptr<ir::Value> ir_value) {
                        if (utility::IsHostTensorType(ir_value->type, ir_module)) {
@@ -61,10 +61,10 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     auto iter_captured_variable = ir_captured_variables_list.begin();
     auto iter_parameter = ir_kernel_function->parameters.begin();
     auto ir_first = *iter_parameter;
-    variables_dict[ir_gpu_for->first()] = ir_first;
+    variables_dict[ir_gpu_for->First()] = ir_first;
     ++iter_parameter;
     auto ir_last = *iter_parameter;
-    variables_dict[ir_gpu_for->last()] = ir_last;
+    variables_dict[ir_gpu_for->Last()] = ir_last;
     ++iter_parameter;
     for (; iter_parameter != ir_kernel_function->parameters.end();
          ++iter_parameter, ++iter_captured_variable) {
@@ -77,7 +77,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
     for (auto ir_captured_variable : ir_captured_variables_list) {
         auto instruction_with_index_inner_list = ir_captured_variable->instruction_with_index_list;
         instruction_with_index_inner_list.remove_if(
-            [=](ir::InstructionWithOperandIndex instruction_with_operand_index) -> bool {
+            [=](ir::InstructionAndOperandIndex instruction_with_operand_index) -> bool {
                 return instruction_with_operand_index.instruction->GetRootBlock() !=
                        ir_gpu_for->LoopBlock();
             });
@@ -91,7 +91,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
 
     auto ir_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetIndexType());
     ir_index->name = "i";
-    for (auto inst_with_idx : Clone(ir_gpu_for->index()->instruction_with_index_list)) {
+    for (auto inst_with_idx : Clone(ir_gpu_for->IndexVariable()->instruction_with_index_list)) {
         auto ir_instruction = inst_with_idx.instruction;
         // ir_gpu_for将被移除, 不能再使用ir_index
         if (ir_instruction == ir_gpu_for) continue;
@@ -195,8 +195,8 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
         ir_builder->SetDim3(ir_block_shape, 2, ir_builder->GetIndexConstant(1));
 
         std::list<std::shared_ptr<ir::Value>> ir_arguments;
-        ir_arguments.push_back(ir_gpu_for->first());
-        ir_arguments.push_back(ir_gpu_for->last());
+        ir_arguments.push_back(ir_gpu_for->First());
+        ir_arguments.push_back(ir_gpu_for->Last());
         std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Variable>>
             gpu_host_tensor_dict;
         std::transform(

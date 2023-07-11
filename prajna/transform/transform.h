@@ -61,15 +61,15 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
 
             if (Is<ir::WriteProperty>(ir_inst) && op_idx == 1) {
                 auto ir_write_property = cast<ir::WriteProperty>(ir_inst);
-                auto ir_arguments = ir_access_property->arguments();
+                auto ir_arguments = ir_access_property->Arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
-                ir_arguments.push_back(ir_write_property->value());
+                ir_arguments.push_back(ir_write_property->Value());
                 auto ir_setter_call = ir_builder->Create<ir::Call>(
                     ir_access_property->property->set_function, ir_arguments);
                 utility::RemoveFromParent(ir_write_property);
                 ir_write_property->Finalize();
             } else {
-                auto ir_arguments = ir_access_property->arguments();
+                auto ir_arguments = ir_access_property->Arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
                 auto ir_getter_call = ir_builder->Create<ir::Call>(
                     ir_access_property->property->get_function, ir_arguments);
@@ -78,7 +78,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
         }
 
         if (unused) {
-            auto ir_arguments = ir_access_property->arguments();
+            auto ir_arguments = ir_access_property->Arguments();
             ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
             auto ir_getter_call = ir_builder->Create<ir::Call>(
                 ir_access_property->property->get_function, ir_arguments);
@@ -354,15 +354,15 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->symbol_table = ir_module->symbol_table;
         // 只需要对数组循环进行处理
-        if (not ir_builder->IsArrayIndexType(ir_for->index()->type)) continue;
+        if (not ir_builder->IsArrayIndexType(ir_for->IndexVariable()->type)) continue;
 
         ir_builder->PushBlock(ir_for->parent_block);
         ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
         auto ir_layout_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
             ir_builder->GetSymbolByPath(true, {"tensor", "Layout"}));
         PRAJNA_ASSERT(ir_layout_template_struct);
-        auto ir_array_first = ir_for->first();
-        auto ir_array_last = ir_for->last();
+        auto ir_array_first = ir_for->First();
+        auto ir_array_last = ir_for->Last();
         auto ir_array_type = ir_array_last->type;
         auto ir_array_template_arguments =
             std::any_cast<std::list<lowering::Symbol>>(ir_array_type->template_arguments_any);
@@ -371,7 +371,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         auto ir_layout_type = ir_layout_template_struct->Instantiate(template_arguments, ir_module);
         auto ir_layout =
             ir_builder->Create<ir::Call>(ir_builder->GetImplementFunction(ir_layout_type, "Create"),
-                                         std::list<std::shared_ptr<ir::Value>>{ir_for->last()});
+                                         std::list<std::shared_ptr<ir::Value>>{ir_for->Last()});
         auto ir_linear_first = ir_builder->GetIndexConstant(0);
 
         auto ir_array_one =
@@ -382,11 +382,11 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
             ir_builder->CallMemberFunction(ir_layout, "ArrayIndexToLinearIndex", {ir_array_range}),
             "+", ir_builder->GetIndexConstant(1));
 
-        ir_for->first(ir_linear_first);
-        ir_for->last(ir_linear_last);
-        auto ir_array_index = ir_for->index();
+        ir_for->First(ir_linear_first);
+        ir_for->Last(ir_linear_last);
+        auto ir_array_index = ir_for->IndexVariable();
         auto ir_linear_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetIndexType());
-        ir_for->index(ir_linear_index);
+        ir_for->IndexVariable(ir_linear_index);
 
         auto ir_array_first_variable = ir_builder->VariableLikedNormalize(ir_array_first);
         auto ir_layout_variable = ir_builder->VariableLikedNormalize(ir_layout);

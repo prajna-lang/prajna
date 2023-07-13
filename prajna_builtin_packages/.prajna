@@ -55,6 +55,7 @@ use list::List;
 use dict::ListDict;
 
 use stack::Stack;
+use optional::Optional;
 
 use io::Input;
 

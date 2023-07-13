@@ -1,0 +1,21 @@
+@test
+func TestMain() {
+    var opt = Optional<i64>::Create(42);
+    test::Assert(opt.HaveValue());
+    test::Assert(opt.Value == 42);
+    var tmp = opt.Value;
+    test::Assert(tmp == 42);
+    
+
+    var none : Optional<i64>;
+    test::Assert(!none.HaveValue());
+    test::Assert(none.Value_Or(0) != 2);
+    test::Assert(none.Value_Or(4) == 4);
+
+
+    var new : Optional<i64>;
+    new.Set(456);
+    test::Assert(new.Get() == 456);
+
+
+}

@@ -19,6 +19,7 @@
 
 #include "boost/dll/shared_library.hpp"
 #include "llvm/ExecutionEngine/JITLink/JITLinkMemoryManager.h"
+#include "llvm/ExecutionEngine/Orc/EPCDynamicLibrarySearchGenerator.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
@@ -98,11 +99,19 @@ ExecutionEngine::ExecutionEngine() {
             .create();
     PRAJNA_ASSERT(expect_up_lljit);
     _up_lljit = std::move(*expect_up_lljit);
+
+    _up_lljit->getMainJITDylib().addGenerator(
+        cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
+            _up_lljit->getDataLayout().getGlobalPrefix())));
+}
+
+bool ExecutionEngine::LoadDynamicLib(std::string lib_name) {
+    return llvm::sys::DynamicLibrary::getPermanentLibrary(lib_name.c_str()).isValid();
 }
 
 size_t ExecutionEngine::GetValue(std::string name) {
     auto expect_symbol = _up_lljit->lookup(name);
-    PRAJNA_ASSERT(expect_symbol);
+    PRAJNA_VERIFY(expect_symbol);
     return expect_symbol->getValue();
 }
 
@@ -221,10 +230,6 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 }
 
 void ExecutionEngine::BindCFunction(void *fun_ptr, std::string mangle_name) {
-    _up_lljit->getMainJITDylib().addGenerator(
-        cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
-            _up_lljit->getDataLayout().getGlobalPrefix())));
-
     auto fun_symbol = llvm::orc::absoluteSymbols(
         {{_up_lljit->mangleAndIntern(mangle_name),
           {llvm::orc::ExecutorAddr::fromPtr(fun_ptr),

@@ -10,6 +10,7 @@
 #include "boost/process/search_path.hpp"
 #include "boost/process/system.hpp"
 #include "prajna/compiler/compiler.h"
+#include "prajna/jit/execution_engine.h"
 
 namespace prajna::lowering {
 
@@ -170,6 +171,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
 }
 
 Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
+    // 编译时输出消息
     if (ast_pragma.name == "error") {
         std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
         logger->Error(fmt::format("pragma error: {}", msg), ast_pragma);
@@ -180,6 +182,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
         logger->Warning(fmt::format("pragma warning: {}", msg), ast_pragma);
         return nullptr;
     }
+
+    // 执行系统指令
     if (ast_pragma.name == "system") {
         std::string command = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
 
@@ -189,12 +193,24 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
         print_callback(future_stdout.get().c_str());
         return nullptr;
     }
+
+    // 系统预加载
     if (ast_pragma.name == "stage0") {
         this->Stage0();
         return nullptr;
     }
     if (ast_pragma.name == "stage1") {
         this->Stage1();
+        return nullptr;
+    }
+
+    // 链接
+    if (ast_pragma.name == "link") {
+        if (ast_pragma.values.size() != 1) {
+            logger->Error("#link should have one value");
+        }
+        auto dynamic_lib_name = ast_pragma.values.front().value;
+        this->compiler->jit_engine->LoadDynamicLib(dynamic_lib_name);
         return nullptr;
     }
 

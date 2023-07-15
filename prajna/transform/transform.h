@@ -432,6 +432,34 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
     return re;
 }
 
+inline bool ExternCFunction(std::shared_ptr<ir::Module> ir_module) {
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->annotation_dict.count("extern")) {
+            // @extern的全名不加前缀
+            ir_function->fullname = ir_function->name;
+            // auto ir_decl_function = ir::Function::Create(ir_function->function_type);
+            // ir_decl_function->fullname = ir_function->name;
+            // ir_decl_function->parent_module = ir_module;
+            // ir_module->functions.push_front(ir_decl_function);
+
+            // ir_function->annotation_dict["inline"];
+
+            // PRAJNA_ASSERT(ir_function->blocks.empty());
+            // auto ir_builder = lowering::IrBuilder::Create();
+            // ir_builder->CreateTopBlockForFunction(ir_function);
+            // auto ir_call = ir_builder->Create<ir::Call>(ir_decl_function,
+            // ir_function->parameters); if
+            // (!Is<ir::VoidType>(ir_decl_function->function_type->return_type)) {
+            //     ir_builder->Create<ir::Return>(ir_call);
+            // }
+
+            ir_function->annotation_dict.erase("extern");
+        }
+    }
+
+    return false;
+}
+
 inline void TopologicalSortFunctionVisit(
     std::shared_ptr<ir::Function> ir_function,
     std::list<std::shared_ptr<ir::Function>> &ir_function_list,
@@ -537,6 +565,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
+    RecursiveTransformModule(ir_module, ExternCFunction);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ConvertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));

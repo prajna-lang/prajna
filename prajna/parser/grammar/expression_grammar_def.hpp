@@ -63,13 +63,13 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_error<fail>(additive_expr, error_handler_function);
     on_success(additive_expr, success_handler_function);
 
-    multiplicative_op = tok.times | tok.divide | tok.remain;
+    multiplicative_op = tok.star | tok.divide | tok.remain;
     multiplicative_expr.name("expression");
     multiplicative_expr = unary_expr >> *(multiplicative_op > unary_expr);
     on_error<fail>(multiplicative_expr, error_handler_function);
     on_success(multiplicative_expr, success_handler_function);
 
-    unary_op = tok.times | tok.and_ | tok.plus | tok.minus | tok.not_;
+    unary_op = tok.star | tok.and_ | tok.plus | tok.minus | tok.not_;
     unary_expr.name("unary expression");
     unary_expr = kernel_function_call | (unary_op > unary_expr);
     on_error<fail>(unary_expr, error_handler_function);

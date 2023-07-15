@@ -68,7 +68,7 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(pragma, success_handler_function);
 
     use.name("use");
-    use = tok.use > identifier_path >> -(tok.as > identifier);
+    use = tok.use > identifier_path >> -(tok.scope >> tok.star) >> -(tok.as > identifier);
     on_error<fail>(use, error_handler_function);
     on_success(use, success_handler_function);
 

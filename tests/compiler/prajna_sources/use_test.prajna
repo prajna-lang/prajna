@@ -1,0 +1,12 @@
+module local {
+    func test1() {}
+    func test2() {}
+}
+
+use local::*;
+
+@test
+func Main() {
+    test1();
+    test2();
+}

@@ -48,8 +48,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         bool is_first_module = true;
 
         path directory_path;
-        for (auto iter_ast_identifier = ast_import.identifier_path.identifiers.begin();
-             iter_ast_identifier != ast_import.identifier_path.identifiers.end();
+        auto iter_ast_identifier = ast_import.identifier_path.identifiers.begin();
+        for (; iter_ast_identifier != ast_import.identifier_path.identifiers.end();
              ++iter_ast_identifier) {
             std::string identifier = iter_ast_identifier->identifier;
             if (symbol.type() != typeid(std::shared_ptr<SymbolTable>)) {
@@ -159,8 +159,27 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
             }
         }
 
-        if (ast_import.as_optional) {
-            ir_builder->symbol_table->Set(symbol, ast_import.as_optional.get());
+        if (ast_import.star_match_optional) {
+            if (auto ir_symbol_table = SymbolGet<lowering::SymbolTable>(symbol)) {
+                for (auto [id, tmp_symbol] : ir_symbol_table->current_symbol_dict) {
+                    if (ir_builder->symbol_table->Has(id)) {
+                        logger->Error(fmt::format("{} has defined", id),
+                                      *ast_import.star_match_optional);
+                    }
+
+                    ir_builder->symbol_table->Set(tmp_symbol, id);
+                }
+
+                if (ast_import.as_optional) {
+                    logger->Error("unepect as", *ast_import.as_optional);
+                }
+            } else {
+                logger->Error("not a module", iter_ast_identifier->identifier);
+            }
+        } else {
+            if (ast_import.as_optional) {
+                ir_builder->symbol_table->Set(symbol, ast_import.as_optional.get());
+            }
         }
 
         return symbol;

@@ -30,7 +30,7 @@ use bindings::exit;
 use debug;
 use test;
 
-use array::Array;
+use _array::Array;
 
 use float::FloatFixedPrinter;
 use float::FloatScientificPrinter;

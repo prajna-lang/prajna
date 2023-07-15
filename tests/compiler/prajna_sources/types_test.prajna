@@ -20,7 +20,7 @@ func TestTypes(){
     var newline: char = '\n';
     var back_slash : char = '\\';
 
-    var arr0 : __array<i64, 3>;
+    var arr0 : array<i64, 3>;
     var arr1 = [0, 1, 2];
     var arr2 = [3.0, 4.2, 6.4];
 

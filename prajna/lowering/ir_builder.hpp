@@ -47,7 +47,7 @@ class IrBuilder {
 
     bool IsArrayIndexType(std::shared_ptr<ir::Type> ir_type) {
         auto array_template_struct =
-            SymbolGet<TemplateStruct>(this->GetSymbolByPath(true, {"array", "Array"}));
+            SymbolGet<TemplateStruct>(this->GetSymbolByPath(false, {"Array"}));
         PRAJNA_ASSERT(array_template_struct);
         return ir_type->template_struct == array_template_struct;
     }
@@ -78,7 +78,7 @@ class IrBuilder {
         symbol_template_arguments.push_back(ir_type);
         symbol_template_arguments.push_back(this->GetIndexConstant(length));
 
-        auto symbol_array = this->GetSymbolByPath(true, {"array", "Array"});
+        auto symbol_array = this->GetSymbolByPath(false, {"Array"});
         auto array_template = SymbolGet<TemplateStruct>(symbol_array);
         PRAJNA_ASSERT(array_template);
         auto ir_shape3_type = array_template->Instantiate(symbol_template_arguments, this->module);

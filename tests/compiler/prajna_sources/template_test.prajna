@@ -30,7 +30,7 @@ use ptrTp<i64>;
 
 template <Type, Length>
 struct MyArray {
-    data: __array<Type, Length>;
+    data: array<Type, Length>;
 }
 
 @test

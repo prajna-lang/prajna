@@ -36,7 +36,7 @@ use float::FloatFixedPrinter;
 use float::FloatScientificPrinter;
 use int;
 
-use ptr::Ptr;
+use _ptr::Ptr;
 use dynamic;
 
 use atomic;
@@ -65,6 +65,6 @@ use chrono;
 
 
 
-func __load_dynamic_library(lib_name: __ptr<char>)->i64;
-func __get_symbol(lib: i64, symbol_name: __ptr<char>)->i64;
+func __load_dynamic_library(lib_name: ptr<char>)->i64;
+func __get_symbol(lib: i64, symbol_name: ptr<char>)->i64;
 func __close_dynamic_library(lib: i64);

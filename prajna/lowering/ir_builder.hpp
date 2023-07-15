@@ -53,8 +53,7 @@ class IrBuilder {
     }
 
     bool IsPtrType(std::shared_ptr<ir::Type> ir_type) {
-        auto ptr_template_struct =
-            SymbolGet<TemplateStruct>(this->GetSymbolByPath(true, {"ptr", "Ptr"}));
+        auto ptr_template_struct = SymbolGet<TemplateStruct>(this->GetSymbolByPath(false, {"Ptr"}));
         PRAJNA_ASSERT(ptr_template_struct);
         return ir_type->template_struct == ptr_template_struct;
     }
@@ -91,7 +90,7 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::Type> GetPtrType(std::shared_ptr<ir::Type> ir_value_type) {
-        auto symbol_ptr = this->GetSymbolByPath(true, {"ptr", "Ptr"});
+        auto symbol_ptr = this->GetSymbolByPath(false, {"Ptr"});
         auto ptr_template = SymbolGet<TemplateStruct>(symbol_ptr);
         PRAJNA_ASSERT(ptr_template);
         std::list<Symbol> symbol_template_arguments = {ir_value_type};

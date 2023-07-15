@@ -20,19 +20,19 @@ func MultiProcessorsCount(device: i64)->i64{
     return count.Cast<i64>();
 }
 
-func LaunchKernel(kernel_function_pointer: __ptr<i8>, GridShape: Array<i64, 3>, BlockShape: Array<i64, 3>, kernel_params: __ptr<__ptr<i8>>)->i64{
+func LaunchKernel(kernel_function_pointer: ptr<i8>, GridShape: Array<i64, 3>, BlockShape: Array<i64, 3>, kernel_params: ptr<ptr<i8>>)->i64{
     var re = cuda::cuLaunchKernel(kernel_function_pointer, GridShape[0].Cast<u32>(), GridShape[1].Cast<u32>(),
-    GridShape[2].Cast<u32>(), BlockShape[0].Cast<u32>(), BlockShape[1].Cast<u32>(), BlockShape[2].Cast<u32>(), 0u32, __cast<i64, __ptr<i8>>(0), kernel_params, __cast<i64, __ptr<__ptr<i8> > >(0));
+    GridShape[2].Cast<u32>(), BlockShape[0].Cast<u32>(), BlockShape[1].Cast<u32>(), BlockShape[2].Cast<u32>(), 0u32, __cast<i64, ptr<i8>>(0), kernel_params, __cast<i64, ptr<ptr<i8> > >(0));
     return re.Cast<i64>();
 }
 
-func LaunchKernelForDim1(kernel_function_pointer: __ptr<i8>, paramters: __ptr<__ptr<i8>>){
+func LaunchKernelForDim1(kernel_function_pointer: ptr<i8>, paramters: ptr<ptr<i8>>){
 
 }
 
 template <Type, Dim>
 struct Tensor {
-    data : __ptr<Type>;
+    data : ptr<Type>;
     layout: Layout<Dim>;
 }
 
@@ -78,7 +78,7 @@ implement Tensor<Type, Dim> {
 
         // TODO : 内存管理需要修复
         var bytes = self.layout.Length() * __sizeof<Type>();
-        cuda::cuMemAlloc(__bit_cast<__ptr<__ptr<Type>> ,__ptr<__ptr<i8> > >(&self.data), bytes);
+        cuda::cuMemAlloc(__bit_cast<ptr<ptr<Type>> ,ptr<ptr<i8> > >(&self.data), bytes);
 
         return self;
     }
@@ -95,7 +95,7 @@ implement Tensor<Type, Dim> {
         for i in 0 to Dim {
             size = size * this.layout.shape[i];
         }
-        var re =  cuda::cudaMemcpy(__bit_cast<__ptr<Type> ,__ptr<i8>>(host_tensor.data.raw_ptr), __bit_cast<__ptr<Type>, __ptr<i8>>(this.data), size * __sizeof<Type>(), 2i32);
+        var re =  cuda::cudaMemcpy(__bit_cast<ptr<Type> ,ptr<i8>>(host_tensor.data.raw_ptr), __bit_cast<ptr<Type>, ptr<i8>>(this.data), size * __sizeof<Type>(), 2i32);
         return host_tensor;
     }
 }
@@ -108,7 +108,7 @@ implement ::Tensor<Type, Dim> {
         for i in 0 to Dim {
             size = size * this.layout.shape[i];
         }
-        var re = cuda::cudaMemcpy(__bit_cast<__ptr<Type> ,__ptr<i8>>(cuda_tensor.data), __bit_cast<__ptr<Type>, __ptr<i8>>(this.data.raw_ptr), size * __sizeof<Type>(), 1i32);
+        var re = cuda::cudaMemcpy(__bit_cast<ptr<Type> ,ptr<i8>>(cuda_tensor.data), __bit_cast<ptr<Type>, ptr<i8>>(this.data.raw_ptr), size * __sizeof<Type>(), 1i32);
         return cuda_tensor;
     }
 }

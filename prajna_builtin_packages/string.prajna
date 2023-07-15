@@ -25,7 +25,7 @@ implement String{
     }
 
     @static
-    func __from_char_ptr(cstr_ptr: __ptr<char>)->String {
+    func __from_char_ptr(cstr_ptr: ptr<char>)->String {
         var length = 0;
         while (cstr_ptr[length] != '\0'){
             length = length + 1;
@@ -38,7 +38,7 @@ implement String{
         return str_re;
     }
 
-    func CStringRawPointer()->__ptr<char> {
+    func CStringRawPointer()->ptr<char> {
         this[this.Length()] = '\0';
         return this.darray._data.raw_ptr;
     }

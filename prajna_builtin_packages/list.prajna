@@ -1,8 +1,8 @@
 
 template <ValueType>
 struct Node {
-    next: __ptr<Node<ValueType>>;
-    prev: __ptr<Node<ValueType>>;
+    next: ptr<Node<ValueType>>;
+    prev: ptr<Node<ValueType>>;
     value: ValueType;
 }
 
@@ -11,7 +11,7 @@ implement Node<ValueType> {
     /// @brief
     /// @warning 确保节点前面存在节点
     func InsertBefore(value: ValueType){
-        var new_node = __ptr<Node<ValueType>>::New();
+        var new_node = ptr<Node<ValueType>>::New();
         (*new_node).value = value;
         (*new_node).prev = this.prev;
         (*this.prev).next = new_node;
@@ -21,7 +21,7 @@ implement Node<ValueType> {
 
     /// @warning 确保节点后面存在节点
     func InsertAfter(value: ValueType){
-        var new_node = __ptr<Node<ValueType>>::New();
+        var new_node = ptr<Node<ValueType>>::New();
         (*new_node).value = value;
         (*new_node).next = this.next;
         (*this.next).prev = new_node;
@@ -48,10 +48,10 @@ implement Node<ValueType> {
 
 template <ValueType>
 struct List {
-    _head: __ptr<Node<ValueType>>;
-    _end: __ptr<Node<ValueType>>;
+    _head: ptr<Node<ValueType>>;
+    _end: ptr<Node<ValueType>>;
     // 用于引用计数
-    _reference_counter : __ptr<i64>;
+    _reference_counter : ptr<i64>;
 }
 
 template <ValueType>
@@ -76,11 +76,11 @@ implement List<ValueType> {
         (*this._end).RemoveBefore();
     }
 
-    func End()->__ptr<Node<ValueType>> {
+    func End()->ptr<Node<ValueType>> {
         return this._end;
     }
 
-    func Begin()->__ptr<Node<ValueType>> {
+    func Begin()->ptr<Node<ValueType>> {
         return (*this._head).next;
     }
 }
@@ -88,14 +88,14 @@ implement List<ValueType> {
 template <ValueType>
 implement Initializable for List<ValueType> {
     func Initialize() {
-        this._head = __ptr<Node<ValueType>>::New();
-        this._end = __ptr<Node<ValueType>>::New();
-        (*this._head).prev = __ptr<Node<ValueType>>::Null();
+        this._head = ptr<Node<ValueType>>::New();
+        this._end = ptr<Node<ValueType>>::New();
+        (*this._head).prev = ptr<Node<ValueType>>::Null();
         (*this._head).next = this._end;
         (*this._end).prev =  this._head;
-        (*this._end).next = __ptr<Node<ValueType>>::Null();
+        (*this._end).next = ptr<Node<ValueType>>::Null();
 
-        this._reference_counter = __ptr<i64>::New();
+        this._reference_counter = ptr<i64>::New();
         *this._reference_counter = 1;
     }
 }

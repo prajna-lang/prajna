@@ -1,8 +1,8 @@
 
 struct TestA {
-    data: __ptr<undef>;
+    data: ptr<undef>;
     data2: Ptr<i64>;
-    _reference_counter: __ptr<i64>;
+    _reference_counter: ptr<i64>;
 }
 
 implement ReferenceCountable for TestA {
@@ -14,7 +14,7 @@ implement ReferenceCountable for TestA {
         *this._reference_counter = *this._reference_counter - 1;
         var ref_count = *this._reference_counter;
         if (ref_count == 0 ){
-            if (__cast<__ptr<undef>, i64>(this.data) == 0) {
+            if (__cast<ptr<undef>, i64>(this.data) == 0) {
                 bindings::free(this.data);
             }
         }
@@ -29,8 +29,8 @@ implement ReferenceCountable for TestA {
 
 implement Initializable for TestA {
     func Initialize(){
-        this.data = __cast<i64, __ptr<undef>>(0);
-        this._reference_counter = __ptr<i64>::New();
+        this.data = __cast<i64, ptr<undef>>(0);
+        this._reference_counter = ptr<i64>::New();
         *this._reference_counter = 1;
     }
 }

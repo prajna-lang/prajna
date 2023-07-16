@@ -1,4 +1,3 @@
-
 func Assert(success: bool){
     if (!success) {
         bindings::exit(-1);

@@ -55,9 +55,6 @@ implement DynamicArray<ValueType> {
         } else {
             this._length = this._length + 1;
         }
-
-        test::Assert(this._data.ReferenceCount() > 0);
-
         this[this._length-1] = value;
     }
 

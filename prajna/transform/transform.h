@@ -563,9 +563,38 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
     }
 }
 
+inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
+    auto ir_calls = utility::GetValuesInModule<ir::Call>(ir_module);
+    for (auto ir_call : ir_calls) {
+        if (auto ir_callee = cast<ir::Function>(ir_call->Function())) {
+            if (ir_callee->fullname == "::test::Assert") {
+                auto iter = ir_call->GetBlockIterator();
+                auto ir_builder =
+                    lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
+                ir_builder->PushBlock(ir_call->parent_block);
+                ir_builder->inserter_iterator = iter;
+                auto position = ir_call->source_location.first_position;
+                auto filename = ir_builder->GetString(position.file);
+                auto line = ir_builder->GetString(std::to_string(position.line));
+                auto ir_print_location = lowering::SymbolGet<ir::Value>(
+                    ir_builder->GetSymbolByPath(false, {"test", "AssertWithPosition"}));
+                auto ir_condition = ir_call->Argument(0);
+                ir_builder->Create<ir::Call>(
+                    ir_print_location,
+                    std::list<std::shared_ptr<ir::Value>>{ir_condition, filename, line});
+                utility::RemoveFromParent(ir_call);
+                ir_call->Finalize();
+            }
+        }
+    }
+
+    return false;
+}
+
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
     RecursiveTransformModule(ir_module, ExternCFunction);
+    RecursiveTransformModule(ir_module, InsertLocationForAssert);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ConvertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));

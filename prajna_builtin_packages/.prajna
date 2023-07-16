@@ -28,7 +28,6 @@ use primitive_type;
 use bindings;
 use bindings::exit;
 use debug;
-use test;
 
 use _array::Array;
 
@@ -43,10 +42,11 @@ use atomic;
 
 use dynamic_array::DynamicArray;
 
-
 use string::String;
 use serializable::Serializable;
 use serialize;
+
+use test;
 
 use tensor::Tensor;
 use tensor::Layout;
@@ -62,6 +62,7 @@ use io::Input;
 use fs;
 
 use chrono;
+
 
 
 

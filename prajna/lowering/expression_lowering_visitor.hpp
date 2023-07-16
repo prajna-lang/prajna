@@ -312,10 +312,10 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> ApplyBinaryOperationCall(std::shared_ptr<ir::Value> ir_lhs,
-                                                        ast::BinaryOperation ast_binary_operaton) {
-        auto ir_arguments = *cast<ir::ValueCollection>(applyOperand(ast_binary_operaton.operand));
-        PRAJNA_ASSERT(ast_binary_operaton.operand.type() == typeid(ast::Expressions));
-        auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operaton.operand);
+                                                        ast::BinaryOperation ast_binary_operation) {
+        auto ir_arguments = *cast<ir::ValueCollection>(applyOperand(ast_binary_operation.operand));
+        PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
+        auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operation.operand);
         if (auto ir_member_function = cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
             auto ir_function_type = ir_member_function->function_prototype->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
@@ -356,6 +356,7 @@ class ExpressionLoweringVisitor {
                     logger->Error("the argument type is not matched", ast_expressions);
                 }
             }
+
             return ir_builder->Create<ir::Call>(ir_lhs, ir_arguments);
         }
 
@@ -390,7 +391,7 @@ class ExpressionLoweringVisitor {
             return ir_access_property;
         }
 
-        logger->Error("not a valid callable", ast_binary_operaton);
+        logger->Error("not a valid callable", ast_binary_operation);
         return nullptr;
     }
 

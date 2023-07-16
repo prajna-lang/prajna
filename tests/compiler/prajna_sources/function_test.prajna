@@ -19,7 +19,7 @@ func PrintHello(){
     "Hello\n".Print();
 }
 
-func Call(fun: ptr<Func<void>>) {
+func Call(fun: function<void>) {
     fun();
 }
 

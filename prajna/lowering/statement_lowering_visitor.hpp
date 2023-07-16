@@ -1172,7 +1172,7 @@ class StatementLoweringVisitor {
         return template_struct_raw_ptr;
     }
 
-    std::shared_ptr<TemplateStruct> CreateFunctionTypeTemplate() {
+    std::shared_ptr<TemplateStruct> CreateFunctionTypePointerTemplate() {
         auto template_function_type = Template::Create();
         template_function_type->generator = [=, symbol_table = this->ir_builder->symbol_table,
                                              logger = this->logger](
@@ -1196,7 +1196,8 @@ class StatementLoweringVisitor {
             ir_parameter_list.pop_back();
             auto ir_return_type = ir_type_list.back();
 
-            return ir::FunctionType::Create(ir_parameter_list, ir_return_type);
+            return ir::PointerType::Create(
+                ir::FunctionType::Create(ir_parameter_list, ir_return_type));
         };
 
         auto template_struct_function_type = TemplateStruct::Create();
@@ -1788,7 +1789,7 @@ class StatementLoweringVisitor {
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateRawPtrTypeTemplate(), "ptr");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateFunctionTypeTemplate(), "Func");
+            this->CreateFunctionTypePointerTemplate(), "function");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateAsCastTemplate(), "__as");

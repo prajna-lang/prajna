@@ -3,7 +3,7 @@ use _c;
 func Write(filename: String , buffer: String) {
         var mode = "wb+";
         var stream = _c::fopen(filename.CStringRawPointer() , mode.CStringRawPointer());
-        debug::Assert(stream.IsValid());
+        __assert(stream.IsValid());
         _c::fwrite(buffer.CStringRawPointer(), 1, buffer.Length(), stream);
         _c::fclose(stream);
 }
@@ -11,7 +11,7 @@ func Write(filename: String , buffer: String) {
 func Read(filename: String)->String {
         var mode = "rb";
         var stream = _c::fopen(filename.CStringRawPointer() , mode.CStringRawPointer());
-        debug::Assert(stream.IsValid());
+        __assert(stream.IsValid());
 
         _c::fseek(stream, 0, 2i32);
         var length = _c::ftell(stream);

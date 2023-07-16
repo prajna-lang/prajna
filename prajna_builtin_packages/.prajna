@@ -27,7 +27,7 @@ use disable_dynamic_interface::Finalizable;
 use primitive_type;
 use bindings;
 use bindings::exit;
-use debug;
+use _debug::__assert;
 
 use _array::Array;
 
@@ -47,6 +47,7 @@ use serializable::Serializable;
 use serialize;
 
 use test;
+use debug;
 
 use tensor::Tensor;
 use tensor::Layout;

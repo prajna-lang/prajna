@@ -15,7 +15,7 @@ template <ValueType>
 implement ValueProperty<ValueType> for Optional<ValueType>{
     @inline
     func Get()->ValueType{
-        debug::Assert(this._hasvalue);
+        __assert(this._hasvalue);
         return this._value;
     }
 
@@ -33,7 +33,7 @@ implement Optional<ValueType> {
     }
 
     func Value_Or(default_value : ValueType) -> ValueType {
-        if(!this.HaveValue()){ 
+        if(!this.HaveValue()){
             return default_value;
         }else {
             return this._value;

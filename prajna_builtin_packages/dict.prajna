@@ -23,7 +23,7 @@ implement ListDict<Key, Value> {
             node = (*node).next;
         }
 
-        debug::Assert(false);
+        __assert(false);
         var tmp: Value;
         return tmp;
     }

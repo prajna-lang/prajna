@@ -93,7 +93,7 @@ func TestFs() {
     }
     {
         var str = fs::Read("fs_test.txt");
-        debug::Assert(str == str_hello_world);
+        __assert(str == str_hello_world);
     }
 }
 ```

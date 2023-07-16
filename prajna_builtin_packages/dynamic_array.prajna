@@ -1,5 +1,5 @@
 func CeilPowerOf2(value: i64)->i64{
-    debug::Assert(value >= 0);
+    __assert(value >= 0);
     var re = 1;
     while (re < value) {
         re = re * 2;

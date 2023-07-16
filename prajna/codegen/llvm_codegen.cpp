@@ -137,10 +137,6 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_null_type = cast<ir::NullType>(ir_type)) {
-            return;
-        }
-
         PRAJNA_TODO;
     }
 

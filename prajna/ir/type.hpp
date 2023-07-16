@@ -69,27 +69,6 @@ class Type : public Named {
     llvm::Type* llvm_type = nullptr;
 };
 
-class NullType : public Type {
-   protected:
-    NullType() = default;
-
-   public:
-    static std::shared_ptr<NullType> Create() {
-        for (auto ir_type : global_context.created_types) {
-            if (auto ir_null_type = cast<NullType>(ir_type)) {
-                return ir_null_type;
-            }
-        }
-
-        std::shared_ptr<NullType> self(new NullType);
-        self->bytes = 0;
-        self->name = "NullType";
-        self->fullname = "NullType";
-        global_context.created_types.push_back(self);
-        return self;
-    }
-};
-
 class RealNumberType : public Type {
    protected:
     RealNumberType() = default;

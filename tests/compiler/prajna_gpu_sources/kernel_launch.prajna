@@ -21,7 +21,7 @@ func TestKernel(){
     parameters[1] = __bit_cast<ptr<i64> ,ptr<i8>>(&value);
     var parameters_ptr = &parameters[0];
 
-    var re = gpu::LaunchKernel(__bit_cast<function<gpu::Tensor<i64, 1>, i64, void>> ,ptr<i8>(myKernel), GridShape, BlockShape, parameters_ptr);
+    var re = gpu::LaunchKernel(__bit_cast<function<gpu::Tensor<i64, 1>, i64, void> ,ptr<i8>>(myKernel), GridShape, BlockShape, parameters_ptr);
     test::Assert(re == 0);
 
     host_tensor = gpu_tensor.ToHost();

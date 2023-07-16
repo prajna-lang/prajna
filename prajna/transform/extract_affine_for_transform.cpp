@@ -11,7 +11,7 @@ class ExtractAffineLoopPass : public FunctionPass {
    public:
     bool RunOnFunction(std::shared_ptr<ir::Function> ir_function) override {
         for (auto block : ir_function->blocks) {
-            auto for_block = cast<ir::For>(block);
+            auto for_block = Cast<ir::For>(block);
             if (!for_block) continue;
             if (std::find(for_block->annotation_dict.begin(), for_block->annotation_dict.end(),
                           "affine") != for_block->annotation_dict.end()) {

@@ -185,7 +185,7 @@ class IrBuilder {
     std::shared_ptr<Value_> Create(Args_&&... __args) {
         auto ir_value = Value_::Create(std::forward<Args_>(__args)...);
 
-        if (auto ir_return = cast<ir::Return>(ir_value)) {
+        if (auto ir_return = Cast<ir::Return>(ir_value)) {
             PRAJNA_ASSERT(ir_return->Value()->type ==
                           this->function_stack.top()->function_type->return_type);
         }
@@ -204,7 +204,7 @@ class IrBuilder {
 
     std::shared_ptr<ir::VariableLiked> VariableLikedNormalize(std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(ir_value);
-        auto ir_variable_liked = cast<ir::VariableLiked>(ir_value);
+        auto ir_variable_liked = Cast<ir::VariableLiked>(ir_value);
         if (ir_variable_liked) {
             return ir_variable_liked;
         } else {
@@ -267,7 +267,7 @@ class IrBuilder {
         auto ir_c_string_address = this->Create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
         ast::IdentifierPath ast_identifier_path;
         auto string_symbol = this->GetSymbolByPath(true, {"String"});
-        auto string_type = cast<ir::StructType>(SymbolGet<ir::Type>(string_symbol));
+        auto string_type = Cast<ir::StructType>(SymbolGet<ir::Type>(string_symbol));
         auto ir_string_from_char_pat = this->GetImplementFunction(string_type, "__from_char_ptr");
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
         return this->Create<ir::Call>(ir_string_from_char_pat,

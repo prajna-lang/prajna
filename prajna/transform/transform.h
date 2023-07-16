@@ -60,7 +60,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
             PRAJNA_ASSERT(not Is<ir::GetAddressOfVariableLiked>(ir_inst));
 
             if (Is<ir::WriteProperty>(ir_inst) && op_idx == 1) {
-                auto ir_write_property = cast<ir::WriteProperty>(ir_inst);
+                auto ir_write_property = Cast<ir::WriteProperty>(ir_inst);
                 auto ir_arguments = ir_access_property->Arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
                 ir_arguments.push_back(ir_write_property->Value());
@@ -164,7 +164,7 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
 
         for (auto ir_instruction : ir_instructions) {
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                if (auto ir_function = cast<ir::Function>(ir_instruction->operand(i))) {
+                if (auto ir_function = Cast<ir::Function>(ir_instruction->operand(i))) {
                     if (ir_function->annotation_dict.count("kernel")) {
                         auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
 
@@ -215,7 +215,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 // @note 全局变量目前遵循如果使用其他module的则自身为external的原则
                 if (auto ir_global_variable =
-                        cast<ir::GlobalVariable>(ir_instruction->operand(i))) {
+                        Cast<ir::GlobalVariable>(ir_instruction->operand(i))) {
                     auto iter_global_alloca = std::find_if(
                         RANGE(ir_module->global_allocas), [=](std::shared_ptr<ir::GlobalAlloca> x) {
                             return x->fullname == ir_global_variable->fullname;
@@ -318,7 +318,7 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
         for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->operand(i);
 
-            if (auto ir_function = cast<ir::Function>(ir_operand)) {
+            if (auto ir_function = Cast<ir::Function>(ir_operand)) {
                 if (ir_function->parent_module != ir_module) {
                     std::shared_ptr<ir::Function> ir_decl_function = nullptr;
                     auto iter_fun = std::find_if(RANGE(ir_module->functions), [=](auto ir_x) {
@@ -470,7 +470,7 @@ inline void TopologicalSortFunctionVisit(
     for (auto ir_instruction : ir_instructions) {
         for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->operand(i);
-            if (auto ir_tmp_function = cast<ir::Function>(ir_operand)) {
+            if (auto ir_tmp_function = Cast<ir::Function>(ir_operand)) {
                 // 值排序同一个module里的函数
                 if (ir_tmp_function->parent_module == ir_function->parent_module) {
                     // 没访问的进行深度搜索
@@ -566,7 +566,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
     auto ir_calls = utility::GetValuesInModule<ir::Call>(ir_module);
     for (auto ir_call : ir_calls) {
-        if (auto ir_callee = cast<ir::Function>(ir_call->Function())) {
+        if (auto ir_callee = Cast<ir::Function>(ir_call->Function())) {
             if (ir_callee->fullname == "::test::Assert") {
                 auto iter = ir_call->GetBlockIterator();
                 auto ir_builder =

@@ -63,24 +63,24 @@ inline void InsertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_blo
 
     for (auto iter = ir_block->values.begin(); iter != ir_builder->inserter_iterator; ++iter) {
         auto ir_value = *iter;
-        if (auto ir_variable = cast<ir::LocalVariable>(ir_value)) {
+        if (auto ir_variable = Cast<ir::LocalVariable>(ir_value)) {
             ir_local_variable_list.push_back(ir_variable);
         }
 
-        if (auto ir_block = cast<ir::Block>(ir_value)) {
+        if (auto ir_block = Cast<ir::Block>(ir_value)) {
             InsertDestroyLocalVariableForBlock(ir_block);
         }
 
-        if (auto ir_if = cast<ir::If>(ir_value)) {
+        if (auto ir_if = Cast<ir::If>(ir_value)) {
             InsertDestroyLocalVariableForBlock(ir_if->TrueBlock());
             InsertDestroyLocalVariableForBlock(ir_if->FalseBlock());
         }
 
-        if (auto ir_while = cast<ir::While>(ir_value)) {
+        if (auto ir_while = Cast<ir::While>(ir_value)) {
             InsertDestroyLocalVariableForBlock(ir_while->LoopBlock());
         }
 
-        if (auto ir_for = cast<ir::For>(ir_value)) {
+        if (auto ir_for = Cast<ir::For>(ir_value)) {
             InsertDestroyLocalVariableForBlock(ir_for->LoopBlock());
         }
     }
@@ -153,7 +153,7 @@ inline void InsertDestroyForCall(std::shared_ptr<ir::Module> ir_module) {
                 // 如果是临时变量, 那应该在使用完临时变量后插入
                 if (ir_instruction_use_call->annotation_dict.count("DisableReferenceCount")) {
                     auto ir_write_variable_liked =
-                        cast<ir::WriteVariableLiked>(ir_instruction_use_call);
+                        Cast<ir::WriteVariableLiked>(ir_instruction_use_call);
                     auto ir_object_pointer = ir_write_variable_liked->variable()
                                                  ->instruction_with_index_list.back()
                                                  .instruction;

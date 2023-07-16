@@ -50,25 +50,25 @@ class LlvmCodegen {
         if (ir_type->llvm_type) return;
 
         // 对于不完备的类型, codegen时选择跳过
-        if (auto ir_real_number_type = cast<ir::RealNumberType>(ir_type)) {
+        if (auto ir_real_number_type = Cast<ir::RealNumberType>(ir_type)) {
             if (ir_real_number_type->bits <= 0) {
                 return;
             }
         }
 
-        if (auto ir_bool_type = cast<ir::BoolType>(ir_type)) {
+        if (auto ir_bool_type = Cast<ir::BoolType>(ir_type)) {
             ir_bool_type->llvm_type = llvm::Type::getInt1Ty(static_llvm_context);
             return;
         }
-        if (auto ir_char_type = cast<ir::CharType>(ir_type)) {
+        if (auto ir_char_type = Cast<ir::CharType>(ir_type)) {
             ir_char_type->llvm_type = llvm::Type::getInt8Ty(static_llvm_context);
             return;
         }
-        if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+        if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
             ir_int_type->llvm_type = llvm::Type::getIntNTy(static_llvm_context, ir_int_type->bits);
             return;
         }
-        if (auto ir_float_type = cast<ir::FloatType>(ir_type)) {
+        if (auto ir_float_type = Cast<ir::FloatType>(ir_type)) {
             switch (ir_float_type->bits) {
                 case 16:
                     ir_float_type->llvm_type = llvm::Type::getHalfTy(static_llvm_context);
@@ -88,15 +88,15 @@ class LlvmCodegen {
 
             return;
         }
-        if (auto ir_undef_type = cast<ir::UndefType>(ir_type)) {
+        if (auto ir_undef_type = Cast<ir::UndefType>(ir_type)) {
             ir_undef_type->llvm_type = llvm::Type::getInt8Ty(static_llvm_context);
             return;
         }
-        if (auto ir_void_type = cast<ir::VoidType>(ir_type)) {
+        if (auto ir_void_type = Cast<ir::VoidType>(ir_type)) {
             ir_void_type->llvm_type = llvm::Type::getVoidTy(static_llvm_context);
             return;
         }
-        if (auto ir_function_type = cast<ir::FunctionType>(ir_type)) {
+        if (auto ir_function_type = Cast<ir::FunctionType>(ir_type)) {
             std::vector<llvm::Type *> llvm_argument_types(ir_function_type->parameter_types.size());
             std::transform(ir_function_type->parameter_types.begin(),
                            ir_function_type->parameter_types.end(), llvm_argument_types.begin(),
@@ -110,19 +110,19 @@ class LlvmCodegen {
                 ir_function_type->return_type->llvm_type, llvm_argument_types, false);
             return;
         }
-        if (auto ir_pointer_type = cast<ir::PointerType>(ir_type)) {
+        if (auto ir_pointer_type = Cast<ir::PointerType>(ir_type)) {
             this->EmitType(ir_pointer_type->value_type);
             ir_pointer_type->llvm_type =
                 llvm::PointerType::get(ir_pointer_type->value_type->llvm_type, 0);
             return;
         }
-        if (auto ir_array_type = cast<ir::ArrayType>(ir_type)) {
+        if (auto ir_array_type = Cast<ir::ArrayType>(ir_type)) {
             this->EmitType(ir_array_type->value_type);
             ir_array_type->llvm_type =
                 llvm::ArrayType::get(ir_array_type->value_type->llvm_type, ir_array_type->size);
             return;
         }
-        if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+        if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
             auto llvm_struct_type =
                 llvm::StructType::create(static_llvm_context, ir_struct_type->fullname);
             ir_struct_type->llvm_type = llvm_struct_type;
@@ -224,19 +224,19 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_constant = cast<ir::Constant>(ir_value)) {
+        if (auto ir_constant = Cast<ir::Constant>(ir_value)) {
             EmitConstant(ir_constant, ir_target);
             return;
         }
 
         PRAJNA_ASSERT(ir_value->llvm_value == nullptr);
 
-        if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
+        if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
             EmitInstruction(ir_instruction, ir_target);
             return;
         }
 
-        if (auto ir_null_value = cast<ir::VoidValue>(ir_value)) {
+        if (auto ir_null_value = Cast<ir::VoidValue>(ir_value)) {
             ir_null_value->llvm_value = nullptr;
             return;
         }
@@ -249,26 +249,26 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_constant_char = cast<ir::ConstantChar>(ir_constant)) {
+        if (auto ir_constant_char = Cast<ir::ConstantChar>(ir_constant)) {
             PRAJNA_ASSERT(ir_constant_char->type->llvm_type);
             ir_constant_char->llvm_value =
                 llvm::ConstantInt::get(ir_constant_char->type->llvm_type, ir_constant_char->value);
             return;
         }
-        if (auto ir_constant_bool = cast<ir::ConstantBool>(ir_constant)) {
+        if (auto ir_constant_bool = Cast<ir::ConstantBool>(ir_constant)) {
             PRAJNA_ASSERT(ir_constant_bool->type->llvm_type);
             ir_constant_bool->llvm_value =
                 llvm::ConstantInt::get(ir_constant_bool->type->llvm_type, ir_constant_bool->value);
             return;
         }
-        if (auto ir_constant_int = cast<ir::ConstantInt>(ir_constant)) {
+        if (auto ir_constant_int = Cast<ir::ConstantInt>(ir_constant)) {
             PRAJNA_ASSERT(ir_constant_int->type->llvm_type);
             ir_constant_int->llvm_value =
                 llvm::ConstantInt::get(ir_constant_int->type->llvm_type, ir_constant_int->value,
-                                       cast<ir::IntType>(ir_constant_int->type)->is_signed);
+                                       Cast<ir::IntType>(ir_constant_int->type)->is_signed);
             return;
         }
-        if (auto ir_constant_float = cast<ir::ConstantFloat>(ir_constant)) {
+        if (auto ir_constant_float = Cast<ir::ConstantFloat>(ir_constant)) {
             PRAJNA_ASSERT(ir_constant_float->type->llvm_type);
             // 提前返回float的最大数或最小数
             llvm::APFloat::Semantics semantics;
@@ -321,7 +321,7 @@ class LlvmCodegen {
             }
         }
 
-        if (auto ir_constant_array = cast<ir::ConstantArray>(ir_constant)) {
+        if (auto ir_constant_array = Cast<ir::ConstantArray>(ir_constant)) {
             std::vector<llvm::Constant *> llvm_contants(
                 ir_constant_array->initialize_constants.size());
             std::transform(RANGE(ir_constant_array->initialize_constants), llvm_contants.begin(),
@@ -341,7 +341,7 @@ class LlvmCodegen {
     }
 
     void EmitGlobalAlloca(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) {
-        auto ir_value_type = cast<ir::PointerType>(ir_global_alloca->type)->value_type;
+        auto ir_value_type = Cast<ir::PointerType>(ir_global_alloca->type)->value_type;
         PRAJNA_ASSERT(ir_value_type && ir_value_type->llvm_type);
         PRAJNA_ASSERT(ir_global_alloca->parent_module->llvm_module);
         // 事实上llvm::GlobalVariable其实获取一个个指针
@@ -361,7 +361,7 @@ class LlvmCodegen {
             static_cast<llvm::BasicBlock *>(ir_instruction->parent_block->llvm_value);
         PRAJNA_ASSERT(llvm_basic_block);
 
-        if (auto ir_call = cast<ir::Call>(ir_instruction)) {
+        if (auto ir_call = Cast<ir::Call>(ir_instruction)) {
             auto ir_function_type = ir_call->Function()->GetFunctionType();
             std::vector<llvm::Value *> llvm_arguments(ir_call->ArgumentSize());
             for (size_t i = 0; i < llvm_arguments.size(); ++i) {
@@ -377,26 +377,26 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_return = cast<ir::Return>(ir_instruction)) {
+        if (auto ir_return = Cast<ir::Return>(ir_instruction)) {
             auto llvm_return = llvm::ReturnInst::Create(
                 static_llvm_context, ir_return->Value()->llvm_value, llvm_basic_block);
             return;
         }
-        if (auto ir_alloca = cast<ir::Alloca>(ir_instruction)) {
+        if (auto ir_alloca = Cast<ir::Alloca>(ir_instruction)) {
             // Align需要设置一个合理的值, 目前先设置为8
             // PRAJNA_ASSERT()
-            auto ir_alloca_type = cast<ir::PointerType>(ir_alloca->type);
+            auto ir_alloca_type = Cast<ir::PointerType>(ir_alloca->type);
             PRAJNA_ASSERT(ir_alloca_type && ir_alloca_type->value_type->llvm_type);
             ir_alloca->llvm_value = new llvm::AllocaInst(ir_alloca_type->value_type->llvm_type, 0,
                                                          ir_alloca->name, llvm_basic_block);
             return;
         }
 
-        if (auto ir_global_alloca = cast<ir::GlobalAlloca>(ir_instruction)) {
+        if (auto ir_global_alloca = Cast<ir::GlobalAlloca>(ir_instruction)) {
             PRAJNA_UNREACHABLE;
         }
 
-        if (auto ir_load_pointer = cast<ir::LoadPointer>(ir_instruction)) {
+        if (auto ir_load_pointer = Cast<ir::LoadPointer>(ir_instruction)) {
             PRAJNA_ASSERT(ir_load_pointer->type->llvm_type);
             PRAJNA_ASSERT(ir_load_pointer->Pointer()->llvm_value);
             auto llvm_load_ptr =
@@ -406,7 +406,7 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_store_pointer = cast<ir::StorePointer>(ir_instruction)) {
+        if (auto ir_store_pointer = Cast<ir::StorePointer>(ir_instruction)) {
             PRAJNA_ASSERT(ir_store_pointer->Value()->llvm_value);
             PRAJNA_ASSERT(ir_store_pointer->Pointer()->llvm_value);
 
@@ -417,7 +417,7 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_condition_branch = cast<ir::ConditionBranch>(ir_instruction)) {
+        if (auto ir_condition_branch = Cast<ir::ConditionBranch>(ir_instruction)) {
             // 需要处理, 因为true/falseBlock在ir_condition_branch的后面
             this->EmitBlock(ir_condition_branch->TrueBlock(), ir_target);
             this->EmitBlock(ir_condition_branch->FalseBlock(), ir_target);
@@ -430,7 +430,7 @@ class LlvmCodegen {
                 ir_condition_branch->Condition()->llvm_value, llvm_basic_block);
             return;
         }
-        if (auto ir_jump_branch = cast<ir::JumpBranch>(ir_instruction)) {
+        if (auto ir_jump_branch = Cast<ir::JumpBranch>(ir_instruction)) {
             PRAJNA_ASSERT(ir_jump_branch->parent_block->parent_function ==
                           ir_jump_branch->NextBlock()->parent_function);
 
@@ -443,7 +443,7 @@ class LlvmCodegen {
         }
 
         if (auto ir_get_struct_element_pointer =
-                cast<ir::GetStructElementPointer>(ir_instruction)) {
+                Cast<ir::GetStructElementPointer>(ir_instruction)) {
             std::vector<llvm::Value *> llvm_idx_list(2);
             llvm_idx_list[0] =
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
@@ -452,7 +452,7 @@ class LlvmCodegen {
                                                       ir_get_struct_element_pointer->field->index);
 
             auto ir_pointer_type =
-                cast<ir::PointerType>(ir_get_struct_element_pointer->Pointer()->type);
+                Cast<ir::PointerType>(ir_get_struct_element_pointer->Pointer()->type);
             PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
             PRAJNA_ASSERT(ir_get_struct_element_pointer->Pointer()->llvm_value);
             ir_get_struct_element_pointer->llvm_value = llvm::GetElementPtrInst::Create(
@@ -462,13 +462,13 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_get_array_element_pointer = cast<ir::GetArrayElementPointer>(ir_instruction)) {
+        if (auto ir_get_array_element_pointer = Cast<ir::GetArrayElementPointer>(ir_instruction)) {
             std::vector<llvm::Value *> llvm_idx_list(2);
             llvm_idx_list[0] =
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
             llvm_idx_list[1] = ir_get_array_element_pointer->IndexVariable()->llvm_value;
             auto ir_pointer_type =
-                cast<ir::PointerType>(ir_get_array_element_pointer->Pointer()->type);
+                Cast<ir::PointerType>(ir_get_array_element_pointer->Pointer()->type);
             PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
             PRAJNA_ASSERT(ir_get_array_element_pointer->Pointer()->llvm_value);
             ir_get_array_element_pointer->llvm_value =
@@ -479,7 +479,7 @@ class LlvmCodegen {
         }
 
         if (auto ir_get_pointer_element_pointer =
-                cast<ir::GetPointerElementPointer>(ir_instruction)) {
+                Cast<ir::GetPointerElementPointer>(ir_instruction)) {
             std::vector<llvm::Value *> llvm_idx_list(1);
             llvm_idx_list[0] = ir_get_pointer_element_pointer->IndexVariable()->llvm_value;
             PRAJNA_ASSERT(ir_get_pointer_element_pointer->type->llvm_type);
@@ -487,7 +487,7 @@ class LlvmCodegen {
             auto llvm_pointer = new llvm::LoadInst(
                 ir_get_pointer_element_pointer->type->llvm_type,
                 ir_get_pointer_element_pointer->Pointer()->llvm_value, "", llvm_basic_block);
-            auto ir_pointer_type = cast<ir::PointerType>(ir_get_pointer_element_pointer->type);
+            auto ir_pointer_type = Cast<ir::PointerType>(ir_get_pointer_element_pointer->type);
             PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
             ir_get_pointer_element_pointer->llvm_value =
                 llvm::GetElementPtrInst::Create(ir_pointer_type->value_type->llvm_type,
@@ -495,7 +495,7 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_bit_cast = cast<ir::BitCast>(ir_instruction)) {
+        if (auto ir_bit_cast = Cast<ir::BitCast>(ir_instruction)) {
             PRAJNA_ASSERT(ir_bit_cast->Value()->llvm_value);
             PRAJNA_ASSERT(ir_bit_cast->type->llvm_type);
             ir_bit_cast->llvm_value =
@@ -504,7 +504,7 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_cast_instruction = cast<ir::CastInstruction>(ir_instruction)) {
+        if (auto ir_cast_instruction = Cast<ir::CastInstruction>(ir_instruction)) {
             std::unordered_map<ir::CastInstruction::Operation, llvm::CastInst::CastOps>
                 cast_operator_dict = {
                     {ir::CastInstruction::Operation::Trunc, llvm::CastInst::Trunc},
@@ -529,7 +529,7 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_compare_instruction = cast<ir::CompareInstruction>(ir_instruction)) {
+        if (auto ir_compare_instruction = Cast<ir::CompareInstruction>(ir_instruction)) {
             std::unordered_map<std::string, llvm::CmpInst::OtherOps> cmp_inst_other_ops = {
                 {"ICmp", llvm::CmpInst::OtherOps::ICmp}, {"FCmp", llvm::CmpInst::OtherOps::FCmp}};
 
@@ -607,7 +607,7 @@ class LlvmCodegen {
             return;
         }
 
-        if (auto ir_binary_operator = cast<ir::BinaryOperator>(ir_instruction)) {
+        if (auto ir_binary_operator = Cast<ir::BinaryOperator>(ir_instruction)) {
             std::unordered_map<ir::BinaryOperator::Operation, llvm::BinaryOperator::BinaryOps>
                 binary_operator_dict = {
                     {ir::BinaryOperator::Operation::Add, llvm::BinaryOperator::BinaryOps::Add},

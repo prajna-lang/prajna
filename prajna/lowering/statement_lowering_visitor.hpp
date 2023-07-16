@@ -31,7 +31,7 @@ inline bool HasInitializable(std::shared_ptr<ir::Type> ir_type) {
         return true;
     }
 
-    if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+    if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
             if (HasInitializable(ir_field->type)) {
                 return true;
@@ -46,7 +46,7 @@ inline void InitializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
                                             std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_variable_liked->type;
     if (HasInitializable(ir_type)) {
-        if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
+        if (auto is_struct_type = Cast<ir::StructType>(ir_type)) {
             for (auto ir_field : is_struct_type->fields) {
                 if (HasInitializable(ir_field->type)) {
                     auto ir_access_field =
@@ -74,7 +74,7 @@ inline bool HasReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
         return true;
     }
 
-    if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+    if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
             if (HasReferenceCountable(ir_field->type)) {
                 return true;
@@ -98,7 +98,7 @@ inline void DestroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         };
 
-        if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
+        if (auto is_struct_type = Cast<ir::StructType>(ir_type)) {
             // 按声明相反的顺序处理
             for (auto iter_field = is_struct_type->fields.rbegin();
                  iter_field != is_struct_type->fields.rend(); ++iter_field) {
@@ -122,7 +122,7 @@ inline void CopyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
     auto ir_type = ir_value->type;
     if (HasReferenceCountable(ir_type)) {
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_value);
-        if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+        if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
             for (auto ir_field : ir_struct_type->fields) {
                 if (HasReferenceCountable(ir_field->type)) {
                     auto ir_access_field =
@@ -280,7 +280,7 @@ class StatementLoweringVisitor {
         auto ir_rhs = expression_lowering_visitor->applyOperand(ast_assignment.right);
         auto ir_lhs = expression_lowering_visitor->applyOperand(ast_assignment.left);
 
-        if (auto ir_variable_liked = cast<ir::VariableLiked>(ir_lhs)) {
+        if (auto ir_variable_liked = Cast<ir::VariableLiked>(ir_lhs)) {
             if (ir_variable_liked->type != ir_rhs->type) {
                 logger->Error("the type is not matched", ast_assignment);
             }
@@ -288,7 +288,7 @@ class StatementLoweringVisitor {
             return ir_lhs;
         }
 
-        if (auto ir_property = cast<ir::AccessProperty>(ir_lhs)) {
+        if (auto ir_property = Cast<ir::AccessProperty>(ir_lhs)) {
             if (not ir_property->property->set_function) {
                 logger->Error("the property has not a setter function", ast_assignment.left);
             }
@@ -330,10 +330,10 @@ class StatementLoweringVisitor {
                                std::shared_ptr<ir::Type> ir_type) {
         PRAJNA_ASSERT(!Is<ir::VoidType>(ir_type));
         auto ir_last_value = ir_block->values.back();
-        if (auto ir_return = cast<ir::Return>(ir_last_value)) {
+        if (auto ir_return = Cast<ir::Return>(ir_last_value)) {
             return ir_return->Value() && ir_return->Value()->type == ir_type;
         }
-        if (auto ir_if = cast<ir::If>(ir_last_value)) {
+        if (auto ir_if = Cast<ir::If>(ir_last_value)) {
             auto re = this->AllBranchIsTerminated(ir_if->TrueBlock(), ir_type) &&
                       this->AllBranchIsTerminated(ir_if->FalseBlock(), ir_type);
             if (re) {
@@ -348,7 +348,7 @@ class StatementLoweringVisitor {
                 return false;
             }
         }
-        if (auto ir_block_ = cast<ir::Block>(ir_last_value)) {
+        if (auto ir_block_ = Cast<ir::Block>(ir_last_value)) {
             return this->AllBranchIsTerminated(ir_block_, ir_type);
         }
 
@@ -609,7 +609,7 @@ class StatementLoweringVisitor {
 
             for (auto ast_statement : ast_implement.statements) {
                 auto symbol_function = (*this)(ast_statement);
-                if (auto ir_function = cast<ir::Function>(SymbolGet<ir::Value>(symbol_function))) {
+                if (auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function))) {
                     // 已经提前加入, 不然无法调用自身
                     // ir_type->function_dict[ir_function->name] = ir_function;
                     continue;
@@ -674,7 +674,7 @@ class StatementLoweringVisitor {
             for (auto ast_function : ast_implement.functions) {
                 std::shared_ptr<ir::Function> ir_function = nullptr;
                 auto symbol_function = (*this)(ast_function);
-                ir_function = cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
+                ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
                 // 已经提前加入
                 // ir_interface->functions.push_back(ir_function);
             }
@@ -974,13 +974,13 @@ class StatementLoweringVisitor {
 
             auto cast_operation = ir::CastInstruction::Operation::None;
 
-            if (auto ir_source_int_type = cast<ir::IntType>(ir_source_type)) {
+            if (auto ir_source_int_type = Cast<ir::IntType>(ir_source_type)) {
                 if (Is<ir::FloatType>(ir_target_type)) {
                     cast_operation = ir_source_int_type->is_signed
                                          ? ir::CastInstruction::Operation::SIToFP
                                          : ir::CastInstruction::Operation::UIToFP;
                 }
-                if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
+                if (auto ir_target_int_type = Cast<ir::IntType>(ir_target_type)) {
                     if (ir_source_int_type->bits == ir_target_int_type->bits) {
                         cast_operation = ir::CastInstruction::Operation::BitCast;
                     }
@@ -998,13 +998,13 @@ class StatementLoweringVisitor {
                 }
             }
 
-            if (auto ir_source_float_type = cast<ir::FloatType>(ir_source_type)) {
-                if (auto ir_target_float_type = cast<ir::FloatType>(ir_target_type)) {
+            if (auto ir_source_float_type = Cast<ir::FloatType>(ir_source_type)) {
+                if (auto ir_target_float_type = Cast<ir::FloatType>(ir_target_type)) {
                     cast_operation = ir_source_float_type->bits > ir_target_float_type->bits
                                          ? ir::CastInstruction::Operation::FPTrunc
                                          : ir::CastInstruction::Operation::FPExt;
                 }
-                if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
+                if (auto ir_target_int_type = Cast<ir::IntType>(ir_target_type)) {
                     cast_operation = ir_target_int_type->is_signed
                                          ? ir::CastInstruction::Operation::FPToSI
                                          : ir::CastInstruction::Operation::FPToUI;
@@ -1018,7 +1018,7 @@ class StatementLoweringVisitor {
             }
 
             if (cast_operation == ir::CastInstruction::Operation::None) {
-                logger->Error("invalid cast");
+                logger->Error("invalid Cast");
             }
 
             ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Create<ir::CastInstruction>(
@@ -1095,7 +1095,7 @@ class StatementLoweringVisitor {
             }
 
             auto ir_float_type =
-                cast<ir::FloatType>(SymbolGet<ir::Type>(symbol_template_arguments.front()));
+                Cast<ir::FloatType>(SymbolGet<ir::Type>(symbol_template_arguments.front()));
             if (!ir_float_type) {
                 logger->Error("should be a float type");
             }
@@ -1309,7 +1309,7 @@ class StatementLoweringVisitor {
                 RANGE(ir_target_value_type->interface_dict),
                 [=](auto x) { return x.second && x.second->prototype == ir_interface_prototype; });
             if (iter_interface_implement == ir_target_value_type->interface_dict.end()) {
-                logger->Error("invalid dynamic cast, operand is not a interface dynamic type");
+                logger->Error("invalid dynamic Cast, operand is not a interface dynamic type");
             }
             auto ir_interface_implement = iter_interface_implement->second;
             // interface implement必然有一个函数, 我们通过该函数来判断dynamic
@@ -1439,7 +1439,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (compare_operation_name == "gt") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         compare_operation = ir::CompareInstruction::Operation::ICMP_SGT;
                     } else {
@@ -1451,7 +1451,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (compare_operation_name == "ge") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         compare_operation = ir::CompareInstruction::Operation::ICMP_SGE;
                     } else {
@@ -1463,7 +1463,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (compare_operation_name == "lt") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         compare_operation = ir::CompareInstruction::Operation::ICMP_SLT;
                     } else {
@@ -1475,7 +1475,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (compare_operation_name == "le") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         compare_operation = ir::CompareInstruction::Operation::ICMP_SLE;
                     } else {
@@ -1551,7 +1551,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (binary_operator_name == "div") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         binary_operation = ir::BinaryOperator::Operation::SDiv;
                     } else {
@@ -1563,7 +1563,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (binary_operator_name == "rem") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         binary_operation = ir::BinaryOperator::Operation::SRem;
                     } else {
@@ -1571,7 +1571,7 @@ class StatementLoweringVisitor {
                     }
                 }
                 if (Is<ir::FloatType>(ir_type)) {
-                    auto ir_float_type = cast<ir::FloatType>(ir_type);
+                    auto ir_float_type = Cast<ir::FloatType>(ir_type);
                     binary_operation = ir::BinaryOperator::Operation::FRem;
                 }
             }
@@ -1599,7 +1599,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (binary_operator_name == "shift_right") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         binary_operation = ir::BinaryOperator::Operation::AShr;
                     } else {
@@ -1640,7 +1640,7 @@ class StatementLoweringVisitor {
                 logger->Error("should input 1 template argument");
             }
             auto ir_float_type =
-                cast<ir::FloatType>(SymbolGet<ir::Type>(symbol_template_arguments.front()));
+                Cast<ir::FloatType>(SymbolGet<ir::Type>(symbol_template_arguments.front()));
             if (!ir_float_type) {
                 logger->Error("template argument should be a float type");
             }
@@ -1934,7 +1934,7 @@ class StatementLoweringVisitor {
             auto guard = function_guard::Create([=]() { this->ir_builder->PopSymbolTable(); });
             ir_builder->symbol_table->name = ir_interface_prototype->name;
             auto symbol_function = (*this)(ast_function_declaration);
-            auto ir_function = cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
+            auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
             ir_interface_prototype->functions.push_back(ir_function);
             // 需要将去从module移出来, 这里的function并不会实际被生成
             ir_builder->module->functions.remove(ir_function);

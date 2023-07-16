@@ -37,14 +37,14 @@ class function_guard {
 };
 
 template <typename DstType_, typename SrcType_>
-auto cast(std::shared_ptr<SrcType_> ir_src) -> std::shared_ptr<DstType_> {
+auto Cast(std::shared_ptr<SrcType_> ir_src) -> std::shared_ptr<DstType_> {
     auto ir_dst = std::dynamic_pointer_cast<DstType_>(ir_src);
     return ir_dst;
 }
 
 template <typename DstType_, typename SrcType_>
 bool Is(std::shared_ptr<SrcType_> ir_src) {
-    return cast<DstType_, SrcType_>(ir_src) != nullptr;
+    return Cast<DstType_, SrcType_>(ir_src) != nullptr;
 }
 
 inline std::filesystem::path ProgramLocation(const char* cstr_path) {

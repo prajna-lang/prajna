@@ -122,8 +122,8 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     virtual std::shared_ptr<Function> GetParentFunction();
 
     std::shared_ptr<FunctionType> GetFunctionType() {
-        if (auto ir_pointer_type = cast<PointerType>(this->type)) {
-            if (auto ir_function_type = cast<FunctionType>(ir_pointer_type->value_type)) {
+        if (auto ir_pointer_type = Cast<PointerType>(this->type)) {
+            if (auto ir_function_type = Cast<FunctionType>(ir_pointer_type->value_type)) {
                 return ir_function_type;
             }
         }
@@ -342,11 +342,11 @@ class ConstantArray : public Constant {
             [=](auto ir_constant) {
                 PRAJNA_ASSERT(
                     function_cloner->value_dict[ir_constant]);  // constant应该在前面就处理过;
-                return cast<Constant>(function_cloner->value_dict[ir_constant]);
+                return Cast<Constant>(function_cloner->value_dict[ir_constant]);
             });
 
         std::shared_ptr<ConstantArray> ir_new =
-            ConstantArray::Create(cast<ArrayType>(this->type), new_initialize_constants);
+            ConstantArray::Create(Cast<ArrayType>(this->type), new_initialize_constants);
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
@@ -380,7 +380,7 @@ class Block : public Value {
     }
 
     iterator insert(iterator iter, std::shared_ptr<ir::Value> ir_value) {
-        ir_value->parent_block = cast<Block>(this->shared_from_this());
+        ir_value->parent_block = Cast<Block>(this->shared_from_this());
         return this->values.insert(iter, ir_value);
     }
 
@@ -401,12 +401,12 @@ class Block : public Value {
     }
 
     void pushFront(std::shared_ptr<ir::Value> ir_value) {
-        ir_value->parent_block = cast<Block>(this->shared_from_this());
+        ir_value->parent_block = Cast<Block>(this->shared_from_this());
         this->values.push_front(ir_value);
     }
 
     void PushBack(std::shared_ptr<ir::Value> ir_value) {
-        ir_value->parent_block = cast<Block>(this->shared_from_this());
+        ir_value->parent_block = Cast<Block>(this->shared_from_this());
         this->values.push_back(ir_value);
     }
 
@@ -552,13 +552,13 @@ class Instruction : virtual public Value {
         auto ir_old_value = this->operands[i];
         if (ir_old_value) {
             ir_old_value->instruction_with_index_list.remove(
-                {cast<Instruction>(this->shared_from_this()), i});
+                {Cast<Instruction>(this->shared_from_this()), i});
         }
 
         this->operands[i] = ir_value;
         if (ir_value)
             ir_value->instruction_with_index_list.push_back(
-                {cast<Instruction>(this->shared_from_this()), i});
+                {Cast<Instruction>(this->shared_from_this()), i});
     };
 
     void Finalize() override {
@@ -568,7 +568,7 @@ class Instruction : virtual public Value {
             auto ir_old_value = this->operands[i];
             if (ir_old_value) {
                 ir_old_value->instruction_with_index_list.remove(
-                    {cast<Instruction>(this->shared_from_this()), i});
+                    {Cast<Instruction>(this->shared_from_this()), i});
             }
         }
 
@@ -641,7 +641,7 @@ class IndexArray : virtual public VariableLiked, virtual public Instruction {
         self->OperandResize(2);
         self->object(ir_object);
         self->IndexVariable(ir_index);
-        auto ir_array_type = cast<ArrayType>(ir_object->type);
+        auto ir_array_type = Cast<ArrayType>(ir_object->type);
         PRAJNA_ASSERT(ir_array_type);
         self->type = ir_array_type->value_type;
         self->tag = "IndexArray";
@@ -676,7 +676,7 @@ class IndexPointer : virtual public VariableLiked, virtual public Instruction {
         self->OperandResize(2);
         self->object(ir_object);
         self->IndexVariable(ir_index);
-        auto ir_pointer_type = cast<PointerType>(ir_object->type);
+        auto ir_pointer_type = Cast<PointerType>(ir_object->type);
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
         self->tag = "IndexPointer";
@@ -755,9 +755,9 @@ class GetArrayElementPointer : public Instruction {
         self->OperandResize(2);
         self->Pointer(ir_pointer);
         self->IndexVariable(ir_index);
-        auto ir_pointer_type = cast<PointerType>(ir_pointer->type);
+        auto ir_pointer_type = Cast<PointerType>(ir_pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
-        auto ir_array_type = cast<ArrayType>(ir_pointer_type->value_type);
+        auto ir_array_type = Cast<ArrayType>(ir_pointer_type->value_type);
         PRAJNA_ASSERT(ir_array_type);
         self->type = PointerType::Create(ir_array_type->value_type);
         self->tag = "GetArrayElementPointer";
@@ -793,7 +793,7 @@ class GetPointerElementPointer : public Instruction {
         self->OperandResize(2);
         self->Pointer(ir_pointer);
         self->IndexVariable(ir_index);
-        auto ir_pointer_type = cast<PointerType>(ir_pointer->type);
+        auto ir_pointer_type = Cast<PointerType>(ir_pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
         PRAJNA_ASSERT(Is<PointerType>(self->type));
@@ -826,7 +826,7 @@ class DeferencePointer : virtual public VariableLiked, virtual public Instructio
         std::shared_ptr<DeferencePointer> self(new DeferencePointer);
         self->OperandResize(1);
         self->Pointer(ir_pointer);
-        auto ir_pointer_type = cast<PointerType>(ir_pointer->type);
+        auto ir_pointer_type = Cast<PointerType>(ir_pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
         self->tag = "DeferencePointer";
@@ -870,7 +870,7 @@ class WriteVariableLiked : public Instruction {
         return this->operand(0, ir_value);
     }
 
-    std::shared_ptr<VariableLiked> variable() { return cast<VariableLiked>(this->operand(1)); }
+    std::shared_ptr<VariableLiked> variable() { return Cast<VariableLiked>(this->operand(1)); }
     void variable(std::shared_ptr<VariableLiked> ir_variable) {
         PRAJNA_ASSERT(ir_variable);
         return this->operand(1, ir_variable);
@@ -900,7 +900,7 @@ class GetAddressOfVariableLiked : public Instruction {
         return self;
     }
 
-    std::shared_ptr<VariableLiked> variable() { return cast<VariableLiked>(this->operand(0)); }
+    std::shared_ptr<VariableLiked> variable() { return Cast<VariableLiked>(this->operand(0)); }
     void variable(std::shared_ptr<VariableLiked> ir_variable_liked) {
         this->operand(0, ir_variable_liked);
     }
@@ -921,7 +921,7 @@ class Alloca : public Instruction {
     static std::shared_ptr<Alloca> Create(std::shared_ptr<Type> type) {
         PRAJNA_ASSERT(type);
         auto self =
-            cast<Alloca>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Alloca)));
+            Cast<Alloca>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Alloca)));
         self->OperandResize(0);
         self->type = PointerType::Create(type);
         self->tag = "Alloca";
@@ -980,7 +980,7 @@ class LoadPointer : public Instruction {
         std::shared_ptr<LoadPointer> self(new LoadPointer);
         self->OperandResize(1);
         self->Pointer(pointer);
-        auto ir_pointer_type = cast<PointerType>(pointer->type);
+        auto ir_pointer_type = Cast<PointerType>(pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
         self->type = ir_pointer_type->value_type;
         self->tag = "LoadPointer";
@@ -1007,7 +1007,7 @@ class StorePointer : public Instruction {
                                                 std::shared_ptr<ir::Value> pointer) {
         PRAJNA_ASSERT(value);
         PRAJNA_ASSERT(pointer);
-        auto ir_pointer_type = cast<PointerType>(pointer->type);
+        auto ir_pointer_type = Cast<PointerType>(pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
         PRAJNA_ASSERT(ir_pointer_type->value_type == value->type);
         std::shared_ptr<StorePointer> self(new StorePointer);
@@ -1040,7 +1040,7 @@ class Return : public Instruction {
     static std::shared_ptr<Return> Create(std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(ir_value);
         auto self =
-            cast<Return>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Return)));
+            Cast<Return>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Return)));
         self->OperandResize(1);
         self->type = ir_value->type;
         self->Value(ir_value);
@@ -1069,7 +1069,7 @@ class BitCast : public Instruction {
         PRAJNA_ASSERT(ir_value);
         PRAJNA_ASSERT(ir_type);
         auto self =
-            cast<BitCast>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new BitCast)));
+            Cast<BitCast>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new BitCast)));
         self->OperandResize(1);
         self->Value(ir_value);
         self->type = ir_type;
@@ -1165,10 +1165,10 @@ class ConditionBranch : public Instruction {
     std::shared_ptr<ir::Value> Condition() { return this->operand(0); }
     void condition(std::shared_ptr<ir::Value> ir_condition) { this->operand(0, ir_condition); }
 
-    std::shared_ptr<Block> TrueBlock() { return cast<Block>(this->operand(1)); }
+    std::shared_ptr<Block> TrueBlock() { return Cast<Block>(this->operand(1)); }
     void TrueBlock(std::shared_ptr<Block> ir_true_block) { this->operand(1, ir_true_block); }
 
-    std::shared_ptr<Block> FalseBlock() { return cast<Block>(this->operand(2)); }
+    std::shared_ptr<Block> FalseBlock() { return Cast<Block>(this->operand(2)); }
     void FalseBlock(std::shared_ptr<Block> ir_false_block) { this->operand(2, ir_false_block); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
@@ -1193,7 +1193,7 @@ class JumpBranch : public Instruction {
         return self;
     }
 
-    std::shared_ptr<Block> NextBlock() { return cast<Block>(this->operand(0)); }
+    std::shared_ptr<Block> NextBlock() { return Cast<Block>(this->operand(0)); }
     void NextBlock(std::shared_ptr<Block> ir_next) { this->operand(0, ir_next); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
@@ -1249,10 +1249,10 @@ class If : public Instruction {
     std::shared_ptr<ir::Value> Condition() { return this->operand(0); }
     void condition(std::shared_ptr<ir::Value> ir_condition) { this->operand(0, ir_condition); }
 
-    std::shared_ptr<Block> TrueBlock() { return cast<Block>(this->operand(1)); }
+    std::shared_ptr<Block> TrueBlock() { return Cast<Block>(this->operand(1)); }
     void TrueBlock(std::shared_ptr<Block> ir_true_block) { this->operand(1, ir_true_block); }
 
-    std::shared_ptr<Block> FalseBlock() { return cast<Block>(this->operand(2)); }
+    std::shared_ptr<Block> FalseBlock() { return Cast<Block>(this->operand(2)); }
     void FalseBlock(std::shared_ptr<Block> ir_false_block) { this->operand(2, ir_false_block); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
@@ -1284,12 +1284,12 @@ class While : public Instruction {
     void condition(std::shared_ptr<ir::Value> ir_condition) { this->operand(0, ir_condition); }
 
     /// @brief 用于存放条件表达式的块
-    std::shared_ptr<Block> ConditionBlock() { return cast<Block>(this->operand(1)); }
+    std::shared_ptr<Block> ConditionBlock() { return Cast<Block>(this->operand(1)); }
     void ConditionBlock(std::shared_ptr<Block> ir_condition_block) {
         this->operand(1, ir_condition_block);
     }
 
-    std::shared_ptr<Block> LoopBlock() { return cast<Block>(this->operand(2)); }
+    std::shared_ptr<Block> LoopBlock() { return Cast<Block>(this->operand(2)); }
     void LoopBlock(std::shared_ptr<Block> ir_true_block) { this->operand(2, ir_true_block); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
@@ -1319,7 +1319,7 @@ class For : public Instruction {
         return self;
     }
 
-    std::shared_ptr<LocalVariable> IndexVariable() { return cast<LocalVariable>(this->operand(0)); }
+    std::shared_ptr<LocalVariable> IndexVariable() { return Cast<LocalVariable>(this->operand(0)); }
     void IndexVariable(std::shared_ptr<LocalVariable> ir_index) { this->operand(0, ir_index); }
 
     std::shared_ptr<ir::Value> First() { return this->operand(1); }
@@ -1328,7 +1328,7 @@ class For : public Instruction {
     std::shared_ptr<ir::Value> Last() { return this->operand(2); }
     void Last(std::shared_ptr<ir::Value> ir_last) { this->operand(2, ir_last); }
 
-    std::shared_ptr<Block> LoopBlock() { return cast<Block>(this->operand(3)); }
+    std::shared_ptr<Block> LoopBlock() { return Cast<Block>(this->operand(3)); }
     void LoopBlock(std::shared_ptr<Block> ir_loop_block) { this->operand(3, ir_loop_block); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
@@ -1492,7 +1492,7 @@ class WriteProperty : public Instruction {
     std::shared_ptr<ir::Value> Value() { return this->operand(0); }
     void Value(std::shared_ptr<ir::Value> ir_value) { return this->operand(0, ir_value); }
 
-    std::shared_ptr<AccessProperty> property() { return cast<AccessProperty>(this->operand(1)); }
+    std::shared_ptr<AccessProperty> property() { return Cast<AccessProperty>(this->operand(1)); }
     void property(std::shared_ptr<AccessProperty> ir_access_property) {
         return this->operand(1, ir_access_property);
     }
@@ -1620,7 +1620,7 @@ class GpuSharedMemory : public Variable {
 
 inline std::shared_ptr<Function> Value::GetParentFunction() {
     if (!parent_block) {
-        if (auto ir_block = cast<Block>(shared_from_this())) {
+        if (auto ir_block = Cast<Block>(shared_from_this())) {
             return ir_block->GetParentFunction();
         } else {
             PRAJNA_UNREACHABLE;
@@ -1634,7 +1634,7 @@ inline std::shared_ptr<Function> Value::GetParentFunction() {
 inline std::shared_ptr<Block> Value::GetRootBlock() {
     if (!this->parent_block) {
         if (Is<Block>(shared_from_this())) {
-            return cast<Block>(shared_from_this());
+            return Cast<Block>(shared_from_this());
         } else {
             return nullptr;
         }
@@ -1675,8 +1675,8 @@ inline std::shared_ptr<ir::Value> Block::Clone(std::shared_ptr<FunctionCloner> f
         ir_new->PushBack(function_cloner->value_dict[ir_value]);
     }
 
-    ir_new->parent_function = cast<Function>(function_cloner->value_dict[this->parent_function]);
-    ir_new->parent_block = cast<Block>(function_cloner->value_dict[this->parent_block]);
+    ir_new->parent_function = Cast<Function>(function_cloner->value_dict[this->parent_function]);
+    ir_new->parent_block = Cast<Block>(function_cloner->value_dict[this->parent_block]);
 
     return ir_new;
 }
@@ -1734,7 +1734,7 @@ inline std::shared_ptr<ir::Value> Function::Clone(std::shared_ptr<FunctionCloner
             ir_block->Clone(function_cloner);
         }
 
-        auto ir_new_block = cast<Block>(function_cloner->value_dict[ir_block]);
+        auto ir_new_block = Cast<Block>(function_cloner->value_dict[ir_block]);
         ir_new->blocks.push_back(ir_new_block);
     }
 

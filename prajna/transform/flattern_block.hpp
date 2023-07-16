@@ -17,7 +17,7 @@ namespace {
 inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
     bool changed = false;
     for (auto iter = ir_block->values.begin(); iter != ir_block->values.end();) {
-        if (auto ir_cur_block = cast<ir::Block>(*iter)) {
+        if (auto ir_cur_block = Cast<ir::Block>(*iter)) {
             // Label也是Block的一种, 但其不能展开
             if (Is<ir::Label>(ir_cur_block)) {
                 ++iter;
@@ -33,7 +33,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             changed = true;
             continue;
         }
-        if (auto ir_if = cast<ir::If>(*iter)) {
+        if (auto ir_if = Cast<ir::If>(*iter)) {
             FlatternBlockImpl(ir_if->TrueBlock());
             FlatternBlockImpl(ir_if->FalseBlock());
 
@@ -65,7 +65,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             changed = true;
             continue;
         }
-        if (auto ir_while = cast<ir::While>(*iter)) {
+        if (auto ir_while = Cast<ir::While>(*iter)) {
             FlatternBlockImpl(ir_while->ConditionBlock());
             FlatternBlockImpl(ir_while->LoopBlock());
 
@@ -97,7 +97,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_builder->PushBlock(ir_block);
 
             for (auto [ir_instruction, op_idx] : Clone(ir_while->instruction_with_index_list)) {
-                if (auto ir_break = cast<ir::Break>(ir_instruction)) {
+                if (auto ir_break = Cast<ir::Break>(ir_instruction)) {
                     ir_builder->inserter_iterator = ir_break->GetBlockIterator();
                     ir_builder->Create<ir::JumpBranch>(ir_label_after_loop);
                     utility::RemoveFromParent(ir_break);
@@ -105,7 +105,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
                     continue;
                 }
 
-                if (auto ir_continue = cast<ir::Continue>(ir_instruction)) {
+                if (auto ir_continue = Cast<ir::Continue>(ir_instruction)) {
                     ir_builder->inserter_iterator = ir_continue->GetBlockIterator();
                     ir_builder->Create<ir::JumpBranch>(ir_label_condition_entry);
                     utility::RemoveFromParent(ir_continue);
@@ -122,7 +122,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             changed = true;
             continue;
         }
-        if (auto ir_for = cast<ir::For>(*iter)) {
+        if (auto ir_for = Cast<ir::For>(*iter)) {
             // 即使标注了gpu, 其内部也应该展开以便简化后续的分析流程
             FlatternBlockImpl(ir_for->LoopBlock());
 
@@ -173,7 +173,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_block->insert(iter, ir_label_after_loop);
 
             for (auto [ir_instruction, op_idx] : Clone(ir_for->instruction_with_index_list)) {
-                if (auto ir_break = cast<ir::Break>(ir_instruction)) {
+                if (auto ir_break = Cast<ir::Break>(ir_instruction)) {
                     ir_builder->inserter_iterator = ir_break->GetBlockIterator();
                     ir_builder->Create<ir::JumpBranch>(ir_label_after_loop);
                     utility::RemoveFromParent(ir_break);
@@ -181,7 +181,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
                     continue;
                 }
 
-                if (auto ir_continue = cast<ir::Continue>(ir_instruction)) {
+                if (auto ir_continue = Cast<ir::Continue>(ir_instruction)) {
                     ir_builder->inserter_iterator = ir_continue->GetBlockIterator();
                     ir_builder->Create<ir::JumpBranch>(ir_label_condition_entry);
                     utility::RemoveFromParent(ir_continue);
@@ -210,7 +210,7 @@ inline std::list<std::shared_ptr<ir::Block>> splitBlock(std::shared_ptr<ir::Bloc
     blocks.push_back(ir::Block::Create());  // @note 函数开头不能插入ir::Label否则和这里矛盾
     for (auto ir_value : ir_top_block->values) {
         PRAJNA_ASSERT(!Is<ir::Block>(ir_value) || Is<ir::Label>(ir_value));
-        if (auto ir_label = cast<ir::Label>(ir_value)) {
+        if (auto ir_label = Cast<ir::Label>(ir_value)) {
             blocks.push_back(ir::Block::Create());
 
             // ir_label作为操作时修改时(移除或添加), 都会改变instructions_with_index的值,

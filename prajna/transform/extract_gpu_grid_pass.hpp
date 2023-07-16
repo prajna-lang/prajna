@@ -129,11 +129,11 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         statement_lowering_visitor->Apply(ast);
 
         // 插入ir_gpu_for里的逻辑
-        auto ir_kernel_while = cast<ir::While>(*std::prev(ir_block->values.end(), 2));
+        auto ir_kernel_while = Cast<ir::While>(*std::prev(ir_block->values.end(), 2));
         PRAJNA_ASSERT(ir_kernel_while);
         ir_kernel_while->ConditionBlock()->parent_function = nullptr;
         auto ir_kernel_while_loop_block =
-            cast<ir::Block>(ir_kernel_while->LoopBlock()->values.front());
+            Cast<ir::Block>(ir_kernel_while->LoopBlock()->values.front());
         PRAJNA_ASSERT(ir_kernel_while_loop_block);
         auto ir_while_builder = lowering::IrBuilder::Create();
         ir_while_builder->PushBlock(ir_kernel_while_loop_block);

@@ -223,7 +223,7 @@ class ExpressionLoweringVisitor {
             auto symbol_template_arguments = this->ApplyTemplateArguments(
                 *identifier_path.identifiers.front().template_arguments_optional);
 
-            auto ir_member_function = cast<ir::Function>(
+            auto ir_member_function = Cast<ir::Function>(
                 SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
                     symbol_template_arguments, ir_builder->module)));
             PRAJNA_ASSERT(ir_member_function);
@@ -261,7 +261,7 @@ class ExpressionLoweringVisitor {
         std::shared_ptr<ir::Value> ir_object, ast::BinaryOperation ast_binary_operation) {
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_object);
         auto ir_arguments =
-            *cast<ir::ValueCollection>(this->applyOperand(ast_binary_operation.operand));
+            *Cast<ir::ValueCollection>(this->applyOperand(ast_binary_operation.operand));
         if (ir_arguments.empty()) {
             logger->Error("index should have one argument at least", ast_binary_operation.operand);
         }
@@ -313,10 +313,10 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> ApplyBinaryOperationCall(std::shared_ptr<ir::Value> ir_lhs,
                                                         ast::BinaryOperation ast_binary_operation) {
-        auto ir_arguments = *cast<ir::ValueCollection>(applyOperand(ast_binary_operation.operand));
+        auto ir_arguments = *Cast<ir::ValueCollection>(applyOperand(ast_binary_operation.operand));
         PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
         auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operation.operand);
-        if (auto ir_member_function = cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
+        if (auto ir_member_function = Cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
             auto ir_function_type = ir_member_function->function_prototype->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
                 logger->Error(
@@ -360,7 +360,7 @@ class ExpressionLoweringVisitor {
             return ir_builder->Create<ir::Call>(ir_lhs, ir_arguments);
         }
 
-        if (auto ir_access_property = cast<ir::AccessProperty>(ir_lhs)) {
+        if (auto ir_access_property = Cast<ir::AccessProperty>(ir_lhs)) {
             // getter函数必须存在
             auto ir_getter_function_type =
                 ir_access_property->property->get_function->function_type;
@@ -435,7 +435,7 @@ class ExpressionLoweringVisitor {
             return this->ApplyUnaryOperatorDereferencePointer(ir_operand);
         }
         if (ast_unary.operator_ == ast::Operator("&")) {
-            auto ir_variable_liked = cast<ir::VariableLiked>(ir_operand);
+            auto ir_variable_liked = Cast<ir::VariableLiked>(ir_operand);
             if (ir_variable_liked == nullptr) {
                 logger->Error("only could get the address of a VariableLiked", ast_unary);
             }
@@ -537,7 +537,7 @@ class ExpressionLoweringVisitor {
                                     ir_type->template_any_dict[static_function_identifier]);
                             auto symbol_template_argumen_list = this->ApplyTemplateArguments(
                                 *iter_ast_identifier->template_arguments_optional);
-                            auto ir_function = cast<ir::Function>(
+                            auto ir_function = Cast<ir::Function>(
                                 SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
                                     symbol_template_argumen_list, ir_builder->module)));
                             PRAJNA_ASSERT(ir_function);
@@ -684,7 +684,7 @@ class ExpressionLoweringVisitor {
             auto ir_grid_shape = (*this)(ast_kernel_function_call.operation->grid_shape);
             auto ir_block_shape = (*this)(ast_kernel_function_call.operation->block_shape);
             auto ir_arguments =
-                *cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
+                *Cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
             auto ir_shape3_type = ir_builder->GetShape3Type();
             if (ir_grid_shape->type != ir_shape3_type) {
                 logger->Error("the grid dim type must be i64[3]",

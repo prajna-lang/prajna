@@ -23,7 +23,7 @@ inline bool InsertValueToBlock(std::shared_ptr<ir::Module> ir_module) {
                 auto ir_value = *iter_ir_value;
                 ir_values.insert(ir_value);
 
-                if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
+                if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
                     for (auto i = 0; i < ir_instruction->OperandSize(); ++i) {
                         auto ir_operand = ir_instruction->operand(i);
                         if (ir_values.count(ir_operand) == 0) {
@@ -88,7 +88,7 @@ inline bool ConvertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Modu
 
         for (auto ir_access_field : ir_access_fields) {
             auto ir_object_deference_ptr0 = (ir_access_field->object());
-            auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_object_deference_ptr0);
+            auto ir_object_deference_ptr = Cast<ir::DeferencePointer>(ir_object_deference_ptr0);
             if (!ir_object_deference_ptr) continue;
 
             changed = true;
@@ -124,7 +124,7 @@ inline bool ConvertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Module
         for (auto ir_index_array : ir_index_arrays) {
             changed = true;
 
-            auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_index_array->object());
+            auto ir_object_deference_ptr = Cast<ir::DeferencePointer>(ir_index_array->object());
             if (!ir_object_deference_ptr) continue;
 
             auto ir_array_get_element_ptr = ir::GetArrayElementPointer::Create(
@@ -159,7 +159,7 @@ inline bool ConvertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Mo
         for (auto ir_index_pointer : ir_index_pointers) {
             changed = true;
 
-            auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_index_pointer->object());
+            auto ir_object_deference_ptr = Cast<ir::DeferencePointer>(ir_index_pointer->object());
             if (!ir_object_deference_ptr) continue;
 
             auto ir_pointer_get_element_ptr = ir::GetPointerElementPointer::Create(
@@ -194,7 +194,7 @@ inline bool ConvertGetAddressOfVaraibleLikedToPointer(std::shared_ptr<ir::Module
             utility::GetValuesInFunction<ir::GetAddressOfVariableLiked>(ir_function);
 
         for (auto ir_get_address : ir_get_addresses) {
-            auto ir_deference_pointer = cast<ir::DeferencePointer>(ir_get_address->variable());
+            auto ir_deference_pointer = Cast<ir::DeferencePointer>(ir_get_address->variable());
             if (!ir_deference_pointer) continue;
 
             changed = true;
@@ -235,7 +235,7 @@ inline bool ConvertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
                 size_t op_idx = instruction_with_index.operand_index;
 
                 if (Is<ir::WriteVariableLiked>(ir_inst) && op_idx == 1) {
-                    auto ir_write_variable_liked = cast<ir::WriteVariableLiked>(ir_inst);
+                    auto ir_write_variable_liked = Cast<ir::WriteVariableLiked>(ir_inst);
                     auto ir_store =
                         ir::StorePointer::Create(ir_write_variable_liked->Value(), ir_pointer);
                     utility::ReplaceInBlock(ir_write_variable_liked, ir_store);

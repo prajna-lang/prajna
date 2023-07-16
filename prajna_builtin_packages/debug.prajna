@@ -1,5 +1,22 @@
-func Assert(success: bool){
-    if (!success) {
+func PrintLocation(filename: String, line: String) {
+    filename.Print();
+    ": ".Print();
+    line.PrintLine();
+}
+
+func AssertWithMessage(condition: bool, msg: String) {
+    if (!condition) {
+        msg.PrintLine();
+        "debug asssert failed".PrintLine();
         bindings::exit(-1);
     }
+}
+
+func Assert(condition: bool){
+    AssertWithMessage(condition, "");
+}
+
+func AssertWithPosition(condition: bool, file: String, line: String) {
+    var msg = file + ":" + line;
+    AssertWithMessage(condition, msg);
 }

@@ -584,6 +584,26 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
                     std::list<std::shared_ptr<ir::Value>>{ir_condition, filename, line});
                 utility::RemoveFromParent(ir_call);
                 ir_call->Finalize();
+                continue;
+            }
+            if (ir_callee->fullname == "::debug::Assert") {
+                auto iter = ir_call->GetBlockIterator();
+                auto ir_builder =
+                    lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
+                ir_builder->PushBlock(ir_call->parent_block);
+                ir_builder->inserter_iterator = iter;
+                auto position = ir_call->source_location.first_position;
+                auto filename = ir_builder->GetString(position.file);
+                auto line = ir_builder->GetString(std::to_string(position.line));
+                auto ir_print_location = lowering::SymbolGet<ir::Value>(
+                    ir_builder->GetSymbolByPath(false, {"debug", "AssertWithPosition"}));
+                auto ir_condition = ir_call->Argument(0);
+                ir_builder->Create<ir::Call>(
+                    ir_print_location,
+                    std::list<std::shared_ptr<ir::Value>>{ir_condition, filename, line});
+                utility::RemoveFromParent(ir_call);
+                ir_call->Finalize();
+                continue;
             }
         }
     }

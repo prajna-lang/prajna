@@ -52,6 +52,8 @@ class Type : public Named {
    public:
     virtual ~Type() {}
 
+    virtual bool IsFirstClass() { return true; }
+
     std::shared_ptr<Function> GetImplementFunction(std::string member_function_name);
 
    public:
@@ -206,6 +208,8 @@ class VoidType : public Type {
         global_context.created_types.push_back(self);
         return self;
     }
+
+    bool IsFirstClass() override { return false; }
 };
 
 class UndefType : public Type {
@@ -255,6 +259,7 @@ class FunctionType : public Type {
         self->name = "(";
         auto iter = self->parameter_types.begin();
         while (iter != self->parameter_types.end()) {
+            PRAJNA_ASSERT((*iter)->IsFirstClass());
             self->name += (*iter)->fullname;
             ++iter;
             if (iter == self->parameter_types.end()) {
@@ -270,6 +275,8 @@ class FunctionType : public Type {
         return self;
     }
 
+    bool IsFirstClass() override { return false; }
+
    public:
     std::shared_ptr<Type> return_type = nullptr;
     std::list<std::shared_ptr<Type>> parameter_types;
@@ -282,8 +289,6 @@ class PointerType : public Type {
 
    public:
     static std::shared_ptr<PointerType> Create(std::shared_ptr<Type> value_type) {
-        PRAJNA_ASSERT(not Is<VoidType>(value_type));
-
         for (auto ir_type : global_context.created_types) {
             if (auto ir_pointer_type = cast<PointerType>(ir_type)) {
                 if (ir_pointer_type->value_type == value_type) {

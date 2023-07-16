@@ -89,7 +89,7 @@ class IrBuilder {
         return this->GetArrayType(this->GetIndexType(), 3);
     }
 
-    std::shared_ptr<ir::Type> GetPtrType(std::shared_ptr<ir::Type> ir_value_type) {
+    std::shared_ptr<ir::Type> GetManagedPtrType(std::shared_ptr<ir::Type> ir_value_type) {
         auto symbol_ptr = this->GetSymbolByPath(false, {"Ptr"});
         auto ptr_template = SymbolGet<TemplateStruct>(symbol_ptr);
         PRAJNA_ASSERT(ptr_template);

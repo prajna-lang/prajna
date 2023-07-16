@@ -667,7 +667,7 @@ class StatementLoweringVisitor {
                 // 创建接口动态类型生成函数
                 ir_interface->dynamic_type_creator = ir_builder->createFunction(
                     std::string("dynamic_type_creator"),
-                    ir::FunctionType::Create({ir_builder->GetPtrType(ir_type)},
+                    ir::FunctionType::Create({ir_builder->GetManagedPtrType(ir_type)},
                                              ir_interface->prototype->dynamic_type));
             }
 
@@ -1160,8 +1160,8 @@ class StatementLoweringVisitor {
                 logger->Error("should input 1 template argument");
             }
             auto ir_type = SymbolGet<ir::Type>(symbol_template_arguments.front());
-            if (!ir_type) {
-                logger->Error("should be a type");
+            if (!ir_type || Is<ir::VoidType>(ir_type)) {
+                logger->Error("should be a first class type");
             }
 
             return ir::PointerType::Create(ir_type);
@@ -1268,7 +1268,7 @@ class StatementLoweringVisitor {
 
             auto ir_interface = iter_interface->second;
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
-            auto ir_pointer_type = ir_tmp_builder->GetPtrType(ir_value_type);
+            auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_value_type);
             auto ir_function_type =
                 ir::FunctionType::Create({ir_pointer_type}, ir_interface_prototype->dynamic_type);
             auto ir_function = ir_tmp_builder->createFunction(
@@ -1316,7 +1316,7 @@ class StatementLoweringVisitor {
             PRAJNA_ASSERT(ir_interface_implement->functions.front());
 
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
-            auto ir_pointer_type = ir_tmp_builder->GetPtrType(ir_target_value_type);
+            auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
             auto ir_function_type =
                 ir::FunctionType::Create({ir_interface_prototype->dynamic_type}, ir_pointer_type);
             auto ir_function = ir_tmp_builder->createFunction(
@@ -1326,7 +1326,7 @@ class StatementLoweringVisitor {
 
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
 
-            auto ir_target_ptr_type = ir_tmp_builder->GetPtrType(ir_target_value_type);
+            auto ir_target_ptr_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
             auto ir_ptr = ir_tmp_builder->Create<ir::LocalVariable>(ir_target_ptr_type);
             auto ir_interface_implement_function0 =
                 ir_interface_implement
@@ -1950,8 +1950,8 @@ class StatementLoweringVisitor {
 
     void CreateInterfaceDynamicType(
         std::shared_ptr<ir::InterfacePrototype> ir_interface_prototype) {
-        auto field_object_pointer =
-            ir::Field::Create("object_pointer", ir_builder->GetPtrType(ir::UndefType::Create()));
+        auto field_object_pointer = ir::Field::Create(
+            "object_pointer", ir_builder->GetManagedPtrType(ir::UndefType::Create()));
         auto ir_interface_struct = ir_interface_prototype->dynamic_type;
         ir_interface_struct->fields.push_back(field_object_pointer);
         ir_interface_struct->name = ir_interface_prototype->name;

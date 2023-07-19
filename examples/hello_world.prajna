@@ -1,4 +1,3 @@
-
 func Main(){
     "Hello World\n".Print();
 }

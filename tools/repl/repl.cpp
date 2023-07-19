@@ -52,12 +52,12 @@ int prajna_repl_main(int argc, char* argv[]) {
     Term::terminal << "Prajna 0.0.0, all copyrights @ \"www.github.com/matazure\"" << std::endl;
 
     auto compiler = prajna::Compiler::Create();
-    if (std::filesystem::exists("prajna_builtin_packages")) {
-        compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
+    if (std::filesystem::exists("builtin_packages")) {
+        compiler->CompileBuiltinSourceFiles("builtin_packages");
     } else {
-        auto prajna_builtin_packages_directory =
-            prajna::ProgramLocation(argv[0]).parent_path() / "../prajna_builtin_packages";
-        compiler->CompileBuiltinSourceFiles(prajna_builtin_packages_directory.string());
+        auto builtin_packages_directory =
+            prajna::ProgramLocation(argv[0]).parent_path() / "../builtin_packages";
+        compiler->CompileBuiltinSourceFiles(builtin_packages_directory.string());
     }
 
     Term::terminal.setOptions({Term::Option::NoClearScreen, Term::Option::SignalKeys,

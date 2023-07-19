@@ -35,3 +35,6 @@ build_release
 .*
 !.prajna
 fs_test.txt
+out
+
+CMakeSettings.json

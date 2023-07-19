@@ -29,9 +29,9 @@
 #include "prajna/exception.hpp"
 #include "prajna/ir/ir.hpp"
 
-extern "C" uint16_t __truncdfhf2(double);
-extern "C" uint16_t __floattihf(int64_t[2]);
-extern "C" uint16_t __floatuntihf(uint64_t[2]);
+// extern "C" uint16_t __truncdfhf2(double);
+// extern "C" uint16_t __floattihf(int64_t[2]);
+// extern "C" uint16_t __floatuntihf(uint64_t[2]);
 
 namespace prajna {
 
@@ -64,7 +64,9 @@ float Clock() {
            std::chrono::steady_clock::period::num / std::chrono::steady_clock::period::den;
 }
 
-void Sleep(float t) { sleep(t); }
+void Sleep(float t) {
+    std::this_thread::sleep_for(std::chrono::nanoseconds(static_cast<long long>(t * 1000000000)));
+}
 
 llvm::sys::DynamicLibrary __load_dynamic_library(char *lib_name) {
     auto dl = llvm::sys::DynamicLibrary::getLibrary(lib_name);
@@ -86,17 +88,22 @@ ExecutionEngine::ExecutionEngine() {
     LLVMInitializeNativeAsmPrinter();
     // LLVMInitializeNativeAsmParser();
 
+// TODO: 需要确定setObjectLinkingLayerCreator的作用, 现在去除后, 在mac上会报错.
+#ifdef __APPLE__
     auto expect_up_lljit =
         llvm::orc::LLJITBuilder()
             .setObjectLinkingLayerCreator(
                 [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
+                    // @note 需要确认机制是做什么用的
                     auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(
-                        // @note 需要确认机制是做什么用的
                         ES, std::make_unique<llvm::jitlink::InProcessMemoryManager>(64 * 1024));
                     ll->setAutoClaimResponsibilityForObjectSymbols(true);
                     return std::move(ll);
                 })
             .create();
+#else
+    auto expect_up_lljit = llvm::orc::LLJITBuilder().create();
+#endif
     PRAJNA_ASSERT(expect_up_lljit);
     _up_lljit = std::move(*expect_up_lljit);
 
@@ -253,9 +260,9 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print");
     this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input");
 
-    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
-    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floattihf");
-    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floatuntihf");
+    // this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
+    // this->BindCFunction(reinterpret_cast<void *>(__floattihf), "__floattihf");
+    // this->BindCFunction(reinterpret_cast<void *>(__floatuntihf), "__floatuntihf");
 
     this->BindCFunction(reinterpret_cast<void *>(fopen), "::fs::_c::fopen");
     this->BindCFunction(reinterpret_cast<void *>(fclose), "::fs::_c::fclose");

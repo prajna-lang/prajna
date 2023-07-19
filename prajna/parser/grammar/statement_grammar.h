@@ -25,7 +25,6 @@ struct StatementGrammer
     typedef qi::in_state_skipper<typename Lexer::lexer_def> skipper_type;
     ExpressionGrammer<Iterator, Lexer> expr;
 
-    __attribute__((no_sanitize("address")))
     StatementGrammer(const Lexer &tok, ErrorHandler<Iterator> error_handler,
                      SuccessHandler<Iterator> success_handler);
 

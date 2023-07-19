@@ -289,6 +289,8 @@ class PointerType : public Type {
 
    public:
     static std::shared_ptr<PointerType> Create(std::shared_ptr<Type> value_type) {
+        PRAJNA_ASSERT(!Is<VoidType>(value_type));
+
         for (auto ir_type : global_context.created_types) {
             if (auto ir_pointer_type = Cast<PointerType>(ir_type)) {
                 if (ir_pointer_type->value_type == value_type) {

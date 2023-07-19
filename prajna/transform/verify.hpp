@@ -46,8 +46,8 @@ inline void VerifyBlockImpl(std::shared_ptr<ir::Block> ir_block,
                 auto ir_operand = ir_instruction->operand(i);
                 PRAJNA_ASSERT(ir_operand);
 
-                if (Is<ir::Function>(ir_operand) or Is<ir::GlobalVariable>(ir_operand) or
-                    Is<ir::GlobalAlloca>(ir_operand) or Is<ir::Parameter>(ir_operand)) {
+                if (Is<ir::Function>(ir_operand) || Is<ir::GlobalVariable>(ir_operand) ||
+                    Is<ir::GlobalAlloca>(ir_operand) || Is<ir::Parameter>(ir_operand)) {
                     continue;
                 }
 
@@ -88,8 +88,8 @@ inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
                 PRAJNA_ASSERT(ir_operand);
 
                 if (ir_operand) {
-                    if (Is<ir::Function>(ir_operand) or Is<ir::GlobalVariable>(ir_operand) or
-                        Is<ir::GlobalAlloca>(ir_operand) or Is<ir::Parameter>(ir_operand)) {
+                    if (Is<ir::Function>(ir_operand) || Is<ir::GlobalVariable>(ir_operand) ||
+                        Is<ir::GlobalAlloca>(ir_operand) || Is<ir::Parameter>(ir_operand)) {
                         continue;
                     }
 

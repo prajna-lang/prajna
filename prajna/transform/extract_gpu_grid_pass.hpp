@@ -152,7 +152,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
 inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
     auto ir_gpu_fors = utility::GetValuesInModule<ir::For>(ir_module);
     ir_gpu_fors.remove_if([](std::shared_ptr<ir::For> ir_gpu_for) {
-        return not ir_gpu_for->annotation_dict.count("gpu");
+        return !ir_gpu_for->annotation_dict.count("gpu");
     });
 
     size_t idx = 0;

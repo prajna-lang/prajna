@@ -40,7 +40,7 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
         };
 
         auto code_line = code;
-        if (code_line.size() >= 1 and not(code_line.back() == ';' or code_line.back() == '}')) {
+        if (code_line.size() >= 1 && !(code_line.back() == ';' || code_line.back() == '}')) {
             code_line.push_back(';');
         }
         code_line.push_back('\n');

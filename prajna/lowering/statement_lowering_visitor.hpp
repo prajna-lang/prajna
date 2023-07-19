@@ -289,7 +289,7 @@ class StatementLoweringVisitor {
         }
 
         if (auto ir_property = Cast<ir::AccessProperty>(ir_lhs)) {
-            if (not ir_property->property->set_function) {
+            if (!ir_property->property->set_function) {
                 logger->Error("the property has not a setter function", ast_assignment.left);
             }
             if (ir_property->property->set_function->function_type->parameter_types.back() !=
@@ -434,8 +434,8 @@ class StatementLoweringVisitor {
                 if (Is<ir::VoidType>(ir_function->function_type->return_type)) {
                     ir_builder->Create<ir::Return>(ir_builder->Create<ir::VoidValue>());
                 } else {
-                    if (not this->AllBranchIsTerminated(ir_function->blocks.back(),
-                                                        ir_function->function_type->return_type)) {
+                    if (!this->AllBranchIsTerminated(ir_function->blocks.back(),
+                                                     ir_function->function_type->return_type)) {
                         logger->Error("not all branch have been terminated",
                                       ast_function.declaration);
                     }
@@ -516,9 +516,9 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::For ast_for) {
         auto ir_first = expression_lowering_visitor->Apply(ast_for.first);
         auto ir_last = expression_lowering_visitor->Apply(ast_for.last);
-        if (ir_last->type != ir_builder->GetIndexType() and
+        if (ir_last->type != ir_builder->GetIndexType() &&
             !ir_builder->IsArrayIndexType(ir_last->type)) {
-            logger->Error("the index type must be i64 or i64 array", ast_for.last);
+            logger->Error("the index type must be i64 || i64 array", ast_for.last);
         }
         if (ir_last->type != ir_first->type) {
             logger->Error("the last firt type are not matched", ast_for.first);
@@ -558,14 +558,14 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::Break ast_break) {
-        if (not ir_builder->loop_stack.size()) {
+        if (!ir_builder->loop_stack.size()) {
             logger->Error("break is outside of a loop", ast_break);
         }
         return ir_builder->Create<ir::Break>(ir_builder->loop_stack.top());
     }
 
     Symbol operator()(ast::Continue ast_continue) {
-        if (not ir_builder->loop_stack.size()) {
+        if (!ir_builder->loop_stack.size()) {
             logger->Error("continue is outside of a loop", ast_continue);
         }
         return ir_builder->Create<ir::Continue>(ir_builder->loop_stack.top());
@@ -1216,7 +1216,7 @@ class StatementLoweringVisitor {
             }
             auto ir_source_type = SymbolGet<ir::Type>(symbol_template_arguments.front());
             auto ir_target_type = SymbolGet<ir::Type>(symbol_template_arguments.back());
-            if (!ir_source_type or !ir_target_type) {
+            if (!ir_source_type || !ir_target_type) {
                 logger->Error("template arguments should be type");
             }
             if (ir_source_type->bytes != ir_target_type->bytes) {

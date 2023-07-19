@@ -33,10 +33,10 @@ int prajna_exe_main(int argc, char* argv[]) {
             } else {
                 auto prajna_builtin_packages_directory =
                     prajna::ProgramLocation(argv[0]).parent_path() / "../prajna_builtin_packages";
-                compiler->CompileBuiltinSourceFiles(prajna_builtin_packages_directory);
+                compiler->CompileBuiltinSourceFiles(prajna_builtin_packages_directory.string());
             }
         }
-        compiler->AddPackageDirectoryPath(std::filesystem::current_path());
+        compiler->AddPackageDirectoryPath(std::filesystem::current_path().string());
         compiler->ExecuteProgram(program_path);
         return 0;
     }

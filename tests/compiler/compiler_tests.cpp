@@ -15,7 +15,7 @@ using namespace prajna;
 struct PrintFileName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType>& info) const {
-        return std::filesystem::path(info.param).stem();
+        return std::filesystem::path(info.param).stem().string();
     }
 };
 

@@ -233,7 +233,8 @@ inline bool FlatternBlock(std::shared_ptr<ir::Module> ir_module) {
         std::list<std::shared_ptr<ir::Block>> blocks;
         for (auto ir_block : ir_function->blocks) {
             FlatternBlockImpl(ir_block);
-            blocks.merge(splitBlock(ir_block));
+            auto ir_new_blocks = splitBlock(ir_block);
+            blocks.insert(blocks.end(), ir_new_blocks.begin(), ir_new_blocks.end());
         }
 
         ir_function->blocks = blocks;

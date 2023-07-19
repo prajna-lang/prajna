@@ -88,7 +88,7 @@ inline void InsertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_blo
     ir_local_variable_list.remove_if([](std::shared_ptr<ir::LocalVariable> ir_local_variable) {
         return ir_local_variable->annotation_dict.count(DISABLE_REFERENCE_COUNT);
     });
-    while (not ir_local_variable_list.empty()) {
+    while (! ir_local_variable_list.empty()) {
         auto ir_local_variable = ir_local_variable_list.front();
         DestroyVariableLikedCallback(ir_local_variable, ir_builder);
         ir_local_variable_list.pop_front();

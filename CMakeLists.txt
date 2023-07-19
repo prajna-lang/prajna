@@ -49,6 +49,7 @@ target_include_directories(llvm_include_dir
 add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/cxxopts EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/fmt EXCLUDE_FROM_ALL)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/cpp-terminal EXCLUDE_FROM_ALL)
 

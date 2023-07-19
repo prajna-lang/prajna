@@ -30,7 +30,7 @@ inline bool RecursiveTransformModule(std::shared_ptr<ir::Module> ir_module, Func
     auto re = fun(ir_module);
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
+        if (!ir_sub_module) continue;
 
         fun(ir_sub_module);
     }
@@ -57,7 +57,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
             auto ir_inst = instruction_with_index.instruction;
             size_t op_idx = instruction_with_index.operand_index;
 
-            PRAJNA_ASSERT(not Is<ir::GetAddressOfVariableLiked>(ir_inst));
+            PRAJNA_ASSERT(!Is<ir::GetAddressOfVariableLiked>(ir_inst));
 
             if (Is<ir::WriteProperty>(ir_inst) && op_idx == 1) {
                 auto ir_write_property = Cast<ir::WriteProperty>(ir_inst);
@@ -354,7 +354,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->symbol_table = ir_module->symbol_table;
         // 只需要对数组循环进行处理
-        if (not ir_builder->IsArrayIndexType(ir_for->IndexVariable()->type)) continue;
+        if (!ir_builder->IsArrayIndexType(ir_for->IndexVariable()->type)) continue;
 
         ir_builder->PushBlock(ir_for->parent_block);
         ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
@@ -498,7 +498,7 @@ inline void TopologicalSortFunction(std::shared_ptr<ir::Module> ir_module) {
 
     ir_module->functions.remove_if(
         [=](auto ir_function) { return std::count(RANGE(ir_function_list), ir_function); });
-    ir_module->functions.merge(ir_function_list);
+    ir_module->functions.insert(ir_module->functions.end(), RANGE(ir_function_list));
 }
 
 inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {

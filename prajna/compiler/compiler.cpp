@@ -216,7 +216,7 @@ std::shared_ptr<ir::Module> Compiler::CompileProgram(
         return nullptr;
     }
 
-    auto current_symbol_table = CreateSymbolTableTree(_symbol_table, prajna_source_package_path);
+    auto current_symbol_table = CreateSymbolTableTree(_symbol_table, prajna_source_package_path.string());
     current_symbol_table->directory_path =
         prajna_directory_path / current_symbol_table->directory_path;
 

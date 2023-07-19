@@ -446,7 +446,7 @@ class ExpressionLoweringVisitor {
         auto unary_operator_name = ast_unary.operator_.string_token;
         auto ir_function =
             ir_builder->GetUnaryOperator(ir_variable_liked->type, unary_operator_name);
-        if (not ir_function) {
+        if (! ir_function) {
             logger->Error("unary operator not found", ast_unary.operator_);
         }
 
@@ -739,7 +739,7 @@ class ExpressionLoweringVisitor {
         auto binary_operator_name = ast_binary_operation.operator_.string_token;
         auto ir_function =
             ir_builder->GetBinaryOperator(ir_variable_liked->type, binary_operator_name);
-        if (not ir_function) {
+        if (! ir_function) {
             logger->Error(
                 fmt::format("{} operator not found", ast_binary_operation.operator_.string_token),
                 ast_binary_operation.operator_);

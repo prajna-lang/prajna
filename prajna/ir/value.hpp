@@ -513,7 +513,7 @@ class LocalVariable : public Variable {
 
    public:
     static std::shared_ptr<LocalVariable> Create(std::shared_ptr<Type> type) {
-        PRAJNA_ASSERT(not Is<VoidType>(type));
+        PRAJNA_ASSERT(! Is<VoidType>(type));
         std::shared_ptr<LocalVariable> self(new LocalVariable);
         self->type = type;
         self->tag = "LocalVariable";
@@ -1428,7 +1428,7 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
         self->property = ir_property;
         self->tag = "AccessProperty";
 
-        if (not ir_property->set_function) {
+        if (! ir_property->set_function) {
             self->is_writeable = false;
         }
 
@@ -1667,7 +1667,7 @@ inline std::shared_ptr<ir::Value> Block::Clone(std::shared_ptr<FunctionCloner> f
     ir_new->values.clear();
     for (auto ir_value : values) {
         // (branch导致)存在递归, 故有的值已被处理, 此外参数也在函数里处理
-        if (not function_cloner->value_dict.count(ir_value)) {
+        if (! function_cloner->value_dict.count(ir_value)) {
             auto ir_new_value = ir_value->Clone(function_cloner);
             function_cloner->value_dict[ir_value] = ir_new_value;
         }
@@ -1730,7 +1730,7 @@ inline std::shared_ptr<ir::Value> Function::Clone(std::shared_ptr<FunctionCloner
     // 需要再开头, 因为函数有可能存在递归
     ir_new->blocks.clear();
     for (auto ir_block : blocks) {
-        if (not function_cloner->value_dict.count(ir_block)) {
+        if (! function_cloner->value_dict.count(ir_block)) {
             ir_block->Clone(function_cloner);
         }
 

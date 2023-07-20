@@ -1,0 +1,3 @@
+// 因为提供了Notebook模式, 所以Prajna也顺带支持了脚本模式, 相当于Notebook的简化版
+
+"Hello World\n".PrintLine();

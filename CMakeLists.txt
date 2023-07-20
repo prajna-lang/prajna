@@ -63,7 +63,6 @@ option(PRAJNA_BUILD_EXAMPLES "Build Prajna examples" ON)
 option(PRAJNA_BUILD_TESTS "Build Prajna tests" ON)
 option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" OFF)
 option(PRAJNA_WITH_GPU "With CUDA" OFF)
-option(PRAJNA_WITH_GPU "With CUDA" OFF)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
 option(PRAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
@@ -87,9 +86,7 @@ if (PRAJNA_BUILD_TOOLS)
     add_subdirectory(tools)
 endif()
 
-if (PRAJNA_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+add_subdirectory(examples_in_cpp)
 
 include(CMakePackageConfigHelpers)
 

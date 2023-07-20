@@ -1,6 +1,6 @@
-add_library(prajna_repl repl.cpp)
+add_library(prajna_repl OBJECT repl.cpp)
 target_link_libraries(prajna_repl
-    PRIVATE prajna_compiler
+    PUBLIC prajna_compiler
     PRIVATE cpp-terminal
 )
 

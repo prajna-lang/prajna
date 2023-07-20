@@ -1,11 +1,14 @@
 add_library(prajna_compiler compiler.cpp stdio_callback.cpp)
 
 target_link_libraries(prajna_compiler
-    PUBLIC prajna_parser
-    PUBLIC prajna_lowering
-    PUBLIC prajna_transform
-    PUBLIC prajna_codegen
-    PUBLIC prajna_jit
+    PRIVATE prajna_ir
+    PRIVATE prajna_parser
+    PRIVATE prajna_lexer
+    PRIVATE prajna_grammar
+    PRIVATE prajna_lowering
+    PRIVATE prajna_transform
+    PRIVATE prajna_codegen
+    PRIVATE prajna_jit
     PUBLIC prajna_config_target
     PRIVATE llvm_include_dir
 )

@@ -1,4 +1,4 @@
-add_library(prajna_codegen
+add_library(prajna_codegen OBJECT
     llvm_codegen.cpp
 )
 

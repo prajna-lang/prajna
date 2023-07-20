@@ -1,9 +1,9 @@
-add_library(prajna_transform
+add_library(prajna_transform OBJECT
     transform.cpp
 )
 
 target_link_libraries(prajna_transform
     PUBLIC prajna_ir
-    PRIVATE prajna_parser
-    PRIVATE prajna_lowering
+    PUBLIC prajna_parser
+    PUBLIC prajna_lowering
 )

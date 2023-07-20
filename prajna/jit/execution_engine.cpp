@@ -29,9 +29,11 @@
 #include "prajna/exception.hpp"
 #include "prajna/ir/ir.hpp"
 
-// extern "C" uint16_t __truncdfhf2(double);
-// extern "C" uint16_t __floattihf(int64_t[2]);
-// extern "C" uint16_t __floatuntihf(uint64_t[2]);
+#ifdef __linux__
+extern "C" uint16_t __truncdfhf2(double);
+extern "C" uint16_t __floattihf(int64_t[2]);
+extern "C" uint16_t __floatuntihf(uint64_t[2]);
+#endif
 
 namespace prajna {
 
@@ -260,9 +262,11 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print");
     this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input");
 
-    // this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
+#ifdef __linux__
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
     // this->BindCFunction(reinterpret_cast<void *>(__floattihf), "__floattihf");
     // this->BindCFunction(reinterpret_cast<void *>(__floatuntihf), "__floatuntihf");
+#endif
 
     this->BindCFunction(reinterpret_cast<void *>(fopen), "::fs::_c::fopen");
     this->BindCFunction(reinterpret_cast<void *>(fclose), "::fs::_c::fclose");

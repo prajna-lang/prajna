@@ -1,4 +1,4 @@
-add_library(prajna_ir
+add_library(prajna_ir OBJECT
     global_context.cpp
 )
 

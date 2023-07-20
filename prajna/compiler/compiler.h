@@ -1,11 +1,10 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "prajna/compiler/stdio_callback.h"
 
 namespace prajna {
 
@@ -26,6 +25,9 @@ class ExecutionEngine;
 namespace jit {
 class ExecutionEngine;
 }
+
+extern std::function<void(std::string)> print_callback;
+extern std::function<char*(void)> input_callback;
 
 // @brief 负责将般若编译器的各个模块整合到一块, 以及和外界的交互
 class Compiler : public std::enable_shared_from_this<Compiler> {

@@ -94,11 +94,11 @@ endif()
 include(CMakePackageConfigHelpers)
 
 install(TARGETS prajna EXPORT ${PROJECT_NAME}-targets)
+# install(TARGETS prajna_shared EXPORT ${PROJECT_NAME}-targets)
 # xeus_prajna依赖
 install(TARGETS nlohmann_json EXPORT ${PROJECT_NAME}-targets)
 install(DIRECTORY builtin_packages DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY dockerfiles DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY docs DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
-
-
+install(FILES prajna/compiler/compiler.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

@@ -126,7 +126,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                                     }
                                 }
 
-                                logger->Error("module is not found",
+                                logger->Error(fmt::format("{} is not found in {}", identifier,
+                                                          symbol_table->Fullname()),
                                               iter_ast_identifier->identifier);
                                 return nullptr;
                             }
@@ -165,12 +166,15 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         if (ast_import.star_match_optional) {
             if (auto ir_symbol_table = SymbolGet<lowering::SymbolTable>(symbol)) {
                 for (auto [id, tmp_symbol] : ir_symbol_table->current_symbol_dict) {
-                    if (ir_builder->symbol_table->Has(id)) {
-                        logger->Error(fmt::format("{} has defined", id),
-                                      *ast_import.star_match_optional);
+                    // 如果符号存在且不是同一个符号报错
+                    if (ir_builder->symbol_table->CurrentTableHas(id)) {
+                        if (ir_builder->symbol_table->Get(id) != tmp_symbol) {
+                            logger->Error(fmt::format("{} has defined", id),
+                                          *ast_import.star_match_optional);
+                        }
+                    } else {
+                        ir_builder->symbol_table->Set(tmp_symbol, id);
                     }
-
-                    ir_builder->symbol_table->Set(tmp_symbol, id);
                 }
 
                 if (ast_import.as_optional) {

@@ -45,7 +45,7 @@
 	url = https://github.com/jupyter-xeus/xwidgets.git
 [submodule "xeus_prajna/third_party/xproperty"]
 	path = xeus_prajna/third_party/xproperty
-	url = https://github.com/matazure/xproperty.git
+	url = https://github.com/prajna-lang/xproperty.git
 [submodule "docs/notebooks"]
 	path = docs/notebooks
-	url = https://github.com/matazure/prajna-notebooks.git
+	url = https://github.com/prajna-lang/prajna-notebooks.git

@@ -39,11 +39,11 @@ func Main(){
 
     // 需要先判断再做转换, 不同于C++, 如果转换类型不合法会直接报错退出
     if (d_say.Is<SayHi>()) {
-        var say_hi2 = d_say.DynamicCast<SayHi>();
+        var say_hi2 = d_say.Cast<SayHi>();
         say_hi2.Say();
         say_hi.name = "Prajna2 ";
     } {
-        var say_hello2 = d_say.DynamicCast<SayHello>();
+        var say_hello2 = d_say.Cast<SayHello>();
         say_hello2.Say();
         say_hello2.name = "Paramita2 ";
     }

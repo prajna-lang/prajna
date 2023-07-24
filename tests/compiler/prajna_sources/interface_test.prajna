@@ -34,11 +34,11 @@ func TestDynamicDispatch(){
     say = say_hello.As<Say>();
     say.say();
 
-    var say_hello2 = say.DynamicCast<SayHello>();
+    var say_hello2 = say.Cast<SayHello>();
     test::Assert(!say_hello2.IsNull());
     say_hello2.say();
 
-    var say_hi2 = say.DynamicCast<SayHi>();
+    var say_hi2 = say.Cast<SayHi>();
     test::Assert(say_hi2.IsNull());
 }
 

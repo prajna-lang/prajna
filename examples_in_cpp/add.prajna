@@ -1,6 +1,5 @@
 
 func helloWorld(ts: Array<i64, 8>*){
-    // "Hello World!\n".Print();
     (*ts).ToString().Print();
 }
 

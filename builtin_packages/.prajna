@@ -26,7 +26,8 @@ use disable_dynamic_interface::Finalizable;
 
 use primitive_type;
 use bindings;
-use bindings::exit;
+use bindings::exit as Exit;
+
 use _debug::__assert;
 
 use _array::Array;
@@ -43,8 +44,14 @@ use atomic;
 use dynamic_array::DynamicArray;
 
 use string::String;
+
 use serializable::Serializable;
 use serialize;
+
+func ExitWithMessage(msg: String) {
+    msg.PrintLine();
+    Exit(-1);
+}
 
 use test;
 use debug;

@@ -4,4 +4,9 @@ implement Dynamic<Interface> {
     func DynamicCast()->Ptr<Target>{
         return __dynamic_cast<Interface, Target>(this);
     }
+
+    template <Target>
+    func Is()->bool{
+        return __dynamic_is<Interface, Target>(this);
+    }
 }

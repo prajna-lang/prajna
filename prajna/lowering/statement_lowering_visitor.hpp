@@ -1363,6 +1363,7 @@ class StatementLoweringVisitor {
             ir_tmp_builder->PopBlock();
 
             ir_tmp_builder->PushBlock(ir_if->FalseBlock());
+            ir_tmp_builder->ExitWithPrintErrorMessage("invalid cast dynamic cast");
             auto ir_nullptr = ir_tmp_builder->Create<ir::Call>(
                 ir_tmp_builder->GetImplementFunction(ir_ptr->type, "Null"),
                 std::list<std::shared_ptr<ir::Value>>{});
@@ -1374,6 +1375,77 @@ class StatementLoweringVisitor {
         };
 
         return template_dynamic_cast;
+    }
+
+    std::shared_ptr<Template> CreateDynamicIsTemplate() {
+        auto template_dynamic_is = Template::Create();
+        template_dynamic_is->generator = [symbol_table = this->ir_builder->symbol_table,
+                                          logger = this->logger,
+                                          this](std::list<Symbol> symbol_template_arguments,
+                                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 2) {
+                logger->Error("should input 2 template argument");
+            }
+
+            auto ir_interface_prototype =
+                SymbolGet<ir::InterfacePrototype>(symbol_template_arguments.front());
+            if (!ir_interface_prototype) {
+                logger->Error("the first template argument should be a interface prototype");
+            }
+            auto ir_target_value_type = SymbolGet<ir::Type>(symbol_template_arguments.back());
+            if (!ir_target_value_type) {
+                logger->Error("the second template argument should be type");
+            }
+
+            auto iter_interface_implement = std::find_if(
+                RANGE(ir_target_value_type->interface_dict),
+                [=](auto x) { return x.second && x.second->prototype == ir_interface_prototype; });
+            if (iter_interface_implement == ir_target_value_type->interface_dict.end()) {
+                logger->Error("invalid dynamic Cast, operand is not a interface dynamic type");
+            }
+            auto ir_interface_implement = iter_interface_implement->second;
+            // interface implement必然有一个函数, 我们通过该函数来判断dynamic
+            // type是否是某一个具体类型
+            PRAJNA_ASSERT(ir_interface_implement->functions.front());
+
+            auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
+            auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
+            auto ir_function_type = ir::FunctionType::Create({ir_interface_prototype->dynamic_type},
+                                                             ir::BoolType::Create());
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__dynamic_is" + GetTemplateArgumentsPostify(symbol_template_arguments),
+                ir_function_type);
+            ir_function->annotation_dict["inline"];
+
+            ir_tmp_builder->CreateTopBlockForFunction(ir_function);
+
+            auto ir_target_ptr_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
+            auto ir_ptr = ir_tmp_builder->Create<ir::LocalVariable>(ir_target_ptr_type);
+            auto ir_interface_implement_function0 =
+                ir_interface_implement
+                    ->undef_this_pointer_functions[ir_interface_implement->functions.front()];
+
+            auto template_cast =
+                SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"__cast"}));
+            auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->instantiate(
+                {ir_interface_implement_function0->type, ir_tmp_builder->GetIndexType()},
+                ir_tmp_builder->module));
+            auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
+                ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
+
+            auto ir_dynamic_object = ir_function->parameters.front();
+            auto ir_rawptr_i64_1 = ir_tmp_builder->Create<ir::Call>(
+                ir_rawptr_to_i64_cast_function,
+                ir_tmp_builder->AccessField(
+                    ir_dynamic_object, ir_interface_implement->functions.front()->name + "/fp"));
+            auto ir_condition =
+                ir_tmp_builder->CallBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
+            ir_tmp_builder->Create<ir::Return>(ir_condition);
+
+            return ir_function;
+        };
+
+        return template_dynamic_is;
     }
 
     std::shared_ptr<Template> CreateSizeOfTemplate() {
@@ -1795,6 +1867,8 @@ class StatementLoweringVisitor {
             this->CreateAsCastTemplate(), "__as");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateDynamicCastTemplate(), "__dynamic_cast");
+        ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
+            this->CreateDynamicIsTemplate(), "__dynamic_is");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateCastInstructionTemplate(), "__cast");

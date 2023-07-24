@@ -274,6 +274,13 @@ class IrBuilder {
                                       std::list<std::shared_ptr<ir::Value>>{ir_c_string_address});
     }
 
+    void ExitWithPrintErrorMessage(std::string str) {
+        auto ir_str = this->GetString(str);
+        auto ir_exit = SymbolGet<ir::Value>(this->GetSymbolByPath(true, {"ExitWithMessage"}));
+        PRAJNA_ASSERT(ir_exit);
+        this->Create<ir::Call>(ir_exit, std::list<std::shared_ptr<ir::Value>>{ir_str});
+    }
+
     std::shared_ptr<ir::AccessField> AccessField(std::shared_ptr<ir::Value> ir_object,
                                                  std::string field_name) {
         auto ir_variable_liked = this->VariableLikedNormalize(ir_object);

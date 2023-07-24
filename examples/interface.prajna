@@ -1,0 +1,43 @@
+interface Say{
+    func Say();
+}
+
+struct SayHi{
+    name: String;
+}
+
+implement Say for SayHi{
+    func Say() {
+        "Hi ".Print();
+        this.name.PrintLine();
+    }
+}
+
+struct SayHello{
+    name: String;
+}
+
+implement Say for SayHello{
+    func Say(){
+        "Hello ".Print();
+        this.name.PrintLine();
+    }
+}
+
+func Main(){
+    var say_hi = Ptr<SayHi>::New();
+    say_hi.name = "Prajna";
+    say_hi.Say();
+    var d_say: Dynamic<Say> = say_hi.As<Say>();
+    d_say.Say();
+
+    var say_hello = Ptr<SayHello>::New();
+    say_hello.name = "Paramita";
+    say_hello.Say();
+    d_say = say_hello.As<Say>();
+    d_say.Say();
+
+    say_hello = d_say.DynamicCast<SayHello>();
+    say_hello.Say();
+}
+

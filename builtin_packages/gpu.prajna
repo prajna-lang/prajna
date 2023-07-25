@@ -21,8 +21,8 @@ func MultiProcessorsCount(device: i64)->i64{
 }
 
 func LaunchKernel(kernel_function_pointer: ptr<i8>, GridShape: Array<i64, 3>, BlockShape: Array<i64, 3>, kernel_params: ptr<ptr<i8>>)->i64{
-    var re = cuda::cuLaunchKernel(kernel_function_pointer, GridShape[0].Cast<u32>(), GridShape[1].Cast<u32>(),
-    GridShape[2].Cast<u32>(), BlockShape[0].Cast<u32>(), BlockShape[1].Cast<u32>(), BlockShape[2].Cast<u32>(), 0u32, __cast<i64, ptr<i8>>(0), kernel_params, __cast<i64, ptr<ptr<i8> > >(0));
+    var re = cuda::cuLaunchKernel(kernel_function_pointer, GridShape[2].Cast<u32>(), GridShape[1].Cast<u32>(),
+    GridShape[0].Cast<u32>(), BlockShape[2].Cast<u32>(), BlockShape[1].Cast<u32>(), BlockShape[0].Cast<u32>(), 0u32, __cast<i64, ptr<i8>>(0), kernel_params, __cast<i64, ptr<ptr<i8> > >(0));
     return re.Cast<i64>();
 }
 
@@ -172,23 +172,23 @@ func BlockBarrier();
 @inline
 @target("nvptx")
 func ThreadIndex()->Array<i64, 3> {
-    return [__thread_idx_x().Cast<i64>(), __thread_idx_y().Cast<i64>(), __thread_idx_z().Cast<i64>()];
+    return [__thread_idx_z().Cast<i64>(), __thread_idx_y().Cast<i64>(), __thread_idx_x().Cast<i64>()];
 }
 
 @inline
 @target("nvptx")
 func BlockShape()->Array<i64, 3> {
-    return [__block_shape_x().Cast<i64>(), __block_shape_y().Cast<i64>(), __block_shape_z().Cast<i64>()];
+    return [__block_shape_z().Cast<i64>(), __block_shape_y().Cast<i64>(), __block_shape_x().Cast<i64>()];
 }
 
 @inline
 @target("nvptx")
 func BlockIndex()->Array<i64, 3> {
-    return [__block_idx_x().Cast<i64>(), __block_idx_y().Cast<i64>(), __block_idx_z().Cast<i64>()];
+    return [__block_idx_z().Cast<i64>(), __block_idx_y().Cast<i64>(), __block_idx_x().Cast<i64>()];
 }
 
 @inline
 @target("nvptx")
 func GridShape()->Array<i64, 3> {
-    return [__grid_shape_x().Cast<i64>(), __grid_shape_y().Cast<i64>(), __grid_shape_z().Cast<i64>()];
+    return [__grid_shape_z().Cast<i64>(), __grid_shape_y().Cast<i64>(), __grid_shape_x().Cast<i64>()];
 }

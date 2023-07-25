@@ -6,9 +6,9 @@ use ::gpu::Tensor<f32, 2> as GpuMatrixf32;
 @target("nvptx")
 func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
     var thread_x = ::gpu::ThreadIndex()[1];
-    var thread_y = ::gpu::ThreadIndex()[0];
+    var thread_y = ::gpu::ThreadIndex()[2];
     var block_x = ::gpu::BlockIndex()[1];
-    var block_y = ::gpu::BlockIndex()[0];
+    var block_y = ::gpu::BlockIndex()[2];
     var block_size = 32;
     var global_x = block_x * block_size + thread_x;
     var global_y = block_y * block_size + thread_y;
@@ -36,10 +36,10 @@ func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
 @test
 func Main() {
     var block_size = 32;
-    var block_shape = [block_size, block_size, 1];
+    var block_shape = [1, block_size, block_size];
     var a_shape = [10 * 32, 10 * 32];
     var b_shape = [10 * 32, 20 * 32];
-    var grid_shape = [a_shape[1] / block_size, b_shape[0] / block_size, 1];
+    var grid_shape = [1, a_shape[0] / block_size, b_shape[1] / block_size];
 
 
     var A = GpuMatrixf32::Create(a_shape);

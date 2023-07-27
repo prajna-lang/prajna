@@ -1,7 +1,7 @@
 template <T>
 struct Node {
     value: T;
-    next: __ptr<Node<T>>;
+    next: ptr<Node<T>>;
 }
 
 template <T>
@@ -21,7 +21,7 @@ implement Node<T>{
 }
 
 template ptrTp <Type>{
-    implement __ptr<Type> {
+    implement ptr<Type> {
         func Test(){}
     }
 }
@@ -30,7 +30,7 @@ use ptrTp<i64>;
 
 template <Type, Length>
 struct MyArray {
-    data: __array<Type, Length>;
+    data: array<Type, Length>;
 }
 
 @test
@@ -42,7 +42,7 @@ func Test(){
     root.next = &next_node;
     root.nextValue2();
 
-    var tt: __ptr<i64>;
+    var tt: ptr<i64>;
     tt.Test();
     root.nextValue();
 

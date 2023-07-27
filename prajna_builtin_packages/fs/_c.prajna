@@ -1,9 +1,0 @@
-struct FILE{}
-
-func fopen(filename: __ptr<char>, mode: __ptr<char>)->__ptr<FILE>;
-func fclose(stream: __ptr<FILE>);
-func fseek(stream: __ptr<FILE>, offset: i64, origin: i32);
-func ftell(stream: __ptr<FILE>)->i64;
-func fflush(stream: __ptr<FILE>);
-func fread(buffer: __ptr<char>, size: i64, count: i64, stream: __ptr<FILE>);
-func fwrite(buffer: __ptr<char>, size: i64, count: i64, stream: __ptr<FILE>);

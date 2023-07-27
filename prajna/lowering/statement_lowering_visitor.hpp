@@ -31,7 +31,7 @@ inline bool HasInitializable(std::shared_ptr<ir::Type> ir_type) {
         return true;
     }
 
-    if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+    if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
             if (HasInitializable(ir_field->type)) {
                 return true;
@@ -46,7 +46,7 @@ inline void InitializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
                                             std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_variable_liked->type;
     if (HasInitializable(ir_type)) {
-        if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
+        if (auto is_struct_type = Cast<ir::StructType>(ir_type)) {
             for (auto ir_field : is_struct_type->fields) {
                 if (HasInitializable(ir_field->type)) {
                     auto ir_access_field =
@@ -74,7 +74,7 @@ inline bool HasReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
         return true;
     }
 
-    if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+    if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
             if (HasReferenceCountable(ir_field->type)) {
                 return true;
@@ -98,7 +98,7 @@ inline void DestroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         };
 
-        if (auto is_struct_type = cast<ir::StructType>(ir_type)) {
+        if (auto is_struct_type = Cast<ir::StructType>(ir_type)) {
             // 按声明相反的顺序处理
             for (auto iter_field = is_struct_type->fields.rbegin();
                  iter_field != is_struct_type->fields.rend(); ++iter_field) {
@@ -122,7 +122,7 @@ inline void CopyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
     auto ir_type = ir_value->type;
     if (HasReferenceCountable(ir_type)) {
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_value);
-        if (auto ir_struct_type = cast<ir::StructType>(ir_type)) {
+        if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
             for (auto ir_field : ir_struct_type->fields) {
                 if (HasReferenceCountable(ir_field->type)) {
                     auto ir_access_field =
@@ -280,7 +280,7 @@ class StatementLoweringVisitor {
         auto ir_rhs = expression_lowering_visitor->applyOperand(ast_assignment.right);
         auto ir_lhs = expression_lowering_visitor->applyOperand(ast_assignment.left);
 
-        if (auto ir_variable_liked = cast<ir::VariableLiked>(ir_lhs)) {
+        if (auto ir_variable_liked = Cast<ir::VariableLiked>(ir_lhs)) {
             if (ir_variable_liked->type != ir_rhs->type) {
                 logger->Error("the type is not matched", ast_assignment);
             }
@@ -288,8 +288,8 @@ class StatementLoweringVisitor {
             return ir_lhs;
         }
 
-        if (auto ir_property = cast<ir::AccessProperty>(ir_lhs)) {
-            if (not ir_property->property->set_function) {
+        if (auto ir_property = Cast<ir::AccessProperty>(ir_lhs)) {
+            if (!ir_property->property->set_function) {
                 logger->Error("the property has not a setter function", ast_assignment.left);
             }
             if (ir_property->property->set_function->function_type->parameter_types.back() !=
@@ -330,10 +330,10 @@ class StatementLoweringVisitor {
                                std::shared_ptr<ir::Type> ir_type) {
         PRAJNA_ASSERT(!Is<ir::VoidType>(ir_type));
         auto ir_last_value = ir_block->values.back();
-        if (auto ir_return = cast<ir::Return>(ir_last_value)) {
-            return ir_return->value() && ir_return->value()->type == ir_type;
+        if (auto ir_return = Cast<ir::Return>(ir_last_value)) {
+            return ir_return->Value() && ir_return->Value()->type == ir_type;
         }
-        if (auto ir_if = cast<ir::If>(ir_last_value)) {
+        if (auto ir_if = Cast<ir::If>(ir_last_value)) {
             auto re = this->AllBranchIsTerminated(ir_if->TrueBlock(), ir_type) &&
                       this->AllBranchIsTerminated(ir_if->FalseBlock(), ir_type);
             if (re) {
@@ -348,7 +348,7 @@ class StatementLoweringVisitor {
                 return false;
             }
         }
-        if (auto ir_block_ = cast<ir::Block>(ir_last_value)) {
+        if (auto ir_block_ = Cast<ir::Block>(ir_last_value)) {
             return this->AllBranchIsTerminated(ir_block_, ir_type);
         }
 
@@ -434,8 +434,8 @@ class StatementLoweringVisitor {
                 if (Is<ir::VoidType>(ir_function->function_type->return_type)) {
                     ir_builder->Create<ir::Return>(ir_builder->Create<ir::VoidValue>());
                 } else {
-                    if (not this->AllBranchIsTerminated(ir_function->blocks.back(),
-                                                        ir_function->function_type->return_type)) {
+                    if (!this->AllBranchIsTerminated(ir_function->blocks.back(),
+                                                     ir_function->function_type->return_type)) {
                         logger->Error("not all branch have been terminated",
                                       ast_function.declaration);
                     }
@@ -516,9 +516,9 @@ class StatementLoweringVisitor {
     Symbol operator()(ast::For ast_for) {
         auto ir_first = expression_lowering_visitor->Apply(ast_for.first);
         auto ir_last = expression_lowering_visitor->Apply(ast_for.last);
-        if (ir_last->type != ir_builder->GetIndexType() and
+        if (ir_last->type != ir_builder->GetIndexType() &&
             !ir_builder->IsArrayIndexType(ir_last->type)) {
-            logger->Error("the index type must be i64 or i64 array", ast_for.last);
+            logger->Error("the index type must be i64 || i64 array", ast_for.last);
         }
         if (ir_last->type != ir_first->type) {
             logger->Error("the last firt type are not matched", ast_for.first);
@@ -558,14 +558,14 @@ class StatementLoweringVisitor {
     }
 
     Symbol operator()(ast::Break ast_break) {
-        if (not ir_builder->loop_stack.size()) {
+        if (!ir_builder->loop_stack.size()) {
             logger->Error("break is outside of a loop", ast_break);
         }
         return ir_builder->Create<ir::Break>(ir_builder->loop_stack.top());
     }
 
     Symbol operator()(ast::Continue ast_continue) {
-        if (not ir_builder->loop_stack.size()) {
+        if (!ir_builder->loop_stack.size()) {
             logger->Error("continue is outside of a loop", ast_continue);
         }
         return ir_builder->Create<ir::Continue>(ir_builder->loop_stack.top());
@@ -609,7 +609,7 @@ class StatementLoweringVisitor {
 
             for (auto ast_statement : ast_implement.statements) {
                 auto symbol_function = (*this)(ast_statement);
-                if (auto ir_function = cast<ir::Function>(SymbolGet<ir::Value>(symbol_function))) {
+                if (auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function))) {
                     // 已经提前加入, 不然无法调用自身
                     // ir_type->function_dict[ir_function->name] = ir_function;
                     continue;
@@ -667,14 +667,14 @@ class StatementLoweringVisitor {
                 // 创建接口动态类型生成函数
                 ir_interface->dynamic_type_creator = ir_builder->createFunction(
                     std::string("dynamic_type_creator"),
-                    ir::FunctionType::Create({ir_builder->GetPtrType(ir_type)},
+                    ir::FunctionType::Create({ir_builder->GetManagedPtrType(ir_type)},
                                              ir_interface->prototype->dynamic_type));
             }
 
             for (auto ast_function : ast_implement.functions) {
                 std::shared_ptr<ir::Function> ir_function = nullptr;
                 auto symbol_function = (*this)(ast_function);
-                ir_function = cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
+                ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
                 // 已经提前加入
                 // ir_interface->functions.push_back(ir_function);
             }
@@ -974,13 +974,13 @@ class StatementLoweringVisitor {
 
             auto cast_operation = ir::CastInstruction::Operation::None;
 
-            if (auto ir_source_int_type = cast<ir::IntType>(ir_source_type)) {
+            if (auto ir_source_int_type = Cast<ir::IntType>(ir_source_type)) {
                 if (Is<ir::FloatType>(ir_target_type)) {
                     cast_operation = ir_source_int_type->is_signed
                                          ? ir::CastInstruction::Operation::SIToFP
                                          : ir::CastInstruction::Operation::UIToFP;
                 }
-                if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
+                if (auto ir_target_int_type = Cast<ir::IntType>(ir_target_type)) {
                     if (ir_source_int_type->bits == ir_target_int_type->bits) {
                         cast_operation = ir::CastInstruction::Operation::BitCast;
                     }
@@ -998,13 +998,13 @@ class StatementLoweringVisitor {
                 }
             }
 
-            if (auto ir_source_float_type = cast<ir::FloatType>(ir_source_type)) {
-                if (auto ir_target_float_type = cast<ir::FloatType>(ir_target_type)) {
+            if (auto ir_source_float_type = Cast<ir::FloatType>(ir_source_type)) {
+                if (auto ir_target_float_type = Cast<ir::FloatType>(ir_target_type)) {
                     cast_operation = ir_source_float_type->bits > ir_target_float_type->bits
                                          ? ir::CastInstruction::Operation::FPTrunc
                                          : ir::CastInstruction::Operation::FPExt;
                 }
-                if (auto ir_target_int_type = cast<ir::IntType>(ir_target_type)) {
+                if (auto ir_target_int_type = Cast<ir::IntType>(ir_target_type)) {
                     cast_operation = ir_target_int_type->is_signed
                                          ? ir::CastInstruction::Operation::FPToSI
                                          : ir::CastInstruction::Operation::FPToUI;
@@ -1018,7 +1018,7 @@ class StatementLoweringVisitor {
             }
 
             if (cast_operation == ir::CastInstruction::Operation::None) {
-                logger->Error("invalid cast");
+                logger->Error("invalid Cast");
             }
 
             ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Create<ir::CastInstruction>(
@@ -1095,7 +1095,7 @@ class StatementLoweringVisitor {
             }
 
             auto ir_float_type =
-                cast<ir::FloatType>(SymbolGet<ir::Type>(symbol_template_arguments.front()));
+                Cast<ir::FloatType>(SymbolGet<ir::Type>(symbol_template_arguments.front()));
             if (!ir_float_type) {
                 logger->Error("should be a float type");
             }
@@ -1160,8 +1160,8 @@ class StatementLoweringVisitor {
                 logger->Error("should input 1 template argument");
             }
             auto ir_type = SymbolGet<ir::Type>(symbol_template_arguments.front());
-            if (!ir_type) {
-                logger->Error("should be a type");
+            if (!ir_type || Is<ir::VoidType>(ir_type)) {
+                logger->Error("should be a first class type");
             }
 
             return ir::PointerType::Create(ir_type);
@@ -1172,7 +1172,7 @@ class StatementLoweringVisitor {
         return template_struct_raw_ptr;
     }
 
-    std::shared_ptr<TemplateStruct> CreateFunctionTypeTemplate() {
+    std::shared_ptr<TemplateStruct> CreateFunctionTypePointerTemplate() {
         auto template_function_type = Template::Create();
         template_function_type->generator = [=, symbol_table = this->ir_builder->symbol_table,
                                              logger = this->logger](
@@ -1196,7 +1196,8 @@ class StatementLoweringVisitor {
             ir_parameter_list.pop_back();
             auto ir_return_type = ir_type_list.back();
 
-            return ir::FunctionType::Create(ir_parameter_list, ir_return_type);
+            return ir::PointerType::Create(
+                ir::FunctionType::Create(ir_parameter_list, ir_return_type));
         };
 
         auto template_struct_function_type = TemplateStruct::Create();
@@ -1215,7 +1216,7 @@ class StatementLoweringVisitor {
             }
             auto ir_source_type = SymbolGet<ir::Type>(symbol_template_arguments.front());
             auto ir_target_type = SymbolGet<ir::Type>(symbol_template_arguments.back());
-            if (!ir_source_type or !ir_target_type) {
+            if (!ir_source_type || !ir_target_type) {
                 logger->Error("template arguments should be type");
             }
             if (ir_source_type->bytes != ir_target_type->bytes) {
@@ -1268,7 +1269,7 @@ class StatementLoweringVisitor {
 
             auto ir_interface = iter_interface->second;
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
-            auto ir_pointer_type = ir_tmp_builder->GetPtrType(ir_value_type);
+            auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_value_type);
             auto ir_function_type =
                 ir::FunctionType::Create({ir_pointer_type}, ir_interface_prototype->dynamic_type);
             auto ir_function = ir_tmp_builder->createFunction(
@@ -1308,7 +1309,7 @@ class StatementLoweringVisitor {
                 RANGE(ir_target_value_type->interface_dict),
                 [=](auto x) { return x.second && x.second->prototype == ir_interface_prototype; });
             if (iter_interface_implement == ir_target_value_type->interface_dict.end()) {
-                logger->Error("invalid dynamic cast, operand is not a interface dynamic type");
+                logger->Error("invalid dynamic Cast, operand is not a interface dynamic type");
             }
             auto ir_interface_implement = iter_interface_implement->second;
             // interface implement必然有一个函数, 我们通过该函数来判断dynamic
@@ -1316,7 +1317,7 @@ class StatementLoweringVisitor {
             PRAJNA_ASSERT(ir_interface_implement->functions.front());
 
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
-            auto ir_pointer_type = ir_tmp_builder->GetPtrType(ir_target_value_type);
+            auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
             auto ir_function_type =
                 ir::FunctionType::Create({ir_interface_prototype->dynamic_type}, ir_pointer_type);
             auto ir_function = ir_tmp_builder->createFunction(
@@ -1326,7 +1327,7 @@ class StatementLoweringVisitor {
 
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
 
-            auto ir_target_ptr_type = ir_tmp_builder->GetPtrType(ir_target_value_type);
+            auto ir_target_ptr_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
             auto ir_ptr = ir_tmp_builder->Create<ir::LocalVariable>(ir_target_ptr_type);
             auto ir_interface_implement_function0 =
                 ir_interface_implement
@@ -1362,6 +1363,7 @@ class StatementLoweringVisitor {
             ir_tmp_builder->PopBlock();
 
             ir_tmp_builder->PushBlock(ir_if->FalseBlock());
+            ir_tmp_builder->ExitWithPrintErrorMessage("invalid cast dynamic cast");
             auto ir_nullptr = ir_tmp_builder->Create<ir::Call>(
                 ir_tmp_builder->GetImplementFunction(ir_ptr->type, "Null"),
                 std::list<std::shared_ptr<ir::Value>>{});
@@ -1373,6 +1375,77 @@ class StatementLoweringVisitor {
         };
 
         return template_dynamic_cast;
+    }
+
+    std::shared_ptr<Template> CreateDynamicIsTemplate() {
+        auto template_dynamic_is = Template::Create();
+        template_dynamic_is->generator = [symbol_table = this->ir_builder->symbol_table,
+                                          logger = this->logger,
+                                          this](std::list<Symbol> symbol_template_arguments,
+                                                std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 2) {
+                logger->Error("should input 2 template argument");
+            }
+
+            auto ir_interface_prototype =
+                SymbolGet<ir::InterfacePrototype>(symbol_template_arguments.front());
+            if (!ir_interface_prototype) {
+                logger->Error("the first template argument should be a interface prototype");
+            }
+            auto ir_target_value_type = SymbolGet<ir::Type>(symbol_template_arguments.back());
+            if (!ir_target_value_type) {
+                logger->Error("the second template argument should be type");
+            }
+
+            auto iter_interface_implement = std::find_if(
+                RANGE(ir_target_value_type->interface_dict),
+                [=](auto x) { return x.second && x.second->prototype == ir_interface_prototype; });
+            if (iter_interface_implement == ir_target_value_type->interface_dict.end()) {
+                logger->Error("invalid dynamic Cast, operand is not a interface dynamic type");
+            }
+            auto ir_interface_implement = iter_interface_implement->second;
+            // interface implement必然有一个函数, 我们通过该函数来判断dynamic
+            // type是否是某一个具体类型
+            PRAJNA_ASSERT(ir_interface_implement->functions.front());
+
+            auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
+            auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
+            auto ir_function_type = ir::FunctionType::Create({ir_interface_prototype->dynamic_type},
+                                                             ir::BoolType::Create());
+            auto ir_function = ir_tmp_builder->createFunction(
+                "__dynamic_is" + GetTemplateArgumentsPostify(symbol_template_arguments),
+                ir_function_type);
+            ir_function->annotation_dict["inline"];
+
+            ir_tmp_builder->CreateTopBlockForFunction(ir_function);
+
+            auto ir_target_ptr_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
+            auto ir_ptr = ir_tmp_builder->Create<ir::LocalVariable>(ir_target_ptr_type);
+            auto ir_interface_implement_function0 =
+                ir_interface_implement
+                    ->undef_this_pointer_functions[ir_interface_implement->functions.front()];
+
+            auto template_cast =
+                SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"__cast"}));
+            auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->instantiate(
+                {ir_interface_implement_function0->type, ir_tmp_builder->GetIndexType()},
+                ir_tmp_builder->module));
+            auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
+                ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
+
+            auto ir_dynamic_object = ir_function->parameters.front();
+            auto ir_rawptr_i64_1 = ir_tmp_builder->Create<ir::Call>(
+                ir_rawptr_to_i64_cast_function,
+                ir_tmp_builder->AccessField(
+                    ir_dynamic_object, ir_interface_implement->functions.front()->name + "/fp"));
+            auto ir_condition =
+                ir_tmp_builder->CallBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
+            ir_tmp_builder->Create<ir::Return>(ir_condition);
+
+            return ir_function;
+        };
+
+        return template_dynamic_is;
     }
 
     std::shared_ptr<Template> CreateSizeOfTemplate() {
@@ -1438,7 +1511,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (compare_operation_name == "gt") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         compare_operation = ir::CompareInstruction::Operation::ICMP_SGT;
                     } else {
@@ -1450,7 +1523,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (compare_operation_name == "ge") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         compare_operation = ir::CompareInstruction::Operation::ICMP_SGE;
                     } else {
@@ -1462,7 +1535,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (compare_operation_name == "lt") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         compare_operation = ir::CompareInstruction::Operation::ICMP_SLT;
                     } else {
@@ -1474,7 +1547,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (compare_operation_name == "le") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         compare_operation = ir::CompareInstruction::Operation::ICMP_SLE;
                     } else {
@@ -1550,7 +1623,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (binary_operator_name == "div") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         binary_operation = ir::BinaryOperator::Operation::SDiv;
                     } else {
@@ -1562,7 +1635,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (binary_operator_name == "rem") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         binary_operation = ir::BinaryOperator::Operation::SRem;
                     } else {
@@ -1570,7 +1643,7 @@ class StatementLoweringVisitor {
                     }
                 }
                 if (Is<ir::FloatType>(ir_type)) {
-                    auto ir_float_type = cast<ir::FloatType>(ir_type);
+                    auto ir_float_type = Cast<ir::FloatType>(ir_type);
                     binary_operation = ir::BinaryOperator::Operation::FRem;
                 }
             }
@@ -1598,7 +1671,7 @@ class StatementLoweringVisitor {
                 }
             }
             if (binary_operator_name == "shift_right") {
-                if (auto ir_int_type = cast<ir::IntType>(ir_type)) {
+                if (auto ir_int_type = Cast<ir::IntType>(ir_type)) {
                     if (ir_int_type->is_signed) {
                         binary_operation = ir::BinaryOperator::Operation::AShr;
                     } else {
@@ -1639,7 +1712,7 @@ class StatementLoweringVisitor {
                 logger->Error("should input 1 template argument");
             }
             auto ir_float_type =
-                cast<ir::FloatType>(SymbolGet<ir::Type>(symbol_template_arguments.front()));
+                Cast<ir::FloatType>(SymbolGet<ir::Type>(symbol_template_arguments.front()));
             if (!ir_float_type) {
                 logger->Error("template argument should be a float type");
             }
@@ -1784,16 +1857,18 @@ class StatementLoweringVisitor {
             this->CreateFloatTypeTemplate(), "Float");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateRawArrayTypeTemplate(), "__array");
+            this->CreateRawArrayTypeTemplate(), "array");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateRawPtrTypeTemplate(), "__ptr");
+            this->CreateRawPtrTypeTemplate(), "ptr");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateFunctionTypeTemplate(), "Func");
+            this->CreateFunctionTypePointerTemplate(), "function");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateAsCastTemplate(), "__as");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateDynamicCastTemplate(), "__dynamic_cast");
+        ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
+            this->CreateDynamicIsTemplate(), "__dynamic_is");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateCastInstructionTemplate(), "__cast");
@@ -1933,7 +2008,7 @@ class StatementLoweringVisitor {
             auto guard = function_guard::Create([=]() { this->ir_builder->PopSymbolTable(); });
             ir_builder->symbol_table->name = ir_interface_prototype->name;
             auto symbol_function = (*this)(ast_function_declaration);
-            auto ir_function = cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
+            auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
             ir_interface_prototype->functions.push_back(ir_function);
             // 需要将去从module移出来, 这里的function并不会实际被生成
             ir_builder->module->functions.remove(ir_function);
@@ -1950,8 +2025,8 @@ class StatementLoweringVisitor {
 
     void CreateInterfaceDynamicType(
         std::shared_ptr<ir::InterfacePrototype> ir_interface_prototype) {
-        auto field_object_pointer =
-            ir::Field::Create("object_pointer", ir_builder->GetPtrType(ir::UndefType::Create()));
+        auto field_object_pointer = ir::Field::Create(
+            "object_pointer", ir_builder->GetManagedPtrType(ir::UndefType::Create()));
         auto ir_interface_struct = ir_interface_prototype->dynamic_type;
         ir_interface_struct->fields.push_back(field_object_pointer);
         ir_interface_struct->name = ir_interface_prototype->name;

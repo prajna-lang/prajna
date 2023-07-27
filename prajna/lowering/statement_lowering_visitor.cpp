@@ -10,6 +10,7 @@
 #include "boost/process/search_path.hpp"
 #include "boost/process/system.hpp"
 #include "prajna/compiler/compiler.h"
+#include "prajna/jit/execution_engine.h"
 
 namespace prajna::lowering {
 
@@ -47,8 +48,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         bool is_first_module = true;
 
         path directory_path;
-        for (auto iter_ast_identifier = ast_import.identifier_path.identifiers.begin();
-             iter_ast_identifier != ast_import.identifier_path.identifiers.end();
+        auto iter_ast_identifier = ast_import.identifier_path.identifiers.begin();
+        for (; iter_ast_identifier != ast_import.identifier_path.identifiers.end();
              ++iter_ast_identifier) {
             std::string identifier = iter_ast_identifier->identifier;
             if (symbol.type() != typeid(std::shared_ptr<SymbolTable>)) {
@@ -64,6 +65,9 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                     [=, &is_first_module](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
                         auto symbol = symbol_table->Get(identifier);
                         if (symbol.which() != 0) {
+                            if (identifier == "gpu") {
+                                int a = 0;
+                            }
                             return symbol;
                         } else {
                             auto new_symbol_table = lowering::SymbolTable::Create(symbol_table);
@@ -122,7 +126,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                                     }
                                 }
 
-                                logger->Error("module is not found",
+                                logger->Error(fmt::format("{} is not found in {}", identifier,
+                                                          symbol_table->Fullname()),
                                               iter_ast_identifier->identifier);
                                 return nullptr;
                             }
@@ -158,8 +163,30 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
             }
         }
 
-        if (ast_import.as_optional) {
-            ir_builder->symbol_table->Set(symbol, ast_import.as_optional.get());
+        if (ast_import.star_match_optional) {
+            if (auto ir_symbol_table = SymbolGet<lowering::SymbolTable>(symbol)) {
+                for (auto [id, tmp_symbol] : ir_symbol_table->current_symbol_dict) {
+                    // 如果符号存在且不是同一个符号报错
+                    if (ir_builder->symbol_table->CurrentTableHas(id)) {
+                        if (ir_builder->symbol_table->Get(id) != tmp_symbol) {
+                            logger->Error(fmt::format("{} has defined", id),
+                                          *ast_import.star_match_optional);
+                        }
+                    } else {
+                        ir_builder->symbol_table->Set(tmp_symbol, id);
+                    }
+                }
+
+                if (ast_import.as_optional) {
+                    logger->Error("unepect as", *ast_import.as_optional);
+                }
+            } else {
+                logger->Error("not a module", iter_ast_identifier->identifier);
+            }
+        } else {
+            if (ast_import.as_optional) {
+                ir_builder->symbol_table->Set(symbol, ast_import.as_optional.get());
+            }
         }
 
         return symbol;
@@ -170,6 +197,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
 }
 
 Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
+    // 编译时输出消息
     if (ast_pragma.name == "error") {
         std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
         logger->Error(fmt::format("pragma error: {}", msg), ast_pragma);
@@ -180,6 +208,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
         logger->Warning(fmt::format("pragma warning: {}", msg), ast_pragma);
         return nullptr;
     }
+
+    // 执行系统指令
     if (ast_pragma.name == "system") {
         std::string command = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
 
@@ -189,12 +219,24 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
         print_callback(future_stdout.get().c_str());
         return nullptr;
     }
+
+    // 系统预加载
     if (ast_pragma.name == "stage0") {
         this->Stage0();
         return nullptr;
     }
     if (ast_pragma.name == "stage1") {
         this->Stage1();
+        return nullptr;
+    }
+
+    // 链接
+    if (ast_pragma.name == "link") {
+        if (ast_pragma.values.size() != 1) {
+            logger->Error("#link should have one value");
+        }
+        auto dynamic_lib_name = ast_pragma.values.front().value;
+        this->compiler->jit_engine->LoadDynamicLib(dynamic_lib_name);
         return nullptr;
     }
 

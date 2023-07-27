@@ -63,24 +63,24 @@ inline void InsertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_blo
 
     for (auto iter = ir_block->values.begin(); iter != ir_builder->inserter_iterator; ++iter) {
         auto ir_value = *iter;
-        if (auto ir_variable = cast<ir::LocalVariable>(ir_value)) {
+        if (auto ir_variable = Cast<ir::LocalVariable>(ir_value)) {
             ir_local_variable_list.push_back(ir_variable);
         }
 
-        if (auto ir_block = cast<ir::Block>(ir_value)) {
+        if (auto ir_block = Cast<ir::Block>(ir_value)) {
             InsertDestroyLocalVariableForBlock(ir_block);
         }
 
-        if (auto ir_if = cast<ir::If>(ir_value)) {
+        if (auto ir_if = Cast<ir::If>(ir_value)) {
             InsertDestroyLocalVariableForBlock(ir_if->TrueBlock());
             InsertDestroyLocalVariableForBlock(ir_if->FalseBlock());
         }
 
-        if (auto ir_while = cast<ir::While>(ir_value)) {
+        if (auto ir_while = Cast<ir::While>(ir_value)) {
             InsertDestroyLocalVariableForBlock(ir_while->LoopBlock());
         }
 
-        if (auto ir_for = cast<ir::For>(ir_value)) {
+        if (auto ir_for = Cast<ir::For>(ir_value)) {
             InsertDestroyLocalVariableForBlock(ir_for->LoopBlock());
         }
     }
@@ -88,7 +88,7 @@ inline void InsertDestroyLocalVariableForBlock(std::shared_ptr<ir::Block> ir_blo
     ir_local_variable_list.remove_if([](std::shared_ptr<ir::LocalVariable> ir_local_variable) {
         return ir_local_variable->annotation_dict.count(DISABLE_REFERENCE_COUNT);
     });
-    while (not ir_local_variable_list.empty()) {
+    while (! ir_local_variable_list.empty()) {
         auto ir_local_variable = ir_local_variable_list.front();
         DestroyVariableLikedCallback(ir_local_variable, ir_builder);
         ir_local_variable_list.pop_front();
@@ -124,7 +124,7 @@ inline void InsertVariableIncrementReferenceCount(std::shared_ptr<ir::Module> ir
             ir_builder->inserter_iterator = iter;
             DestroyVariableLikedCallback(ir_write_variable_liked->variable(), ir_builder);
 
-            CopyVariableLikedCallback(ir_write_variable_liked->value(), ir_builder);
+            CopyVariableLikedCallback(ir_write_variable_liked->Value(), ir_builder);
         }
     }
 }
@@ -153,7 +153,7 @@ inline void InsertDestroyForCall(std::shared_ptr<ir::Module> ir_module) {
                 // 如果是临时变量, 那应该在使用完临时变量后插入
                 if (ir_instruction_use_call->annotation_dict.count("DisableReferenceCount")) {
                     auto ir_write_variable_liked =
-                        cast<ir::WriteVariableLiked>(ir_instruction_use_call);
+                        Cast<ir::WriteVariableLiked>(ir_instruction_use_call);
                     auto ir_object_pointer = ir_write_variable_liked->variable()
                                                  ->instruction_with_index_list.back()
                                                  .instruction;
@@ -176,7 +176,7 @@ inline void InsertCopyForReturn(std::shared_ptr<ir::Module> ir_module) {
         for (auto ir_return : ir_returns) {
             if (lowering::HasReferenceCountable(ir_return->type)) {
                 // 如果是Call则不做操作, 和insertDestroyForCall里的逻辑对应
-                if (Is<ir::Call>(ir_return->value())) {
+                if (Is<ir::Call>(ir_return->Value())) {
                     continue;
                 }
 
@@ -184,7 +184,7 @@ inline void InsertCopyForReturn(std::shared_ptr<ir::Module> ir_module) {
                 ir_builder->PushBlock(ir_return->parent_block);
                 auto iter = std::find(RANGE(ir_return->parent_block->values), ir_return);
                 ir_builder->inserter_iterator = iter;
-                CopyVariableLikedCallback(ir_return->value(), ir_builder);
+                CopyVariableLikedCallback(ir_return->Value(), ir_builder);
             }
         }
     }

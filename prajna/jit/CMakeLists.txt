@@ -1,4 +1,4 @@
-add_library(prajna_jit
+add_library(prajna_jit OBJECT
     execution_engine.cpp
 )
 

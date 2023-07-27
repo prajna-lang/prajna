@@ -1,1 +1,0 @@
-add_subdirectory(prajna_in_cpp)

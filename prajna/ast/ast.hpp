@@ -128,6 +128,7 @@ struct IdentifierPath : SourceLocation {
 
 struct Use : SourceLocation {
     IdentifierPath identifier_path;
+    boost::optional<Operator> star_match_optional;
     boost::optional<Identifier> as_optional;
 };
 
@@ -365,7 +366,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementType, type, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::ImplementInterfaceForType, annotation_dict, interface, type,
                           functions)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IdentifierPath, root_optional, identifiers)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Use, identifier_path, as_optional)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Use, identifier_path, star_match_optional, as_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::IntLiteralPostfix, int_literal, postfix)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FloatLiteralPostfix, float_literal, postfix)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::KernelFunctionCallOperation, grid_shape, block_shape,

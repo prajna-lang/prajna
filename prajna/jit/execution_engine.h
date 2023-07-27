@@ -20,6 +20,8 @@ class ExecutionEngine {
 
     void AddIRModule(std::shared_ptr<ir::Module> ir_module);
 
+    bool LoadDynamicLib(std::string lib_name);
+
     void BindCFunction(void* fun_ptr, std::string mangle_name);
 
     void CatchRuntimeError();

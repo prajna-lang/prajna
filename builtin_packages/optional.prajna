@@ -1,0 +1,58 @@
+template <ValueType>
+struct Optional{
+    _value : ValueType;
+    _hasvalue : bool;
+}
+
+template <ValueType>
+@disable_dynamic
+interface ValueProperty {
+    func Get()->ValueType;
+    func Set(value:ValueType);
+}
+
+template <ValueType>
+implement ValueProperty<ValueType> for Optional<ValueType>{
+    @inline
+    func Get()->ValueType{
+        __assert(this._hasvalue);
+        return this._value;
+    }
+
+    @inline
+    func Set(value:ValueType){
+        this._hasvalue = true;
+        this._value = value;
+    }
+}
+
+template <ValueType>
+implement Optional<ValueType> {
+    func HaveValue() -> bool{
+        return this._hasvalue;
+    }
+
+    func Value_Or(default_value : ValueType) -> ValueType {
+        if(!this.HaveValue()){
+            return default_value;
+        }else {
+            return this._value;
+        }
+    }
+
+    @static
+    func Create(value: ValueType) -> Optional<ValueType> {
+        var optional: Optional<ValueType>;
+        optional._value = value;
+        optional._hasvalue = true;
+        return optional;
+    }
+
+}
+
+template <ValueType>
+implement Initializable for Optional<ValueType> {
+    func Initialize() {
+        this._hasvalue = false;
+    }
+}

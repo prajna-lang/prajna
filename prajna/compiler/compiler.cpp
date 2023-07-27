@@ -86,7 +86,7 @@ std::shared_ptr<ir::Module> Compiler::CompileCode(
     ir_lowering_module->fullname = ir_lowering_module->name;
     for (auto [ir_target, ir_sub_module] : ir_lowering_module->modules) {
         if (ir_sub_module == nullptr) continue;
-        ir_sub_module->name = ir_lowering_module->name + "_" + ir::targetToString(ir_target);
+        ir_sub_module->name = ir_lowering_module->name + "_" + ir::TargetToString(ir_target);
         ir_sub_module->fullname = ir_sub_module->name;
     }
     auto ir_ssa_module = prajna::transform::transform(ir_lowering_module);
@@ -143,7 +143,7 @@ void Compiler::ExecutateMainFunction() {
 
     this->_symbol_table->Each([=, &main_functions](lowering::Symbol symbol) {
         if (auto ir_value = lowering::SymbolGet<ir::Value>(symbol)) {
-            if (auto ir_function = cast<ir::Function>(ir_value)) {
+            if (auto ir_function = Cast<ir::Function>(ir_value)) {
                 if (ir_function->name == "Main") {
                     main_functions.insert(ir_function);
                     if (main_functions.size() >= 2) {
@@ -216,7 +216,7 @@ std::shared_ptr<ir::Module> Compiler::CompileProgram(
         return nullptr;
     }
 
-    auto current_symbol_table = CreateSymbolTableTree(_symbol_table, prajna_source_package_path);
+    auto current_symbol_table = CreateSymbolTableTree(_symbol_table, prajna_source_package_path.string());
     current_symbol_table->directory_path =
         prajna_directory_path / current_symbol_table->directory_path;
 

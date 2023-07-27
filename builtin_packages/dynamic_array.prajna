@@ -1,0 +1,76 @@
+func CeilPowerOf2(value: i64)->i64{
+    __assert(value >= 0);
+    var re = 1;
+    while (re < value) {
+        re = re * 2;
+    }
+    return re;
+}
+
+template <ValueType>
+struct DynamicArray{
+    _data: Ptr<ValueType>;
+    _length: i64;
+    _capacity: i64;
+}
+
+template <ValueType>
+implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
+    func Get(idx: i64)->ValueType{
+        return this._data[idx];
+    }
+
+    func Set(idx: i64, value: ValueType){
+        this._data[idx] = value;
+    }
+}
+
+template <ValueType>
+implement Initializable for DynamicArray<ValueType> {
+    func Initialize() {
+        this._data = Ptr<ValueType>::Null();
+        this._length = 0;
+        this._capacity = 0;
+    }
+}
+
+template <ValueType>
+implement DynamicArray<ValueType> {
+    @static
+    func Create(_length: i64)->DynamicArray<ValueType>{
+        var self: DynamicArray<ValueType>;
+        self._length = _length;
+        self._capacity = CeilPowerOf2(_length);
+        self._data = Ptr<ValueType>::Allocate(self._capacity);
+        return self;
+    }
+
+    func Push(value: ValueType) {
+        if (this._length + 1 > this._capacity) {
+            var new_self = Create(this._length + 1);
+            for idx in 0 to this._length {
+                new_self[idx] = this[idx];
+            }
+            this = new_self;
+        } else {
+            this._length = this._length + 1;
+        }
+        this[this._length-1] = value;
+    }
+
+    func Length()->i64 {
+        return this._length;
+    }
+
+    func Back()->ValueType {
+        return this[this.Length() - 1];
+    }
+
+    func Capacity()->i64 {
+        return this._capacity;
+    }
+
+    func Pop() {
+        this._length = this._length - 1;
+    }
+}

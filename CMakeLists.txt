@@ -49,6 +49,7 @@ target_include_directories(llvm_include_dir
 add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/cxxopts EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/fmt EXCLUDE_FROM_ALL)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/cpp-terminal EXCLUDE_FROM_ALL)
 
@@ -61,7 +62,6 @@ option(PRAJNA_BUILD_TOOLS "Build Prajna tools" ON)
 option(PRAJNA_BUILD_EXAMPLES "Build Prajna examples" ON)
 option(PRAJNA_BUILD_TESTS "Build Prajna tests" ON)
 option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" OFF)
-option(PRAJNA_WITH_GPU "With CUDA" OFF)
 option(PRAJNA_WITH_GPU "With CUDA" OFF)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
@@ -86,17 +86,16 @@ if (PRAJNA_BUILD_TOOLS)
     add_subdirectory(tools)
 endif()
 
-if (PRAJNA_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+add_subdirectory(examples_in_cpp)
 
 include(CMakePackageConfigHelpers)
 
 install(TARGETS prajna EXPORT ${PROJECT_NAME}-targets)
+# install(TARGETS prajna_shared EXPORT ${PROJECT_NAME}-targets)
 # xeus_prajna依赖
 install(TARGETS nlohmann_json EXPORT ${PROJECT_NAME}-targets)
-install(DIRECTORY prajna_builtin_packages DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(DIRECTORY builtin_packages DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY dockerfiles DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY docs DESTINATION ${CMAKE_INSTALL_PREFIX})
-
-
+install(DIRECTORY examples DESTINATION ${CMAKE_INSTALL_PREFIX})
+install(FILES prajna/compiler/compiler.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

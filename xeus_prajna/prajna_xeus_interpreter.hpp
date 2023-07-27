@@ -10,10 +10,10 @@ namespace xeus_prajna {
 
 class PrajnaXeusInterpreter : public xeus::xinterpreter {
    public:
-    PrajnaXeusInterpreter(std::string prajna_builtin_packages_directory) {
+    PrajnaXeusInterpreter(std::string builtin_packages_directory) {
         xeus::register_interpreter(this);
         compiler = prajna::Compiler::Create();
-        compiler->CompileBuiltinSourceFiles(prajna_builtin_packages_directory);
+        compiler->CompileBuiltinSourceFiles(builtin_packages_directory);
     }
 
     virtual ~PrajnaXeusInterpreter() = default;
@@ -40,7 +40,7 @@ class PrajnaXeusInterpreter : public xeus::xinterpreter {
         };
 
         auto code_line = code;
-        if (code_line.size() >= 1 and not(code_line.back() == ';' or code_line.back() == '}')) {
+        if (code_line.size() >= 1 && !(code_line.back() == ';' || code_line.back() == '}')) {
             code_line.push_back(';');
         }
         code_line.push_back('\n');

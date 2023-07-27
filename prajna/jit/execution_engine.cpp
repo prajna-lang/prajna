@@ -19,6 +19,7 @@
 
 #include "boost/dll/shared_library.hpp"
 #include "llvm/ExecutionEngine/JITLink/JITLinkMemoryManager.h"
+#include "llvm/ExecutionEngine/Orc/EPCDynamicLibrarySearchGenerator.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
@@ -28,9 +29,11 @@
 #include "prajna/exception.hpp"
 #include "prajna/ir/ir.hpp"
 
+#ifdef __linux__
 extern "C" uint16_t __truncdfhf2(double);
 extern "C" uint16_t __floattihf(int64_t[2]);
 extern "C" uint16_t __floatuntihf(uint64_t[2]);
+#endif
 
 namespace prajna {
 
@@ -63,7 +66,9 @@ float Clock() {
            std::chrono::steady_clock::period::num / std::chrono::steady_clock::period::den;
 }
 
-void Sleep(float t) { sleep(t); }
+void Sleep(float t) {
+    std::this_thread::sleep_for(std::chrono::nanoseconds(static_cast<long long>(t * 1000000000)));
+}
 
 llvm::sys::DynamicLibrary __load_dynamic_library(char *lib_name) {
     auto dl = llvm::sys::DynamicLibrary::getLibrary(lib_name);
@@ -85,24 +90,37 @@ ExecutionEngine::ExecutionEngine() {
     LLVMInitializeNativeAsmPrinter();
     // LLVMInitializeNativeAsmParser();
 
+// TODO: 需要确定setObjectLinkingLayerCreator的作用, 现在去除后, 在mac上会报错.
+#ifdef __APPLE__
     auto expect_up_lljit =
         llvm::orc::LLJITBuilder()
             .setObjectLinkingLayerCreator(
                 [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
+                    // @note 需要确认机制是做什么用的
                     auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(
-                        // @note 需要确认机制是做什么用的
                         ES, std::make_unique<llvm::jitlink::InProcessMemoryManager>(64 * 1024));
                     ll->setAutoClaimResponsibilityForObjectSymbols(true);
                     return std::move(ll);
                 })
             .create();
+#else
+    auto expect_up_lljit = llvm::orc::LLJITBuilder().create();
+#endif
     PRAJNA_ASSERT(expect_up_lljit);
     _up_lljit = std::move(*expect_up_lljit);
+
+    _up_lljit->getMainJITDylib().addGenerator(
+        cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
+            _up_lljit->getDataLayout().getGlobalPrefix())));
+}
+
+bool ExecutionEngine::LoadDynamicLib(std::string lib_name) {
+    return llvm::sys::DynamicLibrary::getPermanentLibrary(lib_name.c_str()).isValid();
 }
 
 size_t ExecutionEngine::GetValue(std::string name) {
     auto expect_symbol = _up_lljit->lookup(name);
-    PRAJNA_ASSERT(expect_symbol);
+    PRAJNA_VERIFY(expect_symbol);
     return expect_symbol->getValue();
 }
 
@@ -221,10 +239,6 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 }
 
 void ExecutionEngine::BindCFunction(void *fun_ptr, std::string mangle_name) {
-    _up_lljit->getMainJITDylib().addGenerator(
-        cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
-            _up_lljit->getDataLayout().getGlobalPrefix())));
-
     auto fun_symbol = llvm::orc::absoluteSymbols(
         {{_up_lljit->mangleAndIntern(mangle_name),
           {llvm::orc::ExecutorAddr::fromPtr(fun_ptr),
@@ -248,9 +262,11 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print");
     this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input");
 
+#ifdef __linux__
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
-    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floattihf");
-    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__floatuntihf");
+    // this->BindCFunction(reinterpret_cast<void *>(__floattihf), "__floattihf");
+    // this->BindCFunction(reinterpret_cast<void *>(__floatuntihf), "__floatuntihf");
+#endif
 
     this->BindCFunction(reinterpret_cast<void *>(fopen), "::fs::_c::fopen");
     this->BindCFunction(reinterpret_cast<void *>(fclose), "::fs::_c::fclose");

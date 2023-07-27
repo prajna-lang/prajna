@@ -20,16 +20,22 @@ if (PRAJNA_WITH_GPU)
     target_compile_definitions(prajna_config_target INTERFACE PRAJNA_WITH_GPU)
 endif()
 
-target_compile_options(prajna_config_target
-    INTERFACE -Wno-unused-parameter
-    INTERFACE -Wno-deprecated-declarations
-)
+if (MSVC)
+  target_compile_options(prajna_config_target INTERFACE "/bigobj")
+else ()
+    target_compile_options(prajna_config_target
+        INTERFACE -Wno-unused-parameter
+        INTERFACE -Wno-deprecated-declarations
+    )
+endif ()
 
-if (NOT PRAJNA_WITH_JUPYTER)
+if (NOT PRAJNA_WITH_JUPYTER AND NOT MSVC)
     target_compile_options(prajna_config_target
         INTERFACE -Werror
     )
 endif()
+
+
 
 
 if (PRAJNA_DISABLE_ASSERTS)

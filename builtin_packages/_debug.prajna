@@ -1,0 +1,10 @@
+func __assert_with_errno(condition: bool, errno: i64){
+    if (!condition) {
+        bindings::exit(errno);
+    }
+}
+
+
+func __assert(condition: bool){
+    __assert_with_errno(condition, -1);
+}

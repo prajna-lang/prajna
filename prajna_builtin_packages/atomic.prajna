@@ -1,3 +1,0 @@
-// ubuntu下找不到__atomic_load回头再打开, 现在还不必须
-// @intrinsic("__atomic_load")
-// func __atomic_load(v0: i64, v1: __ptr<i64>, v2: __ptr<i64>, o: i32);

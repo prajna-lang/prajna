@@ -11,7 +11,7 @@ class Logger;
 
 namespace prajna::parser {
 
-__attribute__((no_sanitize("address"))) bool parse(std::string code, prajna::ast::Statements& ast,
+ bool parse(std::string code, prajna::ast::Statements& ast,
                                                    std::string file_name,
                                                    std::shared_ptr<Logger> logger);
 

@@ -20,29 +20,29 @@
 
 ## 在Prajna里声明函数
 
-我们在prajna_builtin_packages/fs/_c.prajna里声明上面所绑定的函数.
+我们在builtin_packages/fs/_c.prajna里声明上面所绑定的函数.
 
 ```prajna
 struct FILE{}
 
-func fopen(filename: __ptr<char>, mode: __ptr<char>)->__ptr<FILE>;
-func fclose(stream: __ptr<FILE>);
-func fseek(stream: __ptr<FILE>, offset: i64, origin: i32);
-func ftell(stream: __ptr<FILE>)->i64;
-func fflush(stream: __ptr<FILE>);
-func fread(buffer: __ptr<char>, size: i64, count: i64, stream: __ptr<FILE>);
-func fwrite(buffer: __ptr<char>, size: i64, count: i64, stream: __ptr<FILE>);
+func fopen(filename: ptr<char>, mode: ptr<char>)->ptr<FILE>;
+func fclose(stream: ptr<FILE>);
+func fseek(stream: ptr<FILE>, offset: i64, origin: i32);
+func ftell(stream: ptr<FILE>)->i64;
+func fflush(stream: ptr<FILE>);
+func fread(buffer: ptr<char>, size: i64, count: i64, stream: ptr<FILE>);
+func fwrite(buffer: ptr<char>, size: i64, count: i64, stream: ptr<FILE>);
 ```
 
 prajna_builtin_pakcages是比较特殊的文件夹, 其名字空间就是"::", fs对应"fs", _c.prajna对应"_c", 合到一块就是::fs::_c.
 这里可以看到我们声明的函数全名必须和绑定时所使用的名字一致, 这样执行引擎才能找到.
-i32相当于int32, __ptr\<FILE>相当于FILE *, 我们可以从字面理解Prajna和C的对应类型.
+i32相当于int32, ptr\<FILE>相当于FILE *, 我们可以从字面理解Prajna和C的对应类型.
 
 ## 封装成合理的接口
 
-我们所绑定的函数大部分是不推荐直接使用的, 因为"指针"(__ptr)在Prajna里是不安全的.
+我们所绑定的函数大部分是不推荐直接使用的, 因为"指针"(ptr)在Prajna里是不安全的.
 "\__"开头表示其是不安全的, 使用时要特别关注其内存生存期间和其他安全性问题.
-我们可以在prajna_builtin_packages/fs/.prajna里看到般若对文件读写的封装. (".prajna"不会增加名字空间, 其相当于fs模块的入口文件)
+我们可以在builtin_packages/fs/.prajna里看到般若对文件读写的封装. (".prajna"不会增加名字空间, 其相当于fs模块的入口文件)
 
 ```prajna
 use _c;
@@ -93,7 +93,7 @@ func TestFs() {
     }
     {
         var str = fs::Read("fs_test.txt");
-        debug::Assert(str == str_hello_world);
+        __assert(str == str_hello_world);
     }
 }
 ```

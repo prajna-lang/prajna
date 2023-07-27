@@ -30,7 +30,7 @@ inline bool RecursiveTransformModule(std::shared_ptr<ir::Module> ir_module, Func
     auto re = fun(ir_module);
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (not ir_sub_module) continue;
+        if (!ir_sub_module) continue;
 
         fun(ir_sub_module);
     }
@@ -57,19 +57,19 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
             auto ir_inst = instruction_with_index.instruction;
             size_t op_idx = instruction_with_index.operand_index;
 
-            PRAJNA_ASSERT(not Is<ir::GetAddressOfVariableLiked>(ir_inst));
+            PRAJNA_ASSERT(!Is<ir::GetAddressOfVariableLiked>(ir_inst));
 
             if (Is<ir::WriteProperty>(ir_inst) && op_idx == 1) {
-                auto ir_write_property = cast<ir::WriteProperty>(ir_inst);
-                auto ir_arguments = ir_access_property->arguments();
+                auto ir_write_property = Cast<ir::WriteProperty>(ir_inst);
+                auto ir_arguments = ir_access_property->Arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
-                ir_arguments.push_back(ir_write_property->value());
+                ir_arguments.push_back(ir_write_property->Value());
                 auto ir_setter_call = ir_builder->Create<ir::Call>(
                     ir_access_property->property->set_function, ir_arguments);
                 utility::RemoveFromParent(ir_write_property);
                 ir_write_property->Finalize();
             } else {
-                auto ir_arguments = ir_access_property->arguments();
+                auto ir_arguments = ir_access_property->Arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
                 auto ir_getter_call = ir_builder->Create<ir::Call>(
                     ir_access_property->property->get_function, ir_arguments);
@@ -78,7 +78,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
         }
 
         if (unused) {
-            auto ir_arguments = ir_access_property->arguments();
+            auto ir_arguments = ir_access_property->Arguments();
             ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
             auto ir_getter_call = ir_builder->Create<ir::Call>(
                 ir_access_property->property->get_function, ir_arguments);
@@ -164,7 +164,7 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
 
         for (auto ir_instruction : ir_instructions) {
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                if (auto ir_function = cast<ir::Function>(ir_instruction->operand(i))) {
+                if (auto ir_function = Cast<ir::Function>(ir_instruction->operand(i))) {
                     if (ir_function->annotation_dict.count("kernel")) {
                         auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
 
@@ -215,7 +215,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 // @note 全局变量目前遵循如果使用其他module的则自身为external的原则
                 if (auto ir_global_variable =
-                        cast<ir::GlobalVariable>(ir_instruction->operand(i))) {
+                        Cast<ir::GlobalVariable>(ir_instruction->operand(i))) {
                     auto iter_global_alloca = std::find_if(
                         RANGE(ir_module->global_allocas), [=](std::shared_ptr<ir::GlobalAlloca> x) {
                             return x->fullname == ir_global_variable->fullname;
@@ -318,7 +318,7 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
         for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->operand(i);
 
-            if (auto ir_function = cast<ir::Function>(ir_operand)) {
+            if (auto ir_function = Cast<ir::Function>(ir_operand)) {
                 if (ir_function->parent_module != ir_module) {
                     std::shared_ptr<ir::Function> ir_decl_function = nullptr;
                     auto iter_fun = std::find_if(RANGE(ir_module->functions), [=](auto ir_x) {
@@ -354,15 +354,15 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->symbol_table = ir_module->symbol_table;
         // 只需要对数组循环进行处理
-        if (not ir_builder->IsArrayIndexType(ir_for->index()->type)) continue;
+        if (!ir_builder->IsArrayIndexType(ir_for->IndexVariable()->type)) continue;
 
         ir_builder->PushBlock(ir_for->parent_block);
         ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
         auto ir_layout_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
             ir_builder->GetSymbolByPath(true, {"tensor", "Layout"}));
         PRAJNA_ASSERT(ir_layout_template_struct);
-        auto ir_array_first = ir_for->first();
-        auto ir_array_last = ir_for->last();
+        auto ir_array_first = ir_for->First();
+        auto ir_array_last = ir_for->Last();
         auto ir_array_type = ir_array_last->type;
         auto ir_array_template_arguments =
             std::any_cast<std::list<lowering::Symbol>>(ir_array_type->template_arguments_any);
@@ -371,7 +371,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         auto ir_layout_type = ir_layout_template_struct->Instantiate(template_arguments, ir_module);
         auto ir_layout =
             ir_builder->Create<ir::Call>(ir_builder->GetImplementFunction(ir_layout_type, "Create"),
-                                         std::list<std::shared_ptr<ir::Value>>{ir_for->last()});
+                                         std::list<std::shared_ptr<ir::Value>>{ir_for->Last()});
         auto ir_linear_first = ir_builder->GetIndexConstant(0);
 
         auto ir_array_one =
@@ -382,11 +382,11 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
             ir_builder->CallMemberFunction(ir_layout, "ArrayIndexToLinearIndex", {ir_array_range}),
             "+", ir_builder->GetIndexConstant(1));
 
-        ir_for->first(ir_linear_first);
-        ir_for->last(ir_linear_last);
-        auto ir_array_index = ir_for->index();
+        ir_for->First(ir_linear_first);
+        ir_for->Last(ir_linear_last);
+        auto ir_array_index = ir_for->IndexVariable();
         auto ir_linear_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetIndexType());
-        ir_for->index(ir_linear_index);
+        ir_for->IndexVariable(ir_linear_index);
 
         auto ir_array_first_variable = ir_builder->VariableLikedNormalize(ir_array_first);
         auto ir_layout_variable = ir_builder->VariableLikedNormalize(ir_layout);
@@ -432,6 +432,34 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
     return re;
 }
 
+inline bool ExternCFunction(std::shared_ptr<ir::Module> ir_module) {
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->annotation_dict.count("extern")) {
+            // @extern的全名不加前缀
+            ir_function->fullname = ir_function->name;
+            // auto ir_decl_function = ir::Function::Create(ir_function->function_type);
+            // ir_decl_function->fullname = ir_function->name;
+            // ir_decl_function->parent_module = ir_module;
+            // ir_module->functions.push_front(ir_decl_function);
+
+            // ir_function->annotation_dict["inline"];
+
+            // PRAJNA_ASSERT(ir_function->blocks.empty());
+            // auto ir_builder = lowering::IrBuilder::Create();
+            // ir_builder->CreateTopBlockForFunction(ir_function);
+            // auto ir_call = ir_builder->Create<ir::Call>(ir_decl_function,
+            // ir_function->parameters); if
+            // (!Is<ir::VoidType>(ir_decl_function->function_type->return_type)) {
+            //     ir_builder->Create<ir::Return>(ir_call);
+            // }
+
+            ir_function->annotation_dict.erase("extern");
+        }
+    }
+
+    return false;
+}
+
 inline void TopologicalSortFunctionVisit(
     std::shared_ptr<ir::Function> ir_function,
     std::list<std::shared_ptr<ir::Function>> &ir_function_list,
@@ -442,7 +470,7 @@ inline void TopologicalSortFunctionVisit(
     for (auto ir_instruction : ir_instructions) {
         for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->operand(i);
-            if (auto ir_tmp_function = cast<ir::Function>(ir_operand)) {
+            if (auto ir_tmp_function = Cast<ir::Function>(ir_operand)) {
                 // 值排序同一个module里的函数
                 if (ir_tmp_function->parent_module == ir_function->parent_module) {
                     // 没访问的进行深度搜索
@@ -470,7 +498,7 @@ inline void TopologicalSortFunction(std::shared_ptr<ir::Module> ir_module) {
 
     ir_module->functions.remove_if(
         [=](auto ir_function) { return std::count(RANGE(ir_function_list), ir_function); });
-    ir_module->functions.merge(ir_function_list);
+    ir_module->functions.insert(ir_module->functions.end(), RANGE(ir_function_list));
 }
 
 inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
@@ -535,8 +563,58 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
     }
 }
 
+inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
+    auto ir_calls = utility::GetValuesInModule<ir::Call>(ir_module);
+    for (auto ir_call : ir_calls) {
+        if (auto ir_callee = Cast<ir::Function>(ir_call->Function())) {
+            if (ir_callee->fullname == "::test::Assert") {
+                auto iter = ir_call->GetBlockIterator();
+                auto ir_builder =
+                    lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
+                ir_builder->PushBlock(ir_call->parent_block);
+                ir_builder->inserter_iterator = iter;
+                auto position = ir_call->source_location.first_position;
+                auto filename = ir_builder->GetString(position.file);
+                auto line = ir_builder->GetString(std::to_string(position.line));
+                auto ir_print_location = lowering::SymbolGet<ir::Value>(
+                    ir_builder->GetSymbolByPath(false, {"test", "AssertWithPosition"}));
+                auto ir_condition = ir_call->Argument(0);
+                ir_builder->Create<ir::Call>(
+                    ir_print_location,
+                    std::list<std::shared_ptr<ir::Value>>{ir_condition, filename, line});
+                utility::RemoveFromParent(ir_call);
+                ir_call->Finalize();
+                continue;
+            }
+            if (ir_callee->fullname == "::debug::Assert") {
+                auto iter = ir_call->GetBlockIterator();
+                auto ir_builder =
+                    lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
+                ir_builder->PushBlock(ir_call->parent_block);
+                ir_builder->inserter_iterator = iter;
+                auto position = ir_call->source_location.first_position;
+                auto filename = ir_builder->GetString(position.file);
+                auto line = ir_builder->GetString(std::to_string(position.line));
+                auto ir_print_location = lowering::SymbolGet<ir::Value>(
+                    ir_builder->GetSymbolByPath(false, {"debug", "AssertWithPosition"}));
+                auto ir_condition = ir_call->Argument(0);
+                ir_builder->Create<ir::Call>(
+                    ir_print_location,
+                    std::list<std::shared_ptr<ir::Value>>{ir_condition, filename, line});
+                utility::RemoveFromParent(ir_call);
+                ir_call->Finalize();
+                continue;
+            }
+        }
+    }
+
+    return false;
+}
+
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
+    RecursiveTransformModule(ir_module, ExternCFunction);
+    RecursiveTransformModule(ir_module, InsertLocationForAssert);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ConvertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));

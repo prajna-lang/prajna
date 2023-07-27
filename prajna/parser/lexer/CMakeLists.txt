@@ -1,4 +1,4 @@
-add_library(prajna_lexer code_lexer.cpp)
+add_library(prajna_lexer OBJECT code_lexer.cpp)
 target_link_libraries(prajna_lexer
     PUBLIC prajna_config_target
     PUBLIC prajna_ast

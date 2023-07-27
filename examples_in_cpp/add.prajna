@@ -1,0 +1,13 @@
+
+func helloWorld(ts: Array<i64, 8>*){
+    (*ts).ToString().Print();
+}
+
+func matrixAddF32(p_ts0: Tensor<f32, 2> *, p_ts1: Tensor<f32, 2>*, p_ts_re: Tensor<f32, 2>*){
+    var ts0 = *p_ts0;
+    var ts1 = *p_ts1;
+    var ts_re = *p_ts_re;
+    for idx in [0, 0] to ts0.layout.shape{
+        ts_re.At(idx) = ts0.At(idx) + ts1.At(idx);
+    }
+}

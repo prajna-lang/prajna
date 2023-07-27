@@ -47,14 +47,13 @@ class IrBuilder {
 
     bool IsArrayIndexType(std::shared_ptr<ir::Type> ir_type) {
         auto array_template_struct =
-            SymbolGet<TemplateStruct>(this->GetSymbolByPath(true, {"array", "Array"}));
+            SymbolGet<TemplateStruct>(this->GetSymbolByPath(false, {"Array"}));
         PRAJNA_ASSERT(array_template_struct);
         return ir_type->template_struct == array_template_struct;
     }
 
     bool IsPtrType(std::shared_ptr<ir::Type> ir_type) {
-        auto ptr_template_struct =
-            SymbolGet<TemplateStruct>(this->GetSymbolByPath(true, {"ptr", "Ptr"}));
+        auto ptr_template_struct = SymbolGet<TemplateStruct>(this->GetSymbolByPath(false, {"Ptr"}));
         PRAJNA_ASSERT(ptr_template_struct);
         return ir_type->template_struct == ptr_template_struct;
     }
@@ -79,7 +78,7 @@ class IrBuilder {
         symbol_template_arguments.push_back(ir_type);
         symbol_template_arguments.push_back(this->GetIndexConstant(length));
 
-        auto symbol_array = this->GetSymbolByPath(true, {"array", "Array"});
+        auto symbol_array = this->GetSymbolByPath(false, {"Array"});
         auto array_template = SymbolGet<TemplateStruct>(symbol_array);
         PRAJNA_ASSERT(array_template);
         auto ir_shape3_type = array_template->Instantiate(symbol_template_arguments, this->module);
@@ -90,8 +89,8 @@ class IrBuilder {
         return this->GetArrayType(this->GetIndexType(), 3);
     }
 
-    std::shared_ptr<ir::Type> GetPtrType(std::shared_ptr<ir::Type> ir_value_type) {
-        auto symbol_ptr = this->GetSymbolByPath(true, {"ptr", "Ptr"});
+    std::shared_ptr<ir::Type> GetManagedPtrType(std::shared_ptr<ir::Type> ir_value_type) {
+        auto symbol_ptr = this->GetSymbolByPath(false, {"Ptr"});
         auto ptr_template = SymbolGet<TemplateStruct>(symbol_ptr);
         PRAJNA_ASSERT(ptr_template);
         std::list<Symbol> symbol_template_arguments = {ir_value_type};
@@ -178,7 +177,7 @@ class IrBuilder {
         auto ir_index = this->GetIndexConstant(index);
         auto ir_access_property =
             this->Create<ir::AccessProperty>(ir_array_tmp_this_pointer, ir_index_property);
-        ir_access_property->arguments({ir_index});
+        ir_access_property->Arguments({ir_index});
         return this->Create<ir::WriteProperty>(ir_value, ir_access_property);
     }
 
@@ -186,8 +185,8 @@ class IrBuilder {
     std::shared_ptr<Value_> Create(Args_&&... __args) {
         auto ir_value = Value_::Create(std::forward<Args_>(__args)...);
 
-        if (auto ir_return = cast<ir::Return>(ir_value)) {
-            PRAJNA_ASSERT(ir_return->value()->type ==
+        if (auto ir_return = Cast<ir::Return>(ir_value)) {
+            PRAJNA_ASSERT(ir_return->Value()->type ==
                           this->function_stack.top()->function_type->return_type);
         }
 
@@ -205,7 +204,7 @@ class IrBuilder {
 
     std::shared_ptr<ir::VariableLiked> VariableLikedNormalize(std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(ir_value);
-        auto ir_variable_liked = cast<ir::VariableLiked>(ir_value);
+        auto ir_variable_liked = Cast<ir::VariableLiked>(ir_value);
         if (ir_variable_liked) {
             return ir_variable_liked;
         } else {
@@ -268,11 +267,18 @@ class IrBuilder {
         auto ir_c_string_address = this->Create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
         ast::IdentifierPath ast_identifier_path;
         auto string_symbol = this->GetSymbolByPath(true, {"String"});
-        auto string_type = cast<ir::StructType>(SymbolGet<ir::Type>(string_symbol));
+        auto string_type = Cast<ir::StructType>(SymbolGet<ir::Type>(string_symbol));
         auto ir_string_from_char_pat = this->GetImplementFunction(string_type, "__from_char_ptr");
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
         return this->Create<ir::Call>(ir_string_from_char_pat,
                                       std::list<std::shared_ptr<ir::Value>>{ir_c_string_address});
+    }
+
+    void ExitWithPrintErrorMessage(std::string str) {
+        auto ir_str = this->GetString(str);
+        auto ir_exit = SymbolGet<ir::Value>(this->GetSymbolByPath(true, {"ExitWithMessage"}));
+        PRAJNA_ASSERT(ir_exit);
+        this->Create<ir::Call>(ir_exit, std::list<std::shared_ptr<ir::Value>>{ir_str});
     }
 
     std::shared_ptr<ir::AccessField> AccessField(std::shared_ptr<ir::Value> ir_object,

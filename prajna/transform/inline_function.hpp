@@ -24,7 +24,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
 
         auto ir_calls = utility::GetValuesInFunction<ir::Call>(ir_function);
         for (auto ir_call : ir_calls) {
-            auto ir_callee = cast<ir::Function>(ir_call->Function());
+            auto ir_callee = Cast<ir::Function>(ir_call->Function());
             if (!ir_callee || ir_callee->IsDeclaration()) continue;
             if (!InlineCheck(ir_callee)) continue;
 
@@ -32,7 +32,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
             auto iter = std::find(RANGE(ir_call->parent_block->values), ir_call);
             auto function_cloner = ir::FunctionCloner::Create(ir_module);
             function_cloner->shallow = true;
-            auto ir_new_callee = cast<ir::Function>(ir_callee->Clone(function_cloner));
+            auto ir_new_callee = Cast<ir::Function>(ir_callee->Clone(function_cloner));
             VerifyFunction(ir_callee);
             VerifyFunction(ir_new_callee);
 
@@ -58,11 +58,11 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
 
             auto ir_returns = utility::GetValuesInFunction<ir::Return>(ir_new_callee);
             bool has_return =
-                !ir_returns.empty() && !Is<ir::VoidValue>(ir_returns.front()->value());
+                !ir_returns.empty() && !Is<ir::VoidValue>(ir_returns.front()->Value());
             std::shared_ptr<ir::LocalVariable> ir_return_variable = nullptr;
             for (auto ir_return : ir_returns) {
-                if (Is<ir::VoidValue>(ir_return->value())) {
-                    auto ir_void = ir_return->value();
+                if (Is<ir::VoidValue>(ir_return->Value())) {
+                    auto ir_void = ir_return->Value();
                     utility::RemoveFromParent(ir_return);
                     ir_return->Finalize();
                     utility::RemoveFromParent(ir_void);
@@ -75,7 +75,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
                     auto ir_return_iter = ir_return->GetBlockIterator();
                     ir_return_builder->PushBlock(ir_return->parent_block);
                     ir_return_builder->inserter_iterator = ir_return_iter;
-                    ir_return_builder->Create<ir::WriteVariableLiked>(ir_return->value(),
+                    ir_return_builder->Create<ir::WriteVariableLiked>(ir_return->Value(),
                                                                       ir_return_variable);
                     utility::RemoveFromParent(ir_return);
                     ir_return->Finalize();

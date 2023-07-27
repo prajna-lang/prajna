@@ -19,35 +19,35 @@ inline void VerifyBlockImpl(std::shared_ptr<ir::Block> ir_block,
         PRAJNA_ASSERT(defined_values.count(ir_value) == 0);
         defined_values.insert(ir_value);
 
-        if (auto ir_block = cast<ir::Block>(ir_value)) {
+        if (auto ir_block = Cast<ir::Block>(ir_value)) {
             VerifyBlockImpl(ir_block, defined_values);
             continue;
         }
 
-        if (auto ir_if = cast<ir::If>(ir_value)) {
+        if (auto ir_if = Cast<ir::If>(ir_value)) {
             VerifyBlockImpl(ir_if->TrueBlock(), defined_values);
             VerifyBlockImpl(ir_if->FalseBlock(), defined_values);
             continue;
         }
 
-        if (auto ir_while = cast<ir::While>(ir_value)) {
+        if (auto ir_while = Cast<ir::While>(ir_value)) {
             VerifyBlockImpl(ir_while->ConditionBlock(), defined_values);
             VerifyBlockImpl(ir_while->LoopBlock(), defined_values);
             continue;
         }
 
-        if (auto ir_for = cast<ir::For>(ir_value)) {
+        if (auto ir_for = Cast<ir::For>(ir_value)) {
             VerifyBlockImpl(ir_for->LoopBlock(), defined_values);
             continue;
         }
 
-        if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
+        if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 auto ir_operand = ir_instruction->operand(i);
                 PRAJNA_ASSERT(ir_operand);
 
-                if (Is<ir::Function>(ir_operand) or Is<ir::GlobalVariable>(ir_operand) or
-                    Is<ir::GlobalAlloca>(ir_operand) or Is<ir::Parameter>(ir_operand)) {
+                if (Is<ir::Function>(ir_operand) || Is<ir::GlobalVariable>(ir_operand) ||
+                    Is<ir::GlobalAlloca>(ir_operand) || Is<ir::Parameter>(ir_operand)) {
                     continue;
                 }
 
@@ -88,8 +88,8 @@ inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
                 PRAJNA_ASSERT(ir_operand);
 
                 if (ir_operand) {
-                    if (Is<ir::Function>(ir_operand) or Is<ir::GlobalVariable>(ir_operand) or
-                        Is<ir::GlobalAlloca>(ir_operand) or Is<ir::Parameter>(ir_operand)) {
+                    if (Is<ir::Function>(ir_operand) || Is<ir::GlobalVariable>(ir_operand) ||
+                        Is<ir::GlobalAlloca>(ir_operand) || Is<ir::Parameter>(ir_operand)) {
                         continue;
                     }
 

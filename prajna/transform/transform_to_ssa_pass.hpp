@@ -23,7 +23,7 @@ inline bool InsertValueToBlock(std::shared_ptr<ir::Module> ir_module) {
                 auto ir_value = *iter_ir_value;
                 ir_values.insert(ir_value);
 
-                if (auto ir_instruction = cast<ir::Instruction>(ir_value)) {
+                if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
                     for (auto i = 0; i < ir_instruction->OperandSize(); ++i) {
                         auto ir_operand = ir_instruction->operand(i);
                         if (ir_values.count(ir_operand) == 0) {
@@ -88,12 +88,12 @@ inline bool ConvertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Modu
 
         for (auto ir_access_field : ir_access_fields) {
             auto ir_object_deference_ptr0 = (ir_access_field->object());
-            auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_object_deference_ptr0);
+            auto ir_object_deference_ptr = Cast<ir::DeferencePointer>(ir_object_deference_ptr0);
             if (!ir_object_deference_ptr) continue;
 
             changed = true;
             auto ir_struct_get_element_ptr = ir::GetStructElementPointer::Create(
-                ir_object_deference_ptr->pointer(), ir_access_field->field);
+                ir_object_deference_ptr->Pointer(), ir_access_field->field);
 
             for (auto instruction_with_index_list :
                  Clone(ir_access_field->instruction_with_index_list)) {
@@ -124,11 +124,11 @@ inline bool ConvertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Module
         for (auto ir_index_array : ir_index_arrays) {
             changed = true;
 
-            auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_index_array->object());
+            auto ir_object_deference_ptr = Cast<ir::DeferencePointer>(ir_index_array->object());
             if (!ir_object_deference_ptr) continue;
 
             auto ir_array_get_element_ptr = ir::GetArrayElementPointer::Create(
-                ir_object_deference_ptr->pointer(), ir_index_array->index());
+                ir_object_deference_ptr->Pointer(), ir_index_array->IndexVariable());
 
             for (auto instruction_with_index_list :
                  Clone(ir_index_array->instruction_with_index_list)) {
@@ -159,11 +159,11 @@ inline bool ConvertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Mo
         for (auto ir_index_pointer : ir_index_pointers) {
             changed = true;
 
-            auto ir_object_deference_ptr = cast<ir::DeferencePointer>(ir_index_pointer->object());
+            auto ir_object_deference_ptr = Cast<ir::DeferencePointer>(ir_index_pointer->object());
             if (!ir_object_deference_ptr) continue;
 
             auto ir_pointer_get_element_ptr = ir::GetPointerElementPointer::Create(
-                ir_object_deference_ptr->pointer(), ir_index_pointer->index());
+                ir_object_deference_ptr->Pointer(), ir_index_pointer->IndexVariable());
 
             for (auto instruction_with_index_list :
                  Clone(ir_index_pointer->instruction_with_index_list)) {
@@ -194,7 +194,7 @@ inline bool ConvertGetAddressOfVaraibleLikedToPointer(std::shared_ptr<ir::Module
             utility::GetValuesInFunction<ir::GetAddressOfVariableLiked>(ir_function);
 
         for (auto ir_get_address : ir_get_addresses) {
-            auto ir_deference_pointer = cast<ir::DeferencePointer>(ir_get_address->variable());
+            auto ir_deference_pointer = Cast<ir::DeferencePointer>(ir_get_address->variable());
             if (!ir_deference_pointer) continue;
 
             changed = true;
@@ -203,9 +203,9 @@ inline bool ConvertGetAddressOfVaraibleLikedToPointer(std::shared_ptr<ir::Module
                 auto ir_inst = instruction_with_index_list.instruction;
                 size_t op_idx = instruction_with_index_list.operand_index;
 
-                ir_deference_pointer->pointer();
-                PRAJNA_ASSERT(ir_deference_pointer->pointer());
-                ir_inst->operand(op_idx, ir_deference_pointer->pointer());
+                ir_deference_pointer->Pointer();
+                PRAJNA_ASSERT(ir_deference_pointer->Pointer());
+                ir_inst->operand(op_idx, ir_deference_pointer->Pointer());
             }
 
             utility::RemoveFromParent(ir_get_address);
@@ -226,7 +226,7 @@ inline bool ConvertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
 
         for (auto ir_deference_pointer : ir_deference_pointers) {
             changed = true;
-            auto ir_pointer = ir_deference_pointer->pointer();
+            auto ir_pointer = ir_deference_pointer->Pointer();
             auto iter_deference_pointer =
                 ir_deference_pointer->parent_block->find(ir_deference_pointer);
             for (auto instruction_with_index :
@@ -235,9 +235,9 @@ inline bool ConvertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
                 size_t op_idx = instruction_with_index.operand_index;
 
                 if (Is<ir::WriteVariableLiked>(ir_inst) && op_idx == 1) {
-                    auto ir_write_variable_liked = cast<ir::WriteVariableLiked>(ir_inst);
+                    auto ir_write_variable_liked = Cast<ir::WriteVariableLiked>(ir_inst);
                     auto ir_store =
-                        ir::StorePointer::Create(ir_write_variable_liked->value(), ir_pointer);
+                        ir::StorePointer::Create(ir_write_variable_liked->Value(), ir_pointer);
                     utility::ReplaceInBlock(ir_write_variable_liked, ir_store);
                 } else {
                     auto ir_load = ir::LoadPointer::Create(ir_pointer);

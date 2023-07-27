@@ -223,7 +223,7 @@ class ExpressionLoweringVisitor {
             auto symbol_template_arguments = this->ApplyTemplateArguments(
                 *identifier_path.identifiers.front().template_arguments_optional);
 
-            auto ir_member_function = cast<ir::Function>(
+            auto ir_member_function = Cast<ir::Function>(
                 SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
                     symbol_template_arguments, ir_builder->module)));
             PRAJNA_ASSERT(ir_member_function);
@@ -261,7 +261,7 @@ class ExpressionLoweringVisitor {
         std::shared_ptr<ir::Value> ir_object, ast::BinaryOperation ast_binary_operation) {
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_object);
         auto ir_arguments =
-            *cast<ir::ValueCollection>(this->applyOperand(ast_binary_operation.operand));
+            *Cast<ir::ValueCollection>(this->applyOperand(ast_binary_operation.operand));
         if (ir_arguments.empty()) {
             logger->Error("index should have one argument at least", ast_binary_operation.operand);
         }
@@ -290,7 +290,7 @@ class ExpressionLoweringVisitor {
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             auto ir_access_property =
                 ir_builder->Create<ir::AccessProperty>(ir_this_pointer, ir_linear_index_property);
-            ir_access_property->arguments({ir_index});
+            ir_access_property->Arguments({ir_index});
             return ir_access_property;
         }
 
@@ -302,7 +302,7 @@ class ExpressionLoweringVisitor {
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             auto ir_access_property =
                 ir_builder->Create<ir::AccessProperty>(ir_this_pointer, ir_array_index_property);
-            ir_access_property->arguments({ir_array_argument});
+            ir_access_property->Arguments({ir_array_argument});
             return ir_access_property;
         }
 
@@ -312,11 +312,11 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> ApplyBinaryOperationCall(std::shared_ptr<ir::Value> ir_lhs,
-                                                        ast::BinaryOperation ast_binary_operaton) {
-        auto ir_arguments = *cast<ir::ValueCollection>(applyOperand(ast_binary_operaton.operand));
-        PRAJNA_ASSERT(ast_binary_operaton.operand.type() == typeid(ast::Expressions));
-        auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operaton.operand);
-        if (auto ir_member_function = cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
+                                                        ast::BinaryOperation ast_binary_operation) {
+        auto ir_arguments = *Cast<ir::ValueCollection>(applyOperand(ast_binary_operation.operand));
+        PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
+        auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operation.operand);
+        if (auto ir_member_function = Cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
             auto ir_function_type = ir_member_function->function_prototype->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
                 logger->Error(
@@ -356,10 +356,11 @@ class ExpressionLoweringVisitor {
                     logger->Error("the argument type is not matched", ast_expressions);
                 }
             }
+
             return ir_builder->Create<ir::Call>(ir_lhs, ir_arguments);
         }
 
-        if (auto ir_access_property = cast<ir::AccessProperty>(ir_lhs)) {
+        if (auto ir_access_property = Cast<ir::AccessProperty>(ir_lhs)) {
             // getter函数必须存在
             auto ir_getter_function_type =
                 ir_access_property->property->get_function->function_type;
@@ -386,11 +387,11 @@ class ExpressionLoweringVisitor {
             // 移除, 在末尾插入, 应为参数应该在属性访问的前面
             ir_access_property->parent_block->values.remove(ir_access_property);
             ir_builder->currentBlock()->values.push_back(ir_access_property);
-            ir_access_property->arguments(ir_arguments);
+            ir_access_property->Arguments(ir_arguments);
             return ir_access_property;
         }
 
-        logger->Error("not a valid callable", ast_binary_operaton);
+        logger->Error("not a valid callable", ast_binary_operation);
         return nullptr;
     }
 
@@ -434,7 +435,7 @@ class ExpressionLoweringVisitor {
             return this->ApplyUnaryOperatorDereferencePointer(ir_operand);
         }
         if (ast_unary.operator_ == ast::Operator("&")) {
-            auto ir_variable_liked = cast<ir::VariableLiked>(ir_operand);
+            auto ir_variable_liked = Cast<ir::VariableLiked>(ir_operand);
             if (ir_variable_liked == nullptr) {
                 logger->Error("only could get the address of a VariableLiked", ast_unary);
             }
@@ -445,7 +446,7 @@ class ExpressionLoweringVisitor {
         auto unary_operator_name = ast_unary.operator_.string_token;
         auto ir_function =
             ir_builder->GetUnaryOperator(ir_variable_liked->type, unary_operator_name);
-        if (not ir_function) {
+        if (! ir_function) {
             logger->Error("unary operator not found", ast_unary.operator_);
         }
 
@@ -536,7 +537,7 @@ class ExpressionLoweringVisitor {
                                     ir_type->template_any_dict[static_function_identifier]);
                             auto symbol_template_argumen_list = this->ApplyTemplateArguments(
                                 *iter_ast_identifier->template_arguments_optional);
-                            auto ir_function = cast<ir::Function>(
+                            auto ir_function = Cast<ir::Function>(
                                 SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
                                     symbol_template_argumen_list, ir_builder->module)));
                             PRAJNA_ASSERT(ir_function);
@@ -657,7 +658,7 @@ class ExpressionLoweringVisitor {
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_tmp);
             auto ir_access_property = ir_builder->Create<ir::AccessProperty>(
                 ir_array_tmp_this_pointer, ir_index_property);
-            ir_access_property->arguments({ir_index});
+            ir_access_property->Arguments({ir_index});
             ir_builder->Create<ir::WriteProperty>(ir_value, ir_access_property);
             ++i;
         }
@@ -683,7 +684,7 @@ class ExpressionLoweringVisitor {
             auto ir_grid_shape = (*this)(ast_kernel_function_call.operation->grid_shape);
             auto ir_block_shape = (*this)(ast_kernel_function_call.operation->block_shape);
             auto ir_arguments =
-                *cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
+                *Cast<ir::ValueCollection>((*this)(ast_kernel_function_call.operation->arguments));
             auto ir_shape3_type = ir_builder->GetShape3Type();
             if (ir_grid_shape->type != ir_shape3_type) {
                 logger->Error("the grid dim type must be i64[3]",
@@ -738,7 +739,7 @@ class ExpressionLoweringVisitor {
         auto binary_operator_name = ast_binary_operation.operator_.string_token;
         auto ir_function =
             ir_builder->GetBinaryOperator(ir_variable_liked->type, binary_operator_name);
-        if (not ir_function) {
+        if (! ir_function) {
             logger->Error(
                 fmt::format("{} operator not found", ast_binary_operation.operator_.string_token),
                 ast_binary_operation.operator_);

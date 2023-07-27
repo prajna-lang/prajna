@@ -4,7 +4,7 @@ set -e
 build_configure=$1
 shift 1
 
-CXX=clang++ CC=clang cmake . \
+cmake . \
 -B build_${build_configure} \
 -DCMAKE_BUILD_TYPE=${build_configure} \
 -DCMAKE_INSTALL_PREFIX=build_${build_configure}/install \

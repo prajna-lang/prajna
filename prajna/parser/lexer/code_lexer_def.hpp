@@ -35,10 +35,10 @@ CodeLexer<Lexer>::CodeLexer() {
 
     plus = '+';
     minus = '-';
-    times = '*';
+    star = '*';
     divide = '/';
     remain = '%';
-    this->self += plus | minus | times | divide | remain;
+    this->self += plus | minus | star | divide | remain;
 
     assign = '=';
     this->self += assign;

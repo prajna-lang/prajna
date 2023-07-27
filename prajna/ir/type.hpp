@@ -52,6 +52,8 @@ class Type : public Named {
    public:
     virtual ~Type() {}
 
+    virtual bool IsFirstClass() { return true; }
+
     std::shared_ptr<Function> GetImplementFunction(std::string member_function_name);
 
    public:
@@ -69,27 +71,6 @@ class Type : public Named {
     llvm::Type* llvm_type = nullptr;
 };
 
-class NullType : public Type {
-   protected:
-    NullType() = default;
-
-   public:
-    static std::shared_ptr<NullType> Create() {
-        for (auto ir_type : global_context.created_types) {
-            if (auto ir_null_type = cast<NullType>(ir_type)) {
-                return ir_null_type;
-            }
-        }
-
-        std::shared_ptr<NullType> self(new NullType);
-        self->bytes = 0;
-        self->name = "NullType";
-        self->fullname = "NullType";
-        global_context.created_types.push_back(self);
-        return self;
-    }
-};
-
 class RealNumberType : public Type {
    protected:
     RealNumberType() = default;
@@ -105,7 +86,7 @@ class FloatType : public RealNumberType {
    public:
     static std::shared_ptr<FloatType> Create(int64_t bits) {
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_float_type = cast<FloatType>(ir_type)) {
+            if (auto ir_float_type = Cast<FloatType>(ir_type)) {
                 if (ir_float_type->bits == bits) {
                     return ir_float_type;
                 }
@@ -132,7 +113,7 @@ class IntType : public RealNumberType {
    public:
     static std::shared_ptr<IntType> Create(int64_t bits, bool is_signed) {
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_int_type = cast<IntType>(ir_type)) {
+            if (auto ir_int_type = Cast<IntType>(ir_type)) {
                 // 不能和char和bool混了
                 if (Is<ir::CharType>(ir_type) || Is<ir::BoolType>(ir_type)) {
                     continue;
@@ -165,7 +146,7 @@ class BoolType : public IntType {
    public:
     static std::shared_ptr<BoolType> Create() {
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_bool_type = cast<BoolType>(ir_type)) {
+            if (auto ir_bool_type = Cast<BoolType>(ir_type)) {
                 return ir_bool_type;
             }
         }
@@ -191,7 +172,7 @@ class CharType : public IntType {
    public:
     static std::shared_ptr<CharType> Create() {
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_char_type = cast<CharType>(ir_type)) {
+            if (auto ir_char_type = Cast<CharType>(ir_type)) {
                 return ir_char_type;
             }
         }
@@ -215,7 +196,7 @@ class VoidType : public Type {
    public:
     static std::shared_ptr<VoidType> Create() {
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_void_type = cast<VoidType>(ir_type)) {
+            if (auto ir_void_type = Cast<VoidType>(ir_type)) {
                 return ir_void_type;
             }
         }
@@ -227,6 +208,8 @@ class VoidType : public Type {
         global_context.created_types.push_back(self);
         return self;
     }
+
+    bool IsFirstClass() override { return false; }
 };
 
 class UndefType : public Type {
@@ -236,7 +219,7 @@ class UndefType : public Type {
    public:
     static std::shared_ptr<UndefType> Create() {
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_undef_type = cast<UndefType>(ir_type)) {
+            if (auto ir_undef_type = Cast<UndefType>(ir_type)) {
                 return ir_undef_type;
             }
         }
@@ -260,7 +243,7 @@ class FunctionType : public Type {
                                                 std::shared_ptr<Type> return_type) {
         // @note 不同函数的, 函数类型不应该是用一个指针, 下面的代码更适合判断动态分发的时候使用
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_fun_type = cast<FunctionType>(ir_type)) {
+            if (auto ir_fun_type = Cast<FunctionType>(ir_type)) {
                 if (ir_fun_type->return_type == return_type &&
                     ir_fun_type->parameter_types.size() == ir_parameter_types.size() &&
                     std::equal(RANGE(ir_parameter_types), ir_fun_type->parameter_types.begin())) {
@@ -276,6 +259,7 @@ class FunctionType : public Type {
         self->name = "(";
         auto iter = self->parameter_types.begin();
         while (iter != self->parameter_types.end()) {
+            PRAJNA_ASSERT((*iter)->IsFirstClass());
             self->name += (*iter)->fullname;
             ++iter;
             if (iter == self->parameter_types.end()) {
@@ -291,6 +275,8 @@ class FunctionType : public Type {
         return self;
     }
 
+    bool IsFirstClass() override { return false; }
+
    public:
     std::shared_ptr<Type> return_type = nullptr;
     std::list<std::shared_ptr<Type>> parameter_types;
@@ -303,10 +289,10 @@ class PointerType : public Type {
 
    public:
     static std::shared_ptr<PointerType> Create(std::shared_ptr<Type> value_type) {
-        PRAJNA_ASSERT(not Is<VoidType>(value_type));
+        PRAJNA_ASSERT(!Is<VoidType>(value_type));
 
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_pointer_type = cast<PointerType>(ir_type)) {
+            if (auto ir_pointer_type = Cast<PointerType>(ir_type)) {
                 if (ir_pointer_type->value_type == value_type) {
                     return ir_pointer_type;
                 }
@@ -333,7 +319,7 @@ class ArrayType : public Type {
    public:
     static std::shared_ptr<ArrayType> Create(std::shared_ptr<Type> value_type, size_t size) {
         for (auto ir_type : global_context.created_types) {
-            if (auto ir_array_type = cast<ArrayType>(ir_type)) {
+            if (auto ir_array_type = Cast<ArrayType>(ir_type)) {
                 if (ir_array_type->value_type == value_type && ir_array_type->size == size) {
                     return ir_array_type;
                 }

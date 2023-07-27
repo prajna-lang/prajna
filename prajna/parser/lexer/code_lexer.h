@@ -27,7 +27,7 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<ast::Operator> equal, not_equal, less, less_or_equal, greater,
         greater_or_equal;  // compare
 
-    lex::token_def<ast::Operator> plus, minus, times, divide, remain;  // arithmetic
+    lex::token_def<ast::Operator> plus, minus, star, divide, remain;  // arithmetic
 
     lex::token_def<ast::SourceLocation> assign;
 

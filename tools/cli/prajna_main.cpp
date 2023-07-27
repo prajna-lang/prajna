@@ -28,15 +28,15 @@ int prajna_exe_main(int argc, char* argv[]) {
         auto compiler = prajna::Compiler::Create();
         auto program_path = std::filesystem::path(result["program"].as<std::string>());
         if (!result.count("without_builtin_lib")) {
-            if (std::filesystem::exists("prajna_builtin_packages")) {
-                compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
+            if (std::filesystem::exists("builtin_packages")) {
+                compiler->CompileBuiltinSourceFiles("builtin_packages");
             } else {
-                auto prajna_builtin_packages_directory =
-                    prajna::ProgramLocation(argv[0]).parent_path() / "../prajna_builtin_packages";
-                compiler->CompileBuiltinSourceFiles(prajna_builtin_packages_directory);
+                auto builtin_packages_directory =
+                    prajna::ProgramLocation(argv[0]).parent_path() / "../builtin_packages";
+                compiler->CompileBuiltinSourceFiles(builtin_packages_directory.string());
             }
         }
-        compiler->AddPackageDirectoryPath(std::filesystem::current_path());
+        compiler->AddPackageDirectoryPath(std::filesystem::current_path().string());
         compiler->ExecuteProgram(program_path);
         return 0;
     }

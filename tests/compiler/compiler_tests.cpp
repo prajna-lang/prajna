@@ -15,7 +15,7 @@ using namespace prajna;
 struct PrintFileName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType>& info) const {
-        return std::filesystem::path(info.param).stem();
+        return std::filesystem::path(info.param).stem().string();
     }
 };
 
@@ -25,7 +25,7 @@ TEST_P(CompilerSourceTests, TestSourceFromDirectory) {
     std::string prajna_source_path = GetParam();
     compiler->AddPackageDirectoryPath(".");
     auto t0 = std::chrono::high_resolution_clock::now();
-    compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
+    compiler->CompileBuiltinSourceFiles("builtin_packages");
     auto t1 = std::chrono::high_resolution_clock::now();
     fmt::print("compiling cost time: {}ms\n",
                std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());

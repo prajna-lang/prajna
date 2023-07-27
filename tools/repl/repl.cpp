@@ -52,12 +52,12 @@ int prajna_repl_main(int argc, char* argv[]) {
     Term::terminal << "Prajna 0.0.0, all copyrights @ \"www.github.com/matazure\"" << std::endl;
 
     auto compiler = prajna::Compiler::Create();
-    if (std::filesystem::exists("prajna_builtin_packages")) {
-        compiler->CompileBuiltinSourceFiles("prajna_builtin_packages");
+    if (std::filesystem::exists("builtin_packages")) {
+        compiler->CompileBuiltinSourceFiles("builtin_packages");
     } else {
-        auto prajna_builtin_packages_directory =
-            prajna::ProgramLocation(argv[0]).parent_path() / "../prajna_builtin_packages";
-        compiler->CompileBuiltinSourceFiles(prajna_builtin_packages_directory);
+        auto builtin_packages_directory =
+            prajna::ProgramLocation(argv[0]).parent_path() / "../builtin_packages";
+        compiler->CompileBuiltinSourceFiles(builtin_packages_directory.string());
     }
 
     Term::terminal.setOptions({Term::Option::NoClearScreen, Term::Option::SignalKeys,
@@ -76,7 +76,7 @@ int prajna_repl_main(int argc, char* argv[]) {
         std::list<char> code_line_list(RANGE(code_line));
         for (auto iter = code_line_list.begin(); iter != std::prev(code_line_list.end());) {
             if (*iter == '\\') {
-                if ((*std::next(iter)) == '\n' or (*std::next(iter)) == '\r') {
+                if ((*std::next(iter)) == '\n' || (*std::next(iter)) == '\r') {
                     iter = code_line_list.erase(iter);
                     continue;
                 }
@@ -87,7 +87,7 @@ int prajna_repl_main(int argc, char* argv[]) {
         code_line = std::string(RANGE(code_line_list));
         // ;可以重复, 不会导致错误. 插入到\n前面, 这样错误信息才正确
         auto last_char = *std::prev(code_line.end(), 2);
-        if (code_line.size() >= 2 and not(last_char == ';' or last_char == '}')) {
+        if (code_line.size() >= 2 && !(last_char == ';' || last_char == '}')) {
             code_line.insert(std::prev(code_line.end()), ';');
         }
         // code_line.push_back('\n'); // 自带\n

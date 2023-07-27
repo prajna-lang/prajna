@@ -53,7 +53,7 @@ pipeline{
                 //         stage('test') {
                 //             steps {
                 //                 sh './scripts/test.sh ${BUILD_TYPE}'
-                //                 sh './scripts/test_prajna.sh ${BUILD_TYPE}'
+                //                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                 //             }
                 //         }
                 //     }
@@ -104,7 +104,7 @@ pipeline{
                         stage('test') {
                             steps {
                                 sh './scripts/test.sh ${BUILD_TYPE}'
-                                sh './scripts/test_prajna.sh ${BUILD_TYPE}'
+                                sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }
                     }
@@ -155,7 +155,7 @@ pipeline{
                         stage('test') {
                             steps {
                                 sh './scripts/test.sh ${BUILD_TYPE}'
-                                sh './scripts/test_prajna.sh ${BUILD_TYPE}'
+                                sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }
                         stage("leak-check") {

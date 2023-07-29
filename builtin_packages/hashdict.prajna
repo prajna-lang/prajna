@@ -1,0 +1,113 @@
+template <KeyType,ValueType>
+struct HashDictNode{
+  key : KeyType;
+  value : ValueType;
+  next: ptr<HashDictNode<KeyType, ValueType>>; 
+}
+
+template <KeyType,ValueType>
+implement HashDictNode<KeyType, ValueType> {
+  func Initialize(key: KeyType, value: ValueType) {
+    this.key = key;
+    this.value = value;
+    this.next = ptr<HashDictNode<KeyType, ValueType>>::Null();
+  }
+}
+
+template <KeyType,ValueType>  
+struct HashDict {
+  buckets: Ptr<ptr<HashDictNode<KeyType, ValueType>>>;
+  size: i64;
+  count: i64;
+  load_factor_threshold: f64;
+}
+
+template <KeyType,ValueType>
+implement Initializable for HashDict<KeyType,ValueType> {
+  func Initialize() {
+    var initial_size = 32;
+    this.load_factor_threshold = 0.75f64;
+    this.size = initial_size;
+    this.count = 0;
+    this.buckets = Ptr<ptr<HashDictNode<KeyType, ValueType>>>::Allocate(initial_size);
+    
+    for i in 0 to initial_size {
+      this.buckets[i] = ptr<HashDictNode<KeyType, ValueType>>::Null(); 
+    }
+  }
+}
+
+template <KeyType,ValueType>
+implement HashDict<KeyType, ValueType> {
+
+  func IsEmpty() -> bool {
+    return this.count==0; 
+  }
+  
+  func Hash_index(key: KeyType) -> i64 {
+    // TODO: 实现一个好的哈希函数
+    //return hash<KeyType>(key) % this.size;  
+    var hash = 17;
+    hash = __cast<KeyType, i64>(key);
+    return hash % this.size;
+  }
+
+  func Insert_node(key: KeyType, value: ValueType) {
+    var index = this.Hash_index(key);
+    var node = ptr<HashDictNode<KeyType, ValueType>>::New();
+    (*node).Initialize(key, value);
+    (*node).next = this.buckets[index];
+    this.buckets[index] = node;
+    this.count = this.count + 1;
+
+    // 检查装载因子是否大于阈值,如果是,进行重新哈希
+    // var load_factor = f64(this.count) / f64(this.size);  
+    // if (load_factor > this.load_factor_threshold) {
+    //   this.rehash();
+    // }
+  }
+
+   func Get(key: KeyType) -> ValueType {
+    var index = this.Hash_index(key);
+    var node = this.buckets[index];
+    //TODO
+    return (*node).value;  
+  }
+
+  func Remove(key: KeyType) {
+    var index = this.Hash_index(key);
+    var prev = ptr<HashDictNode<KeyType, ValueType>>::Null();
+    var node = this.buckets[index];
+    while (!node.IsNull()) {
+      if ((*node).key == key) {
+        break;
+      }
+      prev = node;
+      node = (*node).next;
+    }
+    if (node == ptr<HashDictNode<KeyType, ValueType>>::Null()) {
+      return; 
+    }
+    if (prev ==ptr<HashDictNode<KeyType, ValueType>>::Null()) {
+      // 移除的是头节点
+      this.buckets[index] = (*node).next; 
+    } else {
+      (*prev).next = (*node).next;
+    }
+    node.Free();
+    this.count = this.count - 1;
+  }
+
+  func Clear() {
+    for i in 0 to this.size {
+      var node = this.buckets[i];
+      while (!node.IsNull()) {
+        var next = (*node).next;
+        node.Free();
+        node = next;
+      }
+      this.buckets[i] = ptr<HashDictNode<KeyType, ValueType>>::Null();
+    }
+    this.count = 0;
+  } 
+}

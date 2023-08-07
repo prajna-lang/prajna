@@ -1,0 +1,11 @@
+
+use Int<4> as i4;
+
+func Main() {
+    var one = 1.Cast<i4>(); // 目前还不支持i4的书写方式
+    var tmp = one;
+    for i in 0 to 20 {
+        tmp = tmp + one;
+        tmp.PrintLine();
+    }
+}

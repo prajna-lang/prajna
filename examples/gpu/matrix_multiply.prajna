@@ -36,7 +36,7 @@ func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
 @test
 func Main() {
     var block_size = 32;
-    var block_shape = [1, block_size, block_size];
+    var block_shape = [1, block_size, block_size]; // 注意和cuda的dim是相反的顺序, [z, y, x]
     var a_shape = [10 * 32, 10 * 32];
     var b_shape = [10 * 32, 20 * 32];
     var grid_shape = [1, a_shape[0] / block_size, b_shape[1] / block_size];

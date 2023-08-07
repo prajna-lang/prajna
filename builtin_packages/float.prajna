@@ -4,6 +4,10 @@ implement Float<Bits> {
         return __fabs<Float<Bits>>(this);
     }
 
+    func Sqrt()->Float<Bits> {
+        return __sqrt<Float<Bits>>(this);
+    }
+
     func Sin()->Float<Bits> {
         return __sin<Float<Bits>>(this);
     }

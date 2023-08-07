@@ -1914,6 +1914,8 @@ class StatementLoweringVisitor {
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("cos"), "__cos");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
+            this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("sqrt"), "__sqrt");
+        ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("pow", 2), "__pow");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("exp", 2), "__exp");

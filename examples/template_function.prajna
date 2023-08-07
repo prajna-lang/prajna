@@ -1,0 +1,10 @@
+
+template <Type>
+func Add(v0: Type, v1: Type)->Type{
+    return v0 + v1;
+}
+
+func Main() {
+    Add<i32>(0i32, 1i32).PrintLine(); // 不同于其他编程语言, Prajna的模板需要显示的模板
+    Add<f32>(2f32, 3f32).PrintLine();
+}

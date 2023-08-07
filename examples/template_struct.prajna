@@ -1,0 +1,19 @@
+template <ValueType>
+struct Point{
+    x: ValueType;
+    y: ValueType;
+}
+
+template <ValueType>
+implement Point<ValueType> { // Point需要带上模板参数, 不可省略的.
+    func Norm2()->ValueType {
+        return (this.x * this.x + this.y * this.y).Sqrt();
+    }
+}
+
+func Main() {
+    var point: Point<f32>;
+    point.x = 1.0;
+    point.y = 2.0;
+    point.Norm2().PrintLine();
+}

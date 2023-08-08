@@ -1,0 +1,20 @@
+use examples::zmq::*;
+
+func Main () {
+    //  Socket to talk to clients
+    var context = zmq_ctx_new ();
+    var responder = zmq_socket(context, 4i32);
+    var ip = "tcp://localhost:5555";
+    var rc = zmq_bind(responder, ip.CStringRawPointer());
+    rc.PrintLine();
+    debug::Assert(rc == 0i32);
+
+    while (true) {
+        var buffer: array<char, 10>;
+        zmq_recv(responder, &(buffer[0]), 10, 0i32);
+        "Received Hello".PrintLine();
+        chrono::Sleep(1.0);
+        var world = "World";
+        zmq_send(responder, world.CStringRawPointer(), 5, 0i32);
+    }
+}

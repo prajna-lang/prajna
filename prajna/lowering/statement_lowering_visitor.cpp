@@ -236,7 +236,30 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
             logger->Error("#link should have one value");
         }
         auto dynamic_lib_name = ast_pragma.values.front().value;
-        this->compiler->jit_engine->LoadDynamicLib(dynamic_lib_name);
+        // 或者libs的路径
+        std::string os_prefix;
+        std::string lib_extension;
+#ifdef __APPLE__
+        lib_extension = ".dylib";
+        os_prefix = "osx";
+#elif _WIN32
+        lib_extension = ".dll";
+        os_prefix = "win";
+#else
+        lib_extension = ".so";
+        os_prefix = "linux";
+#endif
+
+        std::filesystem::path dynamic_lib_path(dynamic_lib_name);
+        auto dynamic_lib_fullname =
+            (std::filesystem::current_path() / this->ir_builder->symbol_table->directory_path /
+             "libs" / os_prefix / dynamic_lib_name)
+                .string() +
+            lib_extension;
+        if (!this->compiler->jit_engine->LoadDynamicLib(dynamic_lib_fullname)) {
+            this->logger->Error(fmt::format("failed to link dynamic lib {}", dynamic_lib_fullname),
+                                ast_pragma);
+        }
         return nullptr;
     }
 

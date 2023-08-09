@@ -45,6 +45,7 @@ target_include_directories(llvm_include_dir
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/third_party/llvm-project/llvm/include>
     $<INSTALL_INTERFACE:include>
 )
+add_dependencies(llvm_include_dir intrinsics_gen)
 
 add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/cxxopts EXCLUDE_FROM_ALL)

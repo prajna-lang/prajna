@@ -856,14 +856,16 @@ class StatementLoweringVisitor {
                         symbol_template_arguments;
                 }
 
-                return (*statement_lowering_visitor)(ast_statement);
+                auto symbol = (*statement_lowering_visitor)(ast_statement);
 
                 statement_lowering_visitor->ir_builder->current_implement_type = nullptr;
                 statement_lowering_visitor->ir_builder->symbol_template_argument_list_optional
                     .reset();
+                return symbol;
             } catch (CompileError compile_error) {
                 logger->Note(ast_template_paramters);
                 throw compile_error;
+                return nullptr;
             }
         };
     }

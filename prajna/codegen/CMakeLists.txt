@@ -2,11 +2,10 @@ add_library(prajna_codegen OBJECT
     llvm_codegen.cpp
 )
 
-add_dependencies(prajna_codegen intrinsics_gen)
-
 target_link_libraries(prajna_codegen
     PUBLIC prajna_ir
     PRIVATE llvm_include_dir
+    PRIVATE LLVMDebugInfoCodeView
     PRIVATE LLVMExecutionEngine
     PRIVATE LLVMCodeGen
     PRIVATE LLVMAnalysis

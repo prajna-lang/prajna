@@ -7,6 +7,7 @@ pipeline{
     // triggers {
     //     cron('H H(0-7) * * *')
     // }
+
     stages {
         stage('PRAJNA CI'){
             parallel {
@@ -64,6 +65,7 @@ pipeline{
                         dockerfile {
                             filename 'ubuntu_dev_nvgpu.dockerfile'
                             dir 'dockerfiles'
+                            label 'Sunny'
                             //需要jenkins也用root权限启动, 目前使用其他权限会有很多问题, root权限存在极大的安全隐患
                             args '--gpus all -u root:root --network host'
                         }
@@ -115,6 +117,7 @@ pipeline{
                         dockerfile {
                             filename 'ubuntu_dev_nvgpu.dockerfile'
                             dir 'dockerfiles'
+                            label 'Sunny'
                             //需要jenkins也用root权限启动, 目前使用其他权限会有很多问题, root权限存在极大的安全隐患
                             args '--gpus all -u root:root --network host'
                         }

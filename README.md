@@ -1,6 +1,6 @@
 # 般若编程语言
 
-[![Jenkins](http://www.matazure.com:8081/job/prajna/job/main/badge/icon)](http://www.matazure.com:8081/blue/organizations/jenkins/prajna/activity)
+[![Jenkins](http://dev.matazure.com:8080/job/prajna/job/main/badge/icon)](http://dev.matazure.com:8080/blue/organizations/jenkins/prajna/activity)
 
 般若是一门专门为构建更加模块化, 自动化和智能化的人工智能基础设施而研发的开源编程语言. 般若编程语言的目标是同时满足人工智能研究, 训练和部署等多个阶段的使用; 可以简易使用的CPU, GPU和各种TPU为人工智能提供算力.
 
@@ -46,6 +46,74 @@ graph LR
 般若支持main函数, Repl和Jupyter等多种交互方式, 适合算法研发和部署等多种场景.
 
 ## 使用实例
+
+```prjana
+use ::gpu::*;
+use ::gpu::Tensor<f32, 2> as GpuMatrixf32;
+
+@kernel
+@target("nvptx")
+func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
+    var thread_x = ::gpu::ThreadIndex()[1];
+    var thread_y = ::gpu::ThreadIndex()[2];
+    var block_x = ::gpu::BlockIndex()[1];
+    var block_y = ::gpu::BlockIndex()[2];
+    var block_size = 32;
+    var global_x = block_x * block_size + thread_x;
+    var global_y = block_y * block_size + thread_y;
+
+    var sum = 0.0f32;
+    var step = A.Shape()[1] / block_size;
+    for i in 0 to step {
+        @shared
+        var local_a: Array<f32, 1024>;
+        @shared
+        var local_b: Array<f32, 1024>;
+        local_a[thread_x* 32 + thread_y] = A[global_x, thread_y + i * block_size];
+        local_b[thread_x* 32 + thread_y] = B[thread_x + i * block_size , global_y];
+        ::gpu::BlockBarrier();
+
+        for j in 0 to 32 {
+          sum = sum + local_a[thread_x * 32 + j] * local_b[j * 32 + thread_y];
+        }
+        ::gpu::BlockBarrier();
+    }
+
+    C[global_x, global_y] = sum;
+}
+
+@test
+func Main() {
+    var block_size = 32;
+    var block_shape = [1, block_size, block_size]; // 注意和cuda的dim是相反的顺序, [z, y, x]
+    var a_shape = [10 * 32, 10 * 32];
+    var b_shape = [10 * 32, 20 * 32];
+    var grid_shape = [1, a_shape[0] / block_size, b_shape[1] / block_size];
+
+    var A = GpuMatrixf32::Create(a_shape);
+    var B = GpuMatrixf32::Create(b_shape);
+    var C = GpuMatrixf32::Create([a_shape[0], b_shape[1]]);
+
+    MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
+
+    var epoch = 300;
+    var t0 = chrono::Clock();
+
+    for i in 0 to epoch {
+      MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
+    }
+    cuda::cudaDeviceSynchronize(); // 后面会改为更为通用的名字
+
+    var t1 = chrono::Clock();
+    t0.PrintLine();
+    t1.PrintLine();
+
+    var flops = 2 * a_shape[0] * a_shape[1] * b_shape[1];
+    var giga_flops = (flops.Cast<f32>() * 1.0e-9 * epoch.Cast<f32>()) / (t1 - t0);
+    giga_flops.Print();
+    "GFlop/s".PrintLine();
+}
+```
 
 可以搜索*.prajna文件查看
 
@@ -160,13 +228,3 @@ Pytorch/Tensorflow项目代码过于庞大混乱, 基础架构和框架耦合在
 docker pull matazure/prajna:0.1.0-cpu-ubuntu20.04
 docker run -ti matazure/prajna:0.1.0-cpu-ubuntu20.04 prajna repl
 ```
-
-## 其他
-
-微信扫码关注"玄青矩阵"公众号, 我们会定期发布一些技术讲解和般若编程语言的最新进展.
-
-![image](docs/images/%E7%8E%84%E9%9D%92%E7%9F%A9%E9%98%B5%E5%85%AC%E4%BC%97%E5%8F%B7.jpg)
-
-加微信入交流群: zhangzhimin-tju
-
-邮箱: zhangzhimin@matazure.com

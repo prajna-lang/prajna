@@ -1,4 +1,3 @@
-// use gpu // gpu指向的是存在examples::gpu的module
 use ::gpu::*;
 use ::gpu::Tensor<f32, 2> as GpuMatrixf32;
 
@@ -51,9 +50,8 @@ func Main() {
     var t0 = chrono::Clock();
 
     for i in 0 to epoch {
-      MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
+      MatrixMultiply<|grid_shape, block_shape|>(A, B, C); // 核函数调用, 语法和cuda相比有所改进.
     }
-    cuda::cudaDeviceSynchronize(); // 后面会改为更为通用的名字
 
     var t1 = chrono::Clock();
     t0.PrintLine();

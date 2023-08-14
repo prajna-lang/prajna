@@ -61,6 +61,7 @@ use tensor::Layout;
 use list::Node;
 use list::List;
 use dict::ListDict;
+use hashdict::HashDict;
 
 use stack::Stack;
 use optional::Optional;

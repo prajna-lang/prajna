@@ -1,0 +1,22 @@
+@test
+func TestListDict() {
+    var hashdict: HashDict<i64, i64>;
+    hashdict.Insert_node(1, 2);
+    hashdict.Insert_node(2, 3);
+
+    var v1 = hashdict.Get(2);
+    //v1.ToString().PrintLine();
+    test::Assert(v1 == 3);
+
+    hashdict.Remove(1);
+    test::Assert(!hashdict.IsEmpty());
+    hashdict.Remove(2);
+    test::Assert(hashdict.IsEmpty());
+
+    hashdict.Insert_node(5, 6);
+    test::Assert(hashdict.Get(5) == 6);
+    hashdict.Insert_node(7, 8);
+    hashdict.Clear();
+    test::Assert(hashdict.IsEmpty());
+
+}

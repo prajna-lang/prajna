@@ -14,7 +14,7 @@ template <typename Lexer>
 struct CodeLexer : lex::lexer<Lexer> {
     CodeLexer();
 
-    lex::token_def<lex::omit> arrow;         // ->
+    lex::token_def<ast::Operator> arrow;     // ->
     lex::token_def<ast::Operator> scope;     // ::
     lex::token_def<ast::Operator> period;    // .
     lex::token_def<ast::Operator> backslash; /* \ */

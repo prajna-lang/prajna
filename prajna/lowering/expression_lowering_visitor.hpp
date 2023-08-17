@@ -395,6 +395,23 @@ class ExpressionLoweringVisitor {
         return nullptr;
     }
 
+    std::shared_ptr<ir::Value> ApplyBinaryOperationArrow(
+        std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
+        auto ir_raw_ptr_function = ir_builder->GetImplementFunction(ir_lhs->type, "__raw_ptr");
+        if (!ir_raw_ptr_function) {
+            //  错误信息仅显示算子符号即可
+            this->logger->Error("not implement __raw_ptr function", ast_binary_operation.operator_);
+        }
+        auto ir_raw_ptr = ir_builder->CallMemberFunction(ir_lhs, ir_raw_ptr_function, {});
+        if (!Is<ir::PointerType>(ir_raw_ptr->type)) {
+            this->logger->Error("__raw_ptr function should return a raw pointer type",
+                                ir_raw_ptr_function->source_location);
+        }
+        auto ir_raw_ptr_deference = ir_builder->Create<ir::DeferencePointer>(ir_raw_ptr);
+        // 里面不会用的ast_binary_operation.operator_, 只会用到名字.
+        return this->ApplyBinaryOperationAccessMember(ir_raw_ptr_deference, ast_binary_operation);
+    }
+
     std::shared_ptr<ir::Value> ApplyBinaryOperation(std::shared_ptr<ir::Value> ir_lhs,
                                                     ast::BinaryOperation ast_binary_operation) {
         if (ast_binary_operation.operator_ == ast::Operator(".")) {
@@ -405,13 +422,13 @@ class ExpressionLoweringVisitor {
         }
         if (ast_binary_operation.operator_ == ast::Operator("[")) {
             return this->ApplyBinaryOperationIndexArray(ir_lhs, ast_binary_operation);
-        } else {
-            // 将其余的运算都转换为函数调用
-            return this->ConvertBinaryOperationToCallFunction(ir_lhs, ast_binary_operation);
+        }
+        if (ast_binary_operation.operator_ == ast::Operator("->")) {
+            return this->ApplyBinaryOperationArrow(ir_lhs, ast_binary_operation);
         }
 
-        PRAJNA_UNREACHABLE;
-        return nullptr;
+        // 将其余的运算都转换为函数调用
+        return this->ConvertBinaryOperationToCallFunction(ir_lhs, ast_binary_operation);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::Expressions ast_expressions) {

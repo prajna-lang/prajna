@@ -24,7 +24,6 @@ struct ExpressionGrammer
     typedef Iterator iterator_type;
     typedef qi::in_state_skipper<typename Lexer::lexer_def> skipper_type;
 
-    
     ExpressionGrammer(const Lexer& tok, ErrorHandler<Iterator> error_handler,
                       SuccessHandler<Iterator> success_handler);
 
@@ -59,6 +58,7 @@ struct ExpressionGrammer
     rule<ast::Array> array;
     rule<ast::Expressions> arguments;
     rule<ast::BinaryOperation> member_access;
+    rule<ast::BinaryOperation> arrow_access;
     rule<ast::BinaryOperation> call;
     rule<ast::BinaryOperation> index;
     rule<ast::Expression> access_call_index_expr;

@@ -163,7 +163,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(template_parameter, success_handler_function);
 
     function_header.name("function header");
-    function_header = annotation_dict >> tok.func > identifier > parameters > -(tok.arrow > type);
+    function_header =
+        annotation_dict >> tok.func > identifier > parameters > -(omit[tok.arrow] > type);
     on_error<fail>(function_header, error_handler_function);
     on_success(function_header, success_handler_function);
 

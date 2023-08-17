@@ -82,8 +82,8 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_error<fail>(kernel_function_call, error_handler_function);
     on_success(kernel_function_call, success_handler_function);
 
-    access_call_index_expr.name("access/call/index expression");
-    access_call_index_expr = primary_expr >> *(member_access | call | index);
+    access_call_index_expr.name("member access/arrow access/call/index expression");
+    access_call_index_expr = primary_expr >> *(member_access | arrow_access | call | index);
     on_error<fail>(access_call_index_expr, error_handler_function);
     on_success(access_call_index_expr, success_handler_function);
 
@@ -91,6 +91,11 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     member_access = tok.period > identifier_path;
     on_error<fail>(member_access, error_handler_function);
     on_success(member_access, success_handler_function);
+
+    arrow_access.name("arrow access");
+    arrow_access = tok.arrow > identifier_path;
+    on_error<fail>(arrow_access, error_handler_function);
+    on_success(arrow_access, success_handler_function);
 
     call.name("call");
     call = tok.left_bracket > arguments > tok.right_bracket;

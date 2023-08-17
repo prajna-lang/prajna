@@ -33,6 +33,10 @@ implement ptr<Type> {
     func IsValid()->bool {
         return !this.IsNull();
     }
+
+    func __raw_ptr()->ptr<Type> {
+        return this;
+    }
 }
 
 template <Type>
@@ -125,6 +129,10 @@ implement Ptr<Type>{
     template <Interface>
     func As()->Dynamic<Interface> {
         return __as<Type, Interface>(this);
+    }
+
+    func __raw_ptr()->ptr<Type> {
+        return this.raw_ptr;
     }
 }
 

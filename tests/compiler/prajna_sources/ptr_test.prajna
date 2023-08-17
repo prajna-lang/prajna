@@ -81,4 +81,6 @@ implement Initializable for Tmp2 {
 @test
 func TestAllocate() {
     var p_ts1 = Ptr<Tmp2>::New();
+    p_ts1->tmp;
 }
+

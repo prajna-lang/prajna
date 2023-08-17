@@ -424,15 +424,13 @@ class ExpressionLoweringVisitor {
         return ir_values;
     }
 
-    std::shared_ptr<ir::Value> ApplyUnaryOperatorDereferencePointer(
-        std::shared_ptr<ir::Value> ir_operand) {
-        return ir_builder->Create<ir::DeferencePointer>(ir_operand);
-    }
-
     std::shared_ptr<ir::Value> operator()(ast::Unary ast_unary) {
         auto ir_operand = this->applyOperand(ast_unary.operand);
         if (ast_unary.operator_ == ast::Operator("*")) {
-            return this->ApplyUnaryOperatorDereferencePointer(ir_operand);
+            if (!Is<ir::PointerType>(ir_operand->type)) {
+                logger->Error("only could get the address of a VariableLiked", ast_unary);
+            }
+            return ir_builder->Create<ir::DeferencePointer>(ir_operand);
         }
         if (ast_unary.operator_ == ast::Operator("&")) {
             auto ir_variable_liked = Cast<ir::VariableLiked>(ir_operand);
@@ -446,7 +444,7 @@ class ExpressionLoweringVisitor {
         auto unary_operator_name = ast_unary.operator_.string_token;
         auto ir_function =
             ir_builder->GetUnaryOperator(ir_variable_liked->type, unary_operator_name);
-        if (! ir_function) {
+        if (!ir_function) {
             logger->Error("unary operator not found", ast_unary.operator_);
         }
 
@@ -739,7 +737,7 @@ class ExpressionLoweringVisitor {
         auto binary_operator_name = ast_binary_operation.operator_.string_token;
         auto ir_function =
             ir_builder->GetBinaryOperator(ir_variable_liked->type, binary_operator_name);
-        if (! ir_function) {
+        if (!ir_function) {
             logger->Error(
                 fmt::format("{} operator not found", ast_binary_operation.operator_.string_token),
                 ast_binary_operation.operator_);

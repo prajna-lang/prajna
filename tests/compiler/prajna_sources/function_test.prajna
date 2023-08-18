@@ -38,5 +38,4 @@ func TestFunction(){
 
     Call(PrintHi);
     Call(PrintHello);
-
 }

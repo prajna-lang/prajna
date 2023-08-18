@@ -290,7 +290,13 @@ class IrBuilder {
         return this->Create<ir::AccessField>(ir_variable_liked, *iter_field);
     }
 
-    std::shared_ptr<ir::Value> accessMember(std::shared_ptr<ir::Value> ir_object,
+    std::shared_ptr<ir::Value> GetAddressOf(std::shared_ptr<ir::Value> ir_object) {
+        auto ir_variable_liked = this->VariableLikedNormalize(ir_object);
+        auto ir_this_pointer = this->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+        return ir_this_pointer;
+    }
+
+    std::shared_ptr<ir::Value> AccessMember(std::shared_ptr<ir::Value> ir_object,
                                             std::string member_name) {
         auto ir_type = ir_object->type;
 

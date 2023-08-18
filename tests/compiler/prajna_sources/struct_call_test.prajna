@@ -1,0 +1,16 @@
+struct Functor{
+}
+
+implement Functor {
+    func __call(flag: i64) {
+        "functor call ".Print();
+        flag.PrintLine();
+    }
+}
+
+@test
+func TestStructCall() {
+    var functor: Functor;
+    functor.__call(123);
+    functor(123);
+}

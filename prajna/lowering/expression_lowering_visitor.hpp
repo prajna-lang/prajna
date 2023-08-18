@@ -238,7 +238,7 @@ class ExpressionLoweringVisitor {
             this->logger->Error("invalid object type to access member", ir_lhs->source_location);
         }
 
-        if (auto ir_member = ir_builder->accessMember(ir_lhs, member_name)) {
+        if (auto ir_member = ir_builder->AccessMember(ir_lhs, member_name)) {
             return ir_member;
         }
 
@@ -316,8 +316,10 @@ class ExpressionLoweringVisitor {
         auto ir_arguments = *Cast<ir::ValueCollection>(applyOperand(ast_binary_operation.operand));
         PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
         auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operation.operand);
-        if (auto ir_member_function = Cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
-            auto ir_function_type = ir_member_function->function_prototype->function_type;
+        if (auto ir_member_function_with_this_pointer =
+                Cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
+            auto ir_function_type =
+                ir_member_function_with_this_pointer->function_prototype->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
                 logger->Error(
                     fmt::format(
@@ -336,9 +338,10 @@ class ExpressionLoweringVisitor {
                 }
             }
 
-            ir_arguments.insert(ir_arguments.begin(), ir_member_function->this_pointer);
-            return ir_builder->Create<ir::Call>(ir_member_function->function_prototype,
-                                                ir_arguments);
+            ir_arguments.insert(ir_arguments.begin(),
+                                ir_member_function_with_this_pointer->this_pointer);
+            return ir_builder->Create<ir::Call>(
+                ir_member_function_with_this_pointer->function_prototype, ir_arguments);
         }
 
         if (ir_lhs->IsFunction()) {
@@ -358,6 +361,30 @@ class ExpressionLoweringVisitor {
             }
 
             return ir_builder->Create<ir::Call>(ir_lhs, ir_arguments);
+        }
+
+        if (auto ir_member_function = ir_builder->GetImplementFunction(ir_lhs->type, "__call")) {
+            auto ir_function_type = ir_member_function->function_type;
+            if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
+                logger->Error(
+                    fmt::format(
+                        "the arguments size is not matched, require {} argument, but give {}",
+                        ir_function_type->parameter_types.size() - 1, ir_arguments.size()),
+                    ast_expressions);
+            }
+            for (auto [ir_argument, ir_parameter_type, ast_expression] :
+                 boost::combine(ir_arguments,
+                                boost::make_iterator_range(
+                                    std::next(ir_function_type->parameter_types.begin()),
+                                    ir_function_type->parameter_types.end()),
+                                ast_expressions)) {
+                if (ir_argument->type != ir_parameter_type) {
+                    logger->Error("the argument type is not matched", ast_expression);
+                }
+            }
+
+            ir_arguments.insert(ir_arguments.begin(), ir_builder->GetAddressOf(ir_lhs));
+            return ir_builder->Create<ir::Call>(ir_member_function, ir_arguments);
         }
 
         if (auto ir_access_property = Cast<ir::AccessProperty>(ir_lhs)) {

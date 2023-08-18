@@ -23,6 +23,6 @@ implement Stack<ValueType> {
     func Top() -> ValueType {
         debug::Assert(!this.IsEmpty());
         var last_node = (*this._list.End()).prev;
-        return (*last_node).value;
+        return last_node->value;
     }
 }

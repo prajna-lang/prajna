@@ -8,9 +8,9 @@ func TestList() {
 
     var node = tmp_list.Begin();
     while (node != tmp_list.End()) {
-        (*node).value.ToString().Print();
+        node->value.ToString().Print();
         ", ".Print();
-        node = (*node).next;
+        node = node->next;
     }
 
     "\n".Print();

@@ -91,8 +91,8 @@ implement FloatFixedPrinter<FloatType> {
         var str_re = "";
         var node = char_list.Begin();
         while (node != char_list.End()) {
-            str_re.Push((*node).value);
-            node = (*node).next;
+            str_re.Push(node->value);
+            node = node->next;
         }
 
         return str_re;

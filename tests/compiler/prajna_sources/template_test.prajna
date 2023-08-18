@@ -7,7 +7,7 @@ struct Node {
 template <T>
 implement Node<T>{
     func nextValue()->T{
-        return (*this.next).value;
+        return this.next->value;
     }
 }
 

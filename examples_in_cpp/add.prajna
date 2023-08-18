@@ -1,6 +1,6 @@
 
 func helloWorld(ts: Array<i64, 8>*){
-    (*ts).ToString().Print();
+    ts->ToString().Print();
 }
 
 func matrixAddF32(p_ts0: Tensor<f32, 2> *, p_ts1: Tensor<f32, 2>*, p_ts_re: Tensor<f32, 2>*){

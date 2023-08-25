@@ -231,6 +231,9 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     identifier_path = expr.identifier_path;
     on_error<fail>(identifier_path, error_handler_function);
     on_success(identifier_path, success_handler_function);
+
+    expr.closure.name("closure");
+    expr.closure = parameters > -(omit[tok.arrow] > type) > block;
 }
 
 }  // namespace prajna::parser::grammar

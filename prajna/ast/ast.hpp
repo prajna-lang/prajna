@@ -29,7 +29,7 @@ struct Array;
 struct Template;
 struct TemplateStatement;
 struct Module;
-
+struct Closure;
 struct Operator : SourceLocation {
     Operator() = default;
 
@@ -134,9 +134,9 @@ struct Use : SourceLocation {
 
 typedef boost::variant<Blank, CharLiteral, StringLiteral, BoolLiteral, IntLiteral, FloatLiteral,
                        Identifier, IdentifierPath, IntLiteralPostfix, FloatLiteralPostfix,
-                       boost::recursive_wrapper<Unary>, boost::recursive_wrapper<PostfixUnary>,
-                       boost::recursive_wrapper<Expression>, boost::recursive_wrapper<Expressions>,
-                       boost::recursive_wrapper<Array>,
+                       boost::recursive_wrapper<Closure>, boost::recursive_wrapper<Unary>,
+                       boost::recursive_wrapper<PostfixUnary>, boost::recursive_wrapper<Expression>,
+                       boost::recursive_wrapper<Expressions>, boost::recursive_wrapper<Array>,
                        boost::recursive_wrapper<KernelFunctionCall>>
     Operand;
 
@@ -273,6 +273,12 @@ struct Function : SourceLocation {
     boost::optional<Block> body_optional;
 };
 
+struct Closure : SourceLocation {
+    Parameters parameters;
+    boost::optional<Type> return_type_optional;
+    Block body;
+};
+
 struct Field : SourceLocation {
     Identifier name;
     Type type;
@@ -359,6 +365,7 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotation_dict, name, pa
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Pragma, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Annotation, name, values)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Function, declaration, body_optional)
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Closure, parameters, return_type_optional, body)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Template, name, template_parameters, statements)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateStatement, template_parameters, statement)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::InterfacePrototype, annotation_dict, name, functions)

@@ -141,7 +141,7 @@ inline void CopyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
     }
 }
 
-class StatementLoweringVisitor {
+class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLoweringVisitor> {
     StatementLoweringVisitor() = default;
 
     using result_type = Symbol;
@@ -158,6 +158,7 @@ class StatementLoweringVisitor {
         self->compiler = compiler;
         self->expression_lowering_visitor =
             ExpressionLoweringVisitor::Create(self->ir_builder, logger);
+        self->expression_lowering_visitor->wp_statement_lowering_visitor = self->shared_from_this();
         return self;
     }
 

@@ -30,8 +30,6 @@ class IrBuilder {
 
     static std::shared_ptr<IrBuilder> Create() { return Create(nullptr, nullptr, nullptr); }
 
-    // IrBuilder() : IrBuilder(nullptr, nullptr, nullptr) {}
-
     std::shared_ptr<ir::Type> GetIndexType() { return ir::IntType::Create(ir::ADDRESS_BITS, true); }
 
     std::shared_ptr<ir::ConstantInt> GetIndexConstant(int64_t value) {
@@ -507,8 +505,9 @@ class IrBuilder {
     std::shared_ptr<ir::InterfaceImplement> current_implement_interface = nullptr;
     boost::optional<std::list<Symbol>> symbol_template_argument_list_optional;
     bool is_static_function = false;
-
     bool interface_prototype_processing = false;
+
+    int closure_id = 0;
 };
 
 }  // namespace prajna::lowering

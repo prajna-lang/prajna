@@ -114,7 +114,7 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
 
     primary_expr.name("primary experssion");
     primary_expr = literal | tok.this_ | identifier_path | array |
-                   omit[tok.left_bracket] > expr > omit[tok.right_bracket];
+                   omit[tok.left_bracket] >> expr >> omit[tok.right_bracket] | closure;
     on_error<fail>(primary_expr, error_handler_function);
     on_success(primary_expr, success_handler_function);
 

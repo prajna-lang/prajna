@@ -432,6 +432,65 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
     return re;
 }
 
+inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
+    for (auto iter_function = ir_module->functions.rbegin();
+         iter_function != ir_module->functions.rend(); ++iter_function) {
+        auto ir_function = *iter_function;
+        if (!ir_function->is_closure) continue;
+
+        auto ir_external_values = utility::CaptureExternalValueInClosure(ir_function);
+        std::map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Field>> ir_value_field_map;
+
+        // ir_this 存在两个, 之前的不太好获取, 故有搞了一个
+        auto ir_this = ir::DeferencePointer::Create(ir_function->parameters.front());
+        ir_function->blocks.front()->PushFront(ir_this);
+
+        utility::EachValue(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
+            if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
+                for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
+                    auto ir_operand = ir_instruction->operand(i);
+                    if (ir_operand->is_global) continue;
+                    if (ir_operand->GetParentFunction() != ir_function) {
+                        if (!ir_value_field_map[ir_operand]) {
+                            ir_value_field_map[ir_operand] =
+                                ir::Field::Create(ir_value->name, ir_operand->type);
+                        }
+                        auto ir_field = ir_value_field_map[ir_operand];
+                        auto ir_access_field =
+                            ir::AccessField::Create(ir_this, ir_value_field_map[ir_operand]);
+                        ir_instruction->parent_block->values.insert(
+                            ir_instruction->GetBlockIterator(), ir_access_field);
+                        ir_access_field->parent_block = ir_instruction->parent_block;
+                        ir_instruction->operand(i, ir_access_field);
+                    }
+                }
+            }
+        });
+
+        auto ir_closure_struct_type = Cast<ir::StructType>(ir_this->type);
+        PRAJNA_ASSERT(ir_closure_struct_type);
+        std::list<std::shared_ptr<ir::Field>> ir_field_list;
+        for (auto [ir_value, ir_field] : ir_value_field_map) {
+            ir_field_list.push_back(ir_field);
+        }
+        ir_closure_struct_type->fields = ir_field_list;
+        ir_closure_struct_type->Update();
+
+        auto ir_closure = ir_function->closure;
+        PRAJNA_ASSERT(ir_closure);
+        auto ir_builder = lowering::IrBuilder::Create();
+        ir_builder->PushBlock(ir_closure->parent_block);
+        ir_builder->inserter_iterator = std::next(ir_closure->GetBlockIterator());
+        for (auto [ir_value, ir_field] : ir_value_field_map) {
+            auto ir_access_filed =
+                ir_builder->Create<ir::AccessField>(ir_closure, ir_value_field_map[ir_value]);
+            ir_builder->Create<ir::WriteVariableLiked>(ir_value, ir_access_filed);
+        }
+    }
+
+    return false;
+}
+
 inline bool ExternCFunction(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         if (ir_function->annotation_dict.count("extern")) {
@@ -510,7 +569,7 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
         for (auto ir_alloca : ir_allocas) {
             if (ir_alloca->parent_block != ir_top_block) {
                 utility::RemoveFromParent(ir_alloca);
-                ir_top_block->pushFront(ir_alloca);
+                ir_top_block->PushFront(ir_alloca);
             }
         }
     }
@@ -612,8 +671,12 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
 }
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
+    RecursiveTransformModule(ir_module, ConvertClosure);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, ExternCFunction);
+    PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, InsertLocationForAssert);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ConvertForMultiDimToFor1Dim(ir_module);

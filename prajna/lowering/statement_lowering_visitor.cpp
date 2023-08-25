@@ -65,9 +65,6 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                     [=, &is_first_module](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
                         auto symbol = symbol_table->Get(identifier);
                         if (symbol.which() != 0) {
-                            if (identifier == "gpu") {
-                                int a = 0;
-                            }
                             return symbol;
                         } else {
                             auto new_symbol_table = lowering::SymbolTable::Create(symbol_table);

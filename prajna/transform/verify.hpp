@@ -88,10 +88,7 @@ inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
                 PRAJNA_ASSERT(ir_operand);
 
                 if (ir_operand) {
-                    if (Is<ir::Function>(ir_operand) || Is<ir::GlobalVariable>(ir_operand) ||
-                        Is<ir::GlobalAlloca>(ir_operand) || Is<ir::Parameter>(ir_operand)) {
-                        continue;
-                    }
+                    if (ir_operand->is_global || Is<ir::Parameter>(ir_operand)) continue;
 
                     // 如果是While For等Block则直接放回, 其无法溯源到跟函数
                     if (ir_operand->GetRootBlock()->instruction_with_index_list.size() > 0) {

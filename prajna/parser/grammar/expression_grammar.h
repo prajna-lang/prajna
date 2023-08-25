@@ -43,6 +43,10 @@ struct ExpressionGrammer
     rule<ast::TemplateArguments> template_arguments;
     rule<ast::TemplateIdentifier> template_identifier;
 
+    rule<ast::Parameter> parameter;
+    rule<ast::Parameters> parameters;
+    rule<boost::optional<ast::Block>> function_implement;
+
     rule<ast::Operator> logical_op;
     rule<ast::Operator> equality_op;
     rule<ast::Operator> relational_op;
@@ -64,6 +68,7 @@ struct ExpressionGrammer
     rule<ast::Expression> access_call_index_expr;
     rule<ast::Operand> primary_expr;
     rule<ast::Operand> literal;
+    rule<ast::Closure> closure;
     rule<ast::KernelFunctionCall> kernel_function_call;
     rule<ast::Operand> kernel_function_operand;
 };

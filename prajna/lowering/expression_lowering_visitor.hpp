@@ -17,6 +17,8 @@
 
 namespace prajna::lowering {
 
+class StatementLoweringVisitor;
+
 class UndefinedSymbolException : public std::exception {
    public:
     UndefinedSymbolException(ast::IdentifierPath ast_identifier_path) {
@@ -798,6 +800,11 @@ class ExpressionLoweringVisitor {
         }
         return ir_builder->Create<ir::Call>(ir_function, ir_arguemnts);
     }
+
+    std::shared_ptr<ir::Value> operator()(ast::Closure ast_closure);
+
+   public:
+    std::weak_ptr<StatementLoweringVisitor> wp_statement_lowering_visitor;
 
    private:
     std::shared_ptr<IrBuilder> ir_builder;

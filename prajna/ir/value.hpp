@@ -119,7 +119,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     /// @brief 实例需要销毁前调用
     virtual void Finalize();
 
-    virtual std::shared_ptr<Function> GetParentFunction();
+    std::shared_ptr<Function> GetParentFunction();
 
     std::shared_ptr<FunctionType> GetFunctionType() {
         if (auto ir_pointer_type = Cast<PointerType>(this->type)) {
@@ -154,6 +154,10 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     llvm::Value* llvm_value = nullptr;
     // 用于方便调试, 否则无法有效辨别他们
     std::string tag = "";
+    std::shared_ptr<Function> parent_function = nullptr;
+    // 用于判断是否是closure, 用于辅助closure的生成
+    bool is_closure = false;
+    bool is_global = false;
 };
 
 class VoidValue : public Value {
@@ -370,15 +374,6 @@ class Block : public Value {
         return self;
     }
 
-    std::shared_ptr<Function> GetParentFunction() override {
-        if (this->parent_block) {
-            return this->parent_block->GetParentFunction();
-        } else {
-            PRAJNA_ASSERT(parent_function);
-            return parent_function;
-        }
-    }
-
     iterator insert(iterator iter, std::shared_ptr<ir::Value> ir_value) {
         ir_value->parent_block = Cast<Block>(this->shared_from_this());
         return this->values.insert(iter, ir_value);
@@ -400,7 +395,7 @@ class Block : public Value {
         this->values.erase(std::find(RANGE(this->values), ir_value));
     }
 
-    void pushFront(std::shared_ptr<ir::Value> ir_value) {
+    void PushFront(std::shared_ptr<ir::Value> ir_value) {
         ir_value->parent_block = Cast<Block>(this->shared_from_this());
         this->values.push_front(ir_value);
     }
@@ -426,7 +421,6 @@ class Block : public Value {
 
    public:
     std::list<std::shared_ptr<ir::Value>> values;
-    std::shared_ptr<Function> parent_function = nullptr;
 };
 
 class Function : public Value {
@@ -438,15 +432,23 @@ class Function : public Value {
         PRAJNA_ASSERT(function_type);
         std::shared_ptr<Function> self(new Function);
         self->function_type = function_type;
-        // @warning 事实上llvm::Function是一个指针类型
-        self->type = PointerType::Create(function_type);
-        std::transform(RANGE(function_type->parameter_types), std::back_inserter(self->parameters),
-                       [](std::shared_ptr<Type> ir_argument_type) {
-                           return Parameter::Create(ir_argument_type);
-                       });
-
+        self->Update();
         self->tag = "Function";
+        self->is_global = true;
         return self;
+    }
+
+    void Update() {
+        // @warning 事实上llvm::Function是一个指针类型
+        this->parameters.resize(function_type->parameter_types.size());
+        this->type = PointerType::Create(function_type);
+        std::transform(RANGE(function_type->parameter_types), this->parameters.begin(),
+                       [=](std::shared_ptr<Type> ir_argument_type) {
+                           auto ir_parameter = Parameter::Create(ir_argument_type);
+                           ir_parameter->parent_function =
+                               Cast<ir::Function>(this->shared_from_this());
+                           return ir_parameter;
+                       });
     }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override;
@@ -466,6 +468,8 @@ class Function : public Value {
     std::list<std::shared_ptr<ir::Value>> parameters;
     std::list<std::shared_ptr<Block>> blocks;
     std::shared_ptr<Module> parent_module = nullptr;
+
+    std::shared_ptr<ir::Value> closure = nullptr;
 };
 
 /// @brief 在lowering时需要用到的辅助IR, 并不应该在lowering后出现
@@ -513,7 +517,7 @@ class LocalVariable : public Variable {
 
    public:
     static std::shared_ptr<LocalVariable> Create(std::shared_ptr<Type> type) {
-        PRAJNA_ASSERT(! Is<VoidType>(type));
+        PRAJNA_ASSERT(!Is<VoidType>(type));
         std::shared_ptr<LocalVariable> self(new LocalVariable);
         self->type = type;
         self->tag = "LocalVariable";
@@ -952,6 +956,7 @@ class GlobalAlloca : public Instruction {
         self->OperandResize(0);
         self->type = PointerType::Create(type);
         self->tag = "GlobalAlloca";
+        self->is_global = true;
         return self;
     }
 
@@ -1402,6 +1407,7 @@ class GlobalVariable : public Variable {
         std::shared_ptr<GlobalVariable> self(new GlobalVariable);
         self->type = ir_type;
         self->tag = "GlobalVariable";
+        self->is_global = true;
         return self;
     }
 
@@ -1428,7 +1434,7 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
         self->property = ir_property;
         self->tag = "AccessProperty";
 
-        if (! ir_property->set_function) {
+        if (!ir_property->set_function) {
             self->is_writeable = false;
         }
 
@@ -1597,37 +1603,33 @@ class KernelFunctionCall : public Instruction {
     }
 };
 
-class GpuSharedMemory : public Variable {
+class Closure : public Value {
    protected:
-    GpuSharedMemory() = default;
+    Closure() = default;
 
    public:
-    std::shared_ptr<GpuSharedMemory> Create(std::shared_ptr<Type> ir_type) {
-        std::shared_ptr<GpuSharedMemory> self(new GpuSharedMemory);
-        self->type = ir_type;
-        self->tag = "GpuSharedMemory";
+    static std::shared_ptr<Closure> Create(std::shared_ptr<FunctionType> function_type) {
+        std::shared_ptr<Closure> self(new Closure);
+        self->function_type = function_type;
+        self->type = PointerType::Create(function_type);
+        self->tag = "Closure";
         return self;
     }
 
-    std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<GpuSharedMemory> ir_new(new GpuSharedMemory(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-        return ir_new;
-    }
-
-   private:
+   public:
+    std::shared_ptr<FunctionType> function_type = nullptr;
+    std::list<std::shared_ptr<ir::Value>> parameters;
+    std::list<std::shared_ptr<Block>> blocks;
 };
 
 inline std::shared_ptr<Function> Value::GetParentFunction() {
-    if (!parent_block) {
-        if (auto ir_block = Cast<Block>(shared_from_this())) {
-            return ir_block->GetParentFunction();
-        } else {
-            PRAJNA_UNREACHABLE;
-            return nullptr;
-        }
+    if (this->parent_function) {
+        return this->parent_function;
+    } else if (this->parent_block) {
+        return this->parent_block->GetParentFunction();
     } else {
-        return parent_block->GetParentFunction();
+        PRAJNA_UNREACHABLE;
+        return nullptr;
     }
 }
 
@@ -1667,7 +1669,7 @@ inline std::shared_ptr<ir::Value> Block::Clone(std::shared_ptr<FunctionCloner> f
     ir_new->values.clear();
     for (auto ir_value : values) {
         // (branch导致)存在递归, 故有的值已被处理, 此外参数也在函数里处理
-        if (! function_cloner->value_dict.count(ir_value)) {
+        if (!function_cloner->value_dict.count(ir_value)) {
             auto ir_new_value = ir_value->Clone(function_cloner);
             function_cloner->value_dict[ir_value] = ir_new_value;
         }
@@ -1730,7 +1732,7 @@ inline std::shared_ptr<ir::Value> Function::Clone(std::shared_ptr<FunctionCloner
     // 需要再开头, 因为函数有可能存在递归
     ir_new->blocks.clear();
     for (auto ir_block : blocks) {
-        if (! function_cloner->value_dict.count(ir_block)) {
+        if (!function_cloner->value_dict.count(ir_block)) {
             ir_block->Clone(function_cloner);
         }
 

@@ -39,8 +39,8 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
 
             auto ir_true_label = ir::Label::Create();
             auto ir_false_label = ir::Label::Create();
-            ir_if->TrueBlock()->pushFront(ir_true_label);
-            ir_if->FalseBlock()->pushFront(ir_false_label);
+            ir_if->TrueBlock()->PushFront(ir_true_label);
+            ir_if->FalseBlock()->PushFront(ir_false_label);
             auto ir_condition_branch =
                 ir::ConditionBranch::Create(ir_if->Condition(), ir_true_label, ir_false_label);
 
@@ -70,7 +70,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             FlatternBlockImpl(ir_while->LoopBlock());
 
             auto ir_label_loop = ir::Label::Create();
-            ir_while->LoopBlock()->pushFront(ir_label_loop);
+            ir_while->LoopBlock()->PushFront(ir_label_loop);
             auto ir_label_after_loop = ir::Label::Create();
             auto ir_condition_branch = ir::ConditionBranch::Create(
                 ir_while->Condition(), ir_label_loop, ir_label_after_loop);
@@ -162,7 +162,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_builder->inserter_iterator = ir_builder->currentBlock()->values.begin();
             ir_builder->Create<ir::WriteVariableLiked>(ir_index_count, ir_for->IndexVariable());
             // 需要在后面执行, 插入到最前面去
-            ir_for->LoopBlock()->pushFront(ir_label_loop);
+            ir_for->LoopBlock()->PushFront(ir_label_loop);
             ir_builder->PopBlock();
 
             auto ir_jump_branch = ir::JumpBranch::Create(ir_label_condition_entry);

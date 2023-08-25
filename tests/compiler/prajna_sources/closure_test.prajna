@@ -1,0 +1,16 @@
+@test
+func TestClosure() {
+    var b = 3;
+    var f = (x0: i64)->i64 {
+        var f2 = (x0: i64)->i64{
+            return -x0 + b;
+        };
+        return f2(x0 + 1);
+    };
+
+    var f3 = ()->i64 {
+        return 1;
+    };
+
+    f(4).PrintLine();
+}

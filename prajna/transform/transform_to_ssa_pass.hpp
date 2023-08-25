@@ -58,7 +58,7 @@ inline bool ConvertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_mod
             ir_alloca->fullname = ir_alloca->name;
 
             // @note ir::Alloca不应该出现在循环体内部, 故直接再将其放在函数的第一个块
-            ir_function->blocks.front()->pushFront(ir_alloca);
+            ir_function->blocks.front()->PushFront(ir_alloca);
             ir_variable->parent_block->remove(ir_variable);
 
             // 改变使用它的

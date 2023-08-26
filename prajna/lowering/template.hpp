@@ -32,6 +32,7 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
 
    public:
     using Generator = std::function<Symbol(std::list<Symbol>, std::shared_ptr<ir::Module>)>;
+    using SpecialGenerator = std::function<Symbol(std::shared_ptr<ir::Module>)>;
 
     static std::shared_ptr<Template> Create() {
         std::shared_ptr<Template> self(new Template);
@@ -72,8 +73,13 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
         if (!_instance_dict.count(symbol_template_arguments)) {
             _instance_dict[symbol_template_arguments];  // 插入默认值, 阻断多次实力化,
 
-            _instance_dict[symbol_template_arguments] =
-                this->generator(symbol_template_arguments, ir_module);
+            if (this->special_generator_dict.count(symbol_template_arguments)) {
+                _instance_dict[symbol_template_arguments] =
+                    special_generator_dict[symbol_template_arguments](ir_module);
+            } else {
+                _instance_dict[symbol_template_arguments] =
+                    this->generator(symbol_template_arguments, ir_module);
+            }
 
             if (auto ir_interface_prototype =
                     SymbolGet<ir::InterfacePrototype>(_instance_dict[symbol_template_arguments])) {
@@ -90,6 +96,7 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
    public:
     Generator generator;
     size_t template_parameters_size = 0;
+    std::unordered_map<std::list<Symbol>, SpecialGenerator> special_generator_dict;
 };
 
 // class TemplateCollection : public Named, public std::enable_shared_from_this<TemplateCollection>

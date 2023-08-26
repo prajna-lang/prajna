@@ -71,8 +71,9 @@ CodeLexer<Lexer>::CodeLexer() {
     interface = "interface";
     template_ = "template";
     use = "use";
+    special = "special";
     as = "as";
-    this->self += module_ | func | struct_ | implement | interface | template_ | use | as;
+    this->self += module_ | func | struct_ | implement | interface | template_ | special | use | as;
 
     if_ = "if";
     else_ = "else";

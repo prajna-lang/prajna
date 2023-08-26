@@ -35,8 +35,8 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
 
     statement.name("statement");
     statement = module_ | block | if_ | struct_ | interface | implement_interface | implement_type |
-                template_ | template_statement | function | while_ | for_ | single_statement |
-                semicolon_statement;
+                template_ | template_statement | special_statement | function | while_ | for_ |
+                single_statement | semicolon_statement;
     on_error<fail>(statement, error_handler_function);
     on_success(statement, success_handler_function);
 
@@ -205,6 +205,11 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     // boost::variant并未实现相应重载函数, 并非必须的, 故不去实现,直接注释
     // on_error<fail>(templateable_statement, error_handler_function);
     // on_success(templateable_statement, success_handler_function);
+
+    special_statement.name("special statement");
+    special_statement = tok.special > expr.template_arguments > templateable_statement;
+    on_error<fail>(special_statement, error_handler_function);
+    on_success(special_statement, success_handler_function);
 
     annotation_dict.name("annotation_dict");
     annotation_dict = *annotation;

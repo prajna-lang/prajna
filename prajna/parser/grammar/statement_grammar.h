@@ -73,6 +73,7 @@ struct StatementGrammer
     rule<ast::TemplateAbleStatement> templateable_statement;
     rule<ast::Template> template_;
     rule<ast::TemplateStatement> template_statement;
+    rule<ast::SpecialStatement> special_statement;
 };
 
 }  // namespace prajna::parser::grammar

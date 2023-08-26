@@ -945,6 +945,49 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ast_template_statement.statement);
     }
 
+    Symbol operator()(ast::SpecialStatement ast_special_statement) {
+        return boost::apply_visitor(
+            overloaded{
+                [=](auto x) -> Symbol {
+                    PRAJNA_UNREACHABLE;
+                    return nullptr;
+                },
+                [=](ast::Struct ast_struct) -> Symbol {
+                    auto ir_symbol = ir_builder->symbol_table->Get(ast_struct.name);
+                    auto template_struct = SymbolGet<TemplateStruct>(ir_symbol);
+                    if (template_struct == nullptr) {
+                        logger->Error("it's not a template struct but with template parameters ",
+                                      ast_struct.name);
+                    }
+
+                    auto symbol_template_arguments =
+                        expression_lowering_visitor->ApplyTemplateArguments(
+                            ast_special_statement.template_arguments);
+
+                    // 外部使用算子, 必须值捕获
+                    auto template_struct_generator = [=](std::shared_ptr<ir::Module> ir_module)
+                        -> std::shared_ptr<ir::StructType> {
+                        // // 包裹一层名字空间, 避免被污染
+                        // TODO 应该有个名字
+                        auto templates_symbol_table = SymbolTable::Create(ir_builder->symbol_table);
+
+                        auto statement_lowering_visitor = StatementLoweringVisitor::Create(
+                            templates_symbol_table, logger, ir_module, nullptr);
+                        auto ir_type = Cast<ir::StructType>(
+                            SymbolGet<ir::Type>((*statement_lowering_visitor)(ast_struct)));
+                        return ir_type;
+                    };
+
+                    PRAJNA_ASSERT(template_struct->template_struct_impl);
+                    template_struct->template_struct_impl
+                        ->special_generator_dict[symbol_template_arguments] =
+                        template_struct_generator;
+
+                    return nullptr;
+                }},
+            ast_special_statement.statement.get());
+    }
+
     Symbol operator()(ast::Expression ast_expression) {
         return this->ApplyExpression(ast_expression);
     }

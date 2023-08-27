@@ -1,0 +1,43 @@
+template <T>
+struct Hash{}
+
+template <T>
+implement Hash<T> {
+    func __call(v: T)->i64 {
+        return 1;
+    }
+}
+
+implement Hash<i64> {
+    func __call(v: i64)->i64 {
+        return v;
+    }
+}
+
+
+@test
+func Test1() {
+    var tmp: Hash<i64>;
+    tmp(3).PrintLine();
+    var tmp2: Hash<f32>;
+    tmp2(3.0f32).PrintLine();
+}
+
+
+template <T>
+struct Tmp {
+    value: T;
+}
+
+special <i64>
+struct Tmp {
+    value: i64;
+    flag: bool;
+}
+
+@test
+func Test2() {
+    var tmp: Tmp<i64>;
+    tmp.flag = true;
+    tmp.flag.PrintLine();
+}

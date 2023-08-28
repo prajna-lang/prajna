@@ -18,6 +18,7 @@
 #include <unordered_map>
 
 #include "boost/dll/shared_library.hpp"
+#include "fmt/format.h"
 #include "llvm/ExecutionEngine/JITLink/JITLinkMemoryManager.h"
 #include "llvm/ExecutionEngine/Orc/EPCDynamicLibrarySearchGenerator.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
@@ -153,8 +154,9 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
         llvm::raw_fd_ostream llvm_fs(file_base + ".ll", err_code);
         ir_sub_module->llvm_module->print(llvm_fs, nullptr);
         llvm_fs.close();
-        PRAJNA_VERIFY(
-            std::system(("llc " + file_base + ".ll" + " -o " + file_base + ".ptx").c_str()) == 0);
+        std::string llc_cmd =
+            fmt::format("llc {file_base}.ll -o {file_base}.ptx", fmt::arg("file_base", file_base));
+        PRAJNA_VERIFY(std::system(llc_cmd.c_str()) == 0);
 
         auto cu_re = cuInit(0);
         PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
@@ -170,55 +172,9 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
         }
         PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
 
-        const size_t options_size = 6;
-        CUjit_option options[options_size];
-        void *optionVals[options_size];
-        float walltime;
-        char error_log[8192], info_log[8192];
-        unsigned int logSize = 8192;
-        void *cuOut;
-        size_t outSize;
-        // Setup linker options
-        // Return walltime from JIT compilation
-        options[0] = CU_JIT_WALL_TIME;
-        optionVals[0] = (void *)&walltime;
-        // Pass a buffer for info messages
-        options[1] = CU_JIT_INFO_LOG_BUFFER;
-        optionVals[1] = (void *)info_log;
-        // Pass the size of the info buffer
-        options[2] = CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES;
-        optionVals[2] = (void *)(long)logSize;
-        // Pass a buffer for error message
-        options[3] = CU_JIT_ERROR_LOG_BUFFER;
-        optionVals[3] = (void *)error_log;
-        // Pass the size of the error buffer
-        options[4] = CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES;
-        optionVals[4] = (void *)(long)logSize;
-        // Make the linker verbose
-        options[5] = CU_JIT_LOG_VERBOSE;
-        optionVals[5] = (void *)1;
-
         CUmodule cu_module = 0;
-        CUfunction cu_kernel_funciton = 0;
-        CUlinkState cu_link_state;
 
-        cu_re = cuLinkCreate(options_size, options, optionVals, &cu_link_state);
-        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
-        std::fstream fs(file_base + ".ptx");
-        std::stringstream ss;
-        ss << fs.rdbuf();
-        auto ptx_source = ss.str();
-
-        cu_re =
-            cuLinkAddData(cu_link_state, CU_JIT_INPUT_PTX, const_cast<char *>(ptx_source.c_str()),
-                          strlen(ptx_source.c_str()) + 1, 0, 0, 0, 0);
-        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
-
-        cu_re = cuLinkComplete(cu_link_state, &cuOut, &outSize);
-        PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
-
-        // printf("CUDA Link Completed in %fms. Linker Output:\n%s\n", walltime, info_log);
-        cu_re = cuModuleLoadData(&cu_module, cuOut);
+        cu_re = cuModuleLoad(&cu_module, fmt::format("{}.ptx", file_base).c_str());
         PRAJNA_ASSERT(cu_re == CUDA_SUCCESS);
 
         for (auto ir_function : ir_sub_module->functions) {
@@ -228,7 +184,6 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                     reinterpret_cast<CUfunction *>(this->GetValue(kernel_fun_address_name));
                 std::string function_name = MangleNvvmName(ir_function->fullname);
                 cu_re = cuModuleGetFunction(test_kernel_fun, cu_module, function_name.c_str());
-                PRAJNA_ASSERT(cu_re == CUDA_SUCCESS, std::string(error_log));
             }
         }
 

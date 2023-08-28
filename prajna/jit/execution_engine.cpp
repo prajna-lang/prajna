@@ -284,21 +284,6 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(__get_symbol), "::__get_symbol");
     this->BindCFunction(reinterpret_cast<void *>(__close_dynamic_library),
                         "::__close_dynamic_library");
-
-#ifdef PRAJNA_WITH_GPU
-    this->BindCFunction(reinterpret_cast<void *>(cuInit), "::cuda::cuInit");
-    this->BindCFunction(reinterpret_cast<void *>(cuDeviceGetCount), "::cuda::cuDeviceGetCount");
-    this->BindCFunction(reinterpret_cast<void *>(cudaDeviceSynchronize),
-                        "::cuda::cudaDeviceSynchronize");
-    this->BindCFunction(reinterpret_cast<void *>(cuDeviceGetAttribute),
-                        "::cuda::cuDeviceGetAttribute");
-    this->BindCFunction(reinterpret_cast<void *>(cuLaunchKernel), "::cuda::cuLaunchKernel");
-    this->BindCFunction(reinterpret_cast<void *>(cudaSetDevice), "::cuda::cudaSetDevice");
-    this->BindCFunction(reinterpret_cast<void *>(::cudaMemcpy), "::cuda::cudaMemcpy");
-    // cudaMalloc是一个重载函数, 故重新包装了一下
-    this->BindCFunction(reinterpret_cast<void *>(cudaMalloc), "::cuda::cudaMalloc");
-    this->BindCFunction(reinterpret_cast<void *>(::cuMemAlloc), "::cuda::cuMemAlloc");
-#endif
 }
 
 }  // namespace prajna::jit

@@ -78,7 +78,7 @@ implement Tensor<Type, Dim> {
 
         // TODO : 内存管理需要修复
         var bytes = self.layout.Length() * __sizeof<Type>();
-        cuda::cuMemAlloc(__bit_cast<ptr<ptr<Type>> ,ptr<ptr<i8> > >(&self.data), bytes);
+        cuda::cudaMalloc(__bit_cast<ptr<ptr<Type>> ,ptr<ptr<i8> > >(&self.data), bytes);
 
         return self;
     }

@@ -1,26 +1,32 @@
 // @ref /usr/local/cuda/include/cuda.h
-
+#link("libcudart");
 
 // cuda driver api
 
 // CUdevice -> i32
 // Curesult -> i32
+
+@extern
 func cuInit(flag:i32)->i32;
 
+@extern
 func cuDeviceGetCount(count: ptr<i32>)->i32;
 
+@extern
 func cuDeviceGet(device: ptr<i32>, ordinal: i32)->i32;
 
+@extern
 func cuDeviceGetAttribute(pi: ptr<i32>, attrib: i32, device: i32)->i32;
 
+@extern
 func cuLaunchKernel(kernel_fun_ptr: ptr<i8>, gridDimX : u32, gridDimY: u32, gridDimZ: u32, blockDimX: u32, blockDimY: u32, blockDimZ: u32, shared_mem_bytes: u32, stream: ptr<i8>, kernel_params: ptr<ptr<i8>>, extra: ptr<ptr<i8>>)->i32;
 
+@extern
 func cudaDeviceSynchronize()->i32;
 
 // cuda runtime api
 
-func cuMemAlloc(dev_pointer: ptr<ptr<i8>>, size: i64)->i32;
-
+@extern
 func cudaMalloc(dev_pointer: ptr<ptr<i8>>, size: i64)->i32;
 
 // cudaMemcpyHostToHost = 0
@@ -33,8 +39,10 @@ func cudaMalloc(dev_pointer: ptr<ptr<i8>>, size: i64)->i32;
 // Device -> Device
 // cudaMemcpyDefault = 4
 
+@extern
 func cudaSetDevice(id: i64)->i32;
 
+@extern
 func cudaMemcpy(dst: ptr<i8>, src: ptr<i8>, memory_bytes : i64, mode : i32)->i32;
 
 // prajna cuca api

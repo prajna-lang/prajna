@@ -721,7 +721,8 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
         llvm::SMDiagnostic err;
         auto uq_llvm_libdevice_module = llvm::parseIRFile(
             "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc", err, static_llvm_context);
-        PRAJNA_ASSERT(uq_llvm_libdevice_module);
+        PRAJNA_ASSERT(uq_llvm_libdevice_module,
+                      "\"/usr/local/cuda/nvvm/libdevice/libdevice.10.bc\" is not found");
         linker.linkInModule(std::move(uq_llvm_libdevice_module));
 
         prajna::codegen::LlvmPass(ir_nvptx_module);

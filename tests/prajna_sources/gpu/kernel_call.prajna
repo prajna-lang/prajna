@@ -1,15 +1,11 @@
-use gpu;
+use ::gpu;
 
 @kernel
 @target("nvptx")
 func myKernel(tensor: gpu::Tensor<i64, 1>){
     var thread_idx = gpu::ThreadIndex();
     var thread_idx_x = thread_idx[0];
-    @shared
-    var tmp : Array<i64, 1>;
-    tmp[thread_idx_x] = thread_idx_x;
-    gpu::BlockBarrier();
-    tensor.data[thread_idx_x] = tmp[thread_idx_x];
+    tensor.data[thread_idx_x] = thread_idx_x;
 }
 
 @test

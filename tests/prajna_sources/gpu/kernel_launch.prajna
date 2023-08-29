@@ -1,4 +1,4 @@
-use gpu;
+use ::gpu;
 
 @kernel
 @target("nvptx")
@@ -22,10 +22,8 @@ func TestKernel(){
     var parameters_ptr = &parameters[0];
 
     var re = gpu::LaunchKernel(__bit_cast<function<gpu::Tensor<i64, 1>, i64, void> ,ptr<i8>>(myKernel), GridShape, BlockShape, parameters_ptr);
-    test::Assert(re == 0);
+    test::AssertWithMessage(re == 0, re.ToString());
 
     host_tensor = gpu_tensor.ToHost();
-    "\ndata[0] is: ".Print();
-    host_tensor.At([0]).ToString().Print();
-    "\n".Print();
+    test::Assert(host_tensor[0] == 1023);
 }

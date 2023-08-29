@@ -1,5 +1,6 @@
 // @ref /usr/local/cuda/include/cuda.h
 #link("libcudart");
+#link("libcuda");
 
 // cuda driver api
 

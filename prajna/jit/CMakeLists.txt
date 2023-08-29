@@ -36,7 +36,3 @@ if (APPLE AND UNIX)
 endif()
 
 target_include_directories(prajna_jit PRIVATE /usr/local/cuda/include)
-
-if (PRAJNA_WITH_GPU)
-    target_link_libraries(prajna_jit  PRIVATE /usr/local/cuda/lib64/libcudart.so PRIVATE /usr/local/cuda/lib64/stubs/libcuda.so)
-endif()

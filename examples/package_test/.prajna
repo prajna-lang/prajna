@@ -1,7 +1,7 @@
 // use mod_b;
 
 module mod_local {
-    func Test_local(){
+    func TestLocal(){
         "mod_local::test_local".PrintLine();
     }
 }
@@ -15,10 +15,10 @@ use mod_a::mod_aa;
 use mod_c;
 
 func Main() {
-    tests::package_test::test(); //父mod依赖于该文件是怎么被依赖的
-    test();
-    mod_local::test_local();
-    mod_a::mod_aa::test();
-    mod_c::mod_ca::test();
+    package_test::Test(); //父mod依赖于该文件是怎么被依赖的
+    Test();
+    mod_local::TestLocal();
+    mod_a::mod_aa::Test();
+    mod_c::mod_ca::Test();
     "Hi".Print();
 }

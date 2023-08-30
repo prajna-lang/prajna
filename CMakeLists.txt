@@ -62,7 +62,7 @@ option(BUILD_SHARED_LIBS "Build shared libs" OFF) # 需要加入, 否则其并�
 option(PRAJNA_BUILD_TOOLS "Build Prajna tools" ON)
 option(PRAJNA_BUILD_EXAMPLES "Build Prajna examples" ON)
 option(PRAJNA_BUILD_TESTS "Build Prajna tests" ON)
-option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" OFF)
+option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" ON)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
 option(PRAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
@@ -91,6 +91,8 @@ add_subdirectory(examples_in_cpp)
 include(CMakePackageConfigHelpers)
 
 install(TARGETS prajna EXPORT ${PROJECT_NAME}-targets)
+install(TARGETS llc EXPORT ${PROJECT_NAME}-targets)
+install(TARGETS llc RUNTIME DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 # install(TARGETS prajna_shared EXPORT ${PROJECT_NAME}-targets)
 # xeus_prajna依赖
 install(TARGETS nlohmann_json EXPORT ${PROJECT_NAME}-targets)

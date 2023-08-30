@@ -17,10 +17,9 @@
 int prajna_exe_main(int argc, char* argv[]) {
     cxxopts::Options options("prajna exe");
     options.allow_unrecognised_options().positional_help("program").custom_help("[options]");
-    options.add_options()("h,help", "prajna exe help")(
-        "program", "program file", cxxopts::value<std::string>())("without_builtin_lib",
-                                                                  "without builtin lib",
-                                                                  cxxopts::value<std::string>());
+    options.add_options()("h,help", "prajna exe help")("program", "program file",
+                                                       cxxopts::value<std::string>())(
+        "without_builtin_lib", "without builtin lib", cxxopts::value<std::string>());
     options.parse_positional({"program"});
     auto result = options.parse(argc, argv);
 
@@ -32,7 +31,7 @@ int prajna_exe_main(int argc, char* argv[]) {
                 compiler->CompileBuiltinSourceFiles("builtin_packages");
             } else {
                 auto builtin_packages_directory =
-                    prajna::ProgramLocation(argv[0]).parent_path() / "../builtin_packages";
+                    boost::dll::program_location().parent_path() / "../builtin_packages";
                 compiler->CompileBuiltinSourceFiles(builtin_packages_directory.string());
             }
         }

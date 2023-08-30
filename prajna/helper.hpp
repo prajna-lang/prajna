@@ -47,10 +47,6 @@ bool Is(std::shared_ptr<SrcType_> ir_src) {
     return Cast<DstType_, SrcType_>(ir_src) != nullptr;
 }
 
-inline std::filesystem::path ProgramLocation(const char* cstr_path) {
-    return boost::dll::program_location().string();
-}
-
 template <typename Type>
 inline auto Clone(Type t) -> std::decay_t<Type> {
     return t;

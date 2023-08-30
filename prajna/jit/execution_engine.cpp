@@ -22,6 +22,7 @@
 #include "prajna/assert.hpp"
 #include "prajna/compiler/compiler.h"
 #include "prajna/exception.hpp"
+#include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
 
 #ifdef __linux__
@@ -140,8 +141,9 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
         llvm::raw_fd_ostream llvm_fs(file_base + ".ll", err_code);
         ir_sub_module->llvm_module->print(llvm_fs, nullptr);
         llvm_fs.close();
-        std::string llc_cmd =
-            fmt::format("llc {file_base}.ll -o {file_base}.ptx", fmt::arg("file_base", file_base));
+        auto llc_exe = boost::dll::program_location().parent_path() / "llc";
+        std::string llc_cmd = fmt::format("{} {file_base}.ll -o {file_base}.ptx", llc_exe.string(),
+                                          fmt::arg("file_base", file_base));
         PRAJNA_VERIFY(std::system(llc_cmd.c_str()) == 0);
 
         boost::dll::shared_library cuda_so("/usr/lib/x86_64-linux-gnu/libcuda.so");

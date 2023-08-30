@@ -2,6 +2,8 @@ add_library(prajna_jit OBJECT
     execution_engine.cpp
 )
 
+add_dependencies(prajna_jit llc)
+
 target_link_libraries(prajna_jit
     PUBLIC prajna_config_target
     PRIVATE llvm_include_dir

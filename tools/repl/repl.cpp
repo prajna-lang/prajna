@@ -56,7 +56,7 @@ int prajna_repl_main(int argc, char* argv[]) {
         compiler->CompileBuiltinSourceFiles("builtin_packages");
     } else {
         auto builtin_packages_directory =
-            prajna::ProgramLocation(argv[0]).parent_path() / "../builtin_packages";
+            boost::dll::program_location().parent_path() / "../builtin_packages";
         compiler->CompileBuiltinSourceFiles(builtin_packages_directory.string());
     }
 

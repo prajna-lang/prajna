@@ -2,7 +2,7 @@ struct Functor{
 }
 
 implement Functor {
-    func __call(flag: i64) {
+    func __call__(flag: i64) {
         "functor call ".Print();
         flag.PrintLine();
     }
@@ -11,6 +11,6 @@ implement Functor {
 @test
 func TestStructCall() {
     var functor: Functor;
-    functor.__call(123);
+    functor.__call__(123);
     functor(123);
 }

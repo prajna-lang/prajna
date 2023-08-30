@@ -326,7 +326,7 @@ class ExpressionLoweringVisitor {
             return ir_builder->Create<ir::Call>(ir_lhs, ir_arguments);
         }
 
-        if (auto ir_member_function = ir_builder->GetImplementFunction(ir_lhs->type, "__call")) {
+        if (auto ir_member_function = ir_builder->GetImplementFunction(ir_lhs->type, "__call__")) {
             auto ir_function_type = ir_member_function->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
                 logger->Error(

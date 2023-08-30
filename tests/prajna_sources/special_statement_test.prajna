@@ -3,13 +3,13 @@ struct Hash{}
 
 template <T>
 implement Hash<T> {
-    func __call(v: T)->i64 {
+    func __call__(v: T)->i64 {
         return 1;
     }
 }
 
 implement Hash<i64> {
-    func __call(v: i64)->i64 {
+    func __call__(v: i64)->i64 {
         return v;
     }
 }

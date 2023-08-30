@@ -18,7 +18,7 @@ std::shared_ptr<ir::Value> ExpressionLoweringVisitor::operator()(ast::Closure as
 
     // ast_closure
     ast::Function ast_function_tmp;
-    ast_function_tmp.declaration.name = "__call";
+    ast_function_tmp.declaration.name = "__call__";
     ast_function_tmp.declaration.parameters = ast_closure.parameters;
     ast_function_tmp.declaration.return_type_optional = ast_closure.return_type_optional;
     ast_function_tmp.body_optional = ast_closure.body;

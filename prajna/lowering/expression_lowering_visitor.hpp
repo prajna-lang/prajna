@@ -18,16 +18,6 @@
 namespace prajna::lowering {
 
 class StatementLoweringVisitor;
-
-class UndefinedSymbolException : public std::exception {
-   public:
-    UndefinedSymbolException(ast::IdentifierPath ast_identifier_path) {
-        this->identifier_path = ast_identifier_path;
-    }
-
-    ast::IdentifierPath identifier_path;
-};
-
 class ExpressionLoweringVisitor {
     ExpressionLoweringVisitor() = default;
 
@@ -41,35 +31,6 @@ class ExpressionLoweringVisitor {
     };
 
    public:
-    bool IsIdentifier(ast::IdentifierPath ast_identifier_path) {
-        if (ast_identifier_path.root_optional) {
-            return false;
-        }
-
-        if (ast_identifier_path.identifiers.size() != 1) {
-            return false;
-        }
-
-        auto identifier_with_template_parameters = ast_identifier_path.identifiers.front();
-        return !identifier_with_template_parameters.template_arguments_optional;
-    }
-
-    bool IsIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
-        ast::IdentifierPath ast_identifier_path;
-        ast_identifier_path.identifiers = {ast_identifier_with_template_parameters};
-        return this->IsIdentifier(ast_identifier_path);
-    }
-
-    ast::Identifier GetIdentifier(ast::IdentifierPath ast_identifier_path) {
-        return ast_identifier_path.identifiers.front().identifier;
-    }
-
-    ast::Identifier GetIdentifier(ast::TemplateIdentifier ast_identifier_with_template_parameters) {
-        ast::IdentifierPath ast_identifier_path;
-        ast_identifier_path.identifiers = {ast_identifier_with_template_parameters};
-        return this->GetIdentifier(ast_identifier_path);
-    }
-
     std::shared_ptr<ir::Value> Apply(ast::Expression ast_expression) {
         PRAJNA_ASSERT(this);
         return (*this)(ast_expression);

@@ -76,6 +76,8 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
         return current_symbol_dict.count(name) > 0 ? true : false;
     }
 
+    Symbol CurrentTableGet(const std::string& name) { return this->current_symbol_dict[name]; }
+
     bool Has(const std::string& name) {
         auto symbol = this->Get(name);
         return symbol.which() == 0 ? false : true;

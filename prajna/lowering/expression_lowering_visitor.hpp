@@ -520,6 +520,7 @@ class ExpressionLoweringVisitor {
         }
         PRAJNA_ASSERT(symbol.which() != 0);
 
+        bool first_identifier = true;
         for (auto iter_ast_identifier = ast_identifier_path.identifiers.begin();
              iter_ast_identifier != ast_identifier_path.identifiers.end(); ++iter_ast_identifier) {
             std::string flag = iter_ast_identifier->identifier;
@@ -564,8 +565,14 @@ class ExpressionLoweringVisitor {
                         PRAJNA_UNREACHABLE;
                         return nullptr;
                     },
-                    [=](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
-                        auto symbol = symbol_table->Get(iter_ast_identifier->identifier);
+                    [=, &first_identifier](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
+                        Symbol symbol;
+                        if (first_identifier) {
+                            symbol = symbol_table->Get(iter_ast_identifier->identifier);
+                            first_identifier = false;
+                        } else {
+                            symbol = symbol_table->CurrentTableGet(iter_ast_identifier->identifier);
+                        }
                         if (symbol.which() == 0) {
                             logger->Error("the symbol is not found",
                                           iter_ast_identifier->identifier);

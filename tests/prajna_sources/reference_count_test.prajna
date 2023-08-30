@@ -6,10 +6,6 @@ struct TestA {
 }
 
 implement ReferenceCountable for TestA {
-    func RegisterReferenceCount(){
-        *this._reference_counter = 0;
-    }
-
     func DecrementReferenceCount(){
         *this._reference_counter = *this._reference_counter - 1;
         var ref_count = *this._reference_counter;
@@ -40,8 +36,6 @@ implement TestA {
     func Create(bytes: i64)->TestA{
         var self: TestA;
         self.data = bindings::malloc(bytes);
-        self.RegisterReferenceCount();
-        self.IncrementReferenceCount();
         return self; // 调用 copy函数
         // 退出时会调用destropy 函数
     }

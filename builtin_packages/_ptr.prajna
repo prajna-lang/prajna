@@ -1,4 +1,3 @@
-
 template <Type>
 implement ptr<Type> {
     @static
@@ -150,10 +149,6 @@ implement operator::LinearIndex<Type> for Ptr<Type> {
 
 template <Type>
 implement ReferenceCountable for Ptr<Type> {
-    func RegisterReferenceCount() {
-        *this._reference_counter = 0;
-    }
-
     func IncrementReferenceCount() {
         *this._reference_counter = *this._reference_counter + 1;
     }

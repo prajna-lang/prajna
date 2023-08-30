@@ -115,8 +115,6 @@ implement Finalizable for List<ValueType> {
 
 template <ValueType>
 implement ReferenceCountable for List<ValueType> {
-    func RegisterReferenceCount() {}
-
     func IncrementReferenceCount() {
         *this._reference_counter = *this._reference_counter + 1;
     }

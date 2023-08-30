@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
               << std::endl;
 
     auto uq_xeus_prajna_interpreter =
-        std::make_unique<xeus_prajna::PrajnaXeusInterpreter>(builtin_packages_directory);
+        std::make_unique<xeus_prajna::PrajnaXeusInterpreter>(builtin_packages_directory.string());
     std::string file_name = std::string(argv[2]);
     auto context = xeus::make_context<zmq::context_t>();
     using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;

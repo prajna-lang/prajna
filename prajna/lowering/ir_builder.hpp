@@ -95,23 +95,12 @@ class IrBuilder {
         return ptr_template->Instantiate(symbol_template_arguments, this->module);
     }
 
-    std::shared_ptr<ir::Property> GetProperty(std::shared_ptr<ir::Type> ir_type, std::string name) {
-        auto iter_property_interface =
-            std::find_if(RANGE(ir_type->interface_dict), [=](auto key_value) {
-                if (!key_value.second) return false;
-                auto name_prefix = name + "Property";
-                return key_value.second->name.size() >= name_prefix.size() &&
-                       key_value.second->name.substr(0, name_prefix.size()) == name_prefix;
-            });
-        if (iter_property_interface != ir_type->interface_dict.end()) {
-            auto ir_property_interface = iter_property_interface->second;
-            auto ir_property = ir::Property::Create();
-            ir_property->get_function =
-                ir::GetFunctionByName(ir_property_interface->functions, "Get");
-            ir_property->set_function =
-                ir::GetFunctionByName(ir_property_interface->functions, "Set");
-            PRAJNA_ASSERT(ir_property->get_function);
-            PRAJNA_ASSERT(ir_property->set_function);
+    std::shared_ptr<ir::Property> GetProperty(std::shared_ptr<ir::Type> ir_type,
+                                              std::string property_name) {
+        auto ir_property = ir::Property::Create();
+        ir_property->get_function = this->GetImplementFunction(ir_type, "__get__" + property_name);
+        ir_property->set_function = this->GetImplementFunction(ir_type, "__set__" + property_name);
+        if (ir_property->get_function || ir_property->set_function) {
             return ir_property;
         } else {
             return nullptr;

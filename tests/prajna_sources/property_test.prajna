@@ -4,17 +4,12 @@ struct People{
     _age: i64;
 }
 
-interface AgeProperty {
-    func Get()->i64;
-    func Set(v: i64);
-}
-
-implement AgeProperty for People{
-    func Get()->i64{
+implement People{
+    func __get__Age()->i64{
         return this._age;
     }
 
-    func Set(v: i64){
+    func __set__Age(v: i64){
         this._age = v;
     }
 }

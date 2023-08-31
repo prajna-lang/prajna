@@ -4,23 +4,17 @@ struct Optional{
     _hasvalue : bool;
 }
 
-template <ValueType>
-@disable_dynamic
-interface ValueProperty {
-    func Get()->ValueType;
-    func Set(value:ValueType);
-}
 
 template <ValueType>
-implement ValueProperty<ValueType> for Optional<ValueType>{
+implement Optional<ValueType>{
     @inline
-    func Get()->ValueType{
+    func __get__Value()->ValueType{
         __assert(this._hasvalue);
         return this._value;
     }
 
     @inline
-    func Set(value:ValueType){
+    func __set__Value(value:ValueType){
         this._hasvalue = true;
         this._value = value;
     }

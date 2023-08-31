@@ -57,22 +57,15 @@ struct Tensor {
 }
 
 template <Type, Dim>
-@disable_dynamic
-interface AtProperty {
-    func Get(idx: Array<i64, Dim>)->Type;
-    func Set(idx: Array<i64, Dim>, value: Type);
-}
-
-template <Type, Dim>
-implement AtProperty<Type, Dim> for Tensor<Type, Dim>{
+implement Tensor<Type, Dim>{
     @inline
-    func Get(idx: Array<i64, Dim>)->Type{
+    func __get__At(idx: Array<i64, Dim>)->Type{
         var offset = this.layout.ArrayIndexToLinearIndex(idx);
         return this.data.raw_ptr[offset];
     }
 
     @inline
-    func Set(idx: Array<i64, Dim>, value: Type){
+    func __set__At(idx: Array<i64, Dim>, value: Type){
         var offset = this.layout.ArrayIndexToLinearIndex(idx);
         this.data.raw_ptr[offset] = value;
     }

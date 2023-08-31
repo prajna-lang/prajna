@@ -36,21 +36,17 @@ struct Tensor {
     layout: Layout<Dim>;
 }
 
-template <Type, Dim>
-interface AtProperty {
-    func Get(idx: Array<i64, Dim>)->Type;
-    func Set(idx: Array<i64, Dim>, value: Type);
-}
 
 template <Type, Dim>
-implement AtProperty<Type, Dim> for Tensor<Type, Dim>{
+implement for Tensor<Type, Dim>{
     @inline
-    func Get(idx: Array<i64, Dim>)->Type{
+    func __get__At(idx: Array<i64, Dim>)->Type{
         var offset = this.layout.ArrayIndexToLinearIndex(idx);
         return this.data[offset];
     }
+
     @inline
-    func Set(idx: Array<i64, Dim>, value: Type){
+    func __set__At(idx: Array<i64, Dim>, value: Type){
         var offset = this.layout.ArrayIndexToLinearIndex(idx);
         this.data[offset] = value;
     }

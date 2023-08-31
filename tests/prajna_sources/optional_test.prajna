@@ -5,7 +5,7 @@ func TestMain() {
     test::Assert(opt.Value == 42);
     var tmp = opt.Value;
     test::Assert(tmp == 42);
-    
+
 
     var none : Optional<i64>;
     test::Assert(!none.HaveValue());
@@ -14,8 +14,8 @@ func TestMain() {
 
 
     var new : Optional<i64>;
-    new.Set(456);
-    test::Assert(new.Get() == 456);
+    new.Value = 456;
+    test::Assert(new.Value == 456);
 
 
 }

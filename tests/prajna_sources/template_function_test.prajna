@@ -46,7 +46,7 @@ func TestScopeAccess() {
     var f2 = f32::Sin;
     var f3 = f32::Cos;
     f2 = f32::Sin;
-    var f4 = f32::Add;
+    var f4 = f32::__add__;
 
     var a = 3.1415 / 2.0;
     f2(&a);

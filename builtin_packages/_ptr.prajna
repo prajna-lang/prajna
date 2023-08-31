@@ -39,16 +39,16 @@ implement ptr<Type> {
 }
 
 template <Type>
-implement operator::Equal<ptr<Type>> for ptr<Type> {
-    func Equal(operand: ptr<Type>) -> bool {
+implement ptr<Type> {
+    func __equal__(operand: ptr<Type>) -> bool {
         return this._ToInt64() == operand._ToInt64();
     }
 }
 
 
 template <Type>
-implement operator::NotEqual<ptr<Type>> for ptr<Type> {
-    func NotEqual(operand: ptr<Type>) -> bool {
+implement ptr<Type> {
+    func __not_equal__(operand: ptr<Type>) -> bool {
         return !(this == operand);
     }
 }
@@ -186,16 +186,16 @@ implement Ptr<Type> {
 }
 
 template <Type>
-implement operator::Equal<Ptr<Type>> for Ptr<Type> {
-    func Equal(operand: Ptr<Type>) -> bool {
+implement Ptr<Type> {
+    func __equal__(operand: Ptr<Type>) -> bool {
         return this._ToInt64() == operand._ToInt64();
     }
 }
 
 
 template <Type>
-implement operator::NotEqual<Ptr<Type>> for Ptr<Type> {
-    func NotEqual(operand: Ptr<Type>) -> bool {
+implement Ptr<Type> {
+    func __not_equal__(operand: Ptr<Type>) -> bool {
         return !(this == operand);
     }
 }

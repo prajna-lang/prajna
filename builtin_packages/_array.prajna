@@ -27,9 +27,9 @@ implement Array<Type, Length_>{
 }
 
 template <Type, Length_>
-implement operator::Add<Array<Type, Length_>> for Array<Type, Length_> {
+implement Array<Type, Length_> {
     @inline
-    func Add(operand: Array<Type, Length_>)->Array<Type, Length_>{
+    func __add__(operand: Array<Type, Length_>)->Array<Type, Length_>{
         var re : Array<Type, Length_>;
         for i in 0 to this.Length() {
             re[i] = this[i] + operand[i];
@@ -40,9 +40,9 @@ implement operator::Add<Array<Type, Length_>> for Array<Type, Length_> {
 }
 
 template <Type, Length_>
-implement operator::Sub<Array<Type, Length_>> for Array<Type, Length_> {
+implement Array<Type, Length_> {
     @inline
-    func Sub(operand: Array<Type, Length_>)->Array<Type, Length_>{
+    func __sub__(operand: Array<Type, Length_>)->Array<Type, Length_>{
         var re : Array<Type, Length_>;
         for i in 0 to this.Length() {
             re[i] = this[i] - operand[i];

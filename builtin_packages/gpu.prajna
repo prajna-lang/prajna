@@ -38,7 +38,7 @@ struct Tensor {
 
 
 template <Type, Dim>
-implement for Tensor<Type, Dim>{
+implement Tensor<Type, Dim>{
     @inline
     func __get__At(idx: Array<i64, Dim>)->Type{
         var offset = this.layout.ArrayIndexToLinearIndex(idx);

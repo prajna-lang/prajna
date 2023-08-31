@@ -9,6 +9,6 @@
 func TestMain(){
     var t = 3;
     var g = t + 4;
-    t.Add(6);
+    t.__add__(6);
     // t.__add__(4).ToString().Print();
 }

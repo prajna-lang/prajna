@@ -68,8 +68,8 @@ implement String{
     }
 }
 
-implement operator::Add<String> for String {
-    func Add(str_re: String)->String{
+implement String {
+    func __add__(str_re: String)->String{
         var new_str = String::Create(this.Length() + str_re.Length());
         var i = 0;
         while (i < this.Length()){
@@ -87,8 +87,8 @@ implement operator::Add<String> for String {
     }
 }
 
-implement operator::Equal<String> for String{
-    func Equal(rhs_str: String) -> bool{
+implement String{
+    func __equal__(rhs_str: String) -> bool{
         if(this.Length()!=rhs_str.Length()) {
             return false;
         }
@@ -103,8 +103,8 @@ implement operator::Equal<String> for String{
     }
 }
 
-implement operator::NotEqual<String> for String{
-    func NotEqual(rhs_str: String) -> bool{
+implement String{
+    func __not_equal__(rhs_str: String) -> bool{
          return !(this == rhs_str);
     }
 }

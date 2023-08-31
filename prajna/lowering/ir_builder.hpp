@@ -306,23 +306,11 @@ class IrBuilder {
         this->InstantiateTypeImplements(ir_type);
 
         std::unordered_map<std::string, std::string> unary_operator_map = {
-            {"!", "Not"}, {"+", "Positive"}, {"-", "Negative"}};
+            {"!", "not"}, {"+", "positive"}, {"-", "negative"}};
         PRAJNA_ASSERT(unary_operator_map.count(unary_operator_name));
 
-        auto unary_operator_interface_name =
-            unary_operator_map[unary_operator_name] + "<" + ir_type->fullname + ">";
-        if (auto ir_interface_implement = ir_type->interface_dict[unary_operator_interface_name]) {
-            auto iter_function = std::find_if(
-                RANGE(ir_interface_implement->functions),
-                [=](std::shared_ptr<ir::Function> ir_function) -> bool {
-                    return ir_function->name == unary_operator_map.at(unary_operator_name);
-                });
-            if (iter_function != ir_interface_implement->functions.end()) {
-                return *iter_function;
-            }
-        }
-
-        return nullptr;
+        return this->GetImplementFunction(ir_type,
+                                          "__" + unary_operator_map[unary_operator_name] + "__");
     }
 
     std::shared_ptr<ir::Function> GetBinaryOperator(std::shared_ptr<ir::Type> ir_type,
@@ -330,27 +318,16 @@ class IrBuilder {
         this->InstantiateTypeImplements(ir_type);
 
         std::unordered_map<std::string, std::string> binary_operator_map = {
-            {"==", "Equal"},       {"!=", "NotEqual"}, {"<", "Less"},
-            {"<=", "LessOrEqual"}, {">", "Greater"},   {">=", "GreaterOrEqual"},
-            {"+", "Add"},          {"-", "Sub"},       {"*", "Multiply"},
-            {"/", "Divide"},       {"%", "Remaind"},   {"&", "And"},
-            {"|", "Or"},           {"^", "Xor"},       {"!", "Not"}};
+            {"==", "equal"},   {"!=", "not_equal"},
+            {"<", "less"},     {"<=", "less_or_equal"},
+            {">", "greater"},  {">=", "greater_or_equal"},
+            {"+", "add"},      {"-", "sub"},
+            {"*", "multiply"}, {"/", "divide"},
+            {"%", "remaind"},  {"&", "and"},
+            {"|", "or"},       {"^", "xor"}};
 
-        if (auto ir_interface_implement =
-                ir_type->interface_dict[binary_operator_map[binary_operator_name] + "<" +
-                                        ir_type->fullname + ">"]) {
-            auto iter_function = std::find_if(
-                RANGE(ir_interface_implement->functions),
-                [=](std::shared_ptr<ir::Function> ir_function) -> bool {
-                    return binary_operator_map.count(binary_operator_name) &&
-                           ir_function->name == binary_operator_map.at(binary_operator_name);
-                });
-            if (iter_function != ir_interface_implement->functions.end()) {
-                return *iter_function;
-            }
-        }
-
-        return nullptr;
+        return this->GetImplementFunction(ir_type,
+                                          "__" + binary_operator_map[binary_operator_name] + "__");
     }
 
     std::shared_ptr<ir::Call> CallBinaryOperator(std::shared_ptr<ir::Value> ir_object,

@@ -387,14 +387,14 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> ApplyBinaryOperationArrow(
         std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
-        auto ir_raw_ptr_function = ir_builder->GetImplementFunction(ir_lhs->type, "__raw_ptr");
+        auto ir_raw_ptr_function = ir_builder->GetImplementFunction(ir_lhs->type, "__arrow__");
         if (!ir_raw_ptr_function) {
             //  错误信息仅显示算子符号即可
-            this->logger->Error("not implement __raw_ptr function", ast_binary_operation.operator_);
+            this->logger->Error("not implement __arrow__ function", ast_binary_operation.operator_);
         }
         auto ir_raw_ptr = ir_builder->CallMemberFunction(ir_lhs, ir_raw_ptr_function, {});
         if (!Is<ir::PointerType>(ir_raw_ptr->type)) {
-            this->logger->Error("__raw_ptr function should return a raw pointer type",
+            this->logger->Error("__arrow__ function should return a raw pointer type",
                                 ir_raw_ptr_function->source_location);
         }
         auto ir_raw_ptr_deference = ir_builder->Create<ir::DeferencePointer>(ir_raw_ptr);

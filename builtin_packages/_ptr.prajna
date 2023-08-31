@@ -33,7 +33,7 @@ implement ptr<Type> {
         return !this.IsNull();
     }
 
-    func __raw_ptr()->ptr<Type> {
+    func __arrow__()->ptr<Type> {
         return this;
     }
 }
@@ -130,7 +130,7 @@ implement Ptr<Type>{
         return __as<Type, Interface>(this);
     }
 
-    func __raw_ptr()->ptr<Type> {
+    func __arrow__()->ptr<Type> {
         return this.raw_ptr;
     }
 }

@@ -2,8 +2,8 @@ struct Tmp{
     value: i64;
 }
 
-implement Initializable for Tmp {
-    func Initialize() {
+implement Tmp {
+    func __initialize__() {
         this.value = -1;
     }
 }

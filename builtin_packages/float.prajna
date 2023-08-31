@@ -64,8 +64,8 @@ struct FloatFixedPrinter {
 }
 
 template <FloatType>
-implement Initializable for FloatFixedPrinter<FloatType> {
-    func Initialize() {
+implement FloatFixedPrinter<FloatType> {
+    func __initialize__() {
         this.decimal_precision = 6;
     }
 }
@@ -150,8 +150,8 @@ struct FloatScientificPrinter {
 }
 
 template <FloatType>
-implement Initializable for FloatScientificPrinter<FloatType> {
-    func Initialize() {
+implement FloatScientificPrinter<FloatType> {
+    func __initialize__() {
         this.decimal_precision = 6;
     }
 }

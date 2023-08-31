@@ -229,21 +229,7 @@ class IrBuilder {
                                                        std::string member_name) {
         this->InstantiateTypeImplements(ir_type);
 
-        if (ir_type->function_dict.count(member_name)) {
-            return ir_type->function_dict[member_name];
-        }
-
-        for (auto [interface_name, ir_interface] : ir_type->interface_dict) {
-            if (!ir_interface) continue;
-
-            for (auto ir_function : ir_interface->functions) {
-                if (ir_function->name == member_name) {
-                    return ir_function;
-                }
-            }
-        }
-
-        return nullptr;
+        return ir_type->GetImplementFunction(member_name);
     }
 
     std::shared_ptr<ir::Value> GetString(std::string str) {

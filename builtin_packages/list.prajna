@@ -86,8 +86,8 @@ implement List<ValueType> {
 }
 
 template <ValueType>
-implement Initializable for List<ValueType> {
-    func Initialize() {
+implement List<ValueType> {
+    func __initialize__() {
         this._head = ptr<Node<ValueType>>::New();
         this._end = ptr<Node<ValueType>>::New();
         this._head->prev = ptr<Node<ValueType>>::Null();

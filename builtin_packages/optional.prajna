@@ -51,8 +51,8 @@ implement Optional<ValueType> {
 }
 
 template <ValueType>
-implement Initializable for Optional<ValueType> {
-    func Initialize() {
+implement Optional<ValueType> {
+    func __initialize__() {
         this._hasvalue = false;
     }
 }

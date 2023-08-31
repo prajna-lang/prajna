@@ -49,8 +49,8 @@ struct Tmp{
     v: i64;
 }
 
-implement Initializable for Tmp {
-    func Initialize() {
+implement Tmp {
+    func __initialize__() {
         "Hit".PrintLine();
     }
 }
@@ -69,8 +69,8 @@ struct Tmp2{
     tmp: Tmp;
 }
 
-implement Initializable for Tmp2 {
-    func Initialize() {
+implement Tmp2 {
+    func __initialize__() {
         "Hit2".PrintLine();
     }
 }

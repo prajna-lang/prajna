@@ -23,8 +23,8 @@ implement ReferenceCountable for TestA {
     }
 }
 
-implement Initializable for TestA {
-    func Initialize(){
+implement TestA {
+    func __initialize__(){
         this.data = __cast<i64, ptr<undef>>(0);
         this._reference_counter = ptr<i64>::New();
         *this._reference_counter = 1;

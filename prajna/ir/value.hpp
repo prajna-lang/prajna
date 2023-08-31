@@ -1688,7 +1688,13 @@ inline std::string GetKernelFunctionAddressName(std::shared_ptr<Function> ir_ker
 }
 
 inline std::shared_ptr<Function> Type::GetImplementFunction(std::string member_function_name) {
+    if (this->function_dict.count(member_function_name)) {
+        return this->function_dict[member_function_name];
+    }
+
     for (auto [interface_name, ir_interface] : this->interface_dict) {
+        if (!ir_interface) continue;
+
         for (auto ir_function : ir_interface->functions) {
             if (ir_function->name == member_function_name) {
                 return ir_function;

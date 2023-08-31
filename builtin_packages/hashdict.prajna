@@ -2,7 +2,7 @@ template <KeyType,ValueType>
 struct HashDictNode{
   key : KeyType;
   value : ValueType;
-  next: ptr<HashDictNode<KeyType, ValueType>>; 
+  next: ptr<HashDictNode<KeyType, ValueType>>;
 }
 
 template <KeyType,ValueType>
@@ -14,7 +14,7 @@ implement HashDictNode<KeyType, ValueType> {
   }
 }
 
-template <KeyType,ValueType>  
+template <KeyType,ValueType>
 struct HashDict {
   buckets: Ptr<ptr<HashDictNode<KeyType, ValueType>>>;
   size: i64;
@@ -23,16 +23,16 @@ struct HashDict {
 }
 
 template <KeyType,ValueType>
-implement Initializable for HashDict<KeyType,ValueType> {
-  func Initialize() {
+implement HashDict<KeyType,ValueType> {
+  func __initialize__() {
     var initial_size = 32;
     this.load_factor_threshold = 0.75f64;
     this.size = initial_size;
     this.count = 0;
     this.buckets = Ptr<ptr<HashDictNode<KeyType, ValueType>>>::Allocate(initial_size);
-    
+
     for i in 0 to initial_size {
-      this.buckets[i] = ptr<HashDictNode<KeyType, ValueType>>::Null(); 
+      this.buckets[i] = ptr<HashDictNode<KeyType, ValueType>>::Null();
     }
   }
 }
@@ -41,12 +41,12 @@ template <KeyType,ValueType>
 implement HashDict<KeyType, ValueType> {
 
   func IsEmpty() -> bool {
-    return this.count==0; 
+    return this.count==0;
   }
-  
+
   func Hash_index(key: KeyType) -> i64 {
     // TODO: 实现一个好的哈希函数
-    //return hash<KeyType>(key) % this.size;  
+    //return hash<KeyType>(key) % this.size;
     var hash = 17;
     hash = __cast<KeyType, i64>(key);
     return hash % this.size;
@@ -61,7 +61,7 @@ implement HashDict<KeyType, ValueType> {
     this.count = this.count + 1;
 
     // 检查装载因子是否大于阈值,如果是,进行重新哈希
-    // var load_factor = f64(this.count) / f64(this.size);  
+    // var load_factor = f64(this.count) / f64(this.size);
     // if (load_factor > this.load_factor_threshold) {
     //   this.rehash();
     // }
@@ -71,7 +71,7 @@ implement HashDict<KeyType, ValueType> {
     var index = this.Hash_index(key);
     var node = this.buckets[index];
     //TODO
-    return (*node).value;  
+    return (*node).value;
   }
 
   func Remove(key: KeyType) {
@@ -86,11 +86,11 @@ implement HashDict<KeyType, ValueType> {
       node = (*node).next;
     }
     if (node == ptr<HashDictNode<KeyType, ValueType>>::Null()) {
-      return; 
+      return;
     }
     if (prev ==ptr<HashDictNode<KeyType, ValueType>>::Null()) {
       // 移除的是头节点
-      this.buckets[index] = (*node).next; 
+      this.buckets[index] = (*node).next;
     } else {
       (*prev).next = (*node).next;
     }
@@ -109,5 +109,5 @@ implement HashDict<KeyType, ValueType> {
       this.buckets[i] = ptr<HashDictNode<KeyType, ValueType>>::Null();
     }
     this.count = 0;
-  } 
+  }
 }

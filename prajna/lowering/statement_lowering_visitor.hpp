@@ -22,8 +22,7 @@ class Compiler;
 namespace prajna::lowering {
 
 inline bool IsInitializable(std::shared_ptr<ir::Type> ir_type) {
-    auto ir_interface_implement = ir_type->interface_dict["Initializable"];
-    return ir_interface_implement != nullptr;
+    return ir_type->GetImplementFunction("__initialize__") != nullptr;
 }
 
 inline bool HasInitializable(std::shared_ptr<ir::Type> ir_type) {
@@ -57,8 +56,7 @@ inline void InitializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
         }
 
         if (IsInitializable(ir_type)) {
-            auto ir_function = ir::GetFunctionByName(
-                ir_type->interface_dict["Initializable"]->functions, "Initialize");
+            auto ir_function = ir_type->GetImplementFunction("__initialize__");
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         };
     }

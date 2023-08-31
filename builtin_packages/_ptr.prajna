@@ -175,8 +175,8 @@ implement ReferenceCountable for Ptr<Type> {
 }
 
 template <Type>
-implement Initializable for Ptr<Type> {
-    func Initialize() {
+implement Ptr<Type> {
+    func __initialize__() {
         this.raw_ptr = ptr<Type>::Null();
         // 需要申请, 判断的时候需要用到
         this._reference_counter = ptr<i64>::New();

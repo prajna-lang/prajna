@@ -4,7 +4,7 @@ template CastableTemplate <RealNumberType> {
         template <TargetType>
         @inline
         func Cast()->TargetType{
-            return __cast<RealNumberType<Bits>, TargetType>(this);
+            return cast<RealNumberType<Bits>, TargetType>(this);
         }
     }
 }
@@ -163,7 +163,7 @@ template CastableTemplate2 <Type> {
         template <TargetType>
         @inline
         func Cast()->TargetType{
-            return __cast<Type, TargetType>(this);
+            return cast<Type, TargetType>(this);
         }
     }
 }

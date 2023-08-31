@@ -48,7 +48,7 @@ implement HashDict<KeyType, ValueType> {
     // TODO: 实现一个好的哈希函数
     //return hash<KeyType>(key) % this.size;
     var hash = 17;
-    hash = __cast<KeyType, i64>(key);
+    hash = cast<KeyType, i64>(key);
     return hash % this.size;
   }
 

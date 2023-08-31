@@ -14,7 +14,7 @@ implement ptr<Type> {
 
     @static
     func Null()->ptr<Type> {
-        return __cast<i64, ptr<Type>>(0);
+        return cast<i64, ptr<Type>>(0);
     }
 
     func Free() {
@@ -22,7 +22,7 @@ implement ptr<Type> {
     }
 
     func _ToInt64()->i64{
-        return __cast<ptr<Type>, i64>(this);
+        return cast<ptr<Type>, i64>(this);
     }
 
     func IsNull()->bool{
@@ -92,7 +92,7 @@ implement Ptr<Type>{
     }
 
     func _ToInt64()->i64{
-        return __cast<ptr<Type>, i64>(this.raw_ptr);
+        return cast<ptr<Type>, i64>(this.raw_ptr);
     }
 
     // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.

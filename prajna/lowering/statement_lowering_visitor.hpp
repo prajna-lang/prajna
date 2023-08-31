@@ -1021,8 +1021,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::Create({ir_source_type}, ir_target_type);
             auto ir_function = ir_tmp_builder->createFunction(
-                "__cast" + GetTemplateArgumentsPostify(symbol_template_arguments),
-                ir_function_type);
+                "cast" + GetTemplateArgumentsPostify(symbol_template_arguments), ir_function_type);
             ir_function->annotation_dict["inline"];
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
 
@@ -1393,7 +1392,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     ->undef_this_pointer_functions[ir_interface_implement->functions.front()];
 
             auto template_cast =
-                SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"__cast"}));
+                SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"cast"}));
             auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->instantiate(
                 {ir_interface_implement_function0->type, ir_tmp_builder->GetIndexType()},
                 ir_tmp_builder->module));
@@ -1485,7 +1484,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     ->undef_this_pointer_functions[ir_interface_implement->functions.front()];
 
             auto template_cast =
-                SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"__cast"}));
+                SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"cast"}));
             auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->instantiate(
                 {ir_interface_implement_function0->type, ir_tmp_builder->GetIndexType()},
                 ir_tmp_builder->module));
@@ -1930,7 +1929,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             this->CreateDynamicIsTemplate(), "__dynamic_is");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateCastInstructionTemplate(), "__cast");
+            this->CreateCastInstructionTemplate(), "cast");
         // arithematic
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateBinaryOperatorTemplate("add"), "__add");

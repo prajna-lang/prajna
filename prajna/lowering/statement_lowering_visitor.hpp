@@ -1832,7 +1832,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_function_type = ir::FunctionType::Create({ir::PointerType::Create(ir_type)},
                                                              ir::VoidType::Create());
             auto ir_function = ir_tmp_builder->createFunction(
-                "__initialize" + GetTemplateArgumentsPostify(symbol_template_arguments),
+                "initialize" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
@@ -1870,7 +1870,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_function_type = ir::FunctionType::Create({ir::PointerType::Create(ir_type)},
                                                              ir::VoidType::Create());
             auto ir_function = ir_tmp_builder->createFunction(
-                "__destroy" + GetTemplateArgumentsPostify(symbol_template_arguments),
+                "finalize" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
@@ -2033,10 +2033,10 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             expression_lowering_visitor->CreateDynamicTemplate(), "Dynamic");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateInitializeTemplate(), "__initialize");
+            this->CreateInitializeTemplate(), "initialize");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateDestroyTemplate(), "__destroy");
+            this->CreateDestroyTemplate(), "finalize");
     }
 
     Symbol operator()(ast::Pragma ast_pragma);

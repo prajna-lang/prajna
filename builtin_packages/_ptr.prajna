@@ -71,7 +71,7 @@ implement Ptr<Type>{
         self.size = size;
 
         for i in 0 to size {
-            __initialize<Type>(&self.raw_ptr[i]);
+            initialize<Type>(&self.raw_ptr[i]);
         }
 
         // self._reference_count; //不需要再次申请, Initialize的时候会产生.
@@ -163,7 +163,7 @@ implement Ptr<Type> {
         if (*this._reference_counter == 0){
             if (!this.IsNull()) {
                 for i in 0 to this.size {
-                    __destroy<Type>(&this.raw_ptr[i]);
+                    finalize<Type>(&this.raw_ptr[i]);
                 }
 
                 this.raw_ptr.Free();

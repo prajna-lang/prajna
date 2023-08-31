@@ -62,19 +62,18 @@ inline void InitializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
     }
 }
 
-inline bool IsReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
-    auto ir_interface_implement = ir_type->interface_dict["ReferenceCountable"];
-    return ir_interface_implement != nullptr;
+inline bool IsCopy(std::shared_ptr<ir::Type> ir_type) {
+    return ir_type->GetImplementFunction("__copy__") != nullptr;
 }
 
-inline bool HasReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
-    if (IsReferenceCountable(ir_type)) {
+inline bool HasCopy(std::shared_ptr<ir::Type> ir_type) {
+    if (IsCopy(ir_type)) {
         return true;
     }
 
     if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
         for (auto ir_field : ir_struct_type->fields) {
-            if (HasReferenceCountable(ir_field->type)) {
+            if (HasCopy(ir_field->type)) {
                 return true;
             }
         }
@@ -83,16 +82,34 @@ inline bool HasReferenceCountable(std::shared_ptr<ir::Type> ir_type) {
     return false;
 }
 
-inline void DestroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
-                                         std::shared_ptr<lowering::IrBuilder> ir_builder) {
+inline bool IsFinalize(std::shared_ptr<ir::Type> ir_type) {
+    return ir_type->GetImplementFunction("__finialize__") != nullptr;
+}
+
+inline bool HasFinalize(std::shared_ptr<ir::Type> ir_type) {
+    if (IsFinalize(ir_type)) {
+        return true;
+    }
+
+    if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
+        for (auto ir_field : ir_struct_type->fields) {
+            if (HasFinalize(ir_field->type)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+inline void FinalizeVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
+                                          std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_value->type;
-    if (HasReferenceCountable(ir_type)) {
+    if (HasFinalize(ir_type)) {
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_value);
         // 和incresement的顺序是相反的,
-        if (IsReferenceCountable(ir_type)) {
-            auto ir_function =
-                ir::GetFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
-                                      "DecrementReferenceCount");
+        if (IsFinalize(ir_type)) {
+            auto ir_function = ir_type->GetImplementFunction("__finialize__");
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         };
 
@@ -101,10 +118,10 @@ inline void DestroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
             for (auto iter_field = is_struct_type->fields.rbegin();
                  iter_field != is_struct_type->fields.rend(); ++iter_field) {
                 auto ir_field = *iter_field;
-                if (HasReferenceCountable(ir_field->type)) {
+                if (HasFinalize(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->Create<ir::AccessField>(ir_variable_liked, ir_field);
-                    DestroyVariableLikedCallback(ir_access_field, ir_builder);
+                    FinalizeVariableLikedCallback(ir_access_field, ir_builder);
                 }
             }
         }
@@ -118,11 +135,11 @@ inline void DestroyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
 inline void CopyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
                                       std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_value->type;
-    if (HasReferenceCountable(ir_type)) {
+    if (HasCopy(ir_type)) {
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_value);
         if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
             for (auto ir_field : ir_struct_type->fields) {
-                if (HasReferenceCountable(ir_field->type)) {
+                if (HasCopy(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->Create<ir::AccessField>(ir_variable_liked, ir_field);
                     CopyVariableLikedCallback(ir_access_field, ir_builder);
@@ -130,10 +147,8 @@ inline void CopyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
             }
         }
 
-        if (IsReferenceCountable(ir_type)) {
-            auto ir_function =
-                ir::GetFunctionByName(ir_type->interface_dict["ReferenceCountable"]->functions,
-                                      "IncrementReferenceCount");
+        if (IsCopy(ir_type)) {
+            auto ir_function = ir_type->GetImplementFunction("__copy__");
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         }
     }
@@ -1866,7 +1881,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             auto ir_object =
                 ir_tmp_builder->Create<ir::DeferencePointer>(ir_function->parameters.front());
-            DestroyVariableLikedCallback(ir_object, ir_tmp_builder);
+            FinalizeVariableLikedCallback(ir_object, ir_tmp_builder);
             ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Create<ir::VoidValue>());
 
             return ir_function;

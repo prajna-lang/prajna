@@ -100,30 +100,25 @@ implement List<ValueType> {
     }
 }
 
-template <ValueType>
-implement Finalizable for List<ValueType> {
-    // 有循环引用, 需要特殊处理一下
-    func Finalize() {
-        var node = this.Begin();
-        while (node != this.End()) {
-            node->prev.Free();
-            node = node->next;
-        }
-        this.End().Free();
-    }
-}
+
 
 template <ValueType>
-implement ReferenceCountable for List<ValueType> {
-    func IncrementReferenceCount() {
+implement List<ValueType> {
+    func __copy__() {
         *this._reference_counter = *this._reference_counter + 1;
     }
 
-    func DecrementReferenceCount() {
+    func __finialize__() {
         *this._reference_counter = *this._reference_counter - 1;
         if (*this._reference_counter == 0){
-            this.Finalize();
             this._reference_counter.Free();
+
+            var node = this.Begin();
+            while (node != this.End()) {
+                node->prev.Free();
+                node = node->next;
+            }
+            this.End().Free();
         }
     }
 }

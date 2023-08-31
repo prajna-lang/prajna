@@ -5,8 +5,8 @@ struct TestA {
     _reference_counter: ptr<i64>;
 }
 
-implement ReferenceCountable for TestA {
-    func DecrementReferenceCount(){
+implement TestA {
+    func __finialize__(){
         *this._reference_counter = *this._reference_counter - 1;
         var ref_count = *this._reference_counter;
         if (ref_count == 0 ){
@@ -17,7 +17,7 @@ implement ReferenceCountable for TestA {
 
     }
 
-    func IncrementReferenceCount(){
+    func __copy__(){
         *this._reference_counter = *this._reference_counter + 1;
         var ref_count = *this._reference_counter;
     }

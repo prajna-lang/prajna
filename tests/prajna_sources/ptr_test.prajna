@@ -55,12 +55,12 @@ implement Tmp {
     }
 }
 
-implement ReferenceCountable for Tmp {
-    func IncrementReferenceCount() {
+implement Tmp {
+    func __copy__() {
         "inc tmp".PrintLine();
     }
 
-    func DecrementReferenceCount() {
+    func __finialize__() {
         "dec tmp".PrintLine();
     }
 }

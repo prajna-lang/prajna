@@ -148,12 +148,12 @@ implement operator::LinearIndex<Type> for Ptr<Type> {
 }
 
 template <Type>
-implement ReferenceCountable for Ptr<Type> {
-    func IncrementReferenceCount() {
+implement Ptr<Type> {
+    func __copy__() {
         *this._reference_counter = *this._reference_counter + 1;
     }
 
-    func DecrementReferenceCount() {
+    func __finialize__() {
 
         if (this._reference_counter.IsNull()){
             return;

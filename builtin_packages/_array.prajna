@@ -6,14 +6,14 @@ struct Array{
 }
 
 template <Type, Length_>
-implement operator::LinearIndex<Type> for Array<Type, Length_> {
+implement Array<Type, Length_> {
     @inline
-    func Get(idx: i64)->Type{
+    func __get_linear_index__(idx: i64)->Type{
         return this.data[idx];
     }
 
     @inline
-    func Set(idx: i64, value: Type){
+    func __set_linear_index__(idx: i64, value: Type){
         this.data[idx] = value;
     }
 }

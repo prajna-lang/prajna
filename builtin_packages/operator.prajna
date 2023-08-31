@@ -88,13 +88,6 @@ interface Not {
     func Not()->T;
 }
 
-template <T>
-@disable_dynamic
-interface LinearIndex {
-    func Get(index: i64)->T;
-    func Set(index: i64, value: T);
-}
-
 template <ValueType, Dim>
 @disable_dynamic
 interface ArrayIndex {

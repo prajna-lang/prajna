@@ -110,24 +110,16 @@ class IrBuilder {
     std::shared_ptr<ir::Property> GetLinearIndexProperty(std::shared_ptr<ir::Type> ir_type) {
         InstantiateTypeImplements(ir_type);
 
-        auto iter_linear_index_interface =
-            std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
-                if (!key_value.second) return false;
-
-                return key_value.second->name.size() > 12 &&
-                       key_value.second->name.substr(0, 12) == "LinearIndex<";
-            });
-        if (iter_linear_index_interface != ir_type->interface_dict.end()) {
-            auto ir_linear_index_interface = iter_linear_index_interface->second;
-            auto ir_index_property = ir::Property::Create();
-            ir_index_property->get_function =
-                ir::GetFunctionByName(ir_linear_index_interface->functions, "Get");
-            ir_index_property->set_function =
-                ir::GetFunctionByName(ir_linear_index_interface->functions, "Set");
+        auto ir_index_property = ir::Property::Create();
+        ir_index_property->get_function =
+            this->GetImplementFunction(ir_type, "__get_linear_index__");
+        ir_index_property->set_function =
+            this->GetImplementFunction(ir_type, "__set_linear_index__");
+        if (ir_index_property->get_function || ir_index_property->set_function) {
             return ir_index_property;
-        } else {
-            return nullptr;
         }
+
+        return nullptr;
     }
 
     std::shared_ptr<ir::Property> GetArrayIndexProperty(std::shared_ptr<ir::Type> ir_type) {

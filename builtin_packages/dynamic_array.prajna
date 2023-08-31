@@ -15,12 +15,12 @@ struct DynamicArray{
 }
 
 template <ValueType>
-implement operator::LinearIndex<ValueType> for DynamicArray<ValueType> {
-    func Get(idx: i64)->ValueType{
+implement DynamicArray<ValueType> {
+    func __get_linear_index__(idx: i64)->ValueType{
         return this._data[idx];
     }
 
-    func Set(idx: i64, value: ValueType){
+    func __set_linear_index__(idx: i64, value: ValueType){
         this._data[idx] = value;
     }
 }

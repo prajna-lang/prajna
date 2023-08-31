@@ -2,12 +2,12 @@ struct String{
     darray: DynamicArray<char>;
 }
 
-implement operator::LinearIndex<char> for String {
-    func Get(idx: i64)->char{
+implement String {
+    func __get_linear_index__(idx: i64)->char{
         return this.darray[idx];
     }
 
-    func Set(idx: i64, value: char){
+    func __set_linear_index__(idx: i64, value: char){
         this.darray[idx] = value;
     }
 }

@@ -530,8 +530,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
     Symbol operator()(ast::For ast_for) {
         auto ir_first = expression_lowering_visitor->Apply(ast_for.first);
         auto ir_last = expression_lowering_visitor->Apply(ast_for.last);
-        if (ir_last->type != ir_builder->GetIndexType() &&
-            !ir_builder->IsArrayIndexType(ir_last->type)) {
+        if (ir_last->type != ir_builder->GetI64Type() &&
+            !ir_builder->IsArrayI64Type(ir_last->type)) {
             logger->Error("the index type must be i64 || i64 array", ast_for.last);
         }
         if (ir_last->type != ir_first->type) {
@@ -1394,7 +1394,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto template_cast =
                 SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"cast"}));
             auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->instantiate(
-                {ir_interface_implement_function0->type, ir_tmp_builder->GetIndexType()},
+                {ir_interface_implement_function0->type, ir_tmp_builder->GetI64Type()},
                 ir_tmp_builder->module));
             auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
                 ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
@@ -1486,7 +1486,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto template_cast =
                 SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"cast"}));
             auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->instantiate(
-                {ir_interface_implement_function0->type, ir_tmp_builder->GetIndexType()},
+                {ir_interface_implement_function0->type, ir_tmp_builder->GetI64Type()},
                 ir_tmp_builder->module));
             auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
                 ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
@@ -1523,7 +1523,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             // 的确存在为零的情况, 比如没有字段的结构
             // PRAJNA_ASSERT(ir_type->bytes > 0);
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
-            auto ir_function_type = ir::FunctionType::Create({}, ir_builder->GetIndexType());
+            auto ir_function_type = ir::FunctionType::Create({}, ir_builder->GetI64Type());
             auto ir_function = ir_tmp_builder->createFunction(
                 "__sizeof" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);

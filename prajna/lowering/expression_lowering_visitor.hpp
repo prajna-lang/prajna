@@ -229,7 +229,7 @@ class ExpressionLoweringVisitor {
             logger->Error("index should have one argument at least", ast_binary_operation.operand);
         }
         auto ir_index = ir_arguments.front();
-        if (ir_index->type != ir_builder->GetIndexType()) {
+        if (ir_index->type != ir_builder->GetI64Type()) {
             logger->Error(
                 fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
@@ -501,7 +501,7 @@ class ExpressionLoweringVisitor {
                                return this->ApplyIdentifierPath(ast_identifier_path);
                            },
                            [=](ast::IntLiteral ast_int_literal) -> Symbol {
-                               return ir::ConstantInt::Create(ir_builder->GetIndexType(),
+                               return ir::ConstantInt::Create(ir_builder->GetI64Type(),
                                                               ast_int_literal.value);
                            }},
                 ast_template_argument);
@@ -629,7 +629,7 @@ class ExpressionLoweringVisitor {
                 // template parameter could be a ConstantInt.
                 [ir_builder = this->ir_builder](std::shared_ptr<ir::ConstantInt> ir_constant_int)
                     -> std::shared_ptr<ir::Value> {
-                    PRAJNA_ASSERT(ir_constant_int->type == ir_builder->GetIndexType());
+                    PRAJNA_ASSERT(ir_constant_int->type == ir_builder->GetI64Type());
                     return ir_builder->GetIndexConstant(ir_constant_int->value);
                 },
                 [=](auto x) {

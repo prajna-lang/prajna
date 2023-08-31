@@ -30,10 +30,10 @@ class IrBuilder {
 
     static std::shared_ptr<IrBuilder> Create() { return Create(nullptr, nullptr, nullptr); }
 
-    std::shared_ptr<ir::Type> GetIndexType() { return ir::IntType::Create(ir::ADDRESS_BITS, true); }
+    std::shared_ptr<ir::Type> GetI64Type() { return ir::IntType::Create(ir::ADDRESS_BITS, true); }
 
     std::shared_ptr<ir::ConstantInt> GetIndexConstant(int64_t value) {
-        auto ir_value = this->Create<ir::ConstantInt>(GetIndexType(), value);
+        auto ir_value = this->Create<ir::ConstantInt>(GetI64Type(), value);
         return ir_value;
     }
 
@@ -43,11 +43,17 @@ class IrBuilder {
         return ir_local_variable;
     }
 
-    bool IsArrayIndexType(std::shared_ptr<ir::Type> ir_type) {
+    bool IsArrayI64Type(std::shared_ptr<ir::Type> ir_type) {
         auto array_template_struct =
             SymbolGet<TemplateStruct>(this->GetSymbolByPath(false, {"Array"}));
         PRAJNA_ASSERT(array_template_struct);
-        return ir_type->template_struct == array_template_struct;
+        auto symbol_list =
+            std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments_any);
+        if (ir_type->template_struct == array_template_struct) {
+            return SymbolGet<ir::Value>(symbol_list.front())->type == this->GetI64Type();
+        }
+
+        return false;
     }
 
     bool IsPtrType(std::shared_ptr<ir::Type> ir_type) {
@@ -83,9 +89,7 @@ class IrBuilder {
         return ir_shape3_type;
     }
 
-    std::shared_ptr<ir::Type> GetShape3Type() {
-        return this->GetArrayType(this->GetIndexType(), 3);
-    }
+    std::shared_ptr<ir::Type> GetShape3Type() { return this->GetArrayType(this->GetI64Type(), 3); }
 
     std::shared_ptr<ir::Type> GetManagedPtrType(std::shared_ptr<ir::Type> ir_value_type) {
         auto symbol_ptr = this->GetSymbolByPath(false, {"Ptr"});
@@ -125,28 +129,21 @@ class IrBuilder {
     std::shared_ptr<ir::Property> GetArrayIndexProperty(std::shared_ptr<ir::Type> ir_type) {
         InstantiateTypeImplements(ir_type);
 
-        auto iter_array_index_interface =
-            std::find_if(RANGE(ir_type->interface_dict), [](auto key_value) {
-                if (!key_value.second) return false;
-                return key_value.second->name.size() > 11 &&
-                       key_value.second->name.substr(0, 11) == "ArrayIndex<";
-            });
-        if (iter_array_index_interface != ir_type->interface_dict.end()) {
-            auto ir_array_index_interface = iter_array_index_interface->second;
-            auto ir_index_property = ir::Property::Create();
-            ir_index_property->get_function =
-                ir::GetFunctionByName(ir_array_index_interface->functions, "Get");
-            ir_index_property->set_function =
-                ir::GetFunctionByName(ir_array_index_interface->functions, "Set");
+        auto ir_index_property = ir::Property::Create();
+        ir_index_property->get_function =
+            this->GetImplementFunction(ir_type, "__get_array_index__");
+        ir_index_property->set_function =
+            this->GetImplementFunction(ir_type, "__set_array_index__");
+        if (ir_index_property->get_function || ir_index_property->set_function) {
             return ir_index_property;
-        } else {
-            return nullptr;
         }
+
+        return nullptr;
     }
 
     std::shared_ptr<ir::WriteProperty> SetDim3(std::shared_ptr<ir::Value> ir_shape3, int64_t index,
                                                std::shared_ptr<ir::Value> ir_value) {
-        PRAJNA_ASSERT(this->IsArrayIndexType(ir_shape3->type));
+        PRAJNA_ASSERT(this->IsArrayI64Type(ir_shape3->type));
         auto ir_index_property = this->GetLinearIndexProperty(ir_shape3->type);
         PRAJNA_VERIFY(ir_index_property, "linear index property is missing");
 

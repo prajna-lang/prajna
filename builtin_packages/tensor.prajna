@@ -113,14 +113,14 @@ implement Tensor<Type, Dim> {
 }
 
 template <Type, Dim>
-implement operator::ArrayIndex<Type, Dim> for Tensor<Type, Dim> {
+implement Tensor<Type, Dim> {
     @inline
-    func Get(idx: Array<i64, Dim>)->Type{
+    func __get_array_index__(idx: Array<i64, Dim>)->Type{
         return this.At(idx);
     }
 
     @inline
-    func Set(idx: Array<i64, Dim>, value: Type){
+    func __set_array_index__(idx: Array<i64, Dim>, value: Type){
         this.At(idx) = value;
     }
 }

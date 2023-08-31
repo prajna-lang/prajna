@@ -354,7 +354,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->symbol_table = ir_module->symbol_table;
         // 只需要对数组循环进行处理
-        if (!ir_builder->IsArrayIndexType(ir_for->IndexVariable()->type)) continue;
+        if (!ir_builder->IsArrayI64Type(ir_for->IndexVariable()->type)) continue;
 
         ir_builder->PushBlock(ir_for->parent_block);
         ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
@@ -385,7 +385,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         ir_for->First(ir_linear_first);
         ir_for->Last(ir_linear_last);
         auto ir_array_index = ir_for->IndexVariable();
-        auto ir_linear_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetIndexType());
+        auto ir_linear_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetI64Type());
         ir_for->IndexVariable(ir_linear_index);
 
         auto ir_array_first_variable = ir_builder->VariableLikedNormalize(ir_array_first);

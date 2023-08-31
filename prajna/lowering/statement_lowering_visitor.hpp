@@ -1285,7 +1285,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::Create({ir_source_type}, ir_target_type);
             auto ir_function = ir_tmp_builder->createFunction(
-                "__bit_cast" + GetTemplateArgumentsPostify(symbol_template_arguments),
+                "bit_cast" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
 
@@ -1903,7 +1903,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
     void Stage1() {
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateBitCastTemplate(), "__bit_cast");
+            this->CreateBitCastTemplate(), "bit_cast");
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateSizeOfTemplate(), "__sizeof");

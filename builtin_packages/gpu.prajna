@@ -78,7 +78,7 @@ implement Tensor<Type, Dim> {
 
         // TODO : 内存管理需要修复
         var bytes = self.layout.Length() * __sizeof<Type>();
-        cuda::cudaMalloc(__bit_cast<ptr<ptr<Type>> ,ptr<ptr<i8> > >(&self.data), bytes);
+        cuda::cudaMalloc(bit_cast<ptr<ptr<Type>> ,ptr<ptr<i8> > >(&self.data), bytes);
 
         return self;
     }
@@ -95,7 +95,7 @@ implement Tensor<Type, Dim> {
         for i in 0 to Dim {
             size = size * this.layout.shape[i];
         }
-        var re =  cuda::cudaMemcpy(__bit_cast<ptr<Type> ,ptr<i8>>(host_tensor.data.raw_ptr), __bit_cast<ptr<Type>, ptr<i8>>(this.data), size * __sizeof<Type>(), 2i32);
+        var re =  cuda::cudaMemcpy(bit_cast<ptr<Type> ,ptr<i8>>(host_tensor.data.raw_ptr), bit_cast<ptr<Type>, ptr<i8>>(this.data), size * __sizeof<Type>(), 2i32);
         return host_tensor;
     }
 }
@@ -108,7 +108,7 @@ implement ::Tensor<Type, Dim> {
         for i in 0 to Dim {
             size = size * this.layout.shape[i];
         }
-        var re = cuda::cudaMemcpy(__bit_cast<ptr<Type> ,ptr<i8>>(cuda_tensor.data), __bit_cast<ptr<Type>, ptr<i8>>(this.data.raw_ptr), size * __sizeof<Type>(), 1i32);
+        var re = cuda::cudaMemcpy(bit_cast<ptr<Type> ,ptr<i8>>(cuda_tensor.data), bit_cast<ptr<Type>, ptr<i8>>(this.data.raw_ptr), size * __sizeof<Type>(), 1i32);
         return cuda_tensor;
     }
 }

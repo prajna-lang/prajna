@@ -2,7 +2,7 @@ template <Type>
 implement ptr<Type> {
     @static
     func Allocate(size: i64)->ptr<Type> {
-        var re =  __bit_cast<ptr<undef> ,ptr<Type>>(bindings::malloc(size * __sizeof<Type>()));
+        var re =  bit_cast<ptr<undef> ,ptr<Type>>(bindings::malloc(size * __sizeof<Type>()));
         return re;
     }
 
@@ -18,7 +18,7 @@ implement ptr<Type> {
     }
 
     func Free() {
-        bindings::free(__bit_cast<ptr<Type>, ptr<undef>>(this));
+        bindings::free(bit_cast<ptr<Type>, ptr<undef>>(this));
     }
 
     func _ToInt64()->i64{
@@ -98,7 +98,7 @@ implement Ptr<Type>{
     // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
     func ToUndef()->Ptr<undef>{
         var undef_ptr: Ptr<undef>;
-        undef_ptr.raw_ptr = __bit_cast<ptr<Type> ,ptr<undef>>(this.raw_ptr);
+        undef_ptr.raw_ptr = bit_cast<ptr<Type> ,ptr<undef>>(this.raw_ptr);
         undef_ptr._reference_counter = this._reference_counter;
         *undef_ptr._reference_counter = *undef_ptr._reference_counter + 1;
         return undef_ptr;
@@ -107,7 +107,7 @@ implement Ptr<Type>{
     @static
     func FromUndef(undef_ptr: Ptr<undef>)->Ptr<Type>{
         var self: Ptr<Type>;
-        self.raw_ptr = __bit_cast<ptr<undef> ,ptr<Type>>(undef_ptr.raw_ptr);
+        self.raw_ptr = bit_cast<ptr<undef> ,ptr<Type>>(undef_ptr.raw_ptr);
         self._reference_counter = undef_ptr._reference_counter;
         *self._reference_counter = *self._reference_counter + 1;
         return self;

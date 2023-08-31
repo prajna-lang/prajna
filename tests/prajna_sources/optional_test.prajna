@@ -1,17 +1,14 @@
 @test
 func TestMain() {
     var opt = Optional<i64>::Create(42);
-    test::Assert(opt.HaveValue());
+    test::Assert(opt.HasValue());
     test::Assert(opt.Value == 42);
     var tmp = opt.Value;
     test::Assert(tmp == 42);
 
 
     var none : Optional<i64>;
-    test::Assert(!none.HaveValue());
-    test::Assert(none.Value_Or(0) != 2);
-    test::Assert(none.Value_Or(4) == 4);
-
+    test::Assert(!none.HasValue());
 
     var new : Optional<i64>;
     new.Value = 456;

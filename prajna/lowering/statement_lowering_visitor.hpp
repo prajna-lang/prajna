@@ -676,14 +676,11 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 this->ir_builder->current_implement_interface = nullptr;
             });
 
-            // 需要前置, 因为函数会用的接口类型本身
-            if (!ir_interface_prototype->disable_dynamic) {
-                // 创建接口动态类型生成函数
-                ir_interface->dynamic_type_creator = ir_builder->createFunction(
-                    std::string("dynamic_type_creator"),
-                    ir::FunctionType::Create({ir_builder->GetManagedPtrType(ir_type)},
-                                             ir_interface->prototype->dynamic_type));
-            }
+            // 创建接口动态类型生成函数
+            ir_interface->dynamic_type_creator = ir_builder->createFunction(
+                std::string("dynamic_type_creator"),
+                ir::FunctionType::Create({ir_builder->GetManagedPtrType(ir_type)},
+                                         ir_interface->prototype->dynamic_type));
 
             for (auto ast_function : ast_implement.functions) {
                 std::shared_ptr<ir::Function> ir_function = nullptr;
@@ -729,10 +726,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 if (iter_function == ir_interface->functions.end()) {
                     logger->Error("interface function is not implemented", ast_implement.interface);
                 }
-            }
-
-            if (ir_interface_prototype->disable_dynamic) {
-                return nullptr;
             }
 
             // 包装一个undef this pointer的函数
@@ -2049,19 +2042,13 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto guard =
             function_guard::Create([=]() { ir_builder->interface_prototype_processing = false; });
 
-        ir_interface_prototype->disable_dynamic = std::any_of(
-            RANGE(ast_interface_prototype.annotation_dict),
-            [](auto ast_annotation) { return ast_annotation.name == "disable_dynamic"; });
-
-        if (!ir_interface_prototype->disable_dynamic) {
-            ir_interface_prototype->dynamic_type = ir::StructType::Create({});
-            // 我们通过dynamic<Interface>来获取接口所对应的类型, 需要将他们关联,
-            // 以便获取dynamic的实现
-            auto template_struct_dynamic =
-                SymbolGet<TemplateStruct>(ir_builder->GetSymbolByPath(true, {"Dynamic"}));
-            PRAJNA_ASSERT(template_struct_dynamic);
-            ir_interface_prototype->dynamic_type->template_struct = template_struct_dynamic;
-        }
+        ir_interface_prototype->dynamic_type = ir::StructType::Create({});
+        // 我们通过dynamic<Interface>来获取接口所对应的类型, 需要将他们关联,
+        // 以便获取dynamic的实现
+        auto template_struct_dynamic =
+            SymbolGet<TemplateStruct>(ir_builder->GetSymbolByPath(true, {"Dynamic"}));
+        PRAJNA_ASSERT(template_struct_dynamic);
+        ir_interface_prototype->dynamic_type->template_struct = template_struct_dynamic;
 
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ir_builder->PushSymbolTable();
@@ -2074,12 +2061,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_builder->module->functions.remove(ir_function);
         }
 
-        if (!ir_interface_prototype->disable_dynamic) {
-            this->CreateInterfaceDynamicType(ir_interface_prototype);
-        }
-
+        this->CreateInterfaceDynamicType(ir_interface_prototype);
         // 用到的时候再进行该操作, 因为很多原生接口实现时候ptr还未
-
         return ir_interface_prototype;
     }
 

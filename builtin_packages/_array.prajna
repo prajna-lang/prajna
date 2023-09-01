@@ -1,5 +1,3 @@
-
-
 template <Type, Length_>
 struct Array{
     data: array<Type, Length_>;

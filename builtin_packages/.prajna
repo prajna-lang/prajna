@@ -18,8 +18,6 @@ use Float<32> as f32;
 use Float<64> as f64;
 // use Float<128> as f128; // 平台支持不好, 除+,-,*,/外, sin, cos等函数都是错误的结果.
 
-use operator;
-
 use primitive_type;
 use bindings;
 use bindings::exit as Exit;

@@ -142,4 +142,6 @@ void SymbolSetName(std::string name, Symbol symbol);
 
 void SymbolSetFullname(std::string fullname, Symbol symbol);
 
+ast::SourceLocation SymbolGetSourceLocation(Symbol symbol);
+
 }  // namespace prajna::lowering

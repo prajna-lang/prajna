@@ -1,12 +1,12 @@
 interface Say{
-    func say();
+    func Say();
 }
 
 struct SayHi{
 }
 
 implement Say for SayHi{
-    func say() {
+    func Say() {
         "Hi\n".Print();
     }
 }
@@ -14,7 +14,7 @@ implement Say for SayHi{
 struct SayHello{}
 
 implement Say for SayHello{
-    func say(){
+    func Say(){
         "Hello\n".Print();
     }
 }
@@ -22,17 +22,17 @@ implement Say for SayHello{
 @test
 func TestDynamicDispatch(){
     var say_hi = Ptr<SayHi>::New();
-    say_hi.say();
+    say_hi.Say();
     test::Assert(!say_hi.IsNull());
 
     var say: Dynamic<Say> = say_hi.As<Say>();
-    say.say();
+    say.Say();
 
     var say_hello = Ptr<SayHello>::New();
-    say_hello.say();
+    say_hello.Say();
 
     say = say_hello.As<Say>();
-    say.say();
+    say.Say();
 
     test::Assert(say.Is<SayHello>());
     test::Assert(!say.Is<SayHi>());

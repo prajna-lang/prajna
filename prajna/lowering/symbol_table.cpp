@@ -54,4 +54,16 @@ void SymbolTable::SetWithAssigningName(Symbol value, const std::string& name) {
     current_symbol_dict[name] = value;
 }
 
+ast::SourceLocation SymbolGetSourceLocation(Symbol symbol) {
+    return boost::apply_visitor(
+        overloaded{[](auto x) -> ast::SourceLocation {
+                       PRAJNA_TODO;
+                       return ast::SourceLocation();
+                   },
+                   [](std::shared_ptr<ir::Value> ir_value) -> ast::SourceLocation {
+                       return ir_value->source_location;
+                   }},
+        symbol);
+}
+
 }  // namespace prajna::lowering

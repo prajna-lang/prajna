@@ -173,50 +173,58 @@ class ExpressionLoweringVisitor {
         auto identifier_path = boost::get<ast::IdentifierPath>(ast_binary_operation.operand);
         PRAJNA_ASSERT(identifier_path.identifiers.size() == 1);
         std::string member_name = identifier_path.identifiers.front().identifier;
+        try {
+            // 模板函数
+            if (identifier_path.identifiers.front().template_arguments_optional) {
+                ir_builder->InstantiateTypeImplements(ir_lhs->type);
+                if (!ir_lhs->type->template_any_dict.count(member_name)) {
+                    logger->Error("invalid template", ast_binary_operation.operand);
+                }
+                auto lowering_member_function_template = std::any_cast<std::shared_ptr<Template>>(
+                    ir_lhs->type->template_any_dict[member_name]);
 
-        // 模板函数
-        if (identifier_path.identifiers.front().template_arguments_optional) {
-            ir_builder->InstantiateTypeImplements(ir_lhs->type);
-            if (!ir_lhs->type->template_any_dict.count(member_name)) {
-                logger->Error("invalid template", ast_binary_operation.operand);
+                auto symbol_template_arguments = this->ApplyTemplateArguments(
+                    *identifier_path.identifiers.front().template_arguments_optional);
+
+                auto ir_member_function = Cast<ir::Function>(
+                    SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
+                        symbol_template_arguments, ir_builder->module)));
+                PRAJNA_ASSERT(ir_member_function);
+
+                auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_lhs);
+                auto ir_this_pointer =
+                    ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
+                return ir::MemberFunctionWithThisPointer::Create(ir_this_pointer,
+                                                                 ir_member_function);
             }
-            auto lowering_member_function_template = std::any_cast<std::shared_ptr<Template>>(
-                ir_lhs->type->template_any_dict[member_name]);
 
-            auto symbol_template_arguments = this->ApplyTemplateArguments(
-                *identifier_path.identifiers.front().template_arguments_optional);
+            if (!ir_lhs->type) {
+                this->logger->Error("invalid object type to access member",
+                                    ir_lhs->source_location);
+            }
 
-            auto ir_member_function = Cast<ir::Function>(
-                SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
-                    symbol_template_arguments, ir_builder->module)));
-            PRAJNA_ASSERT(ir_member_function);
-
-            auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_lhs);
-            auto ir_this_pointer =
-                ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
-            return ir::MemberFunctionWithThisPointer::Create(ir_this_pointer, ir_member_function);
-        }
-
-        if (!ir_lhs->type) {
-            this->logger->Error("invalid object type to access member", ir_lhs->source_location);
-        }
-
-        if (auto ir_member = ir_builder->AccessMember(ir_lhs, member_name)) {
-            return ir_member;
-        }
-
-        // 语法糖, ptr类型会寻找raw_ptr的成员函数
-        if (ir_builder->IsPtrType(ir_lhs->type)) {
-            auto ir_raw_ptr = ir_builder->AccessField(ir_lhs, "raw_ptr");
-            auto ir_object = ir_builder->Create<ir::DeferencePointer>(ir_raw_ptr);
-            if (auto ir_member =
-                    this->ApplyBinaryOperationAccessMember(ir_object, ast_binary_operation)) {
+            if (auto ir_member = ir_builder->AccessMember(ir_lhs, member_name)) {
                 return ir_member;
             }
+
+            // 语法糖, ptr类型会寻找raw_ptr的成员函数
+            if (ir_builder->IsPtrType(ir_lhs->type)) {
+                auto ir_raw_ptr = ir_builder->AccessField(ir_lhs, "raw_ptr");
+                auto ir_object = ir_builder->Create<ir::DeferencePointer>(ir_raw_ptr);
+                if (auto ir_member =
+                        this->ApplyBinaryOperationAccessMember(ir_object, ast_binary_operation)) {
+                    return ir_member;
+                }
+            }
+
+            logger->Error(
+                fmt::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
+                ast_binary_operation.operand);
+        } catch (CompileError compile_error) {
+            this->logger->Note(ast_binary_operation);
+            throw compile_error;
         }
 
-        logger->Error(fmt::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
-                      ast_binary_operation.operand);
         return nullptr;
     }
 
@@ -473,14 +481,19 @@ class ExpressionLoweringVisitor {
     std::shared_ptr<TemplateStruct> CreateDynamicTemplate() {
         auto template_dynamic = Template::Create();
         template_dynamic->generator = [symbol_table = this->ir_builder->symbol_table,
-                                       logger = this->logger,
-                                       this](std::list<Symbol> symbol_template_arguments,
-                                             std::shared_ptr<ir::Module> ir_module) -> Symbol {
-            PRAJNA_ASSERT(symbol_template_arguments.size() == 1);
+                                       logger = this->logger](
+                                          std::list<Symbol> symbol_template_arguments,
+                                          std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 1) {
+                logger->Error("must be 1 symbol template argument");
+            }
 
+            auto symbol_interface_prototype = symbol_template_arguments.front();
             auto ir_interface_prototype =
-                SymbolGet<ir::InterfacePrototype>(symbol_template_arguments.front());
-            PRAJNA_ASSERT(ir_interface_prototype);
+                SymbolGet<ir::InterfacePrototype>(symbol_interface_prototype);
+            if (!ir_interface_prototype) {
+                logger->Error("not a interface");
+            }
             return ir_interface_prototype->dynamic_type;
         };
 

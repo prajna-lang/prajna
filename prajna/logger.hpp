@@ -157,7 +157,7 @@ class Logger {
     void Note(ast::SourceLocation source_location) {
         auto warning_prompt = fmt::format("{}", fmt::styled("note", fmt::fg(fmt::color::gray)));
         this->Log("", source_location.first_position, source_location.last_position, warning_prompt,
-                  std::string(""), false);
+                  std::string(YEL), false);
     }
 
    private:

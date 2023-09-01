@@ -5,12 +5,12 @@ struct People{
 }
 
 implement People{
-    func sayHello(){
+    func SayHello(){
         "Hello\n".Print();
     }
 
     func SayHi(){
-        this.sayHello();
+        this.SayHello();
         ("Hi, My name is " + this.name + ".\n").Print();
     }
 

@@ -676,27 +676,34 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 this->ir_builder->current_implement_interface = nullptr;
             });
 
+            // 是否每个interface prototpye的函数都被实现
+            auto is_matched_with_function_prototype =
+                [logger = this->logger](std::shared_ptr<ir::Function> ir_function0,
+                                        std::shared_ptr<ir::Function> ir_function1) {
+                    if (ir_function0->name == ir_function1->name) {
+                        if (ir_function0->type == ir_function1->type) {
+                            return true;
+                        } else {
+                            logger->Error("function type is not matched",
+                                          ir_function0->source_location);
+                        }
+                    }
+                    return false;
+                };
+
             // 创建接口动态类型生成函数
             ir_interface->dynamic_type_creator = ir_builder->createFunction(
                 std::string("dynamic_type_creator"),
                 ir::FunctionType::Create({ir_builder->GetManagedPtrType(ir_type)},
                                          ir_interface->prototype->dynamic_type));
 
-            for (auto ast_function : ast_implement.functions) {
-                std::shared_ptr<ir::Function> ir_function = nullptr;
-                auto symbol_function = (*this)(ast_function);
-                ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
-                // 已经提前加入
-                // ir_interface->functions.push_back(ir_function);
-            }
-
-            // 是否每个interface prototpye的函数都被实现
             auto is_matched_with_prototype =
                 [](std::shared_ptr<ir::FunctionType> ir_function_type0,
                    std::shared_ptr<ir::FunctionType> ir_function_type1) {
                     if (ir_function_type0->return_type != ir_function_type1->return_type) {
                         return false;
                     }
+                    // 不比较第一个参数
                     auto iter0 = std::next(ir_function_type0->parameter_types.begin());
                     auto iter1 = ir_function_type1->parameter_types.begin();
                     for (; iter0 != ir_function_type0->parameter_types.end(); ++iter0, ++iter1) {
@@ -708,24 +715,38 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     return true;
                 };
 
-            for (auto ir_function_prototype : ir_interface_prototype->functions) {
-                auto iter_function =
-                    std::find_if(RANGE(ir_interface->functions), [=](auto ir_function) {
+            auto ir_function_prototype_list = ir_interface_prototype->functions;
+            for (auto ast_function : ast_implement.functions) {
+                auto symbol_function = (*this)(ast_function);
+                auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
+                auto iter = std::find_if(
+                    RANGE(ir_function_prototype_list),
+                    [=](std::shared_ptr<ir::Function> ir_function_prototype) {
                         if (ir_function->name == ir_function_prototype->name) {
                             if (is_matched_with_prototype(ir_function->function_type,
                                                           ir_function_prototype->function_type)) {
                                 return true;
                             } else {
-                                // 错误信息, 需要进一步精准到函数上
-                                logger->Error("function type is not matched with interface",
-                                              ast_implement.interface);
+                                logger->Error("function type is not matched",
+                                              ast_function.declaration);
+                                return false;
                             }
+                        } else {
+                            return false;
                         }
-                        return false;
                     });
-                if (iter_function == ir_interface->functions.end()) {
-                    logger->Error("interface function is not implemented", ast_implement.interface);
+                if (iter != ir_function_prototype_list.end()) {
+                    ir_function_prototype_list.erase(iter);
+                } else {
+                    this->logger->Error("has no interface function prototype",
+                                        ast_function.declaration);
                 }
+            }
+
+            for (auto ir_function_prototype : ir_function_prototype_list) {
+                // 只会打印第一个错误, 因为会抛出异常
+                this->logger->Error("the interface function is not implement",
+                                    ir_function_prototype->source_location);
             }
 
             // 包装一个undef this pointer的函数

@@ -53,9 +53,7 @@ implement Tmp {
     func __initialize__() {
         "Hit".PrintLine();
     }
-}
 
-implement Tmp {
     func __copy__() {
         "inc tmp".PrintLine();
     }

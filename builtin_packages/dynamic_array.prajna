@@ -1,4 +1,4 @@
-func CeilPowerOf2(value: i64)->i64{
+func _CeilPowerOf2(value: i64)->i64{
     __assert(value >= 0);
     var re = 1;
     while (re < value) {
@@ -16,6 +16,12 @@ struct DynamicArray{
 
 template <ValueType>
 implement DynamicArray<ValueType> {
+    func __initialize__() {
+        this._data = Ptr<ValueType>::Null();
+        this._length = 0;
+        this._capacity = 0;
+    }
+
     func __get_linear_index__(idx: i64)->ValueType{
         return this._data[idx];
     }
@@ -23,24 +29,12 @@ implement DynamicArray<ValueType> {
     func __set_linear_index__(idx: i64, value: ValueType){
         this._data[idx] = value;
     }
-}
 
-template <ValueType>
-implement DynamicArray<ValueType> {
-    func __initialize__() {
-        this._data = Ptr<ValueType>::Null();
-        this._length = 0;
-        this._capacity = 0;
-    }
-}
-
-template <ValueType>
-implement DynamicArray<ValueType> {
     @static
     func Create(_length: i64)->DynamicArray<ValueType>{
         var self: DynamicArray<ValueType>;
         self._length = _length;
-        self._capacity = CeilPowerOf2(_length);
+        self._capacity = _CeilPowerOf2(_length);
         self._data = Ptr<ValueType>::Allocate(self._capacity);
         return self;
     }

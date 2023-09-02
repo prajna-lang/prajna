@@ -21,9 +21,7 @@ implement TestA {
         *this._reference_counter = *this._reference_counter + 1;
         var ref_count = *this._reference_counter;
     }
-}
 
-implement TestA {
     func __initialize__(){
         this.data = cast<i64, ptr<undef>>(0);
         this._reference_counter = ptr<i64>::New();

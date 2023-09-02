@@ -36,25 +36,15 @@ implement ptr<Type> {
     func __arrow__()->ptr<Type> {
         return this;
     }
-}
 
-template <Type>
-implement ptr<Type> {
     func __equal__(operand: ptr<Type>) -> bool {
         return this._ToInt64() == operand._ToInt64();
     }
-}
 
-
-template <Type>
-implement ptr<Type> {
     func __not_equal__(operand: ptr<Type>) -> bool {
         return !(this == operand);
     }
-}
 
-template <Type>
-implement ptr<Type> {
     func __initialize__() {
         this = ptr<Type>::Null();
     }
@@ -138,10 +128,7 @@ implement Ptr<Type>{
     func __arrow__()->ptr<Type> {
         return this.raw_ptr;
     }
-}
 
-template <Type>
-implement Ptr<Type> {
     @inline
     func __get_linear_index__(index: i64)->Type {
         return  this.raw_ptr[index];
@@ -150,16 +137,28 @@ implement Ptr<Type> {
     func __set_linear_index__(index: i64, value: Type) {
         this.raw_ptr[index] = value;
     }
-}
 
-template <Type>
-implement Ptr<Type> {
+    func __equal__(operand: Ptr<Type>) -> bool {
+        return this._ToInt64() == operand._ToInt64();
+    }
+
+    func __not_equal__(operand: Ptr<Type>) -> bool {
+        return !(this == operand);
+    }
+
+    func __initialize__() {
+        this.raw_ptr = ptr<Type>::Null();
+        // 需要申请, 判断的时候需要用到
+        this._reference_counter = ptr<i64>::New();
+        this.size = 0;
+        *this._reference_counter = 1;
+    }
+
     func __copy__() {
         *this._reference_counter = *this._reference_counter + 1;
     }
 
     func __finialize__() {
-
         if (this._reference_counter.IsNull()){
             return;
         }
@@ -177,31 +176,5 @@ implement Ptr<Type> {
                 this.raw_ptr = ptr<Type>::Null();
             }
         }
-    }
-}
-
-template <Type>
-implement Ptr<Type> {
-    func __initialize__() {
-        this.raw_ptr = ptr<Type>::Null();
-        // 需要申请, 判断的时候需要用到
-        this._reference_counter = ptr<i64>::New();
-        this.size = 0;
-        *this._reference_counter = 1;
-    }
-}
-
-template <Type>
-implement Ptr<Type> {
-    func __equal__(operand: Ptr<Type>) -> bool {
-        return this._ToInt64() == operand._ToInt64();
-    }
-}
-
-
-template <Type>
-implement Ptr<Type> {
-    func __not_equal__(operand: Ptr<Type>) -> bool {
-        return !(this == operand);
     }
 }

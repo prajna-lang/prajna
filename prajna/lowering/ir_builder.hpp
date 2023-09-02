@@ -161,11 +161,6 @@ class IrBuilder {
     std::shared_ptr<Value_> Create(Args_&&... __args) {
         auto ir_value = Value_::Create(std::forward<Args_>(__args)...);
 
-        if (auto ir_return = Cast<ir::Return>(ir_value)) {
-            PRAJNA_ASSERT(ir_return->Value()->type ==
-                          this->function_stack.top()->function_type->return_type);
-        }
-
         static_assert(std::is_base_of<ir::Value, Value_>::value);
         this->insert(ir_value);
         return ir_value;

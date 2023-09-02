@@ -46,3 +46,47 @@ struct zmq_msg_t{
 @extern func zmq_send_const (s_: ptr<undef>, buf_: ptr<undef>, len_: i64, flags_: i32)->i32;
 @extern func zmq_recv (s_: ptr<undef>, buf_: ptr<char>, len_: i64, flags_: i32)->i32;
 @extern func zmq_socket_monitor (s_: ptr<undef>, addr_: ptr<char>, events_: i32)->i32;
+
+struct Socket {
+    _context: ptr<undef>;
+    _socket: ptr<undef>;
+}
+
+
+implement Socket {
+    func __initialize__() {
+        this._context = zmq_ctx_new();
+        debug::Assert(this._context.IsValid());
+    }
+
+    func __finialize__() {
+        if (this._socket.IsValid()) {
+            zmq_close(this._socket);
+        }
+        zmq_ctx_destroy(this._context);
+    }
+
+    func Init(flag: i32){
+        this._socket = zmq_socket(this._context, flag);
+        debug::Assert(this._socket.IsValid());
+    }
+
+    func Bind(ip: String) {
+        var ip = "tcp://localhost:5555";
+        var re = zmq_connect(this._socket, ip.CStringRawPointer());
+        debug::Assert(re == 0i32);
+    }
+
+    func Send(msg: String) {
+        var re = zmq_send(this._socket, msg.CStringRawPointer(), msg.Length(), 0i32);
+        debug::Assert(re > 0i32);
+    }
+
+    func Receive(len: i64) -> String {
+        var msg = String::Create(len);
+        var re = zmq_recv(this._socket, msg.CStringRawPointer(), msg.Length(), 0i32);
+        debug::Assert(re > 0i32);
+        return msg;
+    }
+}
+

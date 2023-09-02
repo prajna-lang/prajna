@@ -53,7 +53,12 @@ implement ptr<Type> {
     }
 }
 
-
+template <Type>
+implement ptr<Type> {
+    func __initialize__() {
+        this = ptr<Type>::Null();
+    }
+}
 
 template <Type>
 struct Ptr{

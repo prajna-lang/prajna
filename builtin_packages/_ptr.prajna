@@ -2,7 +2,7 @@ template <Type>
 implement ptr<Type> {
     @static
     func Allocate(size: i64)->ptr<Type> {
-        var re =  bit_cast<ptr<undef> ,ptr<Type>>(bindings::malloc(size * __sizeof<Type>()));
+        var re =  bit_cast<ptr<undef> ,ptr<Type>>(bindings::malloc(size * sizeof<Type>()));
         return re;
     }
 

@@ -172,7 +172,8 @@ implement Ptr<Type> {
                 }
 
                 this.raw_ptr.Free();
-                // this._reference_counter.Free(); // 循环里的变量会多次被destroy, 故不能释放
+                // 循环里的变量会多次被destroy, 故不能释放, 后面需要进一步修复
+                // this._reference_counter.Free();
                 this.raw_ptr = ptr<Type>::Null();
             }
         }

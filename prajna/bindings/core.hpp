@@ -93,7 +93,7 @@ class Tensor {
     }
 
     ~Tensor() {
-        // __finialize__(this->data);
+        // __finalize__(this->data);
         // if (this->data) {
         //     if (GetReferenceCount(this->data) == 0) {
         //         free(this->data);

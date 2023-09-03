@@ -83,7 +83,7 @@ inline bool HasCopy(std::shared_ptr<ir::Type> ir_type) {
 }
 
 inline bool IsFinalize(std::shared_ptr<ir::Type> ir_type) {
-    return ir_type->GetImplementFunction("__finialize__") != nullptr;
+    return ir_type->GetImplementFunction("__finalize__") != nullptr;
 }
 
 inline bool HasFinalize(std::shared_ptr<ir::Type> ir_type) {
@@ -109,7 +109,7 @@ inline void FinalizeVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_value);
         // 和incresement的顺序是相反的,
         if (IsFinalize(ir_type)) {
-            auto ir_function = ir_type->GetImplementFunction("__finialize__");
+            auto ir_function = ir_type->GetImplementFunction("__finalize__");
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         };
 

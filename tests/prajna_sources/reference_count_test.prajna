@@ -6,7 +6,7 @@ struct TestA {
 }
 
 implement TestA {
-    func __finialize__(){
+    func __finalize__(){
         *this._reference_counter = *this._reference_counter - 1;
         var ref_count = *this._reference_counter;
         if (ref_count == 0 ){

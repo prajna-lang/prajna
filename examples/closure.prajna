@@ -1,0 +1,12 @@
+func Main() {
+    var f = (){
+        "Hello World!".PrintLine();
+    };
+
+    f();
+
+    var add = (a: i64, b: i64)->i64 {
+        return a + b;
+    };
+    add(2, 3).PrintLine();
+}

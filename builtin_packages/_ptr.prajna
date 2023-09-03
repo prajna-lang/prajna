@@ -158,7 +158,7 @@ implement Ptr<Type>{
         *this._reference_counter = *this._reference_counter + 1;
     }
 
-    func __finialize__() {
+    func __finalize__() {
         if (this._reference_counter.IsNull()){
             return;
         }

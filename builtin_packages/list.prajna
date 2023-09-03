@@ -100,7 +100,7 @@ implement List<ValueType> {
         *this._reference_counter = *this._reference_counter + 1;
     }
 
-    func __finialize__() {
+    func __finalize__() {
         *this._reference_counter = *this._reference_counter - 1;
         if (*this._reference_counter == 0){
             this._reference_counter.Free();

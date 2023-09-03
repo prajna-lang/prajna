@@ -58,7 +58,7 @@ implement Tmp {
         "inc tmp".PrintLine();
     }
 
-    func __finialize__() {
+    func __finalize__() {
         "dec tmp".PrintLine();
     }
 }

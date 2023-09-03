@@ -59,7 +59,7 @@ implement Socket {
         debug::Assert(this._context.IsValid());
     }
 
-    func __finialize__() {
+    func __finalize__() {
         if (this._socket.IsValid()) {
             zmq_close(this._socket);
         }

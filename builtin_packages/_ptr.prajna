@@ -19,6 +19,7 @@ implement ptr<Type> {
 
     func Free() {
         bindings::free(bit_cast<ptr<Type>, ptr<undef>>(this));
+        this = ptr<Type>::Null();
     }
 
     func _ToInt64()->i64{
@@ -159,10 +160,6 @@ implement Ptr<Type>{
     }
 
     func __finalize__() {
-        if (this._reference_counter.IsNull()){
-            return;
-        }
-
         *this._reference_counter = *this._reference_counter - 1;
         if (*this._reference_counter == 0){
             if (!this.IsNull()) {
@@ -171,7 +168,6 @@ implement Ptr<Type>{
                 }
 
                 this.raw_ptr.Free();
-                this.raw_ptr = ptr<Type>::Null();
                 this._reference_counter.Free();
             }
         }

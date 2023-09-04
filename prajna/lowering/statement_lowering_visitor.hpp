@@ -22,7 +22,7 @@ class Compiler;
 namespace prajna::lowering {
 
 inline bool IsInitializable(std::shared_ptr<ir::Type> ir_type) {
-    return ir_type->GetImplementFunction("__initialize__") != nullptr;
+    return ir_type->GetMemberFunction("__initialize__") != nullptr;
 }
 
 inline bool HasInitializable(std::shared_ptr<ir::Type> ir_type) {
@@ -56,14 +56,14 @@ inline void InitializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> i
         }
 
         if (IsInitializable(ir_type)) {
-            auto ir_function = ir_type->GetImplementFunction("__initialize__");
+            auto ir_function = ir_type->GetMemberFunction("__initialize__");
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         };
     }
 }
 
 inline bool IsCopy(std::shared_ptr<ir::Type> ir_type) {
-    return ir_type->GetImplementFunction("__copy__") != nullptr;
+    return ir_type->GetMemberFunction("__copy__") != nullptr;
 }
 
 inline bool HasCopy(std::shared_ptr<ir::Type> ir_type) {
@@ -83,7 +83,7 @@ inline bool HasCopy(std::shared_ptr<ir::Type> ir_type) {
 }
 
 inline bool IsFinalize(std::shared_ptr<ir::Type> ir_type) {
-    return ir_type->GetImplementFunction("__finalize__") != nullptr;
+    return ir_type->GetMemberFunction("__finalize__") != nullptr;
 }
 
 inline bool HasFinalize(std::shared_ptr<ir::Type> ir_type) {
@@ -109,7 +109,7 @@ inline void FinalizeVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_value);
         // 和incresement的顺序是相反的,
         if (IsFinalize(ir_type)) {
-            auto ir_function = ir_type->GetImplementFunction("__finalize__");
+            auto ir_function = ir_type->GetMemberFunction("__finalize__");
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         };
 
@@ -148,7 +148,7 @@ inline void CopyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
         }
 
         if (IsCopy(ir_type)) {
-            auto ir_function = ir_type->GetImplementFunction("__copy__");
+            auto ir_function = ir_type->GetMemberFunction("__copy__");
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
         }
     }
@@ -394,7 +394,13 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         } else {
             // 加入struct里
             if (ir_builder->current_implement_type) {
-                ir_builder->current_implement_type->function_dict[ir_function->name] = ir_function;
+                if (ir_builder->is_static_function) {
+                    ir_builder->current_implement_type->static_function_dict[ir_function->name] =
+                        ir_function;
+                } else {
+                    ir_builder->current_implement_type->member_function_dict[ir_function->name] =
+                        ir_function;
+                }
             }
         }
 
@@ -624,8 +630,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             for (auto ast_statement : ast_implement.statements) {
                 auto symbol_function = (*this)(ast_statement);
                 if (auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function))) {
-                    // 已经提前加入, 不然无法调用自身
-                    // ir_type->function_dict[ir_function->name] = ir_function;
                     continue;
                 }
                 if (auto lowering_template = SymbolGet<Template>(symbol_function)) {
@@ -1428,7 +1432,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_tmp_builder->PushBlock(ir_if->TrueBlock());
             ir_tmp_builder->Create<ir::WriteVariableLiked>(
                 ir_tmp_builder->Create<ir::Call>(
-                    ir_tmp_builder->GetImplementFunction(ir_target_ptr_type, "FromUndef"),
+                    ir_tmp_builder->GetMemberFunction(ir_target_ptr_type, "FromUndef"),
                     std::list<std::shared_ptr<ir::Value>>{
                         ir_tmp_builder->AccessField(ir_dynamic_object, "object_pointer")}),
                 ir_ptr);
@@ -1437,7 +1441,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_tmp_builder->PushBlock(ir_if->FalseBlock());
             ir_tmp_builder->ExitWithPrintErrorMessage("invalid cast dynamic cast");
             auto ir_nullptr = ir_tmp_builder->Create<ir::Call>(
-                ir_tmp_builder->GetImplementFunction(ir_ptr->type, "Null"),
+                ir_tmp_builder->GetMemberFunction(ir_ptr->type, "Null"),
                 std::list<std::shared_ptr<ir::Value>>{});
             ir_tmp_builder->Create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
             ir_tmp_builder->PopBlock();

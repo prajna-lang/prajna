@@ -334,7 +334,7 @@ class ExpressionLoweringVisitor {
             return ir_builder->Create<ir::Call>(ir_lhs, ir_arguments);
         }
 
-        if (auto ir_member_function = ir_builder->GetImplementFunction(ir_lhs->type, "__call__")) {
+        if (auto ir_member_function = ir_builder->GetMemberFunction(ir_lhs->type, "__call__")) {
             auto ir_function_type = ir_member_function->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
                 logger->Error(
@@ -395,7 +395,7 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> ApplyBinaryOperationArrow(
         std::shared_ptr<ir::Value> ir_lhs, ast::BinaryOperation ast_binary_operation) {
-        auto ir_raw_ptr_function = ir_builder->GetImplementFunction(ir_lhs->type, "__arrow__");
+        auto ir_raw_ptr_function = ir_builder->GetMemberFunction(ir_lhs->type, "__arrow__");
         if (!ir_raw_ptr_function) {
             //  错误信息仅显示算子符号即可
             this->logger->Error("not implement __arrow__ function", ast_binary_operation.operator_);
@@ -549,11 +549,11 @@ class ExpressionLoweringVisitor {
                         return nullptr;
                     },
                     [=](std::shared_ptr<ir::Type> ir_type) -> Symbol {
-                        auto static_function_identifier = iter_ast_identifier->identifier;
+                        auto name = iter_ast_identifier->identifier;
                         if (iter_ast_identifier->template_arguments_optional) {
                             auto lowering_member_function_template =
                                 std::any_cast<std::shared_ptr<Template>>(
-                                    ir_type->template_any_dict[static_function_identifier]);
+                                    ir_type->template_any_dict[name]);
                             auto symbol_template_argumen_list = this->ApplyTemplateArguments(
                                 *iter_ast_identifier->template_arguments_optional);
                             auto ir_function = Cast<ir::Function>(
@@ -563,16 +563,19 @@ class ExpressionLoweringVisitor {
                             return ir_function;
                         }
 
-                        auto ir_static_fun =
-                            ir_builder->GetImplementFunction(ir_type, static_function_identifier);
-                        if (ir_static_fun == nullptr) {
-                            logger->Error(
-                                fmt::format("the static function {} is not exit in type {}",
-                                            static_function_identifier, ir_type->fullname),
-                                static_function_identifier);
-                        }
+                        ir_builder->InstantiateTypeImplements(ir_type);
+                        auto ir_static_fun = ir_type->static_function_dict[name];
+                        if (ir_static_fun) return ir_static_fun;
 
-                        return ir_static_fun;
+                        auto ir_member_fun = ir_type->GetMemberFunction(name);
+                        if (ir_member_fun) return ir_member_fun;
+
+                        logger->Error(
+                            fmt::format("the static/member function {} is not exit in type {}",
+                                        name, ir_type->fullname),
+                            name);
+
+                        return nullptr;
                     },
                     [=](std::shared_ptr<TemplateStruct> template_strcut) -> Symbol {
                         PRAJNA_UNREACHABLE;

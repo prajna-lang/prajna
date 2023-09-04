@@ -102,8 +102,8 @@ class IrBuilder {
     std::shared_ptr<ir::Property> GetProperty(std::shared_ptr<ir::Type> ir_type,
                                               std::string property_name) {
         auto ir_property = ir::Property::Create();
-        ir_property->get_function = this->GetImplementFunction(ir_type, "__get__" + property_name);
-        ir_property->set_function = this->GetImplementFunction(ir_type, "__set__" + property_name);
+        ir_property->get_function = this->GetMemberFunction(ir_type, "__get__" + property_name);
+        ir_property->set_function = this->GetMemberFunction(ir_type, "__set__" + property_name);
         if (ir_property->get_function || ir_property->set_function) {
             return ir_property;
         } else {
@@ -115,10 +115,8 @@ class IrBuilder {
         InstantiateTypeImplements(ir_type);
 
         auto ir_index_property = ir::Property::Create();
-        ir_index_property->get_function =
-            this->GetImplementFunction(ir_type, "__get_linear_index__");
-        ir_index_property->set_function =
-            this->GetImplementFunction(ir_type, "__set_linear_index__");
+        ir_index_property->get_function = this->GetMemberFunction(ir_type, "__get_linear_index__");
+        ir_index_property->set_function = this->GetMemberFunction(ir_type, "__set_linear_index__");
         if (ir_index_property->get_function || ir_index_property->set_function) {
             return ir_index_property;
         }
@@ -130,10 +128,8 @@ class IrBuilder {
         InstantiateTypeImplements(ir_type);
 
         auto ir_index_property = ir::Property::Create();
-        ir_index_property->get_function =
-            this->GetImplementFunction(ir_type, "__get_array_index__");
-        ir_index_property->set_function =
-            this->GetImplementFunction(ir_type, "__set_array_index__");
+        ir_index_property->get_function = this->GetMemberFunction(ir_type, "__get_array_index__");
+        ir_index_property->set_function = this->GetMemberFunction(ir_type, "__set_array_index__");
         if (ir_index_property->get_function || ir_index_property->set_function) {
             return ir_index_property;
         }
@@ -198,11 +194,11 @@ class IrBuilder {
         }
     }
 
-    std::shared_ptr<ir::Function> GetImplementFunction(std::shared_ptr<ir::Type> ir_type,
-                                                       std::string member_name) {
+    std::shared_ptr<ir::Function> GetMemberFunction(std::shared_ptr<ir::Type> ir_type,
+                                                    std::string member_name) {
         this->InstantiateTypeImplements(ir_type);
 
-        return ir_type->GetImplementFunction(member_name);
+        return ir_type->GetMemberFunction(member_name);
     }
 
     std::shared_ptr<ir::Value> GetString(std::string str) {
@@ -225,9 +221,10 @@ class IrBuilder {
         ast::IdentifierPath ast_identifier_path;
         auto string_symbol = this->GetSymbolByPath(true, {"String"});
         auto string_type = Cast<ir::StructType>(SymbolGet<ir::Type>(string_symbol));
-        auto ir_string_from_char_pat = this->GetImplementFunction(string_type, "__from_char_ptr");
+        auto ir_string_from_char_function = string_type->static_function_dict["__from_char_ptr"];
+        PRAJNA_ASSERT(ir_string_from_char_function);
         // 内建函数, 无需动态判断调用是否合法, 若使用错误会触发ir::Call里的断言
-        return this->Create<ir::Call>(ir_string_from_char_pat,
+        return this->Create<ir::Call>(ir_string_from_char_function,
                                       std::list<std::shared_ptr<ir::Value>>{ir_c_string_address});
     }
 
@@ -258,7 +255,7 @@ class IrBuilder {
         auto ir_type = ir_object->type;
 
         auto ir_variable_liked = this->VariableLikedNormalize(ir_object);
-        if (auto member_function = this->GetImplementFunction(ir_type, member_name)) {
+        if (auto member_function = this->GetMemberFunction(ir_type, member_name)) {
             auto ir_this_pointer = this->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             return ir::MemberFunctionWithThisPointer::Create(ir_this_pointer, member_function);
         }
@@ -282,7 +279,7 @@ class IrBuilder {
     std::shared_ptr<ir::Call> CallMemberFunction(
         std::shared_ptr<ir::Value> ir_object, std::string member_function,
         std::list<std::shared_ptr<ir::Value>> ir_arguments) {
-        auto ir_member_function = this->GetImplementFunction(ir_object->type, member_function);
+        auto ir_member_function = this->GetMemberFunction(ir_object->type, member_function);
         PRAJNA_ASSERT(ir_member_function);
         return this->CallMemberFunction(ir_object, ir_member_function, ir_arguments);
     }
@@ -304,8 +301,8 @@ class IrBuilder {
             {"!", "not"}, {"+", "positive"}, {"-", "negative"}};
         PRAJNA_ASSERT(unary_operator_map.count(unary_operator_name));
 
-        return this->GetImplementFunction(ir_type,
-                                          "__" + unary_operator_map[unary_operator_name] + "__");
+        return this->GetMemberFunction(ir_type,
+                                       "__" + unary_operator_map[unary_operator_name] + "__");
     }
 
     std::shared_ptr<ir::Function> GetBinaryOperator(std::shared_ptr<ir::Type> ir_type,
@@ -321,8 +318,8 @@ class IrBuilder {
             {"%", "remaind"},  {"&", "and"},
             {"|", "or"},       {"^", "xor"}};
 
-        return this->GetImplementFunction(ir_type,
-                                          "__" + binary_operator_map[binary_operator_name] + "__");
+        return this->GetMemberFunction(ir_type,
+                                       "__" + binary_operator_map[binary_operator_name] + "__");
     }
 
     std::shared_ptr<ir::Call> CallBinaryOperator(std::shared_ptr<ir::Value> ir_object,

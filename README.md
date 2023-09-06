@@ -71,12 +71,12 @@ func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
         var local_b: Array<f32, 1024>;
         local_a[thread_x* 32 + thread_y] = A[global_x, thread_y + i * block_size];
         local_b[thread_x* 32 + thread_y] = B[thread_x + i * block_size , global_y];
-        ::gpu::BlockBarrier();
+        ::gpu::BlockSynchronize();
 
         for j in 0 to 32 {
           sum = sum + local_a[thread_x * 32 + j] * local_b[j * 32 + thread_y];
         }
-        ::gpu::BlockBarrier();
+        ::gpu::BlockSynchronize();
     }
 
     C[global_x, global_y] = sum;
@@ -102,7 +102,7 @@ func Main() {
     for i in 0 to epoch {
       MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
     }
-    cuda::cudaDeviceSynchronize(); // 后面会改为更为通用的名字
+    gpu::Synchronize(); // 后面会改为更为通用的名字
 
     var t1 = chrono::Clock();
     t0.PrintLine();

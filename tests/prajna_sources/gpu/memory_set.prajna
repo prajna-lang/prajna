@@ -22,8 +22,8 @@ func TestKernel(){
     var epoch = 100;
     for i in 0 to epoch {
         myKernel<|grid_shape, block_shape|>(gpu_tensor);
-        cuda::cudaDeviceSynchronize();
     }
+    gpu::Synchronize();
     var t1 = chrono::Clock();
 
     t1.PrintLine();

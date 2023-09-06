@@ -8,7 +8,7 @@ func myKernel(tensor: gpu::Tensor<i64, 1>){
     @shared
     var tmp : Array<i64, 1>;
     tmp[thread_idx_x] = thread_idx_x;
-    gpu::BlockBarrier();
+    gpu::BlockSynchronize();
     tensor.data[thread_idx_x] = tmp[thread_idx_x];
 }
 

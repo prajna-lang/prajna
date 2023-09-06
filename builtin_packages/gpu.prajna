@@ -163,7 +163,12 @@ func __warp_size()->u32;
 
 @target("nvptx")
 @intrinsic("llvm.nvvm.barrier0")
-func BlockBarrier();
+func BlockSynchronize();
+
+@target("nvptx")
+func Synchronize() {
+    cuda::cudaDeviceSynchronize();
+}
 
 @inline
 @target("nvptx")

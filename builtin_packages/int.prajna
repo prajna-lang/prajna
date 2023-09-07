@@ -1,5 +1,4 @@
-
-
+use hash::Hash;
 template <Bits>
 implement Uint<Bits> {
     @static
@@ -26,4 +25,40 @@ implement Int<Bits> {
     func Min()->Int<Bits>{
         return !Int<Bits>::Max();
     }
+}
+
+implement Hash<i16> {
+  func __call__(v: i16)->i64 {
+    var hash: i64 = 5381;
+    var int_bits = cast<i16, i64>(v);
+    hash = ((hash * 32) + hash) + int_bits;
+    return hash;
+  }
+}
+
+implement Hash<i32> {
+  func __call__(v: i32)->i64 {
+    var hash: i64 = 5381;
+    var int_bits = cast<i32, i64>(v);
+    hash = ((hash * 32) + hash) + int_bits;
+    return hash;
+  }
+}
+
+implement Hash<i64> {
+  func __call__(v: i64)->i64 {
+    var hash: i64 = 5381;
+    
+    hash = ((hash * 32) + hash) + v;
+    return hash;
+  }
+}
+
+implement Hash<i128> {
+  func __call__(v: i128)->i64 {
+    var hash: i64 = 5381;
+    var int_bits = cast<i128, i64>(v);
+    hash = ((hash * 32) + hash) + int_bits;
+    return hash;
+  }
 }

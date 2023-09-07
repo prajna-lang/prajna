@@ -1,3 +1,4 @@
+use hash::Hash;
 template <Bits>
 implement Float<Bits> {
     func Abs()->Float<Bits> {
@@ -189,4 +190,31 @@ implement FloatScientificPrinter<FloatType> {
         str_re = str_re + "e" + exp.ToString();
         return str_re;
     }
+}
+
+implement Hash<f16> {
+  func __call__(v: f16)->i64 {
+    var hash: i64 = 5381;
+    var int_bits = cast<f16,i64>(v);
+    hash = ((hash * 32) + hash) + int_bits;
+    return hash;
+  }
+}
+
+implement Hash<f32> {
+  func __call__(v: f32)->i64 {
+    var hash: i64 = 5381;
+    var int_bits = cast<f32,i64>(v);
+    hash = ((hash * 32) + hash) + int_bits;
+    return hash;
+  }
+}
+
+implement Hash<f64> {
+  func __call__(v: f64)->i64 {
+    var hash: i64 = 5381;
+    var int_bits = cast<f64,i64>(v);
+    hash = ((hash * 32) + hash) + int_bits;
+    return hash;
+  }
 }

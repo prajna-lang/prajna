@@ -1,3 +1,4 @@
+use hash::Hash;
 struct String{
     darray: DynamicArray<char>;
 }
@@ -106,5 +107,28 @@ implement String{
 implement String{
     func __not_equal__(rhs_str: String) -> bool{
          return !(this == rhs_str);
+    }
+}
+
+implement Hash<String> {
+    func __call__(v: String)->i64 {
+        var hash: i64 = 5381;
+
+        for x in 0 to v.Length(){
+            var int_bits = cast<char, i64>(v.__get_linear_index__(x));
+            hash = ((hash * 16) + hash) + int_bits; 
+        }
+       return hash % i64::Max();
+    }
+}
+ 
+implement Hash<char> {
+    func __call__(v: char)->i64 {
+        var hash: i64 = 5381;
+
+        var int_bits = cast<char, i64>(v);
+        hash = ((hash * 32) + hash) + int_bits; 
+
+       return hash;
     }
 }

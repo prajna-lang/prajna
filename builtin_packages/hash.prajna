@@ -1,0 +1,14 @@
+//先实现简单的平方哈希
+template <T>
+struct Hash{}
+
+template <T>
+implement Hash<T> {
+    func __call__(v: T)->i64 {
+        return 0;
+    }
+}
+
+
+
+

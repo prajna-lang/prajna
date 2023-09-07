@@ -57,6 +57,7 @@ use list::List;
 use dict::ListDict;
 use hashdict::HashDict;
 
+use hash::Hash;
 use stack::Stack;
 use optional::Optional;
 

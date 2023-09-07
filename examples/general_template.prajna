@@ -1,0 +1,15 @@
+// template PointTemplate <Type> {
+//     struct Point {
+//         x: Type;
+//         y: Type;
+//     }
+// }
+
+// use PointTemplate<i64>;
+
+
+// func Main() {
+//     var point: PointTemplate<i64>::Point;
+//     point.x = 0;
+//     point.y = 0;
+// }

@@ -2,11 +2,16 @@ func Main() {
     var f = (){
         "Hello World!".PrintLine();
     };
-
     f();
 
     var add = (a: i64, b: i64)->i64 {
         return a + b;
     };
     add(2, 3).PrintLine();
+
+    var x = 100;
+    var capture_add = (v: i64)->i64 {
+        return v + x; // closure会自行捕获所使用的值, 这里我们捕获了x.
+    };
+    capture_add(10).PrintLine();
 }

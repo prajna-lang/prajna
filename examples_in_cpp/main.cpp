@@ -19,6 +19,7 @@ int main() {
     ts(1, 1) = 5;
     ts(1, 2) = 6;
 
+    // 获取Prajna里的函数地址
     auto matrix_add_f32 = reinterpret_cast<MatrixF32 (*)(MatrixF32 *, MatrixF32 *, MatrixF32 *)>(
         compiler->GetSymbolValue("::examples::prajna_in_cpp::add::matrixAddF32"));
 

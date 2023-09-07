@@ -1,8 +1,8 @@
 use ::gpu::*;
 use ::gpu::Tensor<f32, 2> as GpuMatrixf32;
 
-@kernel
-@target("nvptx")
+@kernel // 标注核函数
+@target("nvptx") // 标注平台
 func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
     var thread_x = ::gpu::ThreadIndex()[1];
     var thread_y = ::gpu::ThreadIndex()[2];

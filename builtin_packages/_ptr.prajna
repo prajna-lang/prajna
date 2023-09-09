@@ -22,12 +22,12 @@ implement ptr<Type> {
         this = ptr<Type>::Null();
     }
 
-    func _ToInt64()->i64{
+    func ToInt64()->i64{
         return cast<ptr<Type>, i64>(this);
     }
 
     func IsNull()->bool{
-        return this._ToInt64() == 0;
+        return this.ToInt64() == 0;
     }
 
     func IsValid()->bool {
@@ -39,7 +39,7 @@ implement ptr<Type> {
     }
 
     func __equal__(operand: ptr<Type>) -> bool {
-        return this._ToInt64() == operand._ToInt64();
+        return this.ToInt64() == operand.ToInt64();
     }
 
     func __not_equal__(operand: ptr<Type>) -> bool {
@@ -87,8 +87,8 @@ implement Ptr<Type>{
         return self;
     }
 
-    func _ToInt64()->i64{
-        return this.raw_ptr._ToInt64();
+    func ToInt64()->i64{
+        return this.raw_ptr.ToInt64();
     }
 
     // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
@@ -140,7 +140,7 @@ implement Ptr<Type>{
     }
 
     func __equal__(operand: Ptr<Type>) -> bool {
-        return this._ToInt64() == operand._ToInt64();
+        return this.ToInt64() == operand.ToInt64();
     }
 
     func __not_equal__(operand: Ptr<Type>) -> bool {

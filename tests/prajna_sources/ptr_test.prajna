@@ -3,9 +3,9 @@
 @test
 func TestMain(){
     var p: Ptr<i64>;
-    p._ToInt64();
+    p.ToInt64();
 
-    test::Assert(p._ToInt64() == 0i64);
+    test::Assert(p.ToInt64() == 0i64);
     // test::Assert(p == Ptr<i64>::Null());
     test::Assert(p.IsNull());
 
@@ -16,9 +16,9 @@ func TestMain(){
 @test
 func TestLocal() {
     var p: Ptr<i64>;
-    p._ToInt64();
+    p.ToInt64();
 
-    test::Assert(p._ToInt64() == 0i64);
+    test::Assert(p.ToInt64() == 0i64);
     test::Assert(p.IsNull());
     {
        var p1 = Ptr<i64>::New();

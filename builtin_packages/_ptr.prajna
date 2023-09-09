@@ -88,7 +88,7 @@ implement Ptr<Type>{
     }
 
     func _ToInt64()->i64{
-        return cast<ptr<Type>, i64>(this.raw_ptr);
+        return this.raw_ptr._ToInt64();
     }
 
     // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
@@ -110,7 +110,7 @@ implement Ptr<Type>{
     }
 
     func IsNull()->bool{
-        return this._ToInt64() == 0;
+        return this.raw_ptr.IsNull();
     }
 
     func IsValid()->bool {
@@ -162,13 +162,15 @@ implement Ptr<Type>{
     func __finalize__() {
         *this._reference_counter = *this._reference_counter - 1;
         if (*this._reference_counter == 0){
-            if (!this.IsNull()) {
+            if (this.IsNull()) {
                 for i in 0 to this.size {
                     finalize<Type>(&this.raw_ptr[i]);
                 }
 
                 this.raw_ptr.Free();
-                this._reference_counter.Free();
+                if (this._reference_counter.IsValid()) { // 这里有bug, 释放的顺序有问题, 存在二次释放的问题, 回头修复
+                    this._reference_counter.Free();
+                }
             }
         }
     }

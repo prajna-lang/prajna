@@ -19,8 +19,8 @@ endif()
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
-# llvm compiler-rt不支持"Linux", 所以需要改为"linxu-gnu"
 if (UNIX AND NOT APPLE)
+    # llvm compiler-rt不支持"Linux", 所以需要改为"linxu-gnu"
     set(CMAKE_SYSTEM_NAME "linux-gnu")
 
     # llvm compiler-rt需要, 交叉编译需要重新设置

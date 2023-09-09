@@ -31,6 +31,10 @@ if (UNIX AND NOT APPLE)
     target_link_libraries(prajna_jit PUBLIC clang_rt.builtins-${CMAKE_SYSTEM_PROCESSOR})
 endif()
 
+if (MSVC) 
+    target_link_libraries(prajna_jit PUBLIC clang_rt.builtins-x86_64.lib)
+endif()
+
 # https://github.com/fxcoudert/gfortran-for-macOS/releases
 # 对于mac平台, 需要下载安装gfortran. 因为jigt运行时float128会依赖下面的动态库
 if (APPLE AND UNIX)

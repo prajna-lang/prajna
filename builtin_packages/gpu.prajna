@@ -166,7 +166,7 @@ func __warp_size()->u32;
 func BlockSynchronize();
 
 func Synchronize() {
-    cuda::cudaDeviceSynchronize();
+    cuda::cuStreamSynchronize(0);
 }
 
 @inline

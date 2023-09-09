@@ -1,11 +1,6 @@
-// @ref /usr/local/cuda/include/cuda.h
-#link("libcudart");
-#link("libcuda");
-
-// cuda driver api
-
-// CUdevice -> i32
-// Curesult -> i32
+#link("libcudart.so", "linux", "absolute");
+#link("libcuda.so", "linux", "absolute");
+#link("cudart64_12.dll", "win", "absolute"); // 注意cuda版本， 可能需要修改版本号
 
 @extern
 func cuInit(flag:i32)->i32;
@@ -24,6 +19,9 @@ func cuLaunchKernel(kernel_fun_ptr: ptr<i8>, gridDimX : u32, gridDimY: u32, grid
 
 @extern
 func cudaDeviceSynchronize()->i32;
+
+@extern
+func cuStreamSynchronize(stream: i64)->i32;
 
 // cuda runtime api
 

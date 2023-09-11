@@ -31,7 +31,7 @@ if (UNIX AND NOT APPLE)
     target_link_libraries(prajna_jit PUBLIC clang_rt.builtins-${CMAKE_SYSTEM_PROCESSOR})
 endif()
 
-if (MSVC) 
+if (MSVC)
     add_library(clang_rt_whole INTERFACE)
     set_property(TARGET clang_rt_whole PROPERTY INTERFACE_LINK_LIBRARIES
     -WHOLEARCHIVE:$<TARGET_FILE:clang_rt.builtins-x86_64>)

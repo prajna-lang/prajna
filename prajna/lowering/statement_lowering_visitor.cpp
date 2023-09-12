@@ -229,10 +229,10 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
 
     // 链接
     if (ast_pragma.name == "link") {
-        if (ast_pragma.values.size() != 1) {
-            logger->Error("#link should have one value");
+        if (ast_pragma.values.size() < 1) {
+            logger->Error("#link should have at least one value");
         }
-        auto dynamic_lib_name = ast_pragma.values.front().value;
+
         // 或者libs的路径
         std::string os_prefix;
         std::string lib_extension;
@@ -246,13 +246,35 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
         lib_extension = ".so";
         os_prefix = "linux";
 #endif
-
+        auto dynamic_lib_name = ast_pragma.values.front().value;
         std::filesystem::path dynamic_lib_path(dynamic_lib_name);
-        auto dynamic_lib_fullname =
-            (std::filesystem::current_path() / this->ir_builder->symbol_table->directory_path /
-             "libs" / os_prefix / dynamic_lib_name)
-                .string() +
-            lib_extension;
+        std::string dynamic_lib_fullname;
+
+        if (ast_pragma.values.size() >= 2) {
+            auto current_os = std::next(ast_pragma.values.begin())->value;
+            if (current_os != os_prefix) {
+                return nullptr;
+            }
+        }
+
+        bool is_absolute = false;
+        if (ast_pragma.values.size() >= 2) {
+            if (std::next(ast_pragma.values.begin(), 2)->value == "absolute") {
+                is_absolute = true;
+            }
+        }
+
+        // 如果是相对路径就到目录下去找
+        if (!is_absolute) {
+            dynamic_lib_fullname =
+                (std::filesystem::current_path() / this->ir_builder->symbol_table->directory_path /
+                 "libs" / os_prefix / dynamic_lib_name)
+                    .string() +
+                lib_extension;
+        } else {
+            dynamic_lib_fullname = dynamic_lib_name;
+        }
+
         if (!this->compiler->jit_engine->LoadDynamicLib(dynamic_lib_fullname)) {
             this->logger->Error(fmt::format("failed to link dynamic lib {}", dynamic_lib_fullname),
                                 ast_pragma);

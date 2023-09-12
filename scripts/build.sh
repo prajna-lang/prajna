@@ -16,5 +16,5 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ];then
 else
 # Windows NT操作系统
     threads=8
-    cmake --build . --target install
+    cmake --build . --target install  --config Release # windows系统需要自己修改下配置， 外面的测试是不起作用的
 fi

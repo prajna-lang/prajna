@@ -54,13 +54,14 @@ class Type : public Named {
 
     virtual bool IsFirstClass() { return true; }
 
-    std::shared_ptr<Function> GetImplementFunction(std::string member_function_name);
+    std::shared_ptr<Function> GetMemberFunction(std::string member_function_name);
 
    public:
     // @ref https://llvm.org/docs/LangRef.html#langref-datalayout bytes是多少可参阅datalyout的描述
     size_t bytes = 0;
 
-    std::unordered_map<std::string, std::shared_ptr<Function>> function_dict;
+    std::unordered_map<std::string, std::shared_ptr<Function>> member_function_dict;
+    std::unordered_map<std::string, std::shared_ptr<Function>> static_function_dict;
     std::unordered_map<std::string, std::any> template_any_dict;
     std::unordered_map<std::string, std::shared_ptr<InterfaceImplement>> interface_dict;
     // fields必须有顺序关系, 故没有使用map

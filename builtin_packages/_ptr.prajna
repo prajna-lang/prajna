@@ -19,14 +19,15 @@ implement ptr<Type> {
 
     func Free() {
         bindings::free(bit_cast<ptr<Type>, ptr<undef>>(this));
+        this = ptr<Type>::Null();
     }
 
-    func _ToInt64()->i64{
+    func ToInt64()->i64{
         return cast<ptr<Type>, i64>(this);
     }
 
     func IsNull()->bool{
-        return this._ToInt64() == 0;
+        return this.ToInt64() == 0;
     }
 
     func IsValid()->bool {
@@ -36,24 +37,19 @@ implement ptr<Type> {
     func __arrow__()->ptr<Type> {
         return this;
     }
-}
 
-template <Type>
-implement ptr<Type> {
     func __equal__(operand: ptr<Type>) -> bool {
-        return this._ToInt64() == operand._ToInt64();
+        return this.ToInt64() == operand.ToInt64();
     }
-}
 
-
-template <Type>
-implement ptr<Type> {
     func __not_equal__(operand: ptr<Type>) -> bool {
         return !(this == operand);
     }
+
+    func __initialize__() {
+        this = ptr<Type>::Null();
+    }
 }
-
-
 
 template <Type>
 struct Ptr{
@@ -91,8 +87,8 @@ implement Ptr<Type>{
         return self;
     }
 
-    func _ToInt64()->i64{
-        return cast<ptr<Type>, i64>(this.raw_ptr);
+    func ToInt64()->i64{
+        return this.raw_ptr.ToInt64();
     }
 
     // 因为内存计数是直接通过指针地址来记录的. 所以只要他们有相同的机制, 那么指针的传输, 转变不会导致错误.
@@ -114,7 +110,7 @@ implement Ptr<Type>{
     }
 
     func IsNull()->bool{
-        return this._ToInt64() == 0;
+        return this.raw_ptr.IsNull();
     }
 
     func IsValid()->bool {
@@ -133,10 +129,7 @@ implement Ptr<Type>{
     func __arrow__()->ptr<Type> {
         return this.raw_ptr;
     }
-}
 
-template <Type>
-implement Ptr<Type> {
     @inline
     func __get_linear_index__(index: i64)->Type {
         return  this.raw_ptr[index];
@@ -145,37 +138,15 @@ implement Ptr<Type> {
     func __set_linear_index__(index: i64, value: Type) {
         this.raw_ptr[index] = value;
     }
-}
 
-template <Type>
-implement Ptr<Type> {
-    func __copy__() {
-        *this._reference_counter = *this._reference_counter + 1;
+    func __equal__(operand: Ptr<Type>) -> bool {
+        return this.ToInt64() == operand.ToInt64();
     }
 
-    func __finialize__() {
-
-        if (this._reference_counter.IsNull()){
-            return;
-        }
-
-        *this._reference_counter = *this._reference_counter - 1;
-        if (*this._reference_counter == 0){
-            if (!this.IsNull()) {
-                for i in 0 to this.size {
-                    finalize<Type>(&this.raw_ptr[i]);
-                }
-
-                this.raw_ptr.Free();
-                // this._reference_counter.Free(); // 循环里的变量会多次被destroy, 故不能释放
-                this.raw_ptr = ptr<Type>::Null();
-            }
-        }
+    func __not_equal__(operand: Ptr<Type>) -> bool {
+        return !(this == operand);
     }
-}
 
-template <Type>
-implement Ptr<Type> {
     func __initialize__() {
         this.raw_ptr = ptr<Type>::Null();
         // 需要申请, 判断的时候需要用到
@@ -183,19 +154,24 @@ implement Ptr<Type> {
         this.size = 0;
         *this._reference_counter = 1;
     }
-}
 
-template <Type>
-implement Ptr<Type> {
-    func __equal__(operand: Ptr<Type>) -> bool {
-        return this._ToInt64() == operand._ToInt64();
+    func __copy__() {
+        *this._reference_counter = *this._reference_counter + 1;
     }
-}
 
+    func __finalize__() {
+        *this._reference_counter = *this._reference_counter - 1;
+        if (*this._reference_counter == 0){
+            if (this.IsNull()) {
+                for i in 0 to this.size {
+                    finalize<Type>(&this.raw_ptr[i]);
+                }
 
-template <Type>
-implement Ptr<Type> {
-    func __not_equal__(operand: Ptr<Type>) -> bool {
-        return !(this == operand);
+                this.raw_ptr.Free();
+                if (this._reference_counter.IsValid()) { // 这里有bug, 释放的顺序有问题, 存在二次释放的问题, 回头修复
+                    this._reference_counter.Free();
+                }
+            }
+        }
     }
 }

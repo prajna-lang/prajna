@@ -25,7 +25,7 @@
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
 
-#ifdef __linux__
+#if defined(__linux__) || defined(WIN32)
 extern "C" uint16_t __truncdfhf2(double);
 extern "C" uint16_t __floattihf(int64_t[2]);
 extern "C" uint16_t __floatuntihf(uint64_t[2]);
@@ -141,12 +141,21 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
         llvm::raw_fd_ostream llvm_fs(file_base + ".ll", err_code);
         ir_sub_module->llvm_module->print(llvm_fs, nullptr);
         llvm_fs.close();
+#ifdef _WIN32
+        auto llc_exe = boost::dll::program_location().parent_path() / "llc.exe";
+#else
         auto llc_exe = boost::dll::program_location().parent_path() / "llc";
+#endif
         std::string llc_cmd = fmt::format("{} {file_base}.ll -o {file_base}.ptx", llc_exe.string(),
                                           fmt::arg("file_base", file_base));
         PRAJNA_VERIFY(std::system(llc_cmd.c_str()) == 0);
 
+#ifdef _WIN32
+        boost::dll::shared_library cuda_so("C:\\Windows\\System32\\nvcuda.dll");
+#else
         boost::dll::shared_library cuda_so("/usr/lib/x86_64-linux-gnu/libcuda.so");
+#endif
+
         auto cu_init = cuda_so.get<int(int)>("cuInit");
         cu_init(0);
 
@@ -200,7 +209,7 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print");
     this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input");
 
-#ifdef __linux__
+#if defined(__linux__) || defined(WIN32)
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
     // this->BindCFunction(reinterpret_cast<void *>(__floattihf), "__floattihf");
     // this->BindCFunction(reinterpret_cast<void *>(__floatuntihf), "__floatuntihf");

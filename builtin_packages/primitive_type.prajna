@@ -16,35 +16,22 @@ template ArithmeticTemplate <RealNumberType> {
         func __add__(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
             return __add<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __sub__(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
             return __sub<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __multiply__(operand: RealNumberType<Bits>)->RealNumberType<Bits>{
             return __mul<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __divide__(operand: RealNumberType<Bits>)->RealNumberType<Bits>{
             return __div<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __remaind__(operand: RealNumberType<Bits>)->RealNumberType<Bits>{
             return __rem<RealNumberType<Bits>>(this, operand);
@@ -60,10 +47,7 @@ template EqualableTemplate <RealNumberType> {
         func __equal__(operand: RealNumberType<Bits>)->bool {
             return __eq<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __not_equal__(operand: RealNumberType<Bits>)->bool{
             return __ne<RealNumberType<Bits>>(this, operand);
@@ -79,42 +63,27 @@ template ComparableTemplate <RealNumberType> {
         func __equal__(operand: RealNumberType<Bits>)->bool {
             return __eq<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __not_equal__(operand: RealNumberType<Bits>)->bool{
             return __ne<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __greater__(operand: RealNumberType<Bits>)->bool{
             return __gt<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __less__(operand: RealNumberType<Bits>)->bool{
             return __lt<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __greater_or_equal__(operand: RealNumberType<Bits>)->bool {
             return __ge<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __less_or_equal__(operand: RealNumberType<Bits>)->bool {
             return __le<RealNumberType<Bits>>(this, operand);
@@ -129,26 +98,17 @@ template LogicalableTemplate <RealNumberType> {
         func __and__(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
             return __and<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __or__(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
             return __or<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __xor__(operand: RealNumberType<Bits>)->RealNumberType<Bits> {
             return __xor<RealNumberType<Bits>>(this, operand);
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits> {
         @inline
         func __not__()->RealNumberType<Bits> {
             // var _true = (-1).Cast<RealNumberType<Bits>>(); 不能这样转, 意味-1是64位的, 转128位就出错了
@@ -174,30 +134,22 @@ template ArithmeticTemplate2 <Type> {
         func __add__(operand: Type)->Type {
             return __add<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __sub__(operand: Type)->Type {
             return __sub<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __multiply__(operand: Type)->Type{
             return __mul<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __divide__(operand: Type)->Type{
             return __div<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __remaind__(operand: Type)->Type{
             return __rem<Type>(this, operand);
@@ -211,9 +163,7 @@ template EqualableTemplate2 <Type> {
         func __equal__(operand: Type)->bool {
             return __eq<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __not_equal__(operand: Type)->bool{
             return __ne<Type>(this, operand);
@@ -228,37 +178,27 @@ template ComparableTemplate2 <Type> {
         func __equal__(operand: Type)->bool {
             return __eq<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __not_equal__(operand: Type)->bool{
             return __ne<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __greater__(operand: Type)->bool{
             return __gt<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __less__(operand: Type)->bool{
             return __lt<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __greater_or_equal__(operand: Type)->bool {
             return __ge<Type>(this, operand);
         }
-    }
 
-    implement Type {
         @inline
         func __less_or_equal__(operand: Type)->bool {
             return __le<Type>(this, operand);
@@ -272,23 +212,17 @@ template LogicalableTemplate2 <T> {
         func __and__(operand: T)->T {
             return __and<T>(this, operand);
         }
-    }
 
-    implement T {
         @inline
         func __or__(operand: T)->T {
             return __or<T>(this, operand);
         }
-    }
 
-    implement T {
         @inline
         func __xor__(operand: T)->T {
             return __xor<T>(this, operand);
         }
-    }
 
-    implement T {
         @inline
         func __not__()->T {
             var _true = (-1).Cast<T>();
@@ -305,10 +239,7 @@ template NegativeAndPositiveTemplate <RealNumberType> {
             var zero = 0i64.Cast<RealNumberType<Bits>>();
             return zero - this;
         }
-    }
 
-    template <Bits>
-    implement RealNumberType<Bits>{
         @inline
         func __positive__()->RealNumberType<Bits> {
             return this;
@@ -324,9 +255,7 @@ template NegativeAndPositiveTemplate2 <Type> {
             var zero = 0i64.Cast<Type>();
             return zero - this;
         }
-    }
 
-    implement Type{
         @inline
         func __positive__()->Type {
             return this;

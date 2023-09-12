@@ -18,7 +18,7 @@ implement Tmp {
 
     template <T>
     @static
-    func create2()->T {
+    func Create2()->T {
         var tmp: T;
         return tmp;
     }
@@ -34,15 +34,16 @@ func TestMain() {
 
     var tmp: Tmp;
     tmp.Create<f32>();
-    Tmp::create2<f32>();
-    // Tmp::Create<f32>();
+    Tmp::Create2<f32>();
     var t = f32::Sin;
 }
+
+use Float<32>;
 
 @test
 func TestScopeAccess() {
     var f0 = Tmp::Create<f32>;
-    var f1 = Tmp::create2<f16>;
+    var f1 = Tmp::Create2<f16>;
     var f2 = f32::Sin;
     var f3 = f32::Cos;
     f2 = f32::Sin;

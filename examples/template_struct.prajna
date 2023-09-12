@@ -1,4 +1,4 @@
-template <ValueType>
+template <ValueType> // ValueType为模板参数
 struct Point{
     x: ValueType;
     y: ValueType;
@@ -12,8 +12,8 @@ implement Point<ValueType> { // Point需要带上模板参数, 不可省略的.
 }
 
 func Main() {
-    var point: Point<f32>;
-    point.x = 1.0;
-    point.y = 2.0;
-    point.Norm2().PrintLine();
+    var point_f32: Point<f32>;
+    point_f32.x = 1.0;
+    point_f32.y = 2.0;
+    point_f32.Norm2().PrintLine();
 }

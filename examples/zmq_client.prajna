@@ -1,23 +1,16 @@
-use examples::zmq::*;
+use examples::zmq;
 
 func Main() {
     "Connecting to hello world server…".PrintLine();
-    var context = zmq_ctx_new ();
-    var requester = zmq_socket (context, 3i32);
+    var socket: zmq::Socket;
+    socket.Init(3i32);
     var ip = "tcp://localhost:5555";
-    var rc = zmq_connect (requester, ip.CStringRawPointer());
-    debug::Assert(rc == 0i32);
+    socket.Bind(ip);
 
     for request_nbr in 0 to 10 {
-        var buffer: array<char, 10>;
-        "Sending Hello ".Print();
-        request_nbr.PrintLine();
-        var hello = "Hello";
-        zmq_send (requester, hello.CStringRawPointer(), 5, 0i32);
-        zmq_recv (requester, &buffer[0], 10, 0i32);
-        "Received World ".Print();
-        request_nbr.PrintLine();
+        socket.Send("Hello");
+        var word = socket.Receive(5);
+        "Received ".PrintLine();
+        word.PrintLine();
     }
-    zmq_close (requester);
-    zmq_ctx_destroy (context);
 }

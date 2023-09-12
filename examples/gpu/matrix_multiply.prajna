@@ -1,8 +1,8 @@
 use ::gpu::*;
 use ::gpu::Tensor<f32, 2> as GpuMatrixf32;
 
-@kernel
-@target("nvptx")
+@kernel // 标注核函数
+@target("nvptx") // 标注平台
 func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
     var thread_x = ::gpu::ThreadIndex()[1];
     var thread_y = ::gpu::ThreadIndex()[2];
@@ -21,12 +21,12 @@ func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
         var local_b: Array<f32, 1024>;
         local_a[thread_x* 32 + thread_y] = A[global_x, thread_y + i * block_size];
         local_b[thread_x* 32 + thread_y] = B[thread_x + i * block_size , global_y];
-        ::gpu::BlockBarrier();
+        ::gpu::BlockSynchronize();
 
         for j in 0 to 32 {
           sum = sum + local_a[thread_x * 32 + j] * local_b[j * 32 + thread_y];
         }
-        ::gpu::BlockBarrier();
+        ::gpu::BlockSynchronize();
     }
 
     C[global_x, global_y] = sum;
@@ -45,7 +45,7 @@ func Main() {
     var C = GpuMatrixf32::Create([a_shape[0], b_shape[1]]);
 
     MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
-    cuda::cudaDeviceSynchronize(); // 后面会改为更为通用的名字
+    gpu::Synchronize(); // 后面会改为更为通用的名字
 
     var epoch = 300;
     var t0 = chrono::Clock();
@@ -53,7 +53,7 @@ func Main() {
     for i in 0 to epoch {
       MatrixMultiply<|grid_shape, block_shape|>(A, B, C); // 核函数调用, 语法和cuda相比有所改进.
     }
-    cuda::cudaDeviceSynchronize(); // 后面会改为更为通用的名字
+    gpu::Synchronize(); // 后面会改为更为通用的名字
 
     var t1 = chrono::Clock();
     t0.PrintLine();

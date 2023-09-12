@@ -35,10 +35,6 @@ implement HashDict<KeyType,ValueType> {
       this.buckets[i] = ptr<HashDictNode<KeyType, ValueType>>::Null();
     }
   }
-}
-
-template <KeyType,ValueType>
-implement HashDict<KeyType, ValueType> {
 
   func IsEmpty() -> bool {
     return this.count==0;

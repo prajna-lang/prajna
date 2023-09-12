@@ -58,6 +58,10 @@ implement String{
         this[this.Length()] = '\0';
     }
 
+    func Resize(length: i64) {
+        this.darray.Resize(length + 1);
+    }
+
     func PrintLine() {
         this.Push('\n');
         this.Print();

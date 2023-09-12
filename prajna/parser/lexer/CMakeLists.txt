@@ -5,5 +5,6 @@ target_link_libraries(prajna_lexer
     PUBLIC Boost::spirit
 )
 
-
-target_compile_options(prajna_lexer INTERFACE "$<$<CONFIG:RELEASE>:-O0;-finline>")
+if (NOT MSVC) 
+    target_compile_options(prajna_lexer INTERFACE "$<$<CONFIG:RELEASE>:-O0;-finline>")
+endif()

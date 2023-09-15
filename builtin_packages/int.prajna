@@ -1,4 +1,4 @@
-
+use hash::Hash;
 
 template <Bits>
 implement Uint<Bits> {
@@ -27,3 +27,23 @@ implement Int<Bits> {
         return !Int<Bits>::Max();
     }
 }
+
+
+
+template HashTemplate<RealNumberType,Bits> {
+    implement Hash<RealNumberType<Bits>> {
+        func __call__(v: RealNumberType<Bits>) -> i64 {
+            var hash: i64 = 5381;
+            var int_bits = cast<RealNumberType<Bits>, i64>(v);
+            hash = ((hash * 32) + hash) + int_bits;
+            return hash;
+        }
+    }    
+}
+
+use HashTemplate<Int,8>;
+use HashTemplate<Int,16>;
+use HashTemplate<Int,32>;
+use HashTemplate<Int,64>;
+use HashTemplate<Int,128>;
+

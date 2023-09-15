@@ -1,3 +1,4 @@
+use hash::Hash;
 struct String{
     darray: DynamicArray<char>;
 }
@@ -112,3 +113,18 @@ implement String{
          return !(this == rhs_str);
     }
 }
+
+template HashTemplate<Type> {
+    implement Hash<Type> {
+        func __call__(v: Type) -> i64 {
+            var hash: i64 = 5381;
+            for x in 0 to v.Length(){
+                var int_bits = cast<char, i64>(v.__get_linear_index__(x));
+                hash = ((hash * 16) + hash) + int_bits; 
+            }
+            return hash % i64::Max();
+        }
+    }    
+}
+
+use HashTemplate<String>;

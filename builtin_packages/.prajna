@@ -41,6 +41,7 @@ use string::String;
 
 use serializable::Serializable;
 use serialize;
+use hash::Hashable;
 
 func ExitWithMessage(msg: String) {
     msg.PrintLine();
@@ -57,7 +58,6 @@ use list::List;
 use dict::ListDict;
 use hashdict::HashDict;
 
-use hash::Hash;
 use stack::Stack;
 use optional::Optional;
 

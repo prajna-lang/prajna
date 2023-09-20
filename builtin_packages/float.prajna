@@ -1,4 +1,3 @@
-use hash::Hash;
 template <Bits>
 implement Float<Bits> {
     func Abs()->Float<Bits> {
@@ -192,17 +191,3 @@ implement FloatScientificPrinter<FloatType> {
     }
 }
 
-template HashTemplate<RealNumberType,Bits> {
-    implement Hash<RealNumberType<Bits>> {
-        func __call__(v: RealNumberType<Bits>) -> i64 {
-            var hash: i64 = 5381;
-            var int_bits = cast<RealNumberType<Bits>, i64>(v);
-            hash = ((hash * 32) + hash) + int_bits;
-            return hash;
-        }
-    }    
-}
-
-use HashTemplate<Float,16>;
-use HashTemplate<Float,32>;
-use HashTemplate<Float,64>;

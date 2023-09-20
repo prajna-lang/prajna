@@ -1,9 +1,54 @@
-template <T>
-struct Hash{}
+interface Hashable{ 
+    func Hash()->i64;
+}
 
-template <T>
-implement Hash<T> {
-    func __call__(v: T)->i64 {
-        return 1;
+implement Hashable for char{
+    func Hash()->i64{
+        var hash: i64 = 5381;
+        var int_bits = cast<char, i64>(this);
+        hash = ((hash * 16) + hash) + int_bits; 
+        return hash;
     }
 }
+
+implement Hashable for bool{
+    func Hash()->i64{
+        var hash: i64 = 5381;        
+        var int_bits = cast<bool, i64>(this);
+        hash = ((hash * 16) + hash) + int_bits; 
+        return hash;
+    }
+}
+
+template <Bits>
+implement Hashable for Int<Bits>{
+    func Hash()->i64{
+        var hash: i64 = 5381;        
+        var int_bits = cast<Int<Bits>, i64>(this);
+        hash = ((hash * 32) + hash) + int_bits; 
+        return hash;
+    }
+}
+
+template <Bits>
+implement Hashable for Float<Bits>{
+    func Hash()->i64{
+        var hash: i64 = 5381;        
+        var int_bits = cast<Float<Bits>, i64>(this);
+        hash = ((hash * 32) + hash) + int_bits; 
+        return hash;
+    }
+}
+
+implement Hashable for String{
+    func Hash()->i64{
+        var hash: i64 = 5381;
+        for x in 0 to this.Length(){
+            var int_bits = cast<char, i64>(this.__get_linear_index__(x));
+            hash = ((hash * 16) + hash) + int_bits; 
+        }
+        return hash;
+    }
+}
+
+

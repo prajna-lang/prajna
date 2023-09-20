@@ -1,4 +1,3 @@
-use hash::Hash;
 template CastableTemplate <RealNumberType> {
     template <Bits>
     implement RealNumberType<Bits> {
@@ -264,17 +263,6 @@ template NegativeAndPositiveTemplate2 <Type> {
     }
 }
 
-template HashTemplate<RealNumberType> {
-    implement Hash<RealNumberType> {
-        func __call__(v: RealNumberType) -> i64 {
-            var hash: i64 = 5381;
-            var int_bits = cast<RealNumberType, i64>(v);
-            hash = ((hash * 16) + hash) + int_bits; 
-            return hash;
-        }
-    }    
-}
-
 use CastableTemplate<Int>;
 use ArithmeticTemplate<Int>;
 use ComparableTemplate<Int>;
@@ -304,5 +292,3 @@ use NegativeAndPositiveTemplate2<char>;
 // use ComparableTemplate2<bool>;
 use LogicalableTemplate2<bool>;
 
-use HashTemplate<char>;
-use HashTemplate<bool>;

@@ -1,25 +1,14 @@
 @test
 func Test1() {
-    var tmp: Hash<i64>;
-    tmp(3).PrintLine();
+    3i64.Hash().ToString().PrintLine();
+    2i32.Hash().ToString().PrintLine();
 
-    var tmp1: Hash<i32>;
-    tmp1(2i32).PrintLine();
+    4.0f64.Hash().ToString().PrintLine();
+    3.1f32.Hash().ToString().PrintLine();
 
-    var tmp2: Hash<f64>;
-    tmp2(4.0f64).PrintLine();
-
-    var tmp3: Hash<f32>;
-    tmp3(3.1f32).PrintLine();
-
-    var tmp4: Hash<char>;
-    tmp4('b').PrintLine();
-
-    var tmp5: Hash<String>;
-    tmp5("hello").PrintLine();
-
-    var tmp6: Hash<bool>;
-    tmp6(true).PrintLine();
+    'b'.Hash().ToString().PrintLine();
+    "hello".Hash().ToString().PrintLine();
+    true.Hash().ToString().PrintLine();
 }
 
 

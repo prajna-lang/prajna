@@ -1,26 +1,14 @@
-template <T>
-struct Hash{}
-
-template <T>
-implement Hash<T> {
-    func __call__(v: T)->i64 {
-        return 1;
-    }
-}
-
-implement Hash<i64> {
-    func __call__(v: i64)->i64 {
-        return v;
-    }
-}
-
-
 @test
 func Test1() {
-    var tmp: Hash<i64>;
-    tmp(3).PrintLine();
-    var tmp2: Hash<f32>;
-    tmp2(3.0f32).PrintLine();
+    3i64.Hash().ToString().PrintLine();
+    2i32.Hash().ToString().PrintLine();
+
+    4.0f64.Hash().ToString().PrintLine();
+    3.1f32.Hash().ToString().PrintLine();
+
+    'b'.Hash().ToString().PrintLine();
+    "hello".Hash().ToString().PrintLine();
+    true.Hash().ToString().PrintLine();
 }
 
 

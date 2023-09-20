@@ -292,5 +292,3 @@ use NegativeAndPositiveTemplate2<char>;
 // use ComparableTemplate2<bool>;
 use LogicalableTemplate2<bool>;
 
-
-

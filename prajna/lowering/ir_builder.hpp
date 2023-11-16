@@ -4,8 +4,8 @@
 #include <unordered_map>
 
 #include "prajna/ir/ir.hpp"
+#include "prajna/logger.hpp"
 #include "prajna/lowering/builtin.hpp"
-#include "prajna/lowering/expression_lowering_visitor.hpp"
 #include "prajna/lowering/symbol_table.hpp"
 #include "prajna/lowering/template.hpp"
 

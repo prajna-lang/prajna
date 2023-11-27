@@ -187,7 +187,7 @@ class ExpressionLoweringVisitor {
                     *identifier_path.identifiers.front().template_arguments_optional);
 
                 auto ir_member_function = Cast<ir::Function>(
-                    SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
+                    SymbolGet<ir::Value>(lowering_member_function_template->Instantiate(
                         symbol_template_arguments, ir_builder->module)));
                 PRAJNA_ASSERT(ir_member_function);
 
@@ -557,7 +557,7 @@ class ExpressionLoweringVisitor {
                             auto symbol_template_argumen_list = this->ApplyTemplateArguments(
                                 *iter_ast_identifier->template_arguments_optional);
                             auto ir_function = Cast<ir::Function>(
-                                SymbolGet<ir::Value>(lowering_member_function_template->instantiate(
+                                SymbolGet<ir::Value>(lowering_member_function_template->Instantiate(
                                     symbol_template_argumen_list, ir_builder->module)));
                             PRAJNA_ASSERT(ir_function);
                             return ir_function;
@@ -616,7 +616,7 @@ class ExpressionLoweringVisitor {
                                 }
 
                                 if (auto tempate_ = SymbolGet<Template>(symbol)) {
-                                    return tempate_->instantiate(symbol_template_arguments,
+                                    return tempate_->Instantiate(symbol_template_arguments,
                                                                  ir_builder->module);
                                 }
 

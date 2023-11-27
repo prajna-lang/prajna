@@ -68,11 +68,11 @@ func TestFor(){
     }
 
     {
-        // var first = [0, 0];
-        // var last = [10, 10];
-        // for idx in first to last {
-        //     idx.ToString().Print();
-        // }
+        var first = [0, 0];
+        var last = [10, 10];
+        for idx in first to last {
+            idx.ToString().Print();
+        }
     }
 }
 

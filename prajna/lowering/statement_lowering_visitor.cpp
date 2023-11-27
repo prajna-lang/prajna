@@ -156,7 +156,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                 }
             }
             if (auto tempate_ = SymbolGet<Template>(symbol)) {
-                symbol = tempate_->instantiate(symbol_template_arguments, ir_builder->module);
+                symbol = tempate_->Instantiate(symbol_template_arguments, ir_builder->module);
             }
         }
 

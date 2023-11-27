@@ -50,3 +50,12 @@ implement Array<Type, Length_> {
     }
 }
 
+template <Length_>
+func __ArrayOne()->Array<i64, Length_> {
+    var re: Array<i64, Length_>;
+    for i in 0 to re.Length() {
+        re[i] = 1;
+    }
+
+    return re;
+}

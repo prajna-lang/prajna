@@ -50,7 +50,7 @@ class IrBuilder {
         auto symbol_list =
             std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments_any);
         if (ir_type->template_struct == array_template_struct) {
-            return SymbolGet<ir::Value>(symbol_list.front())->type == this->GetI64Type();
+            return SymbolGet<ir::Type>(symbol_list.front()) == this->GetI64Type();
         }
 
         return false;
@@ -199,6 +199,12 @@ class IrBuilder {
         this->InstantiateTypeImplements(ir_type);
 
         return ir_type->GetMemberFunction(member_name);
+    }
+
+    std::shared_ptr<ir::Function> GetStaticFunction(std::shared_ptr<ir::Type> ir_type,
+                                                    std::string member_function_name) {
+        this->InstantiateTypeImplements(ir_type);
+        return ir_type->static_function_dict[member_function_name];
     }
 
     std::shared_ptr<ir::Value> GetString(std::string str) {

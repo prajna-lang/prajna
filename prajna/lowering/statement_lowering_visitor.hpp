@@ -538,7 +538,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto ir_last = expression_lowering_visitor->Apply(ast_for.last);
         if (ir_last->type != ir_builder->GetI64Type() &&
             !ir_builder->IsArrayI64Type(ir_last->type)) {
-            logger->Error("the index type must be i64 || i64 array", ast_for.last);
+            logger->Error("the index type must be i64 or i64 array", ast_for.last);
         }
         if (ir_last->type != ir_first->type) {
             logger->Error("the last firt type are not matched", ast_for.first);
@@ -1411,7 +1411,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             auto template_cast =
                 SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"cast"}));
-            auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->instantiate(
+            auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->Instantiate(
                 {ir_interface_implement_function0->type, ir_tmp_builder->GetI64Type()},
                 ir_tmp_builder->module));
             auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
@@ -1503,7 +1503,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             auto template_cast =
                 SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"cast"}));
-            auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->instantiate(
+            auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->Instantiate(
                 {ir_interface_implement_function0->type, ir_tmp_builder->GetI64Type()},
                 ir_tmp_builder->module));
             auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(

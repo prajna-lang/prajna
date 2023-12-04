@@ -50,7 +50,7 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteral ast_int_literal) {
-        return ir_builder->GetIndexConstant(ast_int_literal.value);
+        return ir_builder->GetInt64Constant(ast_int_literal.value);
     };
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteralPostfix ast_int_literal_postfix) {
@@ -237,7 +237,7 @@ class ExpressionLoweringVisitor {
             logger->Error("index should have one argument at least", ast_binary_operation.operand);
         }
         auto ir_index = ir_arguments.front();
-        if (ir_index->type != ir_builder->GetI64Type()) {
+        if (ir_index->type != ir_builder->GetInt64Type()) {
             logger->Error(
                 fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
@@ -514,7 +514,7 @@ class ExpressionLoweringVisitor {
                                return this->ApplyIdentifierPath(ast_identifier_path);
                            },
                            [=](ast::IntLiteral ast_int_literal) -> Symbol {
-                               return ir::ConstantInt::Create(ir_builder->GetI64Type(),
+                               return ir::ConstantInt::Create(ir_builder->GetInt64Type(),
                                                               ast_int_literal.value);
                            }},
                 ast_template_argument);
@@ -645,8 +645,8 @@ class ExpressionLoweringVisitor {
                 // template parameter could be a ConstantInt.
                 [ir_builder = this->ir_builder](std::shared_ptr<ir::ConstantInt> ir_constant_int)
                     -> std::shared_ptr<ir::Value> {
-                    PRAJNA_ASSERT(ir_constant_int->type == ir_builder->GetI64Type());
-                    return ir_builder->GetIndexConstant(ir_constant_int->value);
+                    PRAJNA_ASSERT(ir_constant_int->type == ir_builder->GetInt64Type());
+                    return ir_builder->GetInt64Constant(ir_constant_int->value);
                 },
                 [=](auto x) {
                     logger->Error(fmt::format("use invalid symbol as a value"),
@@ -663,7 +663,7 @@ class ExpressionLoweringVisitor {
         auto ir_value_type = ir_first_value->type;
         std::list<Symbol> symbol_template_arguments;
         symbol_template_arguments.push_back(ir_value_type);
-        symbol_template_arguments.push_back(ir_builder->GetIndexConstant(ast_array_values.size()));
+        symbol_template_arguments.push_back(ir_builder->GetInt64Constant(ast_array_values.size()));
 
         auto symbol_array = ir_builder->symbol_table->Get("Array");
         PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
@@ -681,7 +681,7 @@ class ExpressionLoweringVisitor {
             if (ir_value->type != ir_value_type) {
                 logger->Error("the array element type are not the same", ast_array_value);
             }
-            auto ir_index = ir_builder->GetIndexConstant(i);
+            auto ir_index = ir_builder->GetInt64Constant(i);
             auto ir_array_tmp_this_pointer =
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_tmp);
             auto ir_access_property = ir_builder->Create<ir::AccessProperty>(

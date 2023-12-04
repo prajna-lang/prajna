@@ -30,10 +30,10 @@ class IrBuilder {
 
     static std::shared_ptr<IrBuilder> Create() { return Create(nullptr, nullptr, nullptr); }
 
-    std::shared_ptr<ir::Type> GetI64Type() { return ir::IntType::Create(ir::ADDRESS_BITS, true); }
+    std::shared_ptr<ir::Type> GetInt64Type() { return ir::IntType::Create(ir::ADDRESS_BITS, true); }
 
-    std::shared_ptr<ir::ConstantInt> GetIndexConstant(int64_t value) {
-        auto ir_value = this->Create<ir::ConstantInt>(GetI64Type(), value);
+    std::shared_ptr<ir::ConstantInt> GetInt64Constant(int64_t value) {
+        auto ir_value = this->Create<ir::ConstantInt>(GetInt64Type(), value);
         return ir_value;
     }
 
@@ -50,7 +50,7 @@ class IrBuilder {
         auto symbol_list =
             std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments_any);
         if (ir_type->template_struct == array_template_struct) {
-            return SymbolGet<ir::Type>(symbol_list.front()) == this->GetI64Type();
+            return SymbolGet<ir::Type>(symbol_list.front()) == this->GetInt64Type();
         }
 
         return false;
@@ -80,7 +80,7 @@ class IrBuilder {
 
         std::list<Symbol> symbol_template_arguments;
         symbol_template_arguments.push_back(ir_type);
-        symbol_template_arguments.push_back(this->GetIndexConstant(length));
+        symbol_template_arguments.push_back(this->GetInt64Constant(length));
 
         auto symbol_array = this->GetSymbolByPath(false, {"Array"});
         auto array_template = SymbolGet<TemplateStruct>(symbol_array);
@@ -89,7 +89,9 @@ class IrBuilder {
         return ir_shape3_type;
     }
 
-    std::shared_ptr<ir::Type> GetShape3Type() { return this->GetArrayType(this->GetI64Type(), 3); }
+    std::shared_ptr<ir::Type> GetShape3Type() {
+        return this->GetArrayType(this->GetInt64Type(), 3);
+    }
 
     std::shared_ptr<ir::Type> GetManagedPtrType(std::shared_ptr<ir::Type> ir_value_type) {
         auto symbol_ptr = this->GetSymbolByPath(false, {"Ptr"});
@@ -137,6 +139,20 @@ class IrBuilder {
         return nullptr;
     }
 
+    std::shared_ptr<ir::Value> GetThisPointer(std::shared_ptr<ir::Value> ir_this_object) {
+        auto ir_this_object_tmp_variable = this->VariableLikedNormalize(ir_this_object);
+        return this->Create<ir::GetAddressOfVariableLiked>(ir_this_object_tmp_variable);
+    }
+
+    std::shared_ptr<ir::AccessProperty> AccessArrayIndex(
+        std::shared_ptr<ir::Value> ir_this_object, std::shared_ptr<ir::Value> ir_array_index) {
+        auto ir_this_pointer = this->GetThisPointer(ir_this_object);
+        auto ir_array_index_access = this->Create<ir::AccessProperty>(
+            ir_this_object, this->GetArrayIndexProperty(ir_this_object->type));
+        ir_array_index_access->Arguments({ir_array_index});
+        return ir_array_index_access;
+    }
+
     std::shared_ptr<ir::WriteProperty> SetDim3(std::shared_ptr<ir::Value> ir_shape3, int64_t index,
                                                std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(this->IsArrayI64Type(ir_shape3->type));
@@ -146,7 +162,7 @@ class IrBuilder {
         auto ir_shape3_variable_liked = this->VariableLikedNormalize(ir_shape3);
         auto ir_array_tmp_this_pointer =
             this->Create<ir::GetAddressOfVariableLiked>(ir_shape3_variable_liked);
-        auto ir_index = this->GetIndexConstant(index);
+        auto ir_index = this->GetInt64Constant(index);
         auto ir_access_property =
             this->Create<ir::AccessProperty>(ir_array_tmp_this_pointer, ir_index_property);
         ir_access_property->Arguments({ir_index});
@@ -220,7 +236,7 @@ class IrBuilder {
         ir_inits.back() = this->Create<ir::ConstantChar>('\0');
         auto ir_c_string_constant = this->Create<ir::ConstantArray>(ir_char_string_type, ir_inits);
         auto ir_c_string_variable = this->VariableLikedNormalize(ir_c_string_constant);
-        auto ir_constant_zero = this->GetIndexConstant(0);
+        auto ir_constant_zero = this->GetInt64Constant(0);
         auto ir_c_string_index0 =
             this->Create<ir::IndexArray>(ir_c_string_variable, ir_constant_zero);
         auto ir_c_string_address = this->Create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);
@@ -388,7 +404,7 @@ class IrBuilder {
         this->SetSymbol(symbol, ast_identifier);
     }
 
-    std::shared_ptr<ir::Function> createFunction(
+    std::shared_ptr<ir::Function> CreateFunction(
         ast::Identifier ast_identifier, std::shared_ptr<ir::FunctionType> ir_function_type) {
         auto ir_function = ir::Function::Create(ir_function_type);
         // 函数必须指定名字, 否则其在module里的名字会混乱和重复

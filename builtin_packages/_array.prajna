@@ -59,3 +59,8 @@ func __ArrayOne()->Array<i64, Length_> {
 
     return re;
 }
+
+template <Row_, Column_>
+func __CacluateArrayIndex(Array<Array<i64, Column_>, Row_> A, Array<i64, Row_> B, Array<i64, Column_> Index) {
+    return prod(A, Index) + B;
+}

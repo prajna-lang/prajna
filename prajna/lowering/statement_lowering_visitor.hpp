@@ -385,7 +385,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         auto ir_function_type = ir::FunctionType::Create(ir_argument_types, return_type);
 
-        auto ir_function = ir_builder->createFunction(ast_function_header.name, ir_function_type);
+        auto ir_function = ir_builder->CreateFunction(ast_function_header.name, ir_function_type);
         ir_function->annotation_dict = this->ApplyAnnotations(ast_function_header.annotation_dict);
 
         // 加入interface里
@@ -536,7 +536,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
     Symbol operator()(ast::For ast_for) {
         auto ir_first = expression_lowering_visitor->Apply(ast_for.first);
         auto ir_last = expression_lowering_visitor->Apply(ast_for.last);
-        if (ir_last->type != ir_builder->GetI64Type() &&
+        if (ir_last->type != ir_builder->GetInt64Type() &&
             !ir_builder->IsArrayI64Type(ir_last->type)) {
             logger->Error("the index type must be i64 or i64 array", ast_for.last);
         }
@@ -696,7 +696,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 };
 
             // 创建接口动态类型生成函数
-            ir_interface->dynamic_type_creator = ir_builder->createFunction(
+            ir_interface->dynamic_type_creator = ir_builder->CreateFunction(
                 std::string("dynamic_type_creator"),
                 ir::FunctionType::Create({ir_builder->GetManagedPtrType(ir_type)},
                                          ir_interface->prototype->dynamic_type));
@@ -768,7 +768,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 auto ir_undef_this_pointer_function_type =
                     ir::FunctionType::Create(ir_undef_this_pointer_function_argument_types,
                                              ir_function->function_type->return_type);
-                auto ir_undef_this_pointer_function = ir_builder->createFunction(
+                auto ir_undef_this_pointer_function = ir_builder->CreateFunction(
                     ir_function->name + "/undef", ir_undef_this_pointer_function_type);
 
                 ir_interface->undef_this_pointer_functions.insert(
@@ -1038,7 +1038,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_target_type = SymbolGet<ir::Type>(symbol_template_arguments.back());
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::Create({ir_source_type}, ir_target_type);
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "cast" + GetTemplateArgumentsPostify(symbol_template_arguments), ir_function_type);
             ir_function->annotation_dict["inline"];
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
@@ -1185,7 +1185,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_module->functions.push_back(ir_intrinsic_function);
 
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "__" + intrinsic_name + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
@@ -1301,7 +1301,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::Create({ir_source_type}, ir_target_type);
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "bit_cast" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
@@ -1348,7 +1348,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_value_type);
             auto ir_function_type =
                 ir::FunctionType::Create({ir_pointer_type}, ir_interface_prototype->dynamic_type);
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "__as" + GetTemplateArgumentsPostify(symbol_template_arguments), ir_function_type);
             ir_function->annotation_dict["inline"];
 
@@ -1396,7 +1396,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
             auto ir_function_type =
                 ir::FunctionType::Create({ir_interface_prototype->dynamic_type}, ir_pointer_type);
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "__dynamic_cast" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
@@ -1412,7 +1412,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto template_cast =
                 SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"cast"}));
             auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->Instantiate(
-                {ir_interface_implement_function0->type, ir_tmp_builder->GetI64Type()},
+                {ir_interface_implement_function0->type, ir_tmp_builder->GetInt64Type()},
                 ir_tmp_builder->module));
             auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
                 ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
@@ -1488,7 +1488,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_pointer_type = ir_tmp_builder->GetManagedPtrType(ir_target_value_type);
             auto ir_function_type = ir::FunctionType::Create({ir_interface_prototype->dynamic_type},
                                                              ir::BoolType::Create());
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "__dynamic_is" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
@@ -1504,7 +1504,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto template_cast =
                 SymbolGet<Template>(ir_tmp_builder->GetSymbolByPath(true, {"cast"}));
             auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->Instantiate(
-                {ir_interface_implement_function0->type, ir_tmp_builder->GetI64Type()},
+                {ir_interface_implement_function0->type, ir_tmp_builder->GetInt64Type()},
                 ir_tmp_builder->module));
             auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
                 ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
@@ -1541,14 +1541,14 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             // 的确存在为零的情况, 比如没有字段的结构
             // PRAJNA_ASSERT(ir_type->bytes > 0);
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
-            auto ir_function_type = ir::FunctionType::Create({}, ir_builder->GetI64Type());
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function_type = ir::FunctionType::Create({}, ir_builder->GetInt64Type());
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "sizeof" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
 
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
-            ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->GetIndexConstant(ir_type->bytes));
+            ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->GetInt64Constant(ir_type->bytes));
             return ir_function;
         };
 
@@ -1642,7 +1642,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function_type =
                 ir::FunctionType::Create({ir_type, ir_type}, ir::BoolType::Create());
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "__" + compare_operation_name +
                     GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
@@ -1762,7 +1762,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::Create({ir_type, ir_type}, ir_type);
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "__" + binary_operator_name +
                     GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
@@ -1814,7 +1814,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     break;
             }
             auto is_neg_name = is_negative ? std::string("_negative") : "";
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 ir_function_name_prefix + is_neg_name +
                     GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
@@ -1848,7 +1848,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::Create({ir::PointerType::Create(ir_type)},
                                                              ir::VoidType::Create());
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "initialize" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
@@ -1886,7 +1886,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function_type = ir::FunctionType::Create({ir::PointerType::Create(ir_type)},
                                                              ir::VoidType::Create());
-            auto ir_function = ir_tmp_builder->createFunction(
+            auto ir_function = ir_tmp_builder->CreateFunction(
                 "finalize" + GetTemplateArgumentsPostify(symbol_template_arguments),
                 ir_function_type);
             ir_function->annotation_dict["inline"];
@@ -2126,7 +2126,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_member_function_type = ir::FunctionType::Create(
                 ir_member_function_argument_types, ir_function->function_type->return_type);
             auto ir_member_function =
-                ir_builder->createFunction(ir_function->name + "/member", ir_member_function_type);
+                ir_builder->CreateFunction(ir_function->name + "/member", ir_member_function_type);
             ir_member_function->name = ir_function->name;
             ir_member_function->fullname = ir_function->fullname;
 

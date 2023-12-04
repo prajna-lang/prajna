@@ -139,7 +139,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             // 创建用于记录迭代的变量,
             auto ir_first_sub_one = ir_builder->Create<ir::BinaryOperator>(
                 ir::BinaryOperator::Operation::Sub, ir_for->First(),
-                ir_builder->GetIndexConstant(1));
+                ir_builder->GetInt64Constant(1));
             auto ir_index_count = ir_builder->CloneValue(ir_first_sub_one);
 
             auto ir_label_condition_entry = ir::Label::Create();
@@ -149,7 +149,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             // insertCallMemmberFunction会插入ir_condition
             auto ir_index_count_add_one = ir_builder->Create<ir::BinaryOperator>(
                 ir::BinaryOperator::Operation::Add, ir_index_count,
-                ir_builder->GetIndexConstant(1));
+                ir_builder->GetInt64Constant(1));
             ir_builder->Create<ir::WriteVariableLiked>(ir_index_count_add_one, ir_index_count);
             auto ir_condition = ir_builder->Create<ir::CompareInstruction>(
                 ir::CompareInstruction::Operation::ICMP_SLT, ir_index_count, ir_for->Last());

@@ -89,7 +89,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         }
     }
 
-    auto ir_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetI64Type());
+    auto ir_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetInt64Type());
     ir_index->name = "i";
     for (auto inst_with_idx : Clone(ir_gpu_for->IndexVariable()->instruction_with_index_list)) {
         auto ir_instruction = inst_with_idx.instruction;
@@ -178,7 +178,7 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
             lowering::SymbolGet<ir::Value>(symbol_table_gpu->Get("MultiProcessorsCount"));
         PRAJNA_ASSERT(ir_multi_processor_count_function);
 
-        auto ir_zero = ir_builder->GetIndexConstant(0);
+        auto ir_zero = ir_builder->GetInt64Constant(0);
         auto ir_max_thread_per_block = ir_builder->Create<ir::Call>(
             ir_max_thread_per_block_function, std::list<std::shared_ptr<ir::Value>>{ir_zero});
         auto ir_multi_process_count = ir_builder->Create<ir::Call>(
@@ -186,13 +186,13 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
 
         auto ir_grid_shape = ir_builder->Create<ir::LocalVariable>(ir_builder->GetShape3Type());
         ir_builder->SetDim3(ir_grid_shape, 0, ir_multi_process_count);
-        ir_builder->SetDim3(ir_grid_shape, 1, ir_builder->GetIndexConstant(1));
-        ir_builder->SetDim3(ir_grid_shape, 2, ir_builder->GetIndexConstant(1));
+        ir_builder->SetDim3(ir_grid_shape, 1, ir_builder->GetInt64Constant(1));
+        ir_builder->SetDim3(ir_grid_shape, 2, ir_builder->GetInt64Constant(1));
 
         auto ir_block_shape = ir_builder->Create<ir::LocalVariable>(ir_builder->GetShape3Type());
         ir_builder->SetDim3(ir_block_shape, 0, ir_max_thread_per_block);
-        ir_builder->SetDim3(ir_block_shape, 1, ir_builder->GetIndexConstant(1));
-        ir_builder->SetDim3(ir_block_shape, 2, ir_builder->GetIndexConstant(1));
+        ir_builder->SetDim3(ir_block_shape, 1, ir_builder->GetInt64Constant(1));
+        ir_builder->SetDim3(ir_block_shape, 2, ir_builder->GetInt64Constant(1));
 
         std::list<std::shared_ptr<ir::Value>> ir_arguments;
         ir_arguments.push_back(ir_gpu_for->First());

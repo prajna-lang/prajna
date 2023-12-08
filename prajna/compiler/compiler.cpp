@@ -98,6 +98,14 @@ std::shared_ptr<ir::Module> Compiler::CompileCode(
     return ir_lowering_module;
 }
 
+void Compiler::GenLlvm(std::shared_ptr<ir::Module> ir_module) {
+    auto ir_ssa_module = prajna::transform::transform(ir_module);
+    auto ir_codegen_module = prajna::codegen::LlvmCodegen(ir_ssa_module, ir::Target::host);
+    ir_codegen_module->llvm_module->dump();
+    auto ir_llvm_optimize_module = prajna::codegen::LlvmPass(ir_codegen_module);
+    jit_engine->AddIRModule(ir_llvm_optimize_module);
+}
+
 void Compiler::ExecuteCodeInRelp(std::string script_code) {
     try {
         static int command_id = 0;
@@ -216,7 +224,8 @@ std::shared_ptr<ir::Module> Compiler::CompileProgram(
         return nullptr;
     }
 
-    auto current_symbol_table = CreateSymbolTableTree(_symbol_table, prajna_source_package_path.string());
+    auto current_symbol_table =
+        CreateSymbolTableTree(_symbol_table, prajna_source_package_path.string());
     current_symbol_table->directory_path =
         prajna_directory_path / current_symbol_table->directory_path;
 

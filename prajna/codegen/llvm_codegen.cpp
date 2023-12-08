@@ -721,9 +721,12 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
         llvm::SMDiagnostic err;
 #ifdef _WIN32
         auto uq_llvm_libdevice_module = llvm::parseIRFile(
-            "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.2\\nvvm\\libdevice\\libdevice.10.bc", err, static_llvm_context);
+            "C:\\Program Files\\NVIDIA GPU Computing "
+            "Toolkit\\CUDA\\v12.2\\nvvm\\libdevice\\libdevice.10.bc",
+            err, static_llvm_context);
         PRAJNA_ASSERT(uq_llvm_libdevice_module,
-                      "\"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.2\\nvvm\\libdevice\\libdevice.10.bc\" is not found");
+                      "\"C:\\Program Files\\NVIDIA GPU Computing "
+                      "Toolkit\\CUDA\\v12.2\\nvvm\\libdevice\\libdevice.10.bc\" is not found");
 #else
         auto uq_llvm_libdevice_module = llvm::parseIRFile(
             "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc", err, static_llvm_context);

@@ -28,3 +28,28 @@ func TestProperty(){
 
     people.Age;
 }
+
+struct Group{
+    _leader: People;
+}
+
+implement Group{
+    func __get__Leader()->People {
+        return this._leader;
+    }
+
+    func __set__Leader(v: People) {
+        this._leader = v;
+    }
+}
+
+@test
+func TestNestedProperty() {
+    var group: Group;
+    group._leader._age = 1;
+    // TODO(zhangzhimin)
+    /*
+    */
+    group.Leader.Age = 3;
+    test::Assert(group._leader.Age == 1);
+}

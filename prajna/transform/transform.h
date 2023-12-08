@@ -52,7 +52,6 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
         ir_builder->PushBlock(ir_block);
         ir_builder->inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
 
-        bool unused = ir_access_property->instruction_with_index_list.empty();
         for (auto instruction_with_index : Clone(ir_access_property->instruction_with_index_list)) {
             auto ir_inst = instruction_with_index.instruction;
             size_t op_idx = instruction_with_index.operand_index;
@@ -82,6 +81,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
             }
         }
 
+        bool unused = ir_access_property->instruction_with_index_list.empty();
         if (unused) {
             auto ir_arguments = ir_access_property->Arguments();
             ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());

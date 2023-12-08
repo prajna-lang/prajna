@@ -37,6 +37,11 @@ class IrBuilder {
         return ir_value;
     }
 
+    std::shared_ptr<ir::ConstantInt> GetInt64Constant2(int64_t value) {
+        auto ir_value = ir::ConstantInt::Create(GetInt64Type(), value);
+        return ir_value;
+    }
+
     std::shared_ptr<ir::LocalVariable> CloneValue(std::shared_ptr<ir::Value> ir_value) {
         auto ir_local_variable = this->Create<ir::LocalVariable>(ir_value->type);
         this->Create<ir::WriteVariableLiked>(ir_value, ir_local_variable);
@@ -147,10 +152,21 @@ class IrBuilder {
     std::shared_ptr<ir::AccessProperty> AccessArrayIndex(
         std::shared_ptr<ir::Value> ir_this_object, std::shared_ptr<ir::Value> ir_array_index) {
         auto ir_this_pointer = this->GetThisPointer(ir_this_object);
-        auto ir_array_index_access = this->Create<ir::AccessProperty>(
-            ir_this_object, this->GetArrayIndexProperty(ir_this_object->type));
+        auto ir_array_index_access =
+            this->Create<ir::AccessProperty>(this->GetThisPointer(ir_this_object),
+                                             this->GetArrayIndexProperty(ir_this_object->type));
         ir_array_index_access->Arguments({ir_array_index});
         return ir_array_index_access;
+    }
+
+    std::shared_ptr<ir::AccessProperty> AccessLinearIndex(
+        std::shared_ptr<ir::Value> ir_this_object, std::shared_ptr<ir::Value> ir_linear_index) {
+        auto ir_this_pointer = this->GetThisPointer(ir_this_object);
+        auto ir_linear_index_access =
+            this->Create<ir::AccessProperty>(this->GetThisPointer(ir_this_object),
+                                             this->GetLinearIndexProperty(ir_this_object->type));
+        ir_linear_index_access->Arguments({ir_linear_index});
+        return ir_linear_index_access;
     }
 
     std::shared_ptr<ir::WriteProperty> SetDim3(std::shared_ptr<ir::Value> ir_shape3, int64_t index,

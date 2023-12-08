@@ -64,7 +64,12 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
                 auto ir_arguments = ir_access_property->Arguments();
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
                 ir_arguments.push_back(ir_write_property->Value());
-                auto ir_setter_call = ir_builder->Create<ir::Call>(
+                // 需要在write操作前插入
+                auto ir_tmp_builder = lowering::IrBuilder::Create();
+                ir_tmp_builder->PushBlock(ir_block);
+                ir_tmp_builder->inserter_iterator =
+                    std::find(RANGE(ir_block->values), ir_write_property);
+                auto ir_setter_call = ir_tmp_builder->Create<ir::Call>(
                     ir_access_property->property->set_function, ir_arguments);
                 utility::RemoveFromParent(ir_write_property);
                 ir_write_property->Finalize();

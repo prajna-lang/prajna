@@ -61,6 +61,14 @@ func __ArrayOne()->Array<i64, Length_> {
 }
 
 template <Row_, Column_>
-func __CacluateArrayIndex(Array<Array<i64, Column_>, Row_> A, Array<i64, Row_> B, Array<i64, Column_> Index) {
-    return prod(A, Index) + B;
+func __CacluateArrayIndex(A: Array<Array<i64, Column_>, Row_>, B: Array<i64, Row_>, Index: Array<i64, Column_>) -> Array<i64, Row_> {
+    var re: Array<i64, Row_>;
+    for i in 0 to Row_ {
+        re[i] = B[i];
+        for j in 0 to Column_ {
+            re[i] = re[i] + A[i][j] * Index[j];
+        }
+    }
+
+    return re;
 }

@@ -48,6 +48,8 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
                                             std::shared_ptr<lowering::SymbolTable> symbol_table,
                                             std::string file_name, bool is_interpreter);
 
+    void GenLlvm(std::shared_ptr<ir::Module> ir_module);
+
     void BindBuiltinFunctions();
 
     void ExecuteCodeInRelp(std::string command_line_code);

@@ -20,6 +20,27 @@ class Array {
     Type_& operator[](i64 offset) { return data[offset]; }
 };
 
+template <typename Type>
+struct Ptr {
+    Type* raw_ptr;
+    size_t size;
+    size_t* _reference_counter;
+
+    static Ptr<Type> Allocate(size_t size) {
+        Ptr<Type> self;
+        self.raw_ptr = new Type[size];
+        self.size = size;
+
+        self._reference_counter = new size_t;
+        *self._reference_counter = 1;
+        return self;
+    }
+
+    Type& operator[](size_t offset) { return this->raw_ptr[offset]; }
+
+    // ~Ptr() { delete[] this->raw_ptr; }
+};
+
 template <i64 Dim_>
 class Layout {
    public:
@@ -68,7 +89,7 @@ class Layout {
 template <typename Type_, i64 Dim_>
 class Tensor {
    public:
-    Type_* data = nullptr;
+    Ptr<Type_> data;
     Layout<Dim_> layout;
 
    protected:
@@ -79,9 +100,9 @@ class Tensor {
         Tensor<Type_, Dim_> self;
         self.layout = Layout<Dim_>::Create(shape);
 
-        auto bytes = self.layout.Length() * sizeof(Type_);
-        self.data = reinterpret_cast<Type_*>(malloc(bytes));
+        self.data = Ptr<Type_>::Allocate(self.layout.Length());
 
+        // TODO(zhangzhimin): 初始化和释放还没有处理
         // RegisterReferenceCount(self.data);
         // __copy__(self.data);
 

@@ -1,12 +1,17 @@
 
-func helloWorld(ts: Array<i64, 8>*){
-    ts->ToString().Print();
+func HelloWorld(){
+    "Hello World!\n".Print();
 }
 
-func matrixAddF32(p_ts0: Tensor<f32, 2> *, p_ts1: Tensor<f32, 2>*, p_ts_re: Tensor<f32, 2>*){
+func MatrixAddF32(p_ts0: ptr<Tensor<f32, 2>>, p_ts1: ptr<Tensor<f32, 2>>, p_ts_re: ptr<Tensor<f32, 2>>){
     var ts0 = *p_ts0;
     var ts1 = *p_ts1;
     var ts_re = *p_ts_re;
+    for i in 0 to ts0.layout.shape[0] {
+        for j in 0 to ts0.layout.shape[1] {
+            ts_re[i, j] = ts0[i, j] + ts1[i, j];
+        }
+    }
     for idx in [0, 0] to ts0.layout.shape{
         ts_re.At(idx) = ts0.At(idx) + ts1.At(idx);
     }

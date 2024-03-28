@@ -151,7 +151,6 @@ class IrBuilder {
 
     std::shared_ptr<ir::AccessProperty> AccessArrayIndex(
         std::shared_ptr<ir::Value> ir_this_object, std::shared_ptr<ir::Value> ir_array_index) {
-        auto ir_this_pointer = this->GetThisPointer(ir_this_object);
         auto ir_array_index_access =
             this->Create<ir::AccessProperty>(this->GetThisPointer(ir_this_object),
                                              this->GetArrayIndexProperty(ir_this_object->type));
@@ -161,7 +160,6 @@ class IrBuilder {
 
     std::shared_ptr<ir::AccessProperty> AccessLinearIndex(
         std::shared_ptr<ir::Value> ir_this_object, std::shared_ptr<ir::Value> ir_linear_index) {
-        auto ir_this_pointer = this->GetThisPointer(ir_this_object);
         auto ir_linear_index_access =
             this->Create<ir::AccessProperty>(this->GetThisPointer(ir_this_object),
                                              this->GetLinearIndexProperty(ir_this_object->type));

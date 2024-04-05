@@ -133,7 +133,13 @@ class LlvmCodegen {
                                return field->type->llvm_type;
                            });
             llvm_struct_type->setBody(llvm_types, true);
-
+            return;
+        }
+        if (auto ir_simd_type = Cast<ir::SimdType>(ir_type)) {
+            this->EmitType(ir_simd_type->value_type);
+            ir_simd_type->llvm_type =
+                llvm::VectorType::get(ir_simd_type->value_type->llvm_type,
+                                      llvm::ElementCount::getFixed(ir_simd_type->size));
             return;
         }
 

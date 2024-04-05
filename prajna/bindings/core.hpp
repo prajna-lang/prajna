@@ -122,7 +122,7 @@ class Tensor {
         // }
     }
 
-    const Type_& at(Array<i64, Dim_> idx) const {
+    Type_& at(Array<i64, Dim_> idx) const {
         i64 offset = this->layout.ArrayIndexToLinearIndex(idx);
         return this->data[offset];
     }
@@ -133,7 +133,7 @@ class Tensor {
     }
 
     template <typename... Idx_>
-    const Type_& operator()(Idx_... indices) const {
+    Type_& operator()(Idx_... indices) const {
         Array<i64, Dim_> idx(indices...);
         return this->at(idx);
     }

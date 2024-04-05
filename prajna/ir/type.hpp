@@ -441,4 +441,33 @@ class InterfaceImplement : public Named {
     std::shared_ptr<Function> dynamic_type_creator = nullptr;
 };
 
+class SimdType : public Type {
+   protected:
+    SimdType() = default;
+
+   public:
+    static std::shared_ptr<SimdType> Create(std::shared_ptr<Type> value_type, size_t size) {
+        for (auto ir_type : global_context.created_types) {
+            if (auto ir_array_type = Cast<SimdType>(ir_type)) {
+                if (ir_array_type->value_type == value_type && ir_array_type->size == size) {
+                    return ir_array_type;
+                }
+            }
+        }
+
+        std::shared_ptr<SimdType> self(new SimdType);
+        self->value_type = value_type;
+        self->size = size;
+        self->bytes = value_type->bytes * size;
+        self->name = value_type->name + "[" + std::to_string(size) + "]";
+        self->fullname = self->name;
+        global_context.created_types.push_back(self);
+        return self;
+    }
+
+   public:
+    std::shared_ptr<Type> value_type = nullptr;
+    size_t size = 0;
+};
+
 }  // namespace prajna::ir

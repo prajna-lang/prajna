@@ -22,15 +22,15 @@ struct overloaded : Ts... {
 template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-class function_guard {
+class ScopeGuard {
    public:
-    static std::unique_ptr<function_guard> Create(std::function<void()> func) {
-        auto self = std::unique_ptr<function_guard>(new function_guard);
+    static std::unique_ptr<ScopeGuard> Create(std::function<void()> func) {
+        auto self = std::unique_ptr<ScopeGuard>(new ScopeGuard);
         self->_todo = func;
         return self;
     }
 
-    ~function_guard() { _todo(); }
+    ~ScopeGuard() { _todo(); }
 
    private:
     std::function<void()> _todo;

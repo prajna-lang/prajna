@@ -229,7 +229,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
     Symbol operator()(ast::Block block) {
         ir_builder->PushSymbolTable();
         ir_builder->CreateAndPushBlock();
-        auto guard = function_guard::Create([this]() {
+        auto guard = ScopeGuard::Create([this]() {
             this->ir_builder->PopSymbolTable();
             this->ir_builder->PopBlock();
         });
@@ -421,7 +421,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             if (ast_function.body_optional) {
                 ir_builder->PushSymbolTable();
                 ir_builder->CreateTopBlockForFunction(ir_function);
-                auto guard = function_guard::Create([=]() {
+                auto guard = ScopeGuard::Create([=]() {
                     this->ir_builder->PopBlock();
                     this->ir_builder->function_stack.pop();
                     this->ir_builder->PopSymbolTable();
@@ -557,7 +557,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_builder->PushSymbolTable();
             ir_builder->SetSymbol(ir_index, ast_for.index);
             ir_builder->PushBlock(ir_for->LoopBlock());
-            auto guard = function_guard::Create([this]() {
+            auto guard = ScopeGuard::Create([this]() {
                 this->ir_builder->PopBlock();
                 this->ir_builder->PopSymbolTable();
                 this->ir_builder->loop_stack.pop();
@@ -622,7 +622,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_builder->symbol_table->name = ir_type->name;
             PRAJNA_ASSERT(!ir_builder->current_implement_type);
             ir_builder->current_implement_type = ir_type;
-            auto guard = function_guard::Create([this]() {
+            auto guard = ScopeGuard::Create([this]() {
                 this->ir_builder->PopSymbolTable();
                 this->ir_builder->current_implement_type = nullptr;
             });
@@ -673,7 +673,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_builder->symbol_table->name = ir_interface->name;
             ir_builder->current_implement_interface = ir_interface;
 
-            auto guard = function_guard::Create([=]() {
+            auto guard = ScopeGuard::Create([=]() {
                 this->ir_builder->PopSymbolTable();
                 this->ir_builder->PopSymbolTable();
                 this->ir_builder->current_implement_type = nullptr;
@@ -2065,7 +2065,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         ir_builder->interface_prototype_processing = true;
         auto guard =
-            function_guard::Create([=]() { ir_builder->interface_prototype_processing = false; });
+            ScopeGuard::Create([=]() { ir_builder->interface_prototype_processing = false; });
 
         ir_interface_prototype->dynamic_type = ir::StructType::Create({});
         // 我们通过dynamic<Interface>来获取接口所对应的类型, 需要将他们关联,
@@ -2077,7 +2077,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ir_builder->PushSymbolTable();
-            auto guard = function_guard::Create([=]() { this->ir_builder->PopSymbolTable(); });
+            auto guard = ScopeGuard::Create([=]() { this->ir_builder->PopSymbolTable(); });
             ir_builder->symbol_table->name = ir_interface_prototype->name;
             auto symbol_function = (*this)(ast_function_declaration);
             auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));

@@ -530,7 +530,7 @@ class LlvmCodegen {
             PRAJNA_ASSERT(cast_operator_dict.count(ir_cast_instruction->operation));
             auto cast_op = cast_operator_dict[ir_cast_instruction->operation];
             ir_cast_instruction->llvm_value =
-                llvm::CastInst::Create(cast_op, ir_cast_instruction->operand(0)->llvm_value,
+                llvm::CastInst::Create(cast_op, ir_cast_instruction->GetOperand(0)->llvm_value,
                                        ir_cast_instruction->type->llvm_type, "", llvm_basic_block);
             return;
         }
@@ -608,8 +608,8 @@ class LlvmCodegen {
                 llvm_compare_predicator_dict[ir_compare_instruction->operation];
             ir_compare_instruction->llvm_value = llvm::CmpInst::Create(
                 llvm_compare_other_ops, llvm_compare_predicator,
-                ir_compare_instruction->operand(0)->llvm_value,
-                ir_compare_instruction->operand(1)->llvm_value, "", llvm_basic_block);
+                ir_compare_instruction->GetOperand(0)->llvm_value,
+                ir_compare_instruction->GetOperand(1)->llvm_value, "", llvm_basic_block);
             return;
         }
 
@@ -642,8 +642,8 @@ class LlvmCodegen {
             auto llvm_binary_operator_operation =
                 binary_operator_dict[ir_binary_operator->operation];
             ir_binary_operator->llvm_value = llvm::BinaryOperator::Create(
-                llvm_binary_operator_operation, ir_binary_operator->operand(0)->llvm_value,
-                ir_binary_operator->operand(1)->llvm_value, "", llvm_basic_block);
+                llvm_binary_operator_operation, ir_binary_operator->GetOperand(0)->llvm_value,
+                ir_binary_operator->GetOperand(1)->llvm_value, "", llvm_basic_block);
 
             return;
         }

@@ -85,7 +85,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
             auto ir_instruction = instruction_with_operand_index.instruction;
             auto operand_index = instruction_with_operand_index.operand_index;
             PRAJNA_ASSERT(variables_dict.count(ir_captured_variable));
-            ir_instruction->operand(operand_index, variables_dict[ir_captured_variable]);
+            ir_instruction->SetOperand(operand_index, variables_dict[ir_captured_variable]);
         }
     }
 
@@ -97,7 +97,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, size_
         if (ir_instruction == ir_gpu_for) continue;
 
         auto operand_index = inst_with_idx.operand_index;
-        ir_instruction->operand(operand_index, ir_index);
+        ir_instruction->SetOperand(operand_index, ir_index);
     }
 
     {

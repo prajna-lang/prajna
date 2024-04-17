@@ -43,7 +43,7 @@ inline void VerifyBlockImpl(std::shared_ptr<ir::Block> ir_block,
 
         if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                auto ir_operand = ir_instruction->operand(i);
+                auto ir_operand = ir_instruction->GetOperand(i);
                 PRAJNA_ASSERT(ir_operand);
 
                 if (Is<ir::Function>(ir_operand) || Is<ir::GlobalVariable>(ir_operand) ||
@@ -83,7 +83,7 @@ inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
             }
 
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                auto ir_operand = ir_instruction->operand(i);
+                auto ir_operand = ir_instruction->GetOperand(i);
 
                 PRAJNA_ASSERT(ir_operand);
 

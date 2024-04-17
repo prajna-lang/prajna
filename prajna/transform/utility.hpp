@@ -116,7 +116,7 @@ inline std::list<std::shared_ptr<ir::Value>> CaptureExternalValueInClosure(
     utility::EachValue(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
         if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                auto ir_operand = ir_instruction->operand(i);
+                auto ir_operand = ir_instruction->GetOperand(i);
                 if (ir_operand->is_global) continue;
                 if (ir_operand->GetParentFunction() != ir_function) {
                     ir_values.push_back(ir_operand);
@@ -137,7 +137,7 @@ inline std::list<std::shared_ptr<ir::Variable>> CaptureExternalVariablesInBlock(
         PRAJNA_ASSERT(!Is<ir::For>(ir_value));
         if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                auto ir_operand = ir_instruction->operand(i);
+                auto ir_operand = ir_instruction->GetOperand(i);
                 if (ir_operand->parent_block != ir_block) {
                     if (auto ir_local_variable = Cast<ir::Variable>(ir_operand)) {
                         ir_variables.push_back(ir_local_variable);

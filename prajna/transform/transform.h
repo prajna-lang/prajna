@@ -77,7 +77,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
                 ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
                 auto ir_getter_call = ir_builder->Create<ir::Call>(
                     ir_access_property->property->get_function, ir_arguments);
-                ir_inst->operand(op_idx, ir_getter_call);
+                ir_inst->SetOperand(op_idx, ir_getter_call);
             }
         }
 
@@ -169,7 +169,7 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
 
         for (auto ir_instruction : ir_instructions) {
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                if (auto ir_function = Cast<ir::Function>(ir_instruction->operand(i))) {
+                if (auto ir_function = Cast<ir::Function>(ir_instruction->GetOperand(i))) {
                     if (ir_function->annotation_dict.count("kernel")) {
                         auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
 
@@ -193,7 +193,7 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
                             ir_module->global_variables.push_back(ir_global_variable);
                         }
 
-                        ir_instruction->operand(i, ir_global_variable);
+                        ir_instruction->SetOperand(i, ir_global_variable);
                     }
                 }
             }
@@ -220,7 +220,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
             for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 // @note 全局变量目前遵循如果使用其他module的则自身为external的原则
                 if (auto ir_global_variable =
-                        Cast<ir::GlobalVariable>(ir_instruction->operand(i))) {
+                        Cast<ir::GlobalVariable>(ir_instruction->GetOperand(i))) {
                     auto iter_global_alloca = std::find_if(
                         RANGE(ir_module->global_allocas), [=](std::shared_ptr<ir::GlobalAlloca> x) {
                             return x->fullname == ir_global_variable->fullname;
@@ -242,7 +242,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
                     auto iter =
                         std::find(ir_block->values.begin(), ir_block->values.end(), ir_instruction);
                     ir_block->insert(iter, ir_deference_pointer);
-                    ir_instruction->operand(i, ir_deference_pointer);
+                    ir_instruction->SetOperand(i, ir_deference_pointer);
                 }
             }
         }
@@ -321,7 +321,7 @@ inline void RemoveValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
 inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
     utility::Each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
         for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-            auto ir_operand = ir_instruction->operand(i);
+            auto ir_operand = ir_instruction->GetOperand(i);
 
             if (auto ir_function = Cast<ir::Function>(ir_operand)) {
                 if (ir_function->parent_module != ir_module) {
@@ -344,7 +344,7 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
                         ir_function->instruction_with_index_list;
                     for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
                         if (ir_instruction->GetParentFunction()->parent_module == ir_module) {
-                            ir_instruction->operand(op_idx, ir_decl_function);
+                            ir_instruction->SetOperand(op_idx, ir_decl_function);
                         }
                     }
                 }
@@ -463,7 +463,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
         utility::EachValue(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
             if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
                 for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                    auto ir_operand = ir_instruction->operand(i);
+                    auto ir_operand = ir_instruction->GetOperand(i);
                     if (ir_operand->is_global) continue;
                     if (ir_operand->GetParentFunction() != ir_function) {
                         if (!ir_value_field_map[ir_operand]) {
@@ -476,7 +476,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
                         ir_instruction->parent_block->values.insert(
                             ir_instruction->GetBlockIterator(), ir_access_field);
                         ir_access_field->parent_block = ir_instruction->parent_block;
-                        ir_instruction->operand(i, ir_access_field);
+                        ir_instruction->SetOperand(i, ir_access_field);
                     }
                 }
             }
@@ -543,7 +543,7 @@ inline void TopologicalSortFunctionVisit(
     auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
     for (auto ir_instruction : ir_instructions) {
         for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-            auto ir_operand = ir_instruction->operand(i);
+            auto ir_operand = ir_instruction->GetOperand(i);
             if (auto ir_tmp_function = Cast<ir::Function>(ir_operand)) {
                 // 值排序同一个module里的函数
                 if (ir_tmp_function->parent_module == ir_function->parent_module) {
@@ -629,7 +629,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 
         for (auto [ir_instruction, op_idx] :
              Clone(ir_shared_variable->instruction_with_index_list)) {
-            ir_instruction->operand(op_idx, ir_deference_pointer);
+            ir_instruction->SetOperand(op_idx, ir_deference_pointer);
         }
 
         utility::RemoveFromParent(ir_shared_variable);

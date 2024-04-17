@@ -544,12 +544,12 @@ class Instruction : virtual public Value {
 
     virtual size_t OperandSize() { return this->operands.size(); }
 
-    virtual std::shared_ptr<ir::Value> operand(size_t i) {
+    virtual std::shared_ptr<ir::Value> GetOperand(size_t i) {
         PRAJNA_ASSERT(this->OperandSize() > i);
         return this->operands[i];
     };
 
-    virtual void operand(size_t i, std::shared_ptr<ir::Value> ir_value) {
+    virtual void SetOperand(size_t i, std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(ir_value);
         PRAJNA_ASSERT(this->OperandSize() > i);
 
@@ -589,7 +589,7 @@ class Instruction : virtual public Value {
 
             operands[i] = nullptr;  // 置零以避免干扰原来的操作数
             auto ir_new = function_cloner->value_dict[ir_old];
-            operand(i, ir_new);
+            this->SetOperand(i, ir_new);
         }
     }
 
@@ -617,8 +617,8 @@ class AccessField : virtual public VariableLiked, virtual public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> object() { return this->operand(0); }
-    void object(std::shared_ptr<ir::Value> ir_object) { this->operand(0, ir_object); }
+    std::shared_ptr<ir::Value> object() { return this->GetOperand(0); }
+    void object(std::shared_ptr<ir::Value> ir_object) { this->SetOperand(0, ir_object); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<AccessField> ir_new(new AccessField(*this));
@@ -652,11 +652,11 @@ class IndexArray : virtual public VariableLiked, virtual public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> object() { return this->operand(0); }
-    void object(std::shared_ptr<ir::Value> ir_object) { this->operand(0, ir_object); }
+    std::shared_ptr<ir::Value> object() { return this->GetOperand(0); }
+    void object(std::shared_ptr<ir::Value> ir_object) { this->SetOperand(0, ir_object); }
 
-    std::shared_ptr<ir::Value> IndexVariable() { return this->operand(1); }
-    void IndexVariable(std::shared_ptr<ir::Value> ir_index) { this->operand(1, ir_index); }
+    std::shared_ptr<ir::Value> IndexVariable() { return this->GetOperand(1); }
+    void IndexVariable(std::shared_ptr<ir::Value> ir_index) { this->SetOperand(1, ir_index); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<IndexArray> ir_new(new IndexArray(*this));
@@ -689,15 +689,15 @@ class IndexPointer : virtual public VariableLiked, virtual public Instruction {
 
     std::shared_ptr<ir::Value> object() {
         PRAJNA_ASSERT(this->OperandSize() == 2);
-        return this->operand(0);
+        return this->GetOperand(0);
     }
     void object(std::shared_ptr<ir::Value> ir_object) {
         PRAJNA_ASSERT(this->OperandSize() == 2);
-        this->operand(0, ir_object);
+        this->SetOperand(0, ir_object);
     }
 
-    std::shared_ptr<ir::Value> IndexVariable() { return this->operand(1); }
-    void IndexVariable(std::shared_ptr<ir::Value> ir_index) { this->operand(1, ir_index); }
+    std::shared_ptr<ir::Value> IndexVariable() { return this->GetOperand(1); }
+    void IndexVariable(std::shared_ptr<ir::Value> ir_index) { this->SetOperand(1, ir_index); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<IndexPointer> ir_new(new IndexPointer(*this));
@@ -727,8 +727,8 @@ class GetStructElementPointer : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Pointer() { return this->operand(0); }
-    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { this->operand(0, ir_pointer); }
+    std::shared_ptr<ir::Value> Pointer() { return this->GetOperand(0); }
+    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { this->SetOperand(0, ir_pointer); }
 
     /// @brief  指针偏移下标, 对于结构体来说相当于字段的号数
     std::shared_ptr<Field> field;
@@ -768,11 +768,11 @@ class GetArrayElementPointer : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Pointer() { return this->operand(0); }
-    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { this->operand(0, ir_pointer); }
+    std::shared_ptr<ir::Value> Pointer() { return this->GetOperand(0); }
+    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { this->SetOperand(0, ir_pointer); }
 
-    std::shared_ptr<ir::Value> IndexVariable() { return this->operand(1); }
-    void IndexVariable(std::shared_ptr<ir::Value> ir_index) { this->operand(1, ir_index); }
+    std::shared_ptr<ir::Value> IndexVariable() { return this->GetOperand(1); }
+    void IndexVariable(std::shared_ptr<ir::Value> ir_index) { this->SetOperand(1, ir_index); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<GetArrayElementPointer> ir_new(new GetArrayElementPointer(*this));
@@ -805,11 +805,11 @@ class GetPointerElementPointer : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Pointer() { return this->operand(0); }
-    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { this->operand(0, ir_pointer); }
+    std::shared_ptr<ir::Value> Pointer() { return this->GetOperand(0); }
+    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { this->SetOperand(0, ir_pointer); }
 
-    std::shared_ptr<ir::Value> IndexVariable() { return this->operand(1); }
-    void IndexVariable(std::shared_ptr<ir::Value> ir_index) { this->operand(1, ir_index); }
+    std::shared_ptr<ir::Value> IndexVariable() { return this->GetOperand(1); }
+    void IndexVariable(std::shared_ptr<ir::Value> ir_index) { this->SetOperand(1, ir_index); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<GetPointerElementPointer> ir_new(new GetPointerElementPointer(*this));
@@ -837,8 +837,8 @@ class DeferencePointer : virtual public VariableLiked, virtual public Instructio
         return self;
     }
 
-    std::shared_ptr<ir::Value> Pointer() { return this->operand(0); }
-    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { this->operand(0, ir_pointer); }
+    std::shared_ptr<ir::Value> Pointer() { return this->GetOperand(0); }
+    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { this->SetOperand(0, ir_pointer); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<DeferencePointer> ir_new(new DeferencePointer(*this));
@@ -868,16 +868,16 @@ class WriteVariableLiked : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Value() { return this->operand(0); }
+    std::shared_ptr<ir::Value> Value() { return this->GetOperand(0); }
     void Value(std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(ir_value);
-        return this->operand(0, ir_value);
+        return this->SetOperand(0, ir_value);
     }
 
-    std::shared_ptr<VariableLiked> variable() { return Cast<VariableLiked>(this->operand(1)); }
+    std::shared_ptr<VariableLiked> variable() { return Cast<VariableLiked>(this->GetOperand(1)); }
     void variable(std::shared_ptr<VariableLiked> ir_variable) {
         PRAJNA_ASSERT(ir_variable);
-        return this->operand(1, ir_variable);
+        return this->SetOperand(1, ir_variable);
     }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
@@ -904,9 +904,9 @@ class GetAddressOfVariableLiked : public Instruction {
         return self;
     }
 
-    std::shared_ptr<VariableLiked> variable() { return Cast<VariableLiked>(this->operand(0)); }
+    std::shared_ptr<VariableLiked> variable() { return Cast<VariableLiked>(this->GetOperand(0)); }
     void variable(std::shared_ptr<VariableLiked> ir_variable_liked) {
-        this->operand(0, ir_variable_liked);
+        this->SetOperand(0, ir_variable_liked);
     }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
@@ -992,8 +992,8 @@ class LoadPointer : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Pointer() { return this->operand(0); }
-    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { return this->operand(0, ir_pointer); }
+    std::shared_ptr<ir::Value> Pointer() { return this->GetOperand(0); }
+    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { return this->SetOperand(0, ir_pointer); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<LoadPointer> ir_new(new LoadPointer(*this));
@@ -1023,11 +1023,11 @@ class StorePointer : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Value() { return this->operand(0); }
-    void Value(std::shared_ptr<ir::Value> ir_value) { return this->operand(0, ir_value); }
+    std::shared_ptr<ir::Value> Value() { return this->GetOperand(0); }
+    void Value(std::shared_ptr<ir::Value> ir_value) { return this->SetOperand(0, ir_value); }
 
-    std::shared_ptr<ir::Value> Pointer() { return this->operand(1); }
-    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { return this->operand(1, ir_pointer); }
+    std::shared_ptr<ir::Value> Pointer() { return this->GetOperand(1); }
+    void Pointer(std::shared_ptr<ir::Value> ir_pointer) { return this->SetOperand(1, ir_pointer); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<StorePointer> ir_new(new StorePointer(*this));
@@ -1053,8 +1053,8 @@ class Return : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Value() { return this->operand(0); }
-    void Value(std::shared_ptr<ir::Value> ir_value) { this->operand(0, ir_value); }
+    std::shared_ptr<ir::Value> Value() { return this->GetOperand(0); }
+    void Value(std::shared_ptr<ir::Value> ir_value) { this->SetOperand(0, ir_value); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Return> ir_new(new Return(*this));
@@ -1082,8 +1082,8 @@ class BitCast : public Instruction {
         return self;
     };
 
-    std::shared_ptr<ir::Value> Value() { return this->operand(0); }
-    void Value(std::shared_ptr<ir::Value> ir_value) { this->operand(0, ir_value); }
+    std::shared_ptr<ir::Value> Value() { return this->GetOperand(0); }
+    void Value(std::shared_ptr<ir::Value> ir_value) { this->SetOperand(0, ir_value); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<BitCast> ir_new(new BitCast(*this));
@@ -1129,12 +1129,12 @@ class Call : public Instruction {
         return Create(ir_value, std::list<std::shared_ptr<ir::Value>>{});
     }
 
-    std::shared_ptr<ir::Value> Function() { return this->operand(0); }
-    void Function(std::shared_ptr<ir::Value> ir_value) { this->operand(0, ir_value); }
+    std::shared_ptr<ir::Value> Function() { return this->GetOperand(0); }
+    void Function(std::shared_ptr<ir::Value> ir_value) { this->SetOperand(0, ir_value); }
 
-    std::shared_ptr<ir::Value> Argument(size_t i) { return this->operand(1 + i); }
+    std::shared_ptr<ir::Value> Argument(size_t i) { return this->GetOperand(1 + i); }
     void Argument(size_t i, std::shared_ptr<ir::Value> ir_argument) {
-        this->operand(i + 1, ir_argument);
+        this->SetOperand(i + 1, ir_argument);
     }
 
     size_t ArgumentSize() { return this->OperandSize() - 1; }
@@ -1167,14 +1167,14 @@ class ConditionBranch : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Condition() { return this->operand(0); }
-    void condition(std::shared_ptr<ir::Value> ir_condition) { this->operand(0, ir_condition); }
+    std::shared_ptr<ir::Value> Condition() { return this->GetOperand(0); }
+    void condition(std::shared_ptr<ir::Value> ir_condition) { this->SetOperand(0, ir_condition); }
 
-    std::shared_ptr<Block> TrueBlock() { return Cast<Block>(this->operand(1)); }
-    void TrueBlock(std::shared_ptr<Block> ir_true_block) { this->operand(1, ir_true_block); }
+    std::shared_ptr<Block> TrueBlock() { return Cast<Block>(this->GetOperand(1)); }
+    void TrueBlock(std::shared_ptr<Block> ir_true_block) { this->SetOperand(1, ir_true_block); }
 
-    std::shared_ptr<Block> FalseBlock() { return Cast<Block>(this->operand(2)); }
-    void FalseBlock(std::shared_ptr<Block> ir_false_block) { this->operand(2, ir_false_block); }
+    std::shared_ptr<Block> FalseBlock() { return Cast<Block>(this->GetOperand(2)); }
+    void FalseBlock(std::shared_ptr<Block> ir_false_block) { this->SetOperand(2, ir_false_block); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<ConditionBranch> ir_new(new ConditionBranch(*this));
@@ -1198,8 +1198,8 @@ class JumpBranch : public Instruction {
         return self;
     }
 
-    std::shared_ptr<Block> NextBlock() { return Cast<Block>(this->operand(0)); }
-    void NextBlock(std::shared_ptr<Block> ir_next) { this->operand(0, ir_next); }
+    std::shared_ptr<Block> NextBlock() { return Cast<Block>(this->GetOperand(0)); }
+    void NextBlock(std::shared_ptr<Block> ir_next) { this->SetOperand(0, ir_next); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<JumpBranch> ir_new(new JumpBranch(*this));
@@ -1251,14 +1251,14 @@ class If : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Condition() { return this->operand(0); }
-    void condition(std::shared_ptr<ir::Value> ir_condition) { this->operand(0, ir_condition); }
+    std::shared_ptr<ir::Value> Condition() { return this->GetOperand(0); }
+    void condition(std::shared_ptr<ir::Value> ir_condition) { this->SetOperand(0, ir_condition); }
 
-    std::shared_ptr<Block> TrueBlock() { return Cast<Block>(this->operand(1)); }
-    void TrueBlock(std::shared_ptr<Block> ir_true_block) { this->operand(1, ir_true_block); }
+    std::shared_ptr<Block> TrueBlock() { return Cast<Block>(this->GetOperand(1)); }
+    void TrueBlock(std::shared_ptr<Block> ir_true_block) { this->SetOperand(1, ir_true_block); }
 
-    std::shared_ptr<Block> FalseBlock() { return Cast<Block>(this->operand(2)); }
-    void FalseBlock(std::shared_ptr<Block> ir_false_block) { this->operand(2, ir_false_block); }
+    std::shared_ptr<Block> FalseBlock() { return Cast<Block>(this->GetOperand(2)); }
+    void FalseBlock(std::shared_ptr<Block> ir_false_block) { this->SetOperand(2, ir_false_block); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<If> ir_new(new If(*this));
@@ -1285,17 +1285,17 @@ class While : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Condition() { return this->operand(0); }
-    void condition(std::shared_ptr<ir::Value> ir_condition) { this->operand(0, ir_condition); }
+    std::shared_ptr<ir::Value> Condition() { return this->GetOperand(0); }
+    void condition(std::shared_ptr<ir::Value> ir_condition) { this->SetOperand(0, ir_condition); }
 
     /// @brief 用于存放条件表达式的块
-    std::shared_ptr<Block> ConditionBlock() { return Cast<Block>(this->operand(1)); }
+    std::shared_ptr<Block> ConditionBlock() { return Cast<Block>(this->GetOperand(1)); }
     void ConditionBlock(std::shared_ptr<Block> ir_condition_block) {
-        this->operand(1, ir_condition_block);
+        this->SetOperand(1, ir_condition_block);
     }
 
-    std::shared_ptr<Block> LoopBlock() { return Cast<Block>(this->operand(2)); }
-    void LoopBlock(std::shared_ptr<Block> ir_true_block) { this->operand(2, ir_true_block); }
+    std::shared_ptr<Block> LoopBlock() { return Cast<Block>(this->GetOperand(2)); }
+    void LoopBlock(std::shared_ptr<Block> ir_true_block) { this->SetOperand(2, ir_true_block); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<While> ir_new(new While(*this));
@@ -1324,17 +1324,19 @@ class For : public Instruction {
         return self;
     }
 
-    std::shared_ptr<LocalVariable> IndexVariable() { return Cast<LocalVariable>(this->operand(0)); }
-    void IndexVariable(std::shared_ptr<LocalVariable> ir_index) { this->operand(0, ir_index); }
+    std::shared_ptr<LocalVariable> IndexVariable() {
+        return Cast<LocalVariable>(this->GetOperand(0));
+    }
+    void IndexVariable(std::shared_ptr<LocalVariable> ir_index) { this->SetOperand(0, ir_index); }
 
-    std::shared_ptr<ir::Value> First() { return this->operand(1); }
-    void First(std::shared_ptr<ir::Value> ir_first) { this->operand(1, ir_first); }
+    std::shared_ptr<ir::Value> First() { return this->GetOperand(1); }
+    void First(std::shared_ptr<ir::Value> ir_first) { this->SetOperand(1, ir_first); }
 
-    std::shared_ptr<ir::Value> Last() { return this->operand(2); }
-    void Last(std::shared_ptr<ir::Value> ir_last) { this->operand(2, ir_last); }
+    std::shared_ptr<ir::Value> Last() { return this->GetOperand(2); }
+    void Last(std::shared_ptr<ir::Value> ir_last) { this->SetOperand(2, ir_last); }
 
-    std::shared_ptr<Block> LoopBlock() { return Cast<Block>(this->operand(3)); }
-    void LoopBlock(std::shared_ptr<Block> ir_loop_block) { this->operand(3, ir_loop_block); }
+    std::shared_ptr<Block> LoopBlock() { return Cast<Block>(this->GetOperand(3)); }
+    void LoopBlock(std::shared_ptr<Block> ir_loop_block) { this->SetOperand(3, ir_loop_block); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<For> ir_new(new For(*this));
@@ -1358,8 +1360,8 @@ class Break : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Loop() { return this->operand(0); }
-    void loop(std::shared_ptr<ir::Value> ir_loop) { this->operand(0, ir_loop); }
+    std::shared_ptr<ir::Value> Loop() { return this->GetOperand(0); }
+    void loop(std::shared_ptr<ir::Value> ir_loop) { this->SetOperand(0, ir_loop); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Break> ir_new(new Break(*this));
@@ -1383,8 +1385,8 @@ class Continue : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Loop() { return this->operand(0); }
-    void loop(std::shared_ptr<ir::Value> ir_loop) { this->operand(0, ir_loop); }
+    std::shared_ptr<ir::Value> Loop() { return this->GetOperand(0); }
+    void loop(std::shared_ptr<ir::Value> ir_loop) { this->SetOperand(0, ir_loop); }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Continue> ir_new(new Continue(*this));
@@ -1441,16 +1443,16 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> ThisPointer() { return this->operand(0); }
+    std::shared_ptr<ir::Value> ThisPointer() { return this->GetOperand(0); }
     void ThisPointer(std::shared_ptr<ir::Value> ir_this_pointer) {
-        this->operand(0, ir_this_pointer);
+        this->SetOperand(0, ir_this_pointer);
     }
 
     void Arguments(std::list<std::shared_ptr<ir::Value>> ir_arguments) {
         this->OperandResize(1 + ir_arguments.size());
         size_t i = 1;
         for (auto ir_argument : ir_arguments) {
-            this->operand(i, ir_argument);
+            this->SetOperand(i, ir_argument);
             ++i;
         }
     }
@@ -1458,7 +1460,7 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
     std::list<std::shared_ptr<ir::Value>> Arguments() {
         std::list<std::shared_ptr<ir::Value>> ir_arguments;
         for (size_t i = 1; i < this->OperandSize(); ++i) {
-            ir_arguments.push_back(this->operand(i));
+            ir_arguments.push_back(this->GetOperand(i));
         }
 
         return ir_arguments;
@@ -1495,12 +1497,12 @@ class WriteProperty : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Value() { return this->operand(0); }
-    void Value(std::shared_ptr<ir::Value> ir_value) { return this->operand(0, ir_value); }
+    std::shared_ptr<ir::Value> Value() { return this->GetOperand(0); }
+    void Value(std::shared_ptr<ir::Value> ir_value) { return this->SetOperand(0, ir_value); }
 
-    std::shared_ptr<AccessProperty> property() { return Cast<AccessProperty>(this->operand(1)); }
+    std::shared_ptr<AccessProperty> property() { return Cast<AccessProperty>(this->GetOperand(1)); }
     void property(std::shared_ptr<AccessProperty> ir_access_property) {
-        return this->operand(1, ir_access_property);
+        return this->SetOperand(1, ir_access_property);
     }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
@@ -1577,20 +1579,22 @@ class KernelFunctionCall : public Instruction {
         return self;
     }
 
-    std::shared_ptr<ir::Value> Function() { return this->operand(0); }
-    void Function(std::shared_ptr<ir::Value> ir_value) { this->operand(0, ir_value); }
+    std::shared_ptr<ir::Value> Function() { return this->GetOperand(0); }
+    void Function(std::shared_ptr<ir::Value> ir_value) { this->SetOperand(0, ir_value); }
 
-    std::shared_ptr<ir::Value> GridShape() { return this->operand(1); }
-    void GridShape(std::shared_ptr<ir::Value> ir_grid_shape) { this->operand(1, ir_grid_shape); }
+    std::shared_ptr<ir::Value> GridShape() { return this->GetOperand(1); }
+    void GridShape(std::shared_ptr<ir::Value> ir_grid_shape) { this->SetOperand(1, ir_grid_shape); }
 
-    std::shared_ptr<ir::Value> BlockShape() { return this->operand(2); }
-    void BlockShape(std::shared_ptr<ir::Value> ir_block_shape) { this->operand(2, ir_block_shape); }
+    std::shared_ptr<ir::Value> BlockShape() { return this->GetOperand(2); }
+    void BlockShape(std::shared_ptr<ir::Value> ir_block_shape) {
+        this->SetOperand(2, ir_block_shape);
+    }
 
     size_t ArgumentSize() { return this->OperandSize() - 3; }
 
-    std::shared_ptr<ir::Value> Argument(size_t i) { return this->operand(3 + i); }
+    std::shared_ptr<ir::Value> Argument(size_t i) { return this->GetOperand(3 + i); }
     void Argument(size_t i, std::shared_ptr<ir::Value> ir_argument) {
-        this->operand(i + 3, ir_argument);
+        this->SetOperand(i + 3, ir_argument);
     }
 
     std::list<std::shared_ptr<ir::Value>> Arguments() {

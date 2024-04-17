@@ -46,8 +46,8 @@ class CompareInstruction : public Instruction {
         std::shared_ptr<Self> self(new Self);
         self->operation = operation;
         self->OperandResize(2);
-        self->operand(0, ir_operand0);
-        self->operand(1, ir_operand1);
+        self->SetOperand(0, ir_operand0);
+        self->SetOperand(1, ir_operand1);
         self->type = ir::BoolType::Create();
         self->tag = "CompareInstruction";
         return self;
@@ -99,8 +99,8 @@ class BinaryOperator : public Instruction {
         PRAJNA_ASSERT(ir_operand0->type == ir_operand1->type);
         self->operation = operation;
         self->OperandResize(2);
-        self->operand(0, ir_operand0);
-        self->operand(1, ir_operand1);
+        self->SetOperand(0, ir_operand0);
+        self->SetOperand(1, ir_operand1);
         self->type = ir_operand0->type;
         self->tag = "BinaryOperator";
         return self;
@@ -146,7 +146,7 @@ class CastInstruction : public Instruction {
         std::shared_ptr<CastInstruction> self(new CastInstruction);
         self->operation = operation;
         self->OperandResize(1);
-        self->operand(0, ir_operand);
+        self->SetOperand(0, ir_operand);
         self->type = ir_type;
         self->tag = "CastInstruction";
         return self;

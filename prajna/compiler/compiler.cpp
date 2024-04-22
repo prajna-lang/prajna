@@ -102,7 +102,9 @@ void Compiler::GenLlvm(std::shared_ptr<ir::Module> ir_module) {
     auto ir_ssa_module = prajna::transform::transform(ir_module);
     auto ir_codegen_module = prajna::codegen::LlvmCodegen(ir_ssa_module, ir::Target::host);
     auto ir_llvm_optimize_module = prajna::codegen::LlvmPass(ir_codegen_module);
-    ir_codegen_module->llvm_module->dump();
+#ifdef PRAJNA_ENABLE_LLVM_DUMP
+    ir_module->llvm_module->dump();
+#endif
     jit_engine->AddIRModule(ir_llvm_optimize_module);
 }
 

@@ -28,3 +28,12 @@ func TestTensorSerialize() {
     ts[1, 1] = 11;
     ts.ToString().PrintLine();
 }
+
+
+func TestOptimize(ts0: Tensor<i64, 2>, ts1: Tensor<i64, 2>){
+    for i in 0 to ts0.Shape()[0] {
+        for j in 0 to ts0.Shape()[1] {
+            ts0[i, j] = ts1[i, j];
+        }
+    }
+}

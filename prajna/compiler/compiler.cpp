@@ -180,7 +180,7 @@ void Compiler::ExecutateMainFunction() {
     }
 }
 
-size_t Compiler::GetSymbolValue(std::string symbol_name) {
+int64_t Compiler::GetSymbolValue(std::string symbol_name) {
     return this->jit_engine->GetValue(symbol_name);
 }
 

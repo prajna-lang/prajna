@@ -16,7 +16,7 @@ class ExecutionEngine {
    public:
     ExecutionEngine();
 
-    size_t GetValue(std::string name);
+    int64_t GetValue(std::string name);
 
     void AddIRModule(std::shared_ptr<ir::Module> ir_module);
 

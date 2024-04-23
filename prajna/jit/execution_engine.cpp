@@ -107,7 +107,7 @@ bool ExecutionEngine::LoadDynamicLib(std::string lib_name) {
     return llvm::sys::DynamicLibrary::getPermanentLibrary(lib_name.c_str()).isValid();
 }
 
-size_t ExecutionEngine::GetValue(std::string name) {
+int64_t ExecutionEngine::GetValue(std::string name) {
     auto expect_symbol = _up_lljit->lookup(name);
     PRAJNA_VERIFY(expect_symbol);
     return expect_symbol->getValue();

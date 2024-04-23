@@ -107,7 +107,7 @@ class InterpreterLoweringVisitor {
    private:
     Symbol _symbol_printing_result = nullptr;
     std::shared_ptr<StatementLoweringVisitor> _statement_lowering_visitor = nullptr;
-    static size_t _command_id;
+    static int64_t _command_id;
     std::shared_ptr<Logger> logger;
     std::shared_ptr<Compiler> compiler;
 };

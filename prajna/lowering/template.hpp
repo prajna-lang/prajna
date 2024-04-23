@@ -11,7 +11,7 @@ namespace std {
 
 template <>
 struct hash<std::list<prajna::lowering::Symbol>> {
-    std::size_t operator()(
+    std::int64_t operator()(
         std::list<prajna::lowering::Symbol> symbol_template_parameter_list) const noexcept {
         return symbol_template_parameter_list.size();
     }
@@ -19,7 +19,7 @@ struct hash<std::list<prajna::lowering::Symbol>> {
 
 template <>
 struct hash<prajna::lowering::Symbol> {
-    std::size_t operator()(prajna::lowering::Symbol symbol) const noexcept { return 1; }
+    std::int64_t operator()(prajna::lowering::Symbol symbol) const noexcept { return 1; }
 };
 
 }  // namespace std
@@ -95,7 +95,7 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
 
    public:
     Generator generator;
-    size_t template_parameters_size = 0;
+    int64_t template_parameters_size = 0;
     std::unordered_map<std::list<Symbol>, SpecialGenerator> special_generator_dict;
 };
 

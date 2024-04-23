@@ -10,7 +10,7 @@ class Type;
 
 class GlobalContext {
    public:
-    GlobalContext(size_t target_bits);
+    GlobalContext(int64_t target_bits);
 
     /// @brief 用于存储已经构造了的类型
     /// @note 需要使用vector来确保构造的顺序, 因为后面的codegen需要顺序正确

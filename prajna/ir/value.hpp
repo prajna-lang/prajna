@@ -47,7 +47,7 @@ class Instruction;
 
 struct InstructionAndOperandIndex {
     std::shared_ptr<Instruction> instruction;
-    size_t operand_index;
+    int64_t operand_index;
 };
 
 inline bool operator==(prajna::ir::InstructionAndOperandIndex lhs,
@@ -59,10 +59,10 @@ inline bool operator==(prajna::ir::InstructionAndOperandIndex lhs,
 
 template <>
 struct std::hash<prajna::ir::InstructionAndOperandIndex> {
-    std::size_t operator()(prajna::ir::InstructionAndOperandIndex inst_with_idx) const noexcept {
-        std::size_t h1 =
+    std::int64_t operator()(prajna::ir::InstructionAndOperandIndex inst_with_idx) const noexcept {
+        std::int64_t h1 =
             std::hash<std::shared_ptr<prajna::ir::Instruction>>{}(inst_with_idx.instruction);
-        std::size_t h2 = std::hash<size_t>{}(inst_with_idx.operand_index);
+        std::int64_t h2 = std::hash<int64_t>{}(inst_with_idx.operand_index);
         // 这里哈希函数应该不重要, 应该不会导致性能问题
         return h1 ^ (h2 << 1);
     }
@@ -537,19 +537,19 @@ class Instruction : virtual public Value {
    protected:
     Instruction() : Instruction(0) {}
 
-    Instruction(size_t operand_size) { this->operands.resize(operand_size); }
+    Instruction(int64_t operand_size) { this->operands.resize(operand_size); }
 
    public:
-    virtual void OperandResize(size_t size) { return this->operands.resize(size); }
+    virtual void OperandResize(int64_t size) { return this->operands.resize(size); }
 
-    virtual size_t OperandSize() { return this->operands.size(); }
+    virtual int64_t OperandSize() { return this->operands.size(); }
 
-    virtual std::shared_ptr<ir::Value> GetOperand(size_t i) {
+    virtual std::shared_ptr<ir::Value> GetOperand(int64_t i) {
         PRAJNA_ASSERT(this->OperandSize() > i);
         return this->operands[i];
     };
 
-    virtual void SetOperand(size_t i, std::shared_ptr<ir::Value> ir_value) {
+    virtual void SetOperand(int64_t i, std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(ir_value);
         PRAJNA_ASSERT(this->OperandSize() > i);
 
@@ -568,7 +568,7 @@ class Instruction : virtual public Value {
     void Finalize() override {
         Value::Finalize();
 
-        for (size_t i = 0; i < OperandSize(); ++i) {
+        for (int64_t i = 0; i < OperandSize(); ++i) {
             auto ir_old_value = this->operands[i];
             if (ir_old_value) {
                 ir_old_value->instruction_with_index_list.remove(
@@ -580,7 +580,7 @@ class Instruction : virtual public Value {
     }
 
     void CloneOperands(std::shared_ptr<FunctionCloner> function_cloner) {
-        for (size_t i = 0; i < operands.size(); ++i) {
+        for (int64_t i = 0; i < operands.size(); ++i) {
             auto ir_old = operands[i];
 
             if (!function_cloner->value_dict[ir_old]) {
@@ -1107,7 +1107,7 @@ class Call : public Instruction {
         auto ir_function_type = ir_value->GetFunctionType();
         PRAJNA_ASSERT(ir_function_type);
         PRAJNA_ASSERT(ir_function_type->parameter_types.size() == arguments.size());
-        size_t i = 0;
+        int64_t i = 0;
         for (auto [ir_argument, ir_parameter_type] :
              boost::combine(arguments, ir_function_type->parameter_types)) {
             PRAJNA_ASSERT(ir_argument->type == ir_parameter_type);
@@ -1132,12 +1132,12 @@ class Call : public Instruction {
     std::shared_ptr<ir::Value> Function() { return this->GetOperand(0); }
     void Function(std::shared_ptr<ir::Value> ir_value) { this->SetOperand(0, ir_value); }
 
-    std::shared_ptr<ir::Value> Argument(size_t i) { return this->GetOperand(1 + i); }
-    void Argument(size_t i, std::shared_ptr<ir::Value> ir_argument) {
+    std::shared_ptr<ir::Value> Argument(int64_t i) { return this->GetOperand(1 + i); }
+    void Argument(int64_t i, std::shared_ptr<ir::Value> ir_argument) {
         this->SetOperand(i + 1, ir_argument);
     }
 
-    size_t ArgumentSize() { return this->OperandSize() - 1; }
+    int64_t ArgumentSize() { return this->OperandSize() - 1; }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
         std::shared_ptr<Call> ir_new(new Call(*this));
@@ -1450,7 +1450,7 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
 
     void Arguments(std::list<std::shared_ptr<ir::Value>> ir_arguments) {
         this->OperandResize(1 + ir_arguments.size());
-        size_t i = 1;
+        int64_t i = 1;
         for (auto ir_argument : ir_arguments) {
             this->SetOperand(i, ir_argument);
             ++i;
@@ -1459,7 +1459,7 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
 
     std::list<std::shared_ptr<ir::Value>> Arguments() {
         std::list<std::shared_ptr<ir::Value>> ir_arguments;
-        for (size_t i = 1; i < this->OperandSize(); ++i) {
+        for (int64_t i = 1; i < this->OperandSize(); ++i) {
             ir_arguments.push_back(this->GetOperand(i));
         }
 
@@ -1567,7 +1567,7 @@ class KernelFunctionCall : public Instruction {
         self->BlockShape(ir_block_shape);
 
         auto iter_parameter_type = ir_function_type->parameter_types.begin();
-        size_t i = 0;
+        int64_t i = 0;
         for (auto iter_argument = arguments.begin(); iter_argument != arguments.end();
              ++iter_argument, ++iter_parameter_type, ++i) {
             PRAJNA_ASSERT(*iter_parameter_type == (*iter_argument)->type);
@@ -1590,16 +1590,16 @@ class KernelFunctionCall : public Instruction {
         this->SetOperand(2, ir_block_shape);
     }
 
-    size_t ArgumentSize() { return this->OperandSize() - 3; }
+    int64_t ArgumentSize() { return this->OperandSize() - 3; }
 
-    std::shared_ptr<ir::Value> Argument(size_t i) { return this->GetOperand(3 + i); }
-    void Argument(size_t i, std::shared_ptr<ir::Value> ir_argument) {
+    std::shared_ptr<ir::Value> Argument(int64_t i) { return this->GetOperand(3 + i); }
+    void Argument(int64_t i, std::shared_ptr<ir::Value> ir_argument) {
         this->SetOperand(i + 3, ir_argument);
     }
 
     std::list<std::shared_ptr<ir::Value>> Arguments() {
         std::list<std::shared_ptr<ir::Value>> arguments_re;
-        for (size_t i = 0; i < this->OperandSize(); ++i) {
+        for (int64_t i = 0; i < this->OperandSize(); ++i) {
             arguments_re.push_back(this->Argument(i));
         }
 

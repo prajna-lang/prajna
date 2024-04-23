@@ -29,7 +29,7 @@ class TemplateStruct;
 
 namespace prajna::ir {
 
-const size_t ADDRESS_BITS = 64;
+const int64_t ADDRESS_BITS = 64;
 
 class Function;
 struct Field;
@@ -58,7 +58,7 @@ class Type : public Named {
 
    public:
     // @ref https://llvm.org/docs/LangRef.html#langref-datalayout bytes是多少可参阅datalyout的描述
-    size_t bytes = 0;
+    int64_t bytes = 0;
 
     std::unordered_map<std::string, std::shared_ptr<Function>> member_function_dict;
     std::unordered_map<std::string, std::shared_ptr<Function>> static_function_dict;
@@ -318,7 +318,7 @@ class ArrayType : public Type {
     ArrayType() = default;
 
    public:
-    static std::shared_ptr<ArrayType> Create(std::shared_ptr<Type> value_type, size_t size) {
+    static std::shared_ptr<ArrayType> Create(std::shared_ptr<Type> value_type, int64_t size) {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_array_type = Cast<ArrayType>(ir_type)) {
                 if (ir_array_type->value_type == value_type && ir_array_type->size == size) {
@@ -339,7 +339,7 @@ class ArrayType : public Type {
 
    public:
     std::shared_ptr<Type> value_type = nullptr;
-    size_t size = 0;
+    int64_t size = 0;
 };
 
 class Field {
@@ -357,7 +357,7 @@ class Field {
 
     std::string name;
     std::shared_ptr<Type> type = nullptr;
-    size_t index = 0;
+    int64_t index = 0;
 };
 
 class StructType : public Type {
@@ -446,7 +446,7 @@ class SimdType : public Type {
     SimdType() = default;
 
    public:
-    static std::shared_ptr<SimdType> Create(std::shared_ptr<Type> value_type, size_t size) {
+    static std::shared_ptr<SimdType> Create(std::shared_ptr<Type> value_type, int64_t size) {
         for (auto ir_type : global_context.created_types) {
             if (auto ir_array_type = Cast<SimdType>(ir_type)) {
                 if (ir_array_type->value_type == value_type && ir_array_type->size == size) {
@@ -467,7 +467,7 @@ class SimdType : public Type {
 
    public:
     std::shared_ptr<Type> value_type = nullptr;
-    size_t size = 0;
+    int64_t size = 0;
 };
 
 }  // namespace prajna::ir

@@ -20,6 +20,6 @@ std::shared_ptr<ir::Module> lower(std::shared_ptr<ast::Statements> ast,
     }
 }
 
-size_t InterpreterLoweringVisitor::_command_id = 0;
+int64_t InterpreterLoweringVisitor::_command_id = 0;
 
 }  // namespace prajna::lowering

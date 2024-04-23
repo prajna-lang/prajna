@@ -4,7 +4,7 @@
 
 namespace prajna::ir {
 
-GlobalContext::GlobalContext(size_t target_bits) {
+GlobalContext::GlobalContext(int64_t target_bits) {
     this->created_types.clear();
 }  // namespace prajna::ir
 

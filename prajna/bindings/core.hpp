@@ -23,20 +23,20 @@ class Array {
 template <typename Type>
 struct Ptr {
     Type* raw_ptr;
-    size_t size;
-    size_t* _reference_counter;
+    int64_t size;
+    int64_t* _reference_counter;
 
-    static Ptr<Type> Allocate(size_t size) {
+    static Ptr<Type> Allocate(int64_t size) {
         Ptr<Type> self;
         self.raw_ptr = new Type[size];
         self.size = size;
 
-        self._reference_counter = new size_t;
+        self._reference_counter = new int64_t;
         *self._reference_counter = 1;
         return self;
     }
 
-    Type& operator[](size_t offset) { return this->raw_ptr[offset]; }
+    Type& operator[](int64_t offset) { return this->raw_ptr[offset]; }
 
     // ~Ptr() { delete[] this->raw_ptr; }
 };

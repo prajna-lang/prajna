@@ -673,7 +673,7 @@ class ExpressionLoweringVisitor {
             array_template->Instantiate(symbol_template_arguments, ir_builder->module);
 
         auto ir_array_tmp = ir_builder->Create<ir::LocalVariable>(ir_array_type);
-        size_t i = 0;
+        int64_t i = 0;
         for (auto ast_array_value : ast_array_values) {
             auto ir_value = this->applyOperand(ast_array_value);
             if (ir_value->type != ir_value_type) {

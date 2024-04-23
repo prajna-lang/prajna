@@ -196,7 +196,7 @@ class LlvmCodegen {
         llvm::Function *llvm_fun = static_cast<llvm::Function *>(ir_function->llvm_value);
         PRAJNA_ASSERT(llvm_fun);
         PRAJNA_ASSERT(ir_function->parameters.size() == llvm_fun->arg_size());
-        size_t i = 0;
+        int64_t i = 0;
         auto iter_parameter = ir_function->parameters.begin();
         for (auto llvm_arg = llvm_fun->arg_begin(); llvm_arg != llvm_fun->arg_end();
              ++llvm_arg, ++iter_parameter) {
@@ -370,7 +370,7 @@ class LlvmCodegen {
         if (auto ir_call = Cast<ir::Call>(ir_instruction)) {
             auto ir_function_type = ir_call->Function()->GetFunctionType();
             std::vector<llvm::Value *> llvm_arguments(ir_call->ArgumentSize());
-            for (size_t i = 0; i < llvm_arguments.size(); ++i) {
+            for (int64_t i = 0; i < llvm_arguments.size(); ++i) {
                 llvm_arguments[i] = ir_call->Argument(i)->llvm_value;
                 PRAJNA_ASSERT(llvm_arguments[i]);
             }

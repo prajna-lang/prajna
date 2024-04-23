@@ -54,7 +54,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
 
         for (auto instruction_with_index : Clone(ir_access_property->instruction_with_index_list)) {
             auto ir_inst = instruction_with_index.instruction;
-            size_t op_idx = instruction_with_index.operand_index;
+            int64_t op_idx = instruction_with_index.operand_index;
 
             PRAJNA_ASSERT(!Is<ir::GetAddressOfVariableLiked>(ir_inst));
 
@@ -117,7 +117,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             auto ir_kernel_arguments_address_array_i8ptr = ir_builder->Create<ir::LocalVariable>(
                 ir::ArrayType::Create(ir::PointerType::Create(ir::IntType::Create(8, true)),
                                       ir_kernel_function_call->ArgumentSize()));
-            for (size_t i = 0; i < ir_kernel_function_call->ArgumentSize(); ++i) {
+            for (int64_t i = 0; i < ir_kernel_function_call->ArgumentSize(); ++i) {
                 auto ir_argument = ir_kernel_function_call->Argument(i);
                 auto ir_kernel_argument_address_i8ptr = ir_builder->Create<ir::BitCast>(
                     ir_builder->Create<ir::GetAddressOfVariableLiked>(
@@ -168,7 +168,7 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
         auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
 
         for (auto ir_instruction : ir_instructions) {
-            for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
+            for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 if (auto ir_function = Cast<ir::Function>(ir_instruction->GetOperand(i))) {
                     if (ir_function->annotation_dict.count("kernel")) {
                         auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
@@ -217,7 +217,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
     for (auto ir_function : ir_module->functions) {
         auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
         for (auto ir_instruction : ir_instructions) {
-            for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
+            for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 // @note 全局变量目前遵循如果使用其他module的则自身为external的原则
                 if (auto ir_global_variable =
                         Cast<ir::GlobalVariable>(ir_instruction->GetOperand(i))) {
@@ -320,7 +320,7 @@ inline void RemoveValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
 
 inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
     utility::Each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
-        for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
+        for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->GetOperand(i);
 
             if (auto ir_function = Cast<ir::Function>(ir_operand)) {
@@ -462,7 +462,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
 
         utility::EachValue(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
             if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
-                for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
+                for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                     auto ir_operand = ir_instruction->GetOperand(i);
                     if (ir_operand->is_global) continue;
                     if (ir_operand->GetParentFunction() != ir_function) {
@@ -542,7 +542,7 @@ inline void TopologicalSortFunctionVisit(
     ir_gray_function_set.insert(ir_function);
     auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
     for (auto ir_instruction : ir_instructions) {
-        for (size_t i = 0; i < ir_instruction->OperandSize(); ++i) {
+        for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->GetOperand(i);
             if (auto ir_tmp_function = Cast<ir::Function>(ir_operand)) {
                 // 值排序同一个module里的函数

@@ -10,7 +10,7 @@ namespace prajna {
 class assert_failed : public std::exception {
    public:
     assert_failed(const std::string& expr, const std::string& function, const std::string& file,
-                  size_t line, bool verify, const std::string& msg)
+                  int64_t line, bool verify, const std::string& msg)
         : _expr(expr), _function(function), _file(file), _line(line), _msg(msg) {
         std::string with_msg;
         if (!msg.empty()) {
@@ -28,7 +28,7 @@ class assert_failed : public std::exception {
     std::string _expr;
     std::string _function;
     std::string _file;
-    size_t _line;
+    int64_t _line;
     std::string _msg;
     std::string _what_str;
 };

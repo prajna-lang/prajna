@@ -88,7 +88,7 @@ class Logger {
         }
 
         std::vector<std::string> code_lines;
-        for (size_t i = first_position.line; i <= last_position.line; ++i) {
+        for (int64_t i = first_position.line; i <= last_position.line; ++i) {
             code_lines.push_back(_code_lines[i - 1]);
         }
 

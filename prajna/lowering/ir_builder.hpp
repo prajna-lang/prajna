@@ -71,7 +71,7 @@ class IrBuilder {
         PRAJNA_ASSERT(this->symbol_table);
         auto tmp_symbol_table =
             root_optional ? this->symbol_table->RootSymbolTable() : this->symbol_table;
-        for (size_t i = 0; i < names.size() - 1; ++i) {
+        for (int64_t i = 0; i < names.size() - 1; ++i) {
             tmp_symbol_table = SymbolGet<SymbolTable>(tmp_symbol_table->Get(names[i]));
             if (!tmp_symbol_table) {
                 return nullptr;
@@ -80,7 +80,7 @@ class IrBuilder {
         return tmp_symbol_table->Get(names.back());
     }
 
-    std::shared_ptr<ir::Type> GetArrayType(std::shared_ptr<ir::Type> ir_type, size_t length) {
+    std::shared_ptr<ir::Type> GetArrayType(std::shared_ptr<ir::Type> ir_type, int64_t length) {
         PRAJNA_ASSERT(symbol_table);
 
         std::list<Symbol> symbol_template_arguments;

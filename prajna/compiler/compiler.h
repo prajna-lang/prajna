@@ -54,7 +54,7 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
 
     void ExecuteCodeInRelp(std::string command_line_code);
 
-    size_t GetSymbolValue(std::string symbol_name);
+    int64_t GetSymbolValue(std::string symbol_name);
 
     void RunTests(std::filesystem::path prajna_source_package_path);
 

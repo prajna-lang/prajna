@@ -1159,7 +1159,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
     }
 
     std::shared_ptr<Template> CreateFloatTypeIntrinsicUnaryFunctionTemplate(
-        std::string intrinsic_name, size_t argument_size = 1) {
+        std::string intrinsic_name, int64_t argument_size = 1) {
         auto template_intrinsic = Template::Create();
 
         template_intrinsic->generator = [=, symbol_table = this->ir_builder->symbol_table,

@@ -582,9 +582,12 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
         auto ir_top_block = ir_function->blocks.front();
         auto ir_allocas = utility::GetValuesInFunction<ir::Alloca>(ir_function);
         for (auto ir_alloca : ir_allocas) {
-            if (ir_alloca->parent_block != ir_top_block) {
+            if (ir_alloca->parent_block != ir_top_block &&
+                Is<ir::ConstantInt>(ir_alloca->Length())) {
                 utility::RemoveFromParent(ir_alloca);
                 ir_top_block->PushFront(ir_alloca);
+                utility::RemoveFromParent(ir_alloca->Length());
+                ir_top_block->PushFront(ir_alloca->Length());
             }
         }
     }

@@ -922,11 +922,13 @@ class Alloca : public Instruction {
     Alloca() = default;
 
    public:
-    static std::shared_ptr<Alloca> Create(std::shared_ptr<Type> type) {
+    static std::shared_ptr<Alloca> Create(std::shared_ptr<Type> type,
+                                          std::shared_ptr<Value> length) {
         PRAJNA_ASSERT(type);
         auto self =
             Cast<Alloca>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Alloca)));
-        self->OperandResize(0);
+        self->OperandResize(1);
+        self->Length(length);
         self->type = PointerType::Create(type);
         self->tag = "Alloca";
         return self;
@@ -938,6 +940,9 @@ class Alloca : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    std::shared_ptr<Value> Length() { return this->GetOperand(0); }
+    void Length(std::shared_ptr<Value> ir_length) { this->SetOperand(0, ir_length); }
 };
 
 class GlobalVariable;

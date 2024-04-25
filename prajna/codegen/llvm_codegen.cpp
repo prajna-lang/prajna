@@ -122,6 +122,13 @@ class LlvmCodegen {
                 llvm::ArrayType::get(ir_array_type->value_type->llvm_type, ir_array_type->size);
             return;
         }
+        if (auto ir_vectory_type = Cast<ir::VectorType>(ir_type)) {
+            this->EmitType(ir_vectory_type->value_type);
+            ir_vectory_type->llvm_type =
+                llvm::VectorType::get(ir_vectory_type->value_type->llvm_type,
+                                      llvm::ElementCount::getFixed(ir_vectory_type->size));
+            return;
+        }
         if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
             auto llvm_struct_type =
                 llvm::StructType::create(static_llvm_context, ir_struct_type->fullname);

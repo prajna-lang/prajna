@@ -342,6 +342,35 @@ class ArrayType : public Type {
     int64_t size = 0;
 };
 
+class VectorType : public Type {
+   protected:
+    VectorType() = default;
+
+   public:
+    static std::shared_ptr<VectorType> Create(std::shared_ptr<Type> value_type, int64_t size) {
+        for (auto ir_type : global_context.created_types) {
+            if (auto ir_vectory_type = Cast<VectorType>(ir_type)) {
+                if (ir_vectory_type->value_type == value_type && ir_vectory_type->size == size) {
+                    return ir_vectory_type;
+                }
+            }
+        }
+
+        std::shared_ptr<VectorType> self(new VectorType);
+        self->value_type = value_type;
+        self->size = size;
+        self->bytes = value_type->bytes * size;
+        self->name = value_type->name + "[" + std::to_string(size) + "]";
+        self->fullname = self->name;
+        global_context.created_types.push_back(self);
+        return self;
+    }
+
+   public:
+    std::shared_ptr<Type> value_type = nullptr;
+    int64_t size = 0;
+};
+
 class Field {
    protected:
     Field() = default;

@@ -30,10 +30,16 @@ class IrBuilder {
 
     static std::shared_ptr<IrBuilder> Create() { return Create(nullptr, nullptr, nullptr); }
 
-    std::shared_ptr<ir::Type> GetInt64Type() { return ir::IntType::Create(ir::ADDRESS_BITS, true); }
+    std::shared_ptr<ir::Type> GetInt64Type() { return ir::IntType::Create(64, true); }
+    std::shared_ptr<ir::Type> GetInt32Type() { return ir::IntType::Create(32, true); }
 
     std::shared_ptr<ir::ConstantInt> GetInt64Constant(int64_t value) {
         auto ir_value = this->Create<ir::ConstantInt>(GetInt64Type(), value);
+        return ir_value;
+    }
+
+    std::shared_ptr<ir::ConstantInt> GetInt32Constant(int32_t value) {
+        auto ir_value = this->Create<ir::ConstantInt>(this->GetInt32Type(), value);
         return ir_value;
     }
 

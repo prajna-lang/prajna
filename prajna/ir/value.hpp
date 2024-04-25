@@ -358,6 +358,42 @@ class ConstantArray : public Constant {
     std::list<std::shared_ptr<Constant>> initialize_constants;
 };
 
+class ConstantVector : public Constant {
+   protected:
+    ConstantVector() = default;
+
+   public:
+    static std::shared_ptr<ConstantVector> Create(
+        std::shared_ptr<VectorType> ir_vector_type,
+        std::list<std::shared_ptr<Constant>> ir_init_constants) {
+        PRAJNA_ASSERT(ir_vector_type);
+        std::shared_ptr<ConstantVector> self(new ConstantVector);
+        self->tag = "ConstantVector";
+        self->type = ir_vector_type;
+        self->initialize_constants = ir_init_constants;
+        return self;
+    }
+
+    std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
+        std::list<std::shared_ptr<Constant>> new_initialize_constants(
+            this->initialize_constants.size());
+        std::transform(
+            RANGE(this->initialize_constants), new_initialize_constants.begin(),
+            [=](auto ir_constant) {
+                PRAJNA_ASSERT(
+                    function_cloner->value_dict[ir_constant]);  // constant应该在前面就处理过;
+                return Cast<Constant>(function_cloner->value_dict[ir_constant]);
+            });
+
+        std::shared_ptr<ConstantVector> ir_new =
+            ConstantVector::Create(Cast<VectorType>(this->type), new_initialize_constants);
+        function_cloner->value_dict[shared_from_this()] = ir_new;
+        return ir_new;
+    }
+
+    std::list<std::shared_ptr<Constant>> initialize_constants;
+};
+
 /// @brief  和高级语言里的块是对应的
 class Block : public Value {
    protected:
@@ -645,9 +681,11 @@ class IndexArray : virtual public VariableLiked, virtual public Instruction {
         self->OperandResize(2);
         self->object(ir_object);
         self->IndexVariable(ir_index);
-        auto ir_array_type = Cast<ArrayType>(ir_object->type);
-        PRAJNA_ASSERT(ir_array_type);
-        self->type = ir_array_type->value_type;
+        if (Is<ArrayType>(ir_object->type)) {
+            self->type = Cast<ArrayType>(ir_object->type)->value_type;
+        } else {
+            self->type = Cast<VectorType>(ir_object->type)->value_type;
+        }
         self->tag = "IndexArray";
         return self;
     }
@@ -761,9 +799,13 @@ class GetArrayElementPointer : public Instruction {
         self->IndexVariable(ir_index);
         auto ir_pointer_type = Cast<PointerType>(ir_pointer->type);
         PRAJNA_ASSERT(ir_pointer_type);
-        auto ir_array_type = Cast<ArrayType>(ir_pointer_type->value_type);
-        PRAJNA_ASSERT(ir_array_type);
-        self->type = PointerType::Create(ir_array_type->value_type);
+        if (Is<ArrayType>(ir_pointer_type->value_type)) {
+            self->type =
+                PointerType::Create(Cast<ArrayType>(ir_pointer_type->value_type)->value_type);
+        } else {
+            self->type =
+                PointerType::Create(Cast<VectorType>(ir_pointer_type->value_type)->value_type);
+        }
         self->tag = "GetArrayElementPointer";
         return self;
     }
@@ -1515,6 +1557,31 @@ class WriteProperty : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+};
+
+class ShuffleVector : public Instruction {
+   protected:
+    ShuffleVector() = default;
+
+   public:
+    static std::shared_ptr<ShuffleVector> Create(std::shared_ptr<ir::Value> ir_value,
+                                                 std::shared_ptr<ir::Value> ir_mask) {
+        PRAJNA_ASSERT(Is<VectorType>(ir_value->type));
+        PRAJNA_ASSERT(Is<VectorType>(ir_mask->type));
+        std::shared_ptr<ShuffleVector> self(new ShuffleVector);
+        self->type = ir_value->type;
+        self->OperandResize(2);
+        self->Value(ir_value);
+        self->Mask(ir_mask);
+        self->tag = "ShuffleVector";
+        return self;
+    }
+
+    std::shared_ptr<ir::Value> Value() { return this->GetOperand(0); }
+    void Value(std::shared_ptr<ir::Value> ir_value) { this->SetOperand(0, ir_value); }
+
+    std::shared_ptr<ir::Value> Mask() { return this->GetOperand(1); }
+    void Mask(std::shared_ptr<ir::Value> ir_mask) { this->SetOperand(1, ir_mask); }
 };
 
 class Module : public Named, public std::enable_shared_from_this<Module> {

@@ -350,6 +350,21 @@ class LlvmCodegen {
             return;
         }
 
+        if (auto ir_constant_vector = Cast<ir::ConstantVector>(ir_constant)) {
+            std::vector<llvm::Constant *> llvm_contants(
+                ir_constant_vector->initialize_constants.size());
+            std::transform(RANGE(ir_constant_vector->initialize_constants), llvm_contants.begin(),
+                           [=](auto ir_init) {
+                               auto llvm_constant =
+                                   static_cast<llvm::Constant *>(ir_init->llvm_value);
+                               PRAJNA_ASSERT(llvm_constant);
+                               return llvm_constant;
+                           });
+            PRAJNA_ASSERT(ir_constant_vector->type->llvm_type);
+            ir_constant_vector->llvm_value = llvm::ConstantVector::get(llvm_contants);
+            return;
+        }
+
         PRAJNA_TODO;
     }
 
@@ -651,6 +666,13 @@ class LlvmCodegen {
                 llvm_binary_operator_operation, ir_binary_operator->GetOperand(0)->llvm_value,
                 ir_binary_operator->GetOperand(1)->llvm_value, "", llvm_basic_block);
 
+            return;
+        }
+
+        if (auto ir_shuffle_vector = Cast<ir::ShuffleVector>(ir_instruction)) {
+            ir_shuffle_vector->llvm_value = new llvm::ShuffleVectorInst(
+                ir_shuffle_vector->Value()->llvm_value, ir_shuffle_vector->Mask()->llvm_value, "",
+                llvm_basic_block);
             return;
         }
 

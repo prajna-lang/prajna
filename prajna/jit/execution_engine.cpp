@@ -79,23 +79,29 @@ ExecutionEngine::ExecutionEngine() {
     LLVMInitializeNativeAsmPrinter();
     // LLVMInitializeNativeAsmParser();
 
+    auto lljit_builder = llvm::orc::LLJITBuilder();
+    auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
+    PRAJNA_VERIFY(JTMB);
+    JTMB->getOptions().AllowFPOpFusion = llvm::FPOpFusion::Fast;
+    JTMB->getOptions().UnsafeFPMath = true;
+    lljit_builder.setJITTargetMachineBuilder(*JTMB);
+
+    lljit_builder.setObjectLinkingLayerCreator(
+        [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
+            // @note 需要确认机制是做什么用的
+            auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(
+                ES, std::make_unique<llvm::jitlink::InProcessMemoryManager>(64 * 1024));
+            ll->setAutoClaimResponsibilityForObjectSymbols(true);
+            return std::move(ll);
+        });
+
 // TODO: 需要确定setObjectLinkingLayerCreator的作用, 现在去除后, 在mac上会报错.
 #ifdef __APPLE__
-    auto expect_up_lljit =
-        llvm::orc::LLJITBuilder()
-            .setObjectLinkingLayerCreator(
-                [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
-                    // @note 需要确认机制是做什么用的
-                    auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(
-                        ES, std::make_unique<llvm::jitlink::InProcessMemoryManager>(64 * 1024));
-                    ll->setAutoClaimResponsibilityForObjectSymbols(true);
-                    return std::move(ll);
-                })
-            .create();
+    auto expect_up_lljit = lljit_builder.create();
 #else
     auto expect_up_lljit = llvm::orc::LLJITBuilder().create();
 #endif
-    PRAJNA_ASSERT(expect_up_lljit);
+    PRAJNA_VERIFY(expect_up_lljit);
     _up_lljit = std::move(*expect_up_lljit);
 
     _up_lljit->getMainJITDylib().addGenerator(

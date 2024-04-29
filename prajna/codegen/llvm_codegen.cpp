@@ -413,9 +413,9 @@ class LlvmCodegen {
         if (auto ir_alloca = Cast<ir::Alloca>(ir_instruction)) {
             auto ir_alloca_type = Cast<ir::PointerType>(ir_alloca->type);
             PRAJNA_ASSERT(ir_alloca_type && ir_alloca_type->value_type->llvm_type);
-            ir_alloca->llvm_value = new llvm::AllocaInst(ir_alloca_type->value_type->llvm_type, 0,
-                                                         ir_alloca->Length()->llvm_value,
-                                                         ir_alloca->name, llvm_basic_block);
+            ir_alloca->llvm_value = new llvm::AllocaInst(
+                ir_alloca_type->value_type->llvm_type, 0, ir_alloca->Length()->llvm_value,
+                llvm::Align(16), ir_alloca->name, llvm_basic_block);
             return;
         }
 

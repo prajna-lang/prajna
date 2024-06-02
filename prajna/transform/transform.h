@@ -435,7 +435,8 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
             PRAJNA_ASSERT(ir_function->blocks.empty());
             auto ir_builder = lowering::IrBuilder::Create();
             ir_builder->CreateTopBlockForFunction(ir_function);
-            auto ir_call = ir_builder->Create<ir::Call>(ir_decl_function, ir_function->parameters);
+            auto ir_call = ir_builder->Create<ir::Call>(
+                ir_decl_function, ListCast<ir::Value>(ir_function->parameters));
             if (!Is<ir::VoidType>(ir_decl_function->function_type->return_type)) {
                 ir_builder->Create<ir::Return>(ir_call);
             }

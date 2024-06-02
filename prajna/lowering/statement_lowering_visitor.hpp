@@ -779,7 +779,10 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 auto ir_this_pointer = ir_builder->Create<ir::BitCast>(
                     ir_undef_this_pointer_function->parameters.front(),
                     ir_function->parameters.front()->type);
-                auto ir_arguments = ir_undef_this_pointer_function->parameters;
+                std::list<std::shared_ptr<ir::Value>> ir_arguments;
+                std::transform(RANGE(ir_undef_this_pointer_function->parameters),
+                               std::back_inserter(ir_arguments),
+                               [](auto x) -> std::shared_ptr<ir::Value> { return x; });
                 ir_arguments.front() = ir_this_pointer;
                 auto ir_call = ir_builder->Create<ir::Call>(ir_function, ir_arguments);
                 if (Is<ir::VoidType>(ir_call->type)) {
@@ -1191,8 +1194,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_function->annotation_dict["inline"];
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
 
-            ir_tmp_builder->Create<ir::Return>(
-                ir_tmp_builder->Create<ir::Call>(ir_intrinsic_function, ir_function->parameters));
+            ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Create<ir::Call>(
+                ir_intrinsic_function, ListCast<ir::Value>(ir_function->parameters)));
             return ir_function;
         };
 
@@ -1354,7 +1357,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
             ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Create<ir::Call>(
-                ir_interface->dynamic_type_creator, ir_function->parameters));
+                ir_interface->dynamic_type_creator, ListCast<ir::Value>(ir_function->parameters)));
             return ir_function;
         };
 
@@ -2138,7 +2141,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_function_pointer = ir_builder->Create<ir::AccessField>(
                 ir_builder->Create<ir::DeferencePointer>(ir_this_pointer), field_function_pointer);
             // 直接将外层函数的参数转发进去, 除了第一个参数需要调整一下
-            auto ir_arguments = ir_member_function->parameters;
+            std::list<std::shared_ptr<ir::Value>> ir_arguments;
+            std::transform(RANGE(ir_member_function->parameters), std::back_inserter(ir_arguments),
+                           [](auto x) -> std::shared_ptr<ir::Value> { return x; });
             ir_arguments.front() = ir_builder->AccessField(
                 ir_builder->Create<ir::AccessField>(
                     ir_builder->Create<ir::DeferencePointer>(ir_this_pointer),

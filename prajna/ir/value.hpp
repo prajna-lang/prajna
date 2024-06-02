@@ -197,6 +197,12 @@ class Parameter : public Value {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
+
+   public:
+    bool no_alias = false;
+    bool no_capture = false;
+    bool no_undef = false;
+    bool readonly = false;
 };
 
 class Constant : public Value {
@@ -501,7 +507,7 @@ class Function : public Value {
 
    public:
     std::shared_ptr<FunctionType> function_type = nullptr;
-    std::list<std::shared_ptr<ir::Value>> parameters;
+    std::list<std::shared_ptr<ir::Parameter>> parameters;
     std::list<std::shared_ptr<Block>> blocks;
     std::shared_ptr<Module> parent_module = nullptr;
 
@@ -1569,6 +1575,8 @@ class ShuffleVector : public Instruction {
         PRAJNA_ASSERT(Is<VectorType>(ir_value->type));
         PRAJNA_ASSERT(Is<VectorType>(ir_mask->type));
         std::shared_ptr<ShuffleVector> self(new ShuffleVector);
+        PRAJNA_ASSERT(Cast<VectorType>(ir_value->type)->size ==
+                      Cast<VectorType>(ir_mask->type)->size);
         self->type = ir_value->type;
         self->OperandResize(2);
         self->Value(ir_value);
@@ -1808,7 +1816,7 @@ inline std::shared_ptr<ir::Value> Function::Clone(std::shared_ptr<FunctionCloner
                    [=](auto ir_parameter) {
                        auto ir_new_parameter = ir_parameter->Clone(function_cloner);
                        function_cloner->value_dict[ir_parameter] = ir_new_parameter;
-                       return ir_new_parameter;
+                       return Cast<Parameter>(ir_new_parameter);
                    });
 
     // 需要再开头, 因为函数有可能存在递归

@@ -207,7 +207,20 @@ class LlvmCodegen {
         auto iter_parameter = ir_function->parameters.begin();
         for (auto llvm_arg = llvm_fun->arg_begin(); llvm_arg != llvm_fun->arg_end();
              ++llvm_arg, ++iter_parameter) {
-            (*iter_parameter)->llvm_value = llvm_arg;
+            auto ir_parameter = *iter_parameter;
+            if (ir_parameter->no_alias) {
+                llvm_arg->addAttr(llvm::Attribute::NoAlias);
+            }
+            if (ir_parameter->no_capture) {
+                llvm_arg->addAttr(llvm::Attribute::NoCapture);
+            }
+            if (ir_parameter->no_undef) {
+                llvm_arg->addAttr(llvm::Attribute::NoUndef);
+            }
+            if (ir_parameter->readonly) {
+                llvm_arg->addAttr(llvm::Attribute::ReadOnly);
+            }
+            ir_parameter->llvm_value = llvm_arg;
         }
 
         for (auto block : ir_function->blocks) {

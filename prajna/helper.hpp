@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
+#include <list>
 #include <memory>
 
 #include "boost/dll/runtime_symbol_info.hpp"
@@ -40,6 +41,15 @@ template <typename DstType_, typename SrcType_>
 auto Cast(std::shared_ptr<SrcType_> ir_src) -> std::shared_ptr<DstType_> {
     auto ir_dst = std::dynamic_pointer_cast<DstType_>(ir_src);
     return ir_dst;
+}
+
+template <typename DstType_, typename SrcType_>
+auto ListCast(std::list<std::shared_ptr<SrcType_>> src_list)
+    -> std::list<std::shared_ptr<DstType_>> {
+    std::list<std::shared_ptr<DstType_>> dst_list;
+    std::transform(RANGE(src_list), std::back_inserter(dst_list),
+                   [](std::shared_ptr<DstType_> x) { return Cast<DstType_>(x); });
+    return dst_list;
 }
 
 template <typename DstType_, typename SrcType_>

@@ -122,11 +122,11 @@ class LlvmCodegen {
                 llvm::ArrayType::get(ir_array_type->value_type->llvm_type, ir_array_type->size);
             return;
         }
-        if (auto ir_vectory_type = Cast<ir::VectorType>(ir_type)) {
-            this->EmitType(ir_vectory_type->value_type);
-            ir_vectory_type->llvm_type =
-                llvm::VectorType::get(ir_vectory_type->value_type->llvm_type,
-                                      llvm::ElementCount::getFixed(ir_vectory_type->size));
+        if (auto ir_vector_type = Cast<ir::VectorType>(ir_type)) {
+            this->EmitType(ir_vector_type->value_type);
+            ir_vector_type->llvm_type =
+                llvm::VectorType::get(ir_vector_type->value_type->llvm_type,
+                                      llvm::ElementCount::getFixed(ir_vector_type->size));
             return;
         }
         if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
@@ -748,7 +748,7 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
     llvm::ModulePassManager MPM =
-        PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3, true);
+        PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O2, true);
 
     MPM.run(*ir_module->llvm_module, MAM);
 

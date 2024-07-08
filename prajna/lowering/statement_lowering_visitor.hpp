@@ -235,7 +235,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         });
 
         (*this)(block.statements);
-        auto ir_block = ir_builder->currentBlock();
+        auto ir_block = ir_builder->CurrentBlock();
         return ir_block;
     }
 

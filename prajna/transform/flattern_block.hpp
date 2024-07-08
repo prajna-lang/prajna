@@ -159,7 +159,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
 
             ir_builder->PushBlock(ir_for->LoopBlock());
             // 给ir_for->IndexVariable()赋值
-            ir_builder->inserter_iterator = ir_builder->currentBlock()->values.begin();
+            ir_builder->inserter_iterator = ir_builder->CurrentBlock()->values.begin();
             ir_builder->Create<ir::WriteVariableLiked>(ir_index_count, ir_for->IndexVariable());
             // 需要在后面执行, 插入到最前面去
             ir_for->LoopBlock()->PushFront(ir_label_loop);

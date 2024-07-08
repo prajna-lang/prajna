@@ -199,7 +199,7 @@ class IrBuilder {
     }
 
     void insert(std::shared_ptr<ir::Value> ir_value) {
-        currentBlock()->insert(this->inserter_iterator, ir_value);
+        CurrentBlock()->insert(this->inserter_iterator, ir_value);
         if (this->create_callback) {
             this->create_callback(ir_value);
         }
@@ -387,7 +387,7 @@ class IrBuilder {
         PRAJNA_ASSERT(!block_stack.empty());
         block_stack.pop();
         if (!block_stack.empty()) {
-            inserter_iterator = currentBlock()->values.end();
+            inserter_iterator = CurrentBlock()->values.end();
         }
     }
 
@@ -405,7 +405,7 @@ class IrBuilder {
         inserter_iterator = ir_block->values.end();
     }
 
-    std::shared_ptr<ir::Block> currentBlock() {
+    std::shared_ptr<ir::Block> CurrentBlock() {
         PRAJNA_ASSERT(!block_stack.empty());
         return block_stack.top();
     }

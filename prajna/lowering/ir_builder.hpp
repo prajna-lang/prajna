@@ -243,6 +243,10 @@ class IrBuilder {
         return ir_type->static_function_dict[member_function_name];
     }
 
+    std::shared_ptr<ir::Return> ReturnVoid() {
+        return this->Create<ir::Return>(this->Create<ir::VoidValue>());
+    }
+
     std::shared_ptr<ir::Value> GetString(std::string str) {
         // 最后需要补零, 以兼容C的字符串
         auto char_string_size = str.size() + 1;

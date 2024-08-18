@@ -439,6 +439,8 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
                 ir_decl_function, ListCast<ir::Value>(ir_function->parameters));
             if (!Is<ir::VoidType>(ir_decl_function->function_type->return_type)) {
                 ir_builder->Create<ir::Return>(ir_call);
+            } else {
+                ir_builder->ReturnVoid();
             }
 
             ir_function->annotation_dict.erase("intrinsic");

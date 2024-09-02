@@ -18,6 +18,7 @@ jobs:
         password: ${{ secrets.USER_PASSWORD }}
         script: |
           docker exec ${{ secrets.DOCKER_CONTAINER_ID }} /bin/bash -c "
+          source ~/.bashrc
           cd /prajna && git fetch && git pull
           ./scripts/configure.sh release
           ./scripts/build.sh release

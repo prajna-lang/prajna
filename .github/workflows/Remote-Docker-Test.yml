@@ -17,7 +17,7 @@ jobs:
         username: ${{ secrets.USER_NAME }}
         password: ${{ secrets.USER_PASSWORD }}
         script: |
-          -T docker exec -it ${{ secrets.DOCKER_CONTAINER_ID }} /bin/bash -c "
+          docker exec ${{ secrets.DOCKER_CONTAINER_ID }} /bin/bash -c "
           su ${{ secrets.DOCKER_USER_NAME }}
           echo ${{ secrets.DOCKER_USER_PASSWORD }}
           cd /home/ubuntu/prajna && git fetch && git pull

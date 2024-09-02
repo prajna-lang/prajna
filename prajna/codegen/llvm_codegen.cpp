@@ -730,7 +730,7 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     JTMB->setCPU("");
     JTMB->setRelocationModel(std::nullopt);
     JTMB->setCodeModel(std::nullopt);
-    JTMB->setCodeGenOptLevel(llvm::CodeGenOpt::None);
+    JTMB->setCodeGenOptLevel(llvm::CodeGenOptLevel::None);
     JTMB->addFeatures(std::vector<std::string>());
     auto TM = JTMB->createTargetMachine();
     PRAJNA_ASSERT(TM && TM.get());

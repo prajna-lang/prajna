@@ -34,6 +34,8 @@ if (UNIX AND NOT APPLE)
     set(COMPILER_RT_BUILTINS_HIDE_SYMBOLS Off)
 endif()
 
+find_package(OpenSSL REQUIRED)
+
 add_subdirectory(third_party/llvm-project/llvm EXCLUDE_FROM_ALL)
 # 需要手动添加llvm的头文件路径
 add_library(llvm_include_dir INTERFACE)

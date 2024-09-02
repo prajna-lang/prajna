@@ -1,6 +1,6 @@
 name: Remote Docker Test Workflow
 
-on: [push]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   deploy:
@@ -18,11 +18,7 @@ jobs:
         password: ${{ secrets.USER_PASSWORD }}
         script: |
           docker exec ${{ secrets.DOCKER_CONTAINER_ID }} /bin/bash -c "
-          pwd
-          su ${{ secrets.DOCKER_USER_NAME }}
-          echo ${{ secrets.DOCKER_USER_PASSWORD }}
-          pwd
-          cd /home/ubuntu/prajna && git fetch && git pull
+          cd /prajna && git fetch && git pull
           ./scripts/configure.sh release
           ./scripts/build.sh release
           ./scripts/test.sh release

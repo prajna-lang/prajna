@@ -19,9 +19,9 @@ jobs:
         script: |
           docker exec ${{ secrets.DOCKER_CONTAINER_ID }} /bin/bash -c "
           export PATH=\"/usr/local/cmake-3.25.2-linux-x86_64/bin:$PATH\"
-          cd /prajna
+          cd /prajna && rm -rf /prajna/build_release/*
           git pull > /dev/null 2>&1 || true
-          ./scripts/configure.sh release
-          ./scripts/build.sh release
+          ./scripts/configure.sh release > ./scripts/configure.log
+          ./scripts/build.sh release > ./scripts/build.log
           ./scripts/test.sh release
           "

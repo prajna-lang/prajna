@@ -673,6 +673,8 @@ class ExpressionLoweringVisitor {
             array_template->Instantiate(symbol_template_arguments, ir_builder->module);
 
         auto ir_array_tmp = ir_builder->Create<ir::LocalVariable>(ir_array_type);
+        auto ir_index_property = ir_builder->GetLinearIndexProperty(ir_array_type);
+        PRAJNA_VERIFY(ir_index_property, "Array index property is missing");
         int64_t i = 0;
         for (auto ast_array_value : ast_array_values) {
             auto ir_value = this->applyOperand(ast_array_value);
@@ -680,9 +682,12 @@ class ExpressionLoweringVisitor {
                 logger->Error("the array element type are not the same", ast_array_value);
             }
             auto ir_index = ir_builder->GetInt64Constant(i);
-            auto ir_get_array_element_pointer =
-                ir_builder->Create<ir::IndexArray>(ir_array_tmp, ir_index);
-            ir_builder->Create<ir::WriteVariableLiked>(ir_value, ir_get_array_element_pointer);
+            auto ir_array_tmp_this_pointer =
+                ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_tmp);
+            auto ir_access_property = ir_builder->Create<ir::AccessProperty>(
+                ir_array_tmp_this_pointer, ir_index_property);
+            ir_access_property->Arguments({ir_index});
+            ir_builder->Create<ir::WriteProperty>(ir_value, ir_access_property);
             ++i;
         }
 

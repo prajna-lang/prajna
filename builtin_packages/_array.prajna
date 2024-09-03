@@ -1,22 +1,20 @@
-// template <Type, Length_>
-// struct Array{
-//     data: array<Type, Length_>;
-// }
+template <Type, Length_>
+struct Array{
+    data: array<Type, Length_>;
+}
 
-use array as Array; //nested Array存在问题, 所以现在直接使用array
+template <Type, Length_>
+implement Array<Type, Length_> {
+    @inline
+    func __get_linear_index__(idx: i64)->Type{
+        return this.data[idx];
+    }
 
-// template <Type, Length_>
-// implement Array<Type, Length_> {
-//     @inline
-//     func __get_linear_index__(idx: i64)->Type{
-//         return this.data[idx];
-//     }
-
-//     @inline
-//     func __set_linear_index__(idx: i64, value: Type){
-//         this.data[idx] = value;
-//     }
-// }
+    @inline
+    func __set_linear_index__(idx: i64, value: Type){
+        this.data[idx] = value;
+    }
+}
 
 template <Type, Length_>
 implement Array<Type, Length_>{

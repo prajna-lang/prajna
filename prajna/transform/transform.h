@@ -700,8 +700,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, InsertLocationForAssert);
     PRAJNA_ASSERT(VerifyModule(ir_module));
-    // TODO: disalbe multidim for 1 dim feature;
-    // ConvertForMultiDimToFor1Dim(ir_module);
+    ConvertForMultiDimToFor1Dim(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, ConvertPropertyToFunctionCall);
     PRAJNA_ASSERT(VerifyModule(ir_module));

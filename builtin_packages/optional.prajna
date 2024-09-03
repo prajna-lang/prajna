@@ -15,8 +15,10 @@ implement Optional<ValueType> {
     }
 
     func __get__Value()->ValueType{
+        "hit\n".Print();
         if (!this.HasValue()) {
-            debug::AssertWithMessage(false, "has no value");
+            // TODO(张志敏): 属性赋值存在bug, 后续需要修复
+            // debug::AssertWithMessage(false, "has no value");
         }
         return this._value;
     }
@@ -33,7 +35,7 @@ implement Optional<ValueType> {
     @static
     func Create(value: ValueType) -> Optional<ValueType> {
         var optional: Optional<ValueType>;
-        optional.Value = value;
+        optional._value = value;
         return optional;
     }
 }

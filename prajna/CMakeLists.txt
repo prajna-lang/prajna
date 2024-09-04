@@ -13,6 +13,7 @@ target_link_libraries(prajna_config_target
     INTERFACE Boost::dll
     INTERFACE Boost::process
     INTERFACE Boost::asio
+    INTERFACE Boost::scope
     INTERFACE fmt::fmt
 )
 

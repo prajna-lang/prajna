@@ -57,7 +57,10 @@ class IrBuilder {
     bool IsArrayI64Type(std::shared_ptr<ir::Type> ir_type) {
         auto array_template_struct =
             SymbolGet<TemplateStruct>(this->GetSymbolByPath(false, {"Array"}));
-        PRAJNA_ASSERT(array_template_struct);
+        // 加载Array并非必须的
+        if (!array_template_struct) {
+            return false;
+        }
         auto symbol_list =
             std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments_any);
         if (ir_type->template_struct == array_template_struct) {

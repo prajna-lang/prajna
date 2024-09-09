@@ -58,7 +58,6 @@ inline std::shared_ptr<lowering::SymbolTable> CreateSymbolTableTree(
 }  // namespace
 
 std::shared_ptr<Compiler> Compiler::Create() {
-    ir::global_context = ir::GlobalContext(64);
     std::shared_ptr<Compiler> self(new Compiler);
     self->_symbol_table = lowering::SymbolTable::Create(nullptr);
     self->jit_engine = std::make_shared<jit::ExecutionEngine>();

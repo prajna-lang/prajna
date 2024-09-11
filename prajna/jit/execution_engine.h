@@ -3,11 +3,12 @@
 
 #include <memory>
 
-#include "llvm/ExecutionEngine/JITLink/JITLinkMemoryManager.h"
-#include "llvm/ExecutionEngine/Orc/LLJIT.h"
-
 namespace prajna::ir {
 class Module;
+}
+
+namespace llvm::orc {
+class LLJIT;
 }
 
 namespace prajna::jit {
@@ -29,7 +30,7 @@ class ExecutionEngine {
     void BindBuiltinFunction();
 
    private:
-    std::unique_ptr<llvm::orc::LLJIT> _up_lljit;
+    std::shared_ptr<llvm::orc::LLJIT> _up_lljit;
 };
 
 }  // namespace prajna::jit

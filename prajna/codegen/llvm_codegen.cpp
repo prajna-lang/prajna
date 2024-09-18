@@ -11,6 +11,7 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
+#include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
@@ -690,6 +691,13 @@ class LlvmCodegen {
         }
 
         PRAJNA_ASSERT(false, ir_instruction->tag);
+    }
+
+    void EmitInlineAsm(std::shared_ptr<ir::InlineAsm> ir_inline_asm) {
+        ir_inline_asm->llvm_value = llvm::InlineAsm::get(
+            static_cast<llvm::FunctionType *>(ir_inline_asm->type->llvm_type),
+            ir_inline_asm->str_asm, ir_inline_asm->str_constrains, ir_inline_asm->has_side_effects);
+        ;
     }
 };
 

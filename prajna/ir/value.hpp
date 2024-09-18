@@ -1706,6 +1706,26 @@ class Closure : public Value {
     std::list<std::shared_ptr<Block>> blocks;
 };
 
+class InlineAsm : public Value {
+   protected:
+    InlineAsm() = default;
+
+   public:
+    static std::shared_ptr<InlineAsm> Create(std::shared_ptr<FunctionType> ir_function_type,
+                                             std::string str_asm, std::string str_constrains) {
+        std::shared_ptr<InlineAsm> self(new InlineAsm);
+        self->type = ir_function_type;
+        self->str_asm = str_asm;
+        self->str_constrains = str_constrains;
+        return self;
+    }
+
+    std::string str_asm;
+    std::string str_constrains;
+    bool has_side_effects = false;
+    bool is_align_stack = false;
+};
+
 inline std::shared_ptr<Function> Value::GetParentFunction() {
     if (this->parent_function) {
         return this->parent_function;

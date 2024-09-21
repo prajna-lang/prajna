@@ -40,7 +40,7 @@ class Compiler : public std::enable_shared_from_this<Compiler> {
     Compiler() = default;
 
    public:
-    static std::shared_ptr<Compiler> Create();
+    static std::shared_ptr<Compiler> Create(bool clean_types = true);
 
     void CompileBuiltinSourceFiles(std::string builtin_sources_dir);
 

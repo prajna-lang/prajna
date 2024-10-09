@@ -25,6 +25,7 @@ target_link_libraries(prajna_jit
     PRIVATE LLVMAArch64AsmParser
     PRIVATE LLVMAArch64Desc
     PRIVATE LLVMCore
+    PUBLIC LLVMLinker
 )
 
 if (UNIX AND NOT APPLE)

@@ -13,6 +13,7 @@ if (NOT BUILD_SHARED_LIBS)
    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
    set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 else()
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # 没有找到动态库的warning消除方法
 endif()
 

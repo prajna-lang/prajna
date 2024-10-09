@@ -19,6 +19,7 @@ target_link_libraries(prajna_codegen
     PRIVATE LLVMAArch64Info
     PRIVATE LLVMAArch64CodeGen
     PRIVATE LLVMAArch64AsmParser
+    PUBLIC LLVMPasses
     PUBLIC LLVMCore # Module在头文件暴露了
 )
 

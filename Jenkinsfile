@@ -46,7 +46,7 @@ pipeline{
                 //         stage('build') {
                 //             steps {
                 //                 sh 'git config --global --list'
-                //                 sh './scripts/clone_submodules.sh --jobs=16 --depth=10'
+                //                 sh './scripts/clone_submodules.sh --jobs=16 --depth=100'
                 //                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=ON'
                 //                 sh './scripts/build.sh ${BUILD_TYPE} install'
                 //             }
@@ -96,7 +96,7 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh --jobs=16 --depth=10'
+                                sh './scripts/clone_submodules.sh --jobs=16 --depth=100'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc
@@ -148,7 +148,7 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh --jobs=16 --depth=10'
+                                sh './scripts/clone_submodules.sh --jobs=16 --depth=100'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERTS=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc

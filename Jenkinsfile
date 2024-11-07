@@ -100,7 +100,8 @@ pipeline{
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc
-                                sh 'cd build_${BUILD_TYPE}/third_party/llvm-project/llvm/tools/llc && make llc -j && cp  ../../bin/llc /usr/bin'
+                                   // 需要安装llc
+                                sh 'cp build_${BUILD_TYPE}/bin/llc /usr/bin'
                             }
                         }
                         stage('test') {

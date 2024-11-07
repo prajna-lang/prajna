@@ -150,7 +150,7 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh --jobs=32'
+                                sh './scripts/clone_submodules.sh -f --jobs=32'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERTS=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc

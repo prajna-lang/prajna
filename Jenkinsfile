@@ -154,7 +154,7 @@ pipeline{
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERTS=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc
-                                sh 'cd build_${BUILD_TYPE}/third_party/llvm-project/llvm/tools/llc && make llc -j && cp  ../../bin/llc /usr/bin'
+                                sh 'cp build_${BUILD_TYPE}/bin/llc /usr/bin'
                             }
                         }
                         stage('test') {

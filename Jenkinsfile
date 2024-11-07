@@ -96,7 +96,7 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh --jobs=32'
+                                sh './scripts/clone_submodules.sh -f --jobs=32'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc

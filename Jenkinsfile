@@ -169,6 +169,17 @@ pipeline{
                                 sh 'valgrind --leak-check=full  --num-callers=10 --trace-children=yes ./scripts/test.sh ${BUILD_TYPE} --gtest_filter=*tensor_test'
                             }
                         }
+                        stage("clean") {
+                            when {
+                                allOf {
+                                    branch 'main'
+                                    branch 'dev'
+                                }
+                            }
+                            steps{
+                                cleanWs()
+                            }
+                        }
                     }
                 }
             }
@@ -176,13 +187,13 @@ pipeline{
     }
     post {
         always {
-            when {
-                allOf {
-                    branch 'main';
-                    branch 'dev'
-                }
-            }
-            cleanWs()
+            // // when {
+            // //     allOf {
+            // //         branch 'main'
+            // //         branch 'dev'
+            // //     }
+            // // }
+            // cleanWs()
         }
         // success {
         //     echo 'This will run only ifsuccessful'

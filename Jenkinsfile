@@ -186,7 +186,7 @@ pipeline{
         }
     }
     post {
-        always {
+        // always {
             // // when {
             // //     allOf {
             // //         branch 'main'
@@ -194,7 +194,7 @@ pipeline{
             // //     }
             // // }
             // cleanWs()
-        }
+        // }
         // success {
         //     echo 'This will run only ifsuccessful'
         // }

@@ -178,7 +178,7 @@ pipeline{
         always {
             when {
                 allOf {
-                    branch 'main'
+                    branch 'main';
                     branch 'dev'
                 }
             }

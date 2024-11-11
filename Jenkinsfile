@@ -4,9 +4,9 @@ pipeline{
     options {
         timeout(time: 2, unit: 'HOURS')
     }
-    // triggers {
-    //     cron('H H(0-7) * * *')
-    // }
+    triggers {
+        cron('30 07 * * *') // run at 07:30
+    }
 
     stages {
         stage('PRAJNA CI'){
@@ -169,19 +169,18 @@ pipeline{
                                 sh 'valgrind --leak-check=full  --num-callers=10 --trace-children=yes ./scripts/test.sh ${BUILD_TYPE} --gtest_filter=*tensor_test'
                             }
                         }
-                        stage("clean") {
-                            when {
-                                allOf {
-                                    branch 'main'
-                                    branch 'dev'
-                                }
-                            }
-                            steps{
-                                cleanWs()
-                            }
-                        }
                     }
                 }
+            }
+        }
+    }
+
+    post {
+         always {
+             script {
+                if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'dev'){
+                    cleanWs()
+               }
             }
         }
     }

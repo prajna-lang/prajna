@@ -18,18 +18,17 @@ pipeline{
                     stages {
                         stage('env') {
                             steps {
-                                // sh 'git --version'
-                                sh 'cmake --version'
+                                bat 'git --version'
+                                bat 'cmake --version'
                                 // docker内存也需要设置代理, 上面设置了使用host网络
                                 // gnutls错误, 先这样设置吧
-                                sh 'git config --global http.postBuffer 1048576000'
-                                sh "git config --global --add safe.directory '*'"
-                                sh 'git config http.sslVerify false'
+                                bat 'git config --global http.postBuffer 1048576000'
+                                bat "git config --global --add safe.directory '*'"
+                                bat 'git config http.sslVerify false'
                             }
                         }
                         stage('build') {
                             steps {
-                                sh 'git config --global --list'
                                 sh './scripts/clone_submodules.sh --jobs=32'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'

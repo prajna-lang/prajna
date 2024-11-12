@@ -21,7 +21,6 @@ pipeline{
                                 sh 'git --version'
                                 sh 'cmake --version'
                                 // docker内存也需要设置代理, 上面设置了使用host网络
-                                sh 'git config --global http.proxy localhost:1087'
                                 // gnutls错误, 先这样设置吧
                                 sh 'git config --global http.postBuffer 1048576000'
                                 sh "git config --global --add safe.directory '*'"

@@ -18,7 +18,7 @@ pipeline{
                     stages {
                         stage('env') {
                             steps {
-                                sh 'git --version'
+                                // sh 'git --version'
                                 sh 'cmake --version'
                                 // docker内存也需要设置代理, 上面设置了使用host网络
                                 // gnutls错误, 先这样设置吧

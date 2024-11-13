@@ -116,7 +116,7 @@ void Compiler::ExecuteCodeInRelp(std::string script_code) {
 
         auto ir_module = this->CompileCode(script_code, _symbol_table,
                                            ":cmd" + std::to_string(command_id++), true);
-        if (not ir_module) return;
+        if (!ir_module) return;
 
         // @note 会有一次输入多个句子的情况
         for (auto ir_function : ir_module->functions) {

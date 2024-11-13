@@ -33,11 +33,10 @@ if (UNIX AND NOT APPLE)
 endif()
 
 if (MSVC)
+
     add_library(clang_rt_whole INTERFACE)
-    set_property(TARGET clang_rt_whole PROPERTY INTERFACE_LINK_LIBRARIES
-    -WHOLEARCHIVE:$<TARGET_FILE:clang_rt.builtins-x86_64>)
-    add_dependencies(clang_rt_whole clang_rt.builtins-x86_64)
-    target_link_libraries(prajna_jit PUBLIC -WHOLEARCHIVE:$<TARGET_FILE:clang_rt.builtins-x86_64>)
+    target_link_libraries(clang_rt_whole INTERFACE "$<LINK_LIBRARY:WHOLE_ARCHIVE,clang_rt.builtins-x86_64>")
+    target_link_libraries(prajna_jit PRIVATE clang_rt_whole)
 endif()
 
 # https://github.com/fxcoudert/gfortran-for-macOS/releases

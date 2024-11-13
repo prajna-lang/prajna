@@ -1,4 +1,4 @@
-add_library(prajna_compiler compiler.cpp stdio_callback.cpp)
+add_library(prajna_compiler compiler.cpp stdio_callback.cpp boost_exception.cpp)
 
 target_link_libraries(prajna_compiler
     PRIVATE prajna_ir

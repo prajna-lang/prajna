@@ -29,8 +29,9 @@ pipeline{
                         }
                         stage('build') {
                             steps {
-                                bat 'call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat"'
                                 bat 'bash ./scripts/clone_submodules.sh --jobs=32'
+                                bat 'cl --help'
+                                bat 'call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat"'
                                 bat 'bash ./scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=ON'
                                 bat 'bash ./scripts/build.sh ${BUILD_TYPE} install'
                             }

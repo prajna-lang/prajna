@@ -23,17 +23,13 @@ pipeline{
                             steps {
                                 bat 'git --version'
                                 bat 'cmake --version'
-                                // docker内存也需要设置代理, 上面设置了使用host网络
-                                // gnutls错误, 先这样设置吧
-                                bat 'git config --global http.postBuffer 1048576000'
-                                bat "git config --global --add safe.directory '*'"
-                                bat 'git config --global http.version HTTP/1.1'
-                                bat 'git config http.sslVerify false'
+                                sh 'git config --global http.postBuffer 500M'
+                                sh 'git config --global http.maxRequestBuffer 100M'
                             }
                         }
                         stage('build') {
                             steps {
-                                bat 'bash ./scripts/clone_submodules.sh --jobs=32'
+                                bat 'bash ./scripts/clone_submodules.sh --jobs=16 --depth=50'
                                 bat 'call ./scripts/windows_build.bat %BUILD_TYPE%'
                             }
                         }
@@ -73,17 +69,14 @@ pipeline{
                                 sh 'git --version'
                                 // docker内存也需要设置代理, 上面设置了使用host网络
                                 sh 'git config --global http.proxy localhost:1087'
-                                // gnutls错误, 先这样设置吧
-                                sh 'git config --global http.postBuffer 1048576000'
-                                sh "git config --global --add safe.directory '*'"
-                                bat 'git git config --global http.version HTTP/1.1'
-                                sh 'git config http.sslVerify false'
+                                sh 'git config --global http.postBuffer 500M'
+                                sh 'git config --global http.maxRequestBuffer 100M'
                             }
                         }
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh -f --jobs=32'
+                                sh './scripts/clone_submodules.sh -f --jobs=16 --depth=50'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc
@@ -129,16 +122,12 @@ pipeline{
                                 sh 'git config --global http.proxy localhost:1087'
                                 sh 'git config --global http.postBuffer 500M'
                                 sh 'git config --global http.maxRequestBuffer 100M'
-                                sh "git config --global --add safe.directory '*'"
-                                bat 'git git config --global http.version HTTP/1.1'
-                                // gnutls错误, 先这样设置吧
-                                sh 'git config http.sslVerify false'
                             }
                         }
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh -f --jobs=32'
+                                sh './scripts/clone_submodules.sh -f --jobs=16 --depth=50'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERTS=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc

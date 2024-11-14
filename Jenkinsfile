@@ -27,6 +27,7 @@ pipeline{
                                 // gnutls错误, 先这样设置吧
                                 bat 'git config --global http.postBuffer 1048576000'
                                 bat "git config --global --add safe.directory '*'"
+                                bat 'git config --global http.version HTTP/1.1'
                                 bat 'git config http.sslVerify false'
                             }
                         }
@@ -75,6 +76,7 @@ pipeline{
                                 // gnutls错误, 先这样设置吧
                                 sh 'git config --global http.postBuffer 1048576000'
                                 sh "git config --global --add safe.directory '*'"
+                                bat 'git git config --global http.version HTTP/1.1'
                                 sh 'git config http.sslVerify false'
                             }
                         }
@@ -127,8 +129,8 @@ pipeline{
                                 sh 'git config --global http.proxy localhost:1087'
                                 sh 'git config --global http.postBuffer 500M'
                                 sh 'git config --global http.maxRequestBuffer 100M'
-                                sh 'git config --global core.compression 0'
                                 sh "git config --global --add safe.directory '*'"
+                                bat 'git git config --global http.version HTTP/1.1'
                                 // gnutls错误, 先这样设置吧
                                 sh 'git config http.sslVerify false'
                             }

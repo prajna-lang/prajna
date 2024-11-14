@@ -217,6 +217,10 @@ void ExecutionEngine::BindBuiltinFunction() {
 
 #if defined(__linux__) || defined(WIN32)
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__umodti3");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__udivti3");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__modti3");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__divti3");
     // this->BindCFunction(reinterpret_cast<void *>(__floattihf), "__floattihf");
     // this->BindCFunction(reinterpret_cast<void *>(__floatuntihf), "__floatuntihf");
 #endif

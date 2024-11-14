@@ -33,7 +33,6 @@ if (UNIX AND NOT APPLE)
     set(COMPILER_RT_DEFAULT_TARGET_ONLY ON)
 else()
     # do none
-    add_compile_options(/wd4819)
 endif()
 
 message("prajna build target triple: ${CMAKE_C_COMPILER_TARGET}")

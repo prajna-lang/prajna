@@ -35,8 +35,8 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE}'
-                                sh './scripts/test_examples.sh ${BUILD_TYPE}'
+                                sh './scripts/test.sh release'
+                                sh './scripts/test_examples.sh release'
                             }
                         }
                     }

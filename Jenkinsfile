@@ -71,6 +71,7 @@ pipeline{
                                 sh 'git config --global http.proxy localhost:1087'
                                 sh 'git config --global http.postBuffer 500M'
                                 sh 'git config --global http.maxRequestBuffer 100M'
+                                sh "git config --global --add safe.directory '*'"
                             }
                         }
                         stage('build') {
@@ -122,6 +123,7 @@ pipeline{
                                 sh 'git config --global http.proxy localhost:1087'
                                 sh 'git config --global http.postBuffer 500M'
                                 sh 'git config --global http.maxRequestBuffer 100M'
+                                sh "git config --global --add safe.directory '*'"
                             }
                         }
                         stage('build') {

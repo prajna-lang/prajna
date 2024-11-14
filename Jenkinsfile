@@ -15,6 +15,9 @@ pipeline{
                     agent {
                         label "Win11"
                     }
+                    environment{
+                        BUILD_TYPE = 'release'
+                    }
                     stages {
                         stage('env') {
                             steps {
@@ -30,13 +33,13 @@ pipeline{
                         stage('build') {
                             steps {
                                 bat 'bash ./scripts/clone_submodules.sh --jobs=32'
-                                bat 'call ./scripts/windows_build.bat'
+                                bat 'call ./scripts/windows_build.bat %BUILD_TYPE%'
                             }
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh release'
-                                sh './scripts/test_examples.sh release'
+                                bat 'bash ./scripts/test.sh %BUILD_TYPE%'
+                                bat 'bash ./scripts/test_examples.sh %BUILD_TYPE%'
                             }
                         }
                     }

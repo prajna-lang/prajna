@@ -192,11 +192,11 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 }
 
 void ExecutionEngine::BindCFunction(void *fun_ptr, std::string mangle_name) {
-    auto fun_symbol = llvm::orc::absoluteSymbols(
-        {{_up_lljit->mangleAndIntern(mangle_name),
-          {llvm::orc::ExecutorAddr::fromPtr(fun_ptr),
-           llvm::JITSymbolFlags::Exported | llvm::JITSymbolFlags::Absolute}}});
-    exit_on_error(_up_lljit->getMainJITDylib().define(fun_symbol));
+    auto jit_evaluated_symbol = llvm::JITEvaluatedSymbol::fromPointer(
+        fun_ptr, llvm::JITSymbolFlags::Exported | llvm::JITSymbolFlags::Absolute);
+    llvm::orc::SymbolMap fun_symbol;
+    fun_symbol.insert({_up_lljit->mangleAndIntern(mangle_name), jit_evaluated_symbol});
+    exit_on_error(_up_lljit->getMainJITDylib().define(llvm::orc::absoluteSymbols(fun_symbol)));
 }
 
 void ExecutionEngine::CatchRuntimeError() {

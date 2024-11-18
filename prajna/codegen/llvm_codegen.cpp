@@ -738,7 +738,7 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     JTMB->setCPU("");
     JTMB->setRelocationModel(std::nullopt);
     JTMB->setCodeModel(std::nullopt);
-    JTMB->setCodeGenOptLevel(llvm::CodeGenOptLevel::None);
+    JTMB->setCodeGenOptLevel(llvm::CodeGenOpt::None);
     JTMB->addFeatures(std::vector<std::string>());
     auto TM = JTMB->createTargetMachine();
     PRAJNA_ASSERT(TM && TM.get());
@@ -776,20 +776,20 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
         llvm::SMDiagnostic err;
 #ifdef _WIN32
         // TODO: 后期增加cuda版本配置的功能, 目前使用最新版本
-        auto cuda_path =  std::filesystem::path("C:\\Program Files\\NVIDIA GPU Computing "
+        auto cuda_path = std::filesystem::path(
+            "C:\\Program Files\\NVIDIA GPU Computing "
             "Toolkit\\CUDA");
         auto libdevice_bc_path_postfix = std::filesystem::path("nvvm\\libdevice\\libdevice.10.bc");
-        PRAJNA_ASSERT(std::filesystem::is_directory(cuda_path), "Can't find cuda in "+ cuda_path.string());
-        auto cuda_version_dir_iter= std::filesystem::directory_iterator(cuda_path);
+        PRAJNA_ASSERT(std::filesystem::is_directory(cuda_path),
+                      "Can't find cuda in " + cuda_path.string());
+        auto cuda_version_dir_iter = std::filesystem::directory_iterator(cuda_path);
         auto dir_iter_end = std::filesystem::directory_iterator();
         // 使用最新那版本的cuda
         auto cuda_version_path = (*std::max_element(cuda_version_dir_iter, dir_iter_end)).path();
-        auto libdevice_bc_path =  cuda_version_path / libdevice_bc_path_postfix;
-        auto uq_llvm_libdevice_module = llvm::parseIRFile(
-           libdevice_bc_path.string(),
-            err, static_llvm_context);
-        PRAJNA_ASSERT(uq_llvm_libdevice_module,
-                      "Failed to parse " + libdevice_bc_path.string());
+        auto libdevice_bc_path = cuda_version_path / libdevice_bc_path_postfix;
+        auto uq_llvm_libdevice_module =
+            llvm::parseIRFile(libdevice_bc_path.string(), err, static_llvm_context);
+        PRAJNA_ASSERT(uq_llvm_libdevice_module, "Failed to parse " + libdevice_bc_path.string());
 #else
         auto uq_llvm_libdevice_module = llvm::parseIRFile(
             "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc", err, static_llvm_context);

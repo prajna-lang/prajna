@@ -24,6 +24,7 @@ pipeline{
                             steps {
                                 bat 'git --version'
                                 bat 'cmake --version'
+                                bat 'git config --global --list'
                             }
                         }
                         stage('build') {
@@ -69,12 +70,12 @@ pipeline{
                                 // docker内存也需要设置代理, 上面设置了使用host网络
                                 sh 'git config --global http.postBuffer 500M'
                                 sh 'git config --global http.maxRequestBuffer 100M'
-                                sh "git config --global --add safe.directory '*'"
+                                sh 'git config --global --add safe.directory "*"'
+                                sh 'git config --global --list'
                             }
                         }
                         stage('build') {
                             steps {
-                                sh 'git config --global --list'
                                 sh './scripts/clone_submodules.sh -f'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
@@ -120,12 +121,12 @@ pipeline{
                                 // docker内存也需要设置代理, 上面设置了使用host网络
                                 sh 'git config --global http.postBuffer 500M'
                                 sh 'git config --global http.maxRequestBuffer 100M'
-                                sh "git config --global --add safe.directory '*'"
+                                sh 'git config --global --add safe.directory "*"'
+                                sh 'git config --global --list'
                             }
                         }
                         stage('build') {
                             steps {
-                                sh 'git config --global --list'
                                 sh './scripts/clone_submodules.sh -f'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERTS=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'

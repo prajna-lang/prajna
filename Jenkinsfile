@@ -24,6 +24,7 @@ pipeline{
                             steps {
                                 bat 'git --version'
                                 bat 'cmake --version'
+                                sh 'git config --global unset http.proxy'
                                 sh 'git config --global http.postBuffer 500M'
                                 sh 'git config --global http.maxRequestBuffer 100M'
                             }

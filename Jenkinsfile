@@ -69,11 +69,11 @@ pipeline{
                                 sh 'git --version'
                                 sh 'git config --global http.version HTTP/1.1'
                                 sh 'git config --global http.sslVerify false'
-                                sh  'git config --add core.bigFileThreshold 1'
+                                sh 'git config --global core.bigFileThreshold 1'
                                 sh 'git config --global http.postBuffer 524288000'
                                 sh 'git config --global http.lowSpeedLimit 0'
                                 sh 'git config --global http.lowSpeedTime 999999'
-                                sh 'git config --global --add safe.directory "*"'
+                                sh 'git config --global safe.directory "*"'
                                 sh 'git config --global --list'
                             }
                         }
@@ -123,11 +123,11 @@ pipeline{
                                 sh 'git --version'
                                 sh 'git config --global http.version HTTP/1.1'
                                 sh 'git config --global http.sslVerify false'
-                                sh  'git config --add core.bigFileThreshold 1'
+                                sh 'git config --global core.bigFileThreshold 1'
                                 sh 'git config --global http.postBuffer 524288000'
                                 sh 'git config --global http.lowSpeedLimit 0'
                                 sh 'git config --global http.lowSpeedTime 999999'
-                                sh 'git config --global --add safe.directory "*"'
+                                sh 'git config --global safe.directory "*"'
                                 sh 'git config --global --list'
                             }
                         }

@@ -28,7 +28,7 @@ pipeline{
                         }
                         stage('build') {
                             steps {
-                                bat 'bash ./scripts/clone_submodules.sh --jobs=16'
+                                bat 'bash ./scripts/clone_submodules.sh'
                                 bat 'call ./scripts/windows_build.bat %BUILD_TYPE%'
                             }
                         }
@@ -76,7 +76,7 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh -f --jobs=16'
+                                sh './scripts/clone_submodules.sh -f'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc
@@ -128,7 +128,7 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh 'git config --global --list'
-                                sh './scripts/clone_submodules.sh -f --jobs=16'
+                                sh './scripts/clone_submodules.sh -f'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERTS=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc

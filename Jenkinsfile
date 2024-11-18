@@ -67,9 +67,10 @@ pipeline{
                                 sh 'nvidia-smi'
                                 sh 'pwd'
                                 sh 'git --version'
-                                // docker内存也需要设置代理, 上面设置了使用host网络
-                                sh 'git config --global http.postBuffer 500M'
-                                sh 'git config --global http.maxRequestBuffer 100M'
+                                sh 'git config --global http.version HTTP/1.1'
+                                sh 'git config --global http.postBuffer 524288000'
+                                sh 'git config --global http.lowSpeedLimit 0'
+                                sh 'git config --global http.lowSpeedTime 999999'
                                 sh 'git config --global --add safe.directory "*"'
                                 sh 'git config --global --list'
                             }
@@ -118,9 +119,10 @@ pipeline{
                                 sh 'nvidia-smi'
                                 sh 'pwd'
                                 sh 'git --version'
-                                // docker内存也需要设置代理, 上面设置了使用host网络
-                                sh 'git config --global http.postBuffer 500M'
-                                sh 'git config --global http.maxRequestBuffer 100M'
+                                sh 'git config --global http.version HTTP/1.1'
+                                sh 'git config --global http.postBuffer 524288000'
+                                sh 'git config --global http.lowSpeedLimit 0'
+                                sh 'git config --global http.lowSpeedTime 999999'
                                 sh 'git config --global --add safe.directory "*"'
                                 sh 'git config --global --list'
                             }

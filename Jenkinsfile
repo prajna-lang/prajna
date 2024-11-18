@@ -160,9 +160,5 @@ pipeline{
                }
             }
         }
-
-        failure{
-
-        }
     }
 }

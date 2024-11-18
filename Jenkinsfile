@@ -67,9 +67,9 @@ pipeline{
                                 sh 'pwd'
                                 sh 'git --version'
                                 // docker内存也需要设置代理, 上面设置了使用host网络
-                                // sh 'git config --global http.proxy localhost:1087'
-                                // sh 'git config --global http.postBuffer 500M'
-                                // sh 'git config --global http.maxRequestBuffer 100M'
+                                sh 'git config --global http.proxy localhost:1087'
+                                sh 'git config --global http.postBuffer 500M'
+                                sh 'git config --global http.maxRequestBuffer 100M'
                                 sh "git config --global --add safe.directory '*'"
                             }
                         }
@@ -119,9 +119,9 @@ pipeline{
                                 sh 'pwd'
                                 sh 'git --version'
                                 // docker内存也需要设置代理, 上面设置了使用host网络
-                                // sh 'git config --global http.proxy localhost:1087'
-                                // sh 'git config --global http.postBuffer 500M'
-                                // sh 'git config --global http.maxRequestBuffer 100M'
+                                sh 'git config --global http.proxy localhost:1087'
+                                sh 'git config --global http.postBuffer 500M'
+                                sh 'git config --global http.maxRequestBuffer 100M'
                                 sh "git config --global --add safe.directory '*'"
                             }
                         }

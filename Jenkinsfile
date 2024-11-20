@@ -42,54 +42,6 @@ pipeline{
                     }
                 }
 
-                stage('x64-linux-nvgpu-debug') {
-                    agent {
-                        dockerfile {
-                            filename 'ubuntu_dev_nvgpu.dockerfile'
-                            dir 'dockerfiles'
-                            label 'Sunny'
-                            //需要jenkins也用root权限启动, 目前使用其他权限会有很多问题, root权限存在极大的安全隐患
-                            args '--gpus all -u root:root --network host'
-                        }
-                    }
-                    environment {
-                        CXX = 'clang++'
-                        CC = 'clang'
-                        BUILD_TYPE = 'debug'
-                    }
-                    stages {
-                        stage('env') {
-                            steps {
-                                sh 'uname -a'
-                                sh 'echo $USER'
-                                sh 'cmake --version'
-                                sh 'clang++ --version'
-                                sh 'nvidia-smi'
-                                sh 'pwd'
-                                sh 'git --version'
-                                sh 'git config --global safe.directory "*"'
-                                sh 'git config --global --list'
-                            }
-                        }
-                        stage('build') {
-                            steps {
-                                sh './scripts/clone_submodules.sh -f --jobs=16 --depth=50'
-                                sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF'
-                                sh './scripts/build.sh ${BUILD_TYPE} install'
-                                // 需要安装llc
-                                   // 需要安装llc
-                                sh 'cp build_${BUILD_TYPE}/bin/llc /usr/bin'
-                            }
-                        }
-                        stage('test') {
-                            steps {
-                                sh './scripts/test.sh ${BUILD_TYPE}'
-                                sh './scripts/test_examples.sh ${BUILD_TYPE}'
-                            }
-                        }
-                    }
-                }
-
                 stage('x64-linux-nvgpu-release') {
                     agent {
                         dockerfile {

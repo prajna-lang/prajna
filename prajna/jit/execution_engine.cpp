@@ -152,7 +152,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 #else
         auto llc_exe = boost::dll::program_location().parent_path() / "llc";
 #endif
-        std::string llc_cmd = fmt::format("{} {file_base}.ll -o {file_base}.ptx", llc_exe.string(),
+        std::string llc_cmd = fmt::format("{}  -mcpu=sm_86 {file_base}.ll -o {file_base}.ptx", llc_exe.string(),
                                           fmt::arg("file_base", file_base));
         PRAJNA_VERIFY(std::system(llc_cmd.c_str()) == 0);
 

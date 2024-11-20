@@ -67,19 +67,13 @@ pipeline{
                                 sh 'nvidia-smi'
                                 sh 'pwd'
                                 sh 'git --version'
-                                sh 'git config --global http.version HTTP/1.1'
-                                sh 'git config --global http.sslVerify false'
-                                sh 'git config --global core.bigFileThreshold 1'
-                                sh 'git config --global http.postBuffer 524288000'
-                                sh 'git config --global http.lowSpeedLimit 0'
-                                sh 'git config --global http.lowSpeedTime 999999'
                                 sh 'git config --global safe.directory "*"'
                                 sh 'git config --global --list'
                             }
                         }
                         stage('build') {
                             steps {
-                                sh './scripts/clone_submodules.sh -f --jobs=16 --detph=50'
+                                sh './scripts/clone_submodules.sh -f --jobs=16 --depth=50'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DWITH_TLS=OFF -DPRAJNA_WITH_JUPYTER=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc
@@ -121,19 +115,13 @@ pipeline{
                                 sh 'nvidia-smi'
                                 sh 'pwd'
                                 sh 'git --version'
-                                sh 'git config --global http.version HTTP/1.1'
-                                sh 'git config --global http.sslVerify false'
-                                sh 'git config --global core.bigFileThreshold 1'
-                                sh 'git config --global http.postBuffer 524288000'
-                                sh 'git config --global http.lowSpeedLimit 0'
-                                sh 'git config --global http.lowSpeedTime 999999'
                                 sh 'git config --global safe.directory "*"'
                                 sh 'git config --global --list'
                             }
                         }
                         stage('build') {
                             steps {
-                                sh './scripts/clone_submodules.sh -f --jobs=16 --depth=10'
+                                sh './scripts/clone_submodules.sh -f --jobs=16 --depth=50'
                                 sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERTS=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                                 // 需要安装llc

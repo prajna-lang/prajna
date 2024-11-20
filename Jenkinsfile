@@ -93,6 +93,49 @@ pipeline{
                         }
                     }
                 }
+
+                stage('aarch64-osx-release') {
+                    agent {
+                            label 'MacM1'
+                        }
+                    }
+                    environment {
+                        CXX = 'clang++'
+                        CC = 'clang'
+                        BUILD_TYPE = 'release'
+                    }
+                    stages {
+                        stage('env') {
+                            steps {
+                                sh 'echo $USER'
+                                sh 'uname -a'
+                                sh 'cmake --version'
+                                sh 'clang++ --version'
+                                sh 'pwd'
+                                sh 'git --version'
+                                sh 'git config --global --list'
+                            }
+                        }
+                        stage('build') {
+                            steps {
+                                sh './scripts/clone_submodules.sh -f --jobs=8 --depth=50'
+                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERTS=ON'
+                                sh './scripts/build.sh ${BUILD_TYPE} install'
+                            }
+                        }
+                        stage('test') {
+                            steps {
+                                sh './scripts/test.sh ${BUILD_TYPE}'
+                                sh './scripts/test_examples.sh ${BUILD_TYPE}'
+                            }
+                        }
+                        // stage("leak-check") {
+                        //     steps {
+                        //         sh 'valgrind --leak-check=full  --num-callers=10 --trace-children=yes ./scripts/test.sh ${BUILD_TYPE} --gtest_filter=*tensor_test'
+                        //     }
+                        // }
+                    }
+                }
             }
         }
     }

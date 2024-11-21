@@ -35,7 +35,7 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                bat 'bash ./scripts/test.sh %BUILD_TYPE%'
+                                bat 'bash ./scripts/test.sh %BUILD_TYPE% --gtest_filter=-*gpu*'
                                 bat 'bash ./scripts/test_examples.sh %BUILD_TYPE%'
                             }
                         }

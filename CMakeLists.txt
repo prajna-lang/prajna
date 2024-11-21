@@ -28,16 +28,16 @@ if (UNIX AND NOT APPLE)
     set(CMAKE_C_COMPILER_TARGET "${CMAKE_SYSTEM_PROCESSOR}-unknown-${CMAKE_SYSTEM_NAME}")
     # 不可设置C++的, 会导致头文件找不到
     # set(CMAKE_CXX_COMPILER_TARGET "${CMAKE_SYSTEM_PROCESSOR}-unknown-${CMAKE_SYSTEM_NAME}")
-    message("prajna build target triple: ${CMAKE_C_COMPILER_TARGET}")
-
-    set(COMPILER_RT_DEFAULT_TARGET_ONLY ON)
-    set(COMPILER_RT_BUILD_BUILTINS ON)
     set(COMPILER_RT_BUILTINS_HIDE_SYMBOLS Off)
+    set(COMPILER_RT_BUILD_BUILTINS ON)
+    set(COMPILER_RT_DEFAULT_TARGET_ONLY ON)
+else()
+    # do none
 endif()
 
-find_package(OpenSSL REQUIRED)
-
+message("prajna build target triple: ${CMAKE_C_COMPILER_TARGET}")
 add_subdirectory(third_party/llvm-project/llvm EXCLUDE_FROM_ALL)
+# add_subdirectory(third_party/llvm-project/compiler-rt)
 # 需要手动添加llvm的头文件路径
 add_library(llvm_include_dir INTERFACE)
 target_include_directories(llvm_include_dir
@@ -67,12 +67,13 @@ option(BUILD_SHARED_LIBS "Build shared libs" OFF) # 需要加入, 否则其并�
 option(PRAJNA_BUILD_TOOLS "Build Prajna tools" ON)
 option(PRAJNA_BUILD_EXAMPLES "Build Prajna examples" ON)
 option(PRAJNA_BUILD_TESTS "Build Prajna tests" ON)
-option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" ON)
+option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" OFF)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
 option(PRAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
 option(PRAJNA_DISABLE_ASSERTS "Disable Prajna ASSERTS" OFF)
 
+message("Hit ${PRAJNA_WITH_JUPYTER}")
 add_subdirectory(prajna)
 if (PRAJNA_WITH_JUPYTER)
     add_subdirectory(xeus_prajna)

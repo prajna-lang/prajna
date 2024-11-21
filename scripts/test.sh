@@ -11,5 +11,5 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ];then
     ./$build_dir/bin/prajna_compiler_tests $@
 else
 # Windows NT操作系统
-    ./$build_dir/bin/Release/prajna_compiler_tests $@
+    ./$build_dir/bin/prajna_compiler_tests $@
 fi

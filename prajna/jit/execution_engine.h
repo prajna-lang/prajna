@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <string>
 #include <memory>
 
 namespace prajna::ir {

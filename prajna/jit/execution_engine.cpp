@@ -152,7 +152,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 #else
         auto llc_exe = boost::dll::program_location().parent_path() / "llc";
 #endif
-        std::string llc_cmd = fmt::format("{} {file_base}.ll -o {file_base}.ptx", llc_exe.string(),
+        std::string llc_cmd = fmt::format("{}  -mcpu=sm_86 {file_base}.ll -o {file_base}.ptx", llc_exe.string(),
                                           fmt::arg("file_base", file_base));
         PRAJNA_VERIFY(std::system(llc_cmd.c_str()) == 0);
 
@@ -192,11 +192,11 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 }
 
 void ExecutionEngine::BindCFunction(void *fun_ptr, std::string mangle_name) {
-    auto fun_symbol = llvm::orc::absoluteSymbols(
-        {{_up_lljit->mangleAndIntern(mangle_name),
-          {llvm::orc::ExecutorAddr::fromPtr(fun_ptr),
-           llvm::JITSymbolFlags::Exported | llvm::JITSymbolFlags::Absolute}}});
-    exit_on_error(_up_lljit->getMainJITDylib().define(fun_symbol));
+    auto jit_evaluated_symbol = llvm::JITEvaluatedSymbol::fromPointer(
+        fun_ptr, llvm::JITSymbolFlags::Exported | llvm::JITSymbolFlags::Absolute);
+    llvm::orc::SymbolMap fun_symbol;
+    fun_symbol.insert({_up_lljit->mangleAndIntern(mangle_name), jit_evaluated_symbol});
+    exit_on_error(_up_lljit->getMainJITDylib().define(llvm::orc::absoluteSymbols(fun_symbol)));
 }
 
 void ExecutionEngine::CatchRuntimeError() {
@@ -217,6 +217,10 @@ void ExecutionEngine::BindBuiltinFunction() {
 
 #if defined(__linux__) || defined(WIN32)
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__umodti3");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__udivti3");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__modti3");
+    this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__divti3");
     // this->BindCFunction(reinterpret_cast<void *>(__floattihf), "__floattihf");
     // this->BindCFunction(reinterpret_cast<void *>(__floatuntihf), "__floatuntihf");
 #endif

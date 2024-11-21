@@ -138,14 +138,4 @@ pipeline{
             }
         }
     }
-
-    post {
-         always {
-             script {
-                if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'dev'){
-                    cleanWs()
-               }
-            }
-        }
-    }
 }

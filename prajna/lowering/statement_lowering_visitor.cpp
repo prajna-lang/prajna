@@ -6,9 +6,9 @@
 #include <optional>
 
 #include "boost/asio/io_service.hpp"
-#include "boost/process/io.hpp"
-#include "boost/process/search_path.hpp"
-#include "boost/process/system.hpp"
+#include "boost/process/v1/io.hpp"
+#include "boost/process/v1/search_path.hpp"
+#include "boost/process/v1/system.hpp"
 #include "prajna/compiler/compiler.h"
 #include "prajna/jit/execution_engine.h"
 

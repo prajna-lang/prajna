@@ -127,6 +127,20 @@ class IrBuilder {
         }
     }
 
+    std::shared_ptr<ir::Function> GetIntrinsic(std::string llvm_intrinsic_name,
+                                               std::shared_ptr<ir::FunctionType> ir_function_type) {
+        if (this->intrinsic_dict.count(llvm_intrinsic_name)) {
+            return this->intrinsic_dict[llvm_intrinsic_name];
+        } else {
+            auto ir_intrinsic = this->Create<ir::Function>(ir_function_type);
+            ir_intrinsic->name = llvm_intrinsic_name;
+            ir_intrinsic->fullname = llvm_intrinsic_name;
+            ir_intrinsic->annotation_dict["intrinsic"].push_back(llvm_intrinsic_name);
+            this->intrinsic_dict[llvm_intrinsic_name] = ir_intrinsic;
+            return ir_intrinsic;
+        }
+    }
+
     std::shared_ptr<ir::Property> GetLinearIndexProperty(std::shared_ptr<ir::Type> ir_type) {
         InstantiateTypeImplements(ir_type);
 
@@ -491,6 +505,8 @@ class IrBuilder {
     bool interface_prototype_processing = false;
 
     int closure_id = 0;
+
+    std::unordered_map<std::string, std::shared_ptr<ir::Function>> intrinsic_dict;
 };
 
 }  // namespace prajna::lowering

@@ -12,35 +12,35 @@ pipeline{
         stage('PRAJNA CI'){
             // failFast true
             parallel {
-                stage('x64-win11-release') {
-                    agent {
-                        label "Win11"
-                    }
-                    environment{
-                        BUILD_TYPE = 'release'
-                    }
-                    stages {
-                        stage('env') {
-                            steps {
-                                bat 'git --version'
-                                bat 'cmake --version'
-                                bat 'git config --global --list'
-                            }
-                        }
-                        stage('build') {
-                            steps {
-                                bat 'bash ./scripts/clone_submodules.sh -f --jobs=4 --depth=50'
-                                bat 'call ./scripts/windows_build.bat %BUILD_TYPE%'
-                            }
-                        }
-                        stage('test') {
-                            steps {
-                                bat 'bash ./scripts/test.sh %BUILD_TYPE%'
-                                bat 'bash ./scripts/test_examples.sh %BUILD_TYPE%'
-                            }
-                        }
-                    }
-                }
+                // stage('x64-win11-release') {
+                //     agent {
+                //         label "Win11"
+                //     }
+                //     environment{
+                //         BUILD_TYPE = 'release'
+                //     }
+                //     stages {
+                //         stage('env') {
+                //             steps {
+                //                 bat 'git --version'
+                //                 bat 'cmake --version'
+                //                 bat 'git config --global --list'
+                //             }
+                //         }
+                //         stage('build') {
+                //             steps {
+                //                 bat 'bash ./scripts/clone_submodules.sh -f --jobs=4 --depth=50'
+                //                 bat 'call ./scripts/windows_build.bat %BUILD_TYPE%'
+                //             }
+                //         }
+                //         stage('test') {
+                //             steps {
+                //                 bat 'bash ./scripts/test.sh %BUILD_TYPE%'
+                //                 bat 'bash ./scripts/test_examples.sh %BUILD_TYPE%'
+                //             }
+                //         }
+                //     }
+                // }
 
                 stage('x64-linux-nvgpu-release') {
                     agent {
@@ -96,7 +96,7 @@ pipeline{
 
                 stage('aarch64-osx-release') {
                     agent {
-                        label 'MacM1'
+                        label 'Mac'
                     }
                     environment {
                         CXX = 'clang++'

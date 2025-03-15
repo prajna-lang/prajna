@@ -22,6 +22,7 @@ if (UNIX AND APPLE)
     set(OPENSSL_CRYPTO_LIBRARY /usr/local/lib/libcrypto.a)
 endif()
 
+set(ENABLE_CLANG "Include Clang" FALSE)
 add_subdirectory(third_party/json EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/xtl EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/xeus EXCLUDE_FROM_ALL)

@@ -73,7 +73,6 @@ option(PRAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
 option(PRAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
 option(PRAJNA_DISABLE_ASSERTS "Disable Prajna ASSERTS" OFF)
 
-message("Hit ${PRAJNA_WITH_JUPYTER}")
 add_subdirectory(prajna)
 if (PRAJNA_WITH_JUPYTER)
     add_subdirectory(xeus_prajna)

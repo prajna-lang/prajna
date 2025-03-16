@@ -1,5 +1,3 @@
-# include(cmake/openssl.cmake)
-
 set(CMAKE_SYSTEM_PROGRAM_PATH /opt/homebrew/Cellar/llvm/15.0.4/bin/)
 
 set(JSON_Install ON CACHE BOOL "" FORCE)
@@ -13,16 +11,9 @@ if (APPLE AND UNIX)
     set(ENABLE_WS OFF CACHE BOOL "" FORCE)
 endif()
 
-if (UNIX AND NOT APPLE)
-    set(OPENSSL_INCLUDE_DIR /usr/include)
-    set(OPENSSL_CRYPTO_LIBRARY /usr/lib/x86_64-linux-gnu/libcrypto.a)
-endif()
-if (UNIX AND APPLE)
-    set(OPENSSL_INCLUDE_DIR /usr/local/include)
-    set(OPENSSL_CRYPTO_LIBRARY /usr/local/lib/libcrypto.a)
-endif()
+include(cmake/openssl.cmake)
 
-set(ENABLE_CLANG "Include Clang" FALSE)
+set(ENABLE_CLANG  OFF CACHE BOOL "" FORCE)
 add_subdirectory(third_party/json EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/xtl EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/xeus EXCLUDE_FROM_ALL)

@@ -1575,9 +1575,8 @@ class ShuffleVector : public Instruction {
         PRAJNA_ASSERT(Is<VectorType>(ir_value->type));
         PRAJNA_ASSERT(Is<VectorType>(ir_mask->type));
         std::shared_ptr<ShuffleVector> self(new ShuffleVector);
-        PRAJNA_ASSERT(Cast<VectorType>(ir_value->type)->size ==
-                      Cast<VectorType>(ir_mask->type)->size);
-        self->type = ir_value->type;
+        auto ir_vector_type = Cast<VectorType>(ir_value->type);
+        self->type = ir::VectorType::Create(ir_vector_type->value_type, Cast<VectorType>(ir_mask->type)->size);
         self->OperandResize(2);
         self->Value(ir_value);
         self->Mask(ir_mask);

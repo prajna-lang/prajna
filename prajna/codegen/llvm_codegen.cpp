@@ -694,9 +694,10 @@ class LlvmCodegen {
     }
 
     void EmitInlineAsm(std::shared_ptr<ir::InlineAsm> ir_inline_asm) {
-        ir_inline_asm->llvm_value = llvm::InlineAsm::get(
-            static_cast<llvm::FunctionType *>(ir_inline_asm->type->llvm_type),
-            ir_inline_asm->str_asm, ir_inline_asm->str_constrains, ir_inline_asm->has_side_effects);
+        ir_inline_asm->llvm_value =
+            llvm::InlineAsm::get(static_cast<llvm::FunctionType *>(ir_inline_asm->type->llvm_type),
+                                 ir_inline_asm->str_asm, ir_inline_asm->str_constrains,
+                                 ir_inline_asm->has_side_effects, ir_inline_asm->is_align_stack);
         ;
     }
 };

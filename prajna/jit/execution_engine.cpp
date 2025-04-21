@@ -18,6 +18,7 @@
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
+#include "llvm/ExecutionEngine/Orc/ObjectTransformLayer.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "prajna/assert.hpp"
 #include "prajna/compiler/compiler.h"
@@ -81,11 +82,12 @@ ExecutionEngine::ExecutionEngine() {
 
     auto lljit_builder = llvm::orc::LLJITBuilder();
     auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
-    PRAJNA_VERIFY(JTMB);
     JTMB->getOptions().AllowFPOpFusion = llvm::FPOpFusion::Fast;
     JTMB->getOptions().UnsafeFPMath = true;
     lljit_builder.setJITTargetMachineBuilder(*JTMB);
 
+// TODO: 需要确定setObjectLinkingLayerCreator的作用, 现在去除后, 在mac上会报错.
+#ifdef __APPLE__
     lljit_builder.setObjectLinkingLayerCreator(
         [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
             // @note 需要确认机制是做什么用的
@@ -94,13 +96,24 @@ ExecutionEngine::ExecutionEngine() {
             ll->setAutoClaimResponsibilityForObjectSymbols(true);
             return std::move(ll);
         });
-
-// TODO: 需要确定setObjectLinkingLayerCreator的作用, 现在去除后, 在mac上会报错.
-#ifdef __APPLE__
-    auto expect_up_lljit = lljit_builder.create();
-#else
-    auto expect_up_lljit = llvm::orc::LLJITBuilder().create();
 #endif
+// TODO(zhangzhimin): 下面的代码会导致程序崩溃， 但可以正确的打印出汇编代码
+//    lljit_builder.setObjectLinkingLayerCreator(
+//         [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
+//             auto ObjLinkingLayer = std::make_unique<llvm::orc::ObjectLinkingLayer>(ES);
+//             auto ObjTransformLayer =
+//               std::make_unique<llvm::orc::ObjectTransformLayer>(ES, *ObjLinkingLayer);
+//             ObjTransformLayer->setTransform([](std::unique_ptr<llvm::MemoryBuffer> Buf)
+//             -> llvm::Expected<std::unique_ptr<llvm::MemoryBuffer>> {
+//                 std::ofstream out(".tmp.o", std::ios::binary);
+//                 out.write(Buf->getBufferStart(), Buf->getBufferSize());
+//                 out.close();
+//                 return Buf;
+//             });
+//           return ObjTransformLayer;
+//         });
+
+    auto expect_up_lljit = lljit_builder.create();
     PRAJNA_VERIFY(expect_up_lljit);
     _up_lljit = std::move(*expect_up_lljit);
 

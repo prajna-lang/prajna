@@ -42,11 +42,11 @@ pipeline{
                 //     }
                 // }
 
-                stage('x64-linux-nvgpu-release') {
+                stage('x64-linux-release') {
                     agent {
                         dockerfile {
                             label 'Sunny'
-                            filename 'ubuntu_dev_nvgpu_jenkins.dockerfile'
+                            filename 'ubuntu_dev_jenkins.dockerfile'
                             dir 'dockerfiles'
                             // 参数由宿主主机的jenkins账号决定
                             additionalBuildArgs '''\
@@ -54,7 +54,7 @@ pipeline{
                             --build-arg UID=124 \
                             --build-arg UNAME=jenkins \
                             '''
-                            args '--gpus all --network host'
+                            // args '--gpus all --network host'
                         }
                     }
                     environment {
@@ -69,7 +69,7 @@ pipeline{
                                 sh 'echo $USER'
                                 sh 'cmake --version'
                                 sh 'clang++ --version'
-                                sh 'nvidia-smi'
+                                // sh 'nvidia-smi'
                                 sh 'pwd'
                                 sh 'git --version'
                             }
@@ -83,7 +83,7 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE}'
+                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*gpu*'
                                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }

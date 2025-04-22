@@ -17,8 +17,8 @@
 #include "llvm/ExecutionEngine/Orc/EPCDynamicLibrarySearchGenerator.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
-#include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/ExecutionEngine/Orc/ObjectTransformLayer.h"
+#include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "prajna/assert.hpp"
 #include "prajna/compiler/compiler.h"
@@ -97,21 +97,21 @@ ExecutionEngine::ExecutionEngine() {
             return std::move(ll);
         });
 #endif
-// TODO(zhangzhimin): 下面的代码会导致程序崩溃， 但可以正确的打印出汇编代码
-//    lljit_builder.setObjectLinkingLayerCreator(
-//         [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
-//             auto ObjLinkingLayer = std::make_unique<llvm::orc::ObjectLinkingLayer>(ES);
-//             auto ObjTransformLayer =
-//               std::make_unique<llvm::orc::ObjectTransformLayer>(ES, *ObjLinkingLayer);
-//             ObjTransformLayer->setTransform([](std::unique_ptr<llvm::MemoryBuffer> Buf)
-//             -> llvm::Expected<std::unique_ptr<llvm::MemoryBuffer>> {
-//                 std::ofstream out(".tmp.o", std::ios::binary);
-//                 out.write(Buf->getBufferStart(), Buf->getBufferSize());
-//                 out.close();
-//                 return Buf;
-//             });
-//           return ObjTransformLayer;
-//         });
+    // TODO(zhangzhimin): 下面的代码会导致程序崩溃， 但可以正确的打印出汇编代码
+    //    lljit_builder.setObjectLinkingLayerCreator(
+    //         [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
+    //             auto ObjLinkingLayer = std::make_unique<llvm::orc::ObjectLinkingLayer>(ES);
+    //             auto ObjTransformLayer =
+    //               std::make_unique<llvm::orc::ObjectTransformLayer>(ES, *ObjLinkingLayer);
+    //             ObjTransformLayer->setTransform([](std::unique_ptr<llvm::MemoryBuffer> Buf)
+    //             -> llvm::Expected<std::unique_ptr<llvm::MemoryBuffer>> {
+    //                 std::ofstream out(".tmp.o", std::ios::binary);
+    //                 out.write(Buf->getBufferStart(), Buf->getBufferSize());
+    //                 out.close();
+    //                 return Buf;
+    //             });
+    //           return ObjTransformLayer;
+    //         });
 
     auto expect_up_lljit = lljit_builder.create();
     PRAJNA_VERIFY(expect_up_lljit);
@@ -165,8 +165,8 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 #else
         auto llc_exe = boost::dll::program_location().parent_path() / "llc";
 #endif
-        std::string llc_cmd = fmt::format("{}  -mcpu=sm_86 {file_base}.ll -o {file_base}.ptx", llc_exe.string(),
-                                          fmt::arg("file_base", file_base));
+        std::string llc_cmd = fmt::format("{}  -mcpu=sm_86 {file_base}.ll -o {file_base}.ptx",
+                                          llc_exe.string(), fmt::arg("file_base", file_base));
         PRAJNA_VERIFY(std::system(llc_cmd.c_str()) == 0);
 
 #ifdef _WIN32

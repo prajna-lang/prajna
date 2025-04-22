@@ -970,8 +970,8 @@ class Alloca : public Instruction {
     Alloca() = default;
 
    public:
-    static std::shared_ptr<Alloca> Create(std::shared_ptr<Type> type,
-                                          std::shared_ptr<Value> length) {
+    static std::shared_ptr<Alloca> Create(std::shared_ptr<Type> type, std::shared_ptr<Value> length,
+                                          int64_t alignment = -1) {
         PRAJNA_ASSERT(type);
         auto self =
             Cast<Alloca>(std::shared_ptr<Instruction>(static_cast<Instruction*>(new Alloca)));
@@ -979,6 +979,7 @@ class Alloca : public Instruction {
         self->Length(length);
         self->type = PointerType::Create(type);
         self->tag = "Alloca";
+        self->alignment = alignment;
         return self;
     }
 
@@ -991,6 +992,8 @@ class Alloca : public Instruction {
 
     std::shared_ptr<Value> Length() { return this->GetOperand(0); }
     void Length(std::shared_ptr<Value> ir_length) { this->SetOperand(0, ir_length); }
+
+    int64_t alignment = -1;  // -1表示不设置
 };
 
 class GlobalVariable;
@@ -1576,7 +1579,8 @@ class ShuffleVector : public Instruction {
         PRAJNA_ASSERT(Is<VectorType>(ir_mask->type));
         std::shared_ptr<ShuffleVector> self(new ShuffleVector);
         auto ir_vector_type = Cast<VectorType>(ir_value->type);
-        self->type = ir::VectorType::Create(ir_vector_type->value_type, Cast<VectorType>(ir_mask->type)->size);
+        self->type = ir::VectorType::Create(ir_vector_type->value_type,
+                                            Cast<VectorType>(ir_mask->type)->size);
         self->OperandResize(2);
         self->Value(ir_value);
         self->Mask(ir_mask);

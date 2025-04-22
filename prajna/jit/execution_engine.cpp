@@ -86,14 +86,11 @@ ExecutionEngine::ExecutionEngine() {
     JTMB->getOptions().UnsafeFPMath = true;
     lljit_builder.setJITTargetMachineBuilder(*JTMB);
 
-// TODO: 需要确定setObjectLinkingLayerCreator的作用, 现在去除后, 在mac上会报错.
 #ifdef __APPLE__
+    // TODO(zhangzhimin): 目前不是用自定的ObjectLinkingLayer会存在未知问题
     lljit_builder.setObjectLinkingLayerCreator(
         [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
-            // @note 需要确认机制是做什么用的
-            auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(
-                ES, std::make_unique<llvm::jitlink::InProcessMemoryManager>(64 * 1024));
-            ll->setAutoClaimResponsibilityForObjectSymbols(true);
+            auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(ES);
             return std::move(ll);
         });
 #endif

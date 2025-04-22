@@ -87,16 +87,16 @@ ExecutionEngine::ExecutionEngine() {
     lljit_builder.setJITTargetMachineBuilder(*JTMB);
 
 // TODO: 需要确定setObjectLinkingLayerCreator的作用, 现在去除后, 在mac上会报错.
-#ifdef __APPLE__
-    lljit_builder.setObjectLinkingLayerCreator(
-        [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
-            // @note 需要确认机制是做什么用的
-            auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(
-                ES, std::make_unique<llvm::jitlink::InProcessMemoryManager>(64 * 1024));
-            ll->setAutoClaimResponsibilityForObjectSymbols(true);
-            return std::move(ll);
-        });
-#endif
+// #ifdef __APPLE__
+    // lljit_builder.setObjectLinkingLayerCreator(
+    //     [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
+    //         // @note 需要确认机制是做什么用的
+    //         auto ll = std::make_unique<llvm::orc::ObjectLinkingLayer>(
+    //             ES, std::make_unique<llvm::jitlink::InProcessMemoryManager>(64 * 1024));
+    //         ll->setAutoClaimResponsibilityForObjectSymbols(true);
+    //         return std::move(ll);
+    //     });
+// #endif
     // TODO(zhangzhimin): 下面的代码会导致程序崩溃， 但可以正确的打印出汇编代码
     //    lljit_builder.setObjectLinkingLayerCreator(
     //         [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {

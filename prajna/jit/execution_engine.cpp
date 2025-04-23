@@ -82,6 +82,7 @@ ExecutionEngine::ExecutionEngine() {
 
     auto lljit_builder = llvm::orc::LLJITBuilder();
     auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
+    PRAJNA_VERIFY(JTMB);
     JTMB->getOptions().AllowFPOpFusion = llvm::FPOpFusion::Fast;
     JTMB->getOptions().UnsafeFPMath = true;
     lljit_builder.setJITTargetMachineBuilder(*JTMB);

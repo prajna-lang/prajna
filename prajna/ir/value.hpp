@@ -114,6 +114,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         // 只是解除依赖, 不是销毁数据,
         this->instruction_with_index_list.clear();
         this->parent_block = nullptr;
+        this->parent_function = nullptr;
     }
 
     /// @brief 实例需要销毁前调用
@@ -447,12 +448,6 @@ class Block : public Value {
         this->values.push_back(ir_value);
     }
 
-    void Finalize() override {
-        Value::Finalize();
-        this->parent_function = nullptr;
-        this->values.clear();
-    }
-
     void Detach() override {
         Value::Detach();
         this->parent_function = nullptr;
@@ -494,6 +489,14 @@ class Function : public Value {
     }
 
     std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override;
+
+    void Detach() override {
+        Value::Detach();
+        for (auto& ir_parameter : this->parameters) {
+            ir_parameter->Detach();
+        }
+        this->parent_module = nullptr;
+    }
 
     void Finalize() override {
         Value::Finalize();
@@ -1022,6 +1025,11 @@ class GlobalAlloca : public Instruction {
         return shared_from_this();
     }
 
+    void Detach() override {
+        Value::Detach();
+        this->parent_module = nullptr;
+    }
+
    public:
     bool is_external = false;
     uint32_t address_space = 0;
@@ -1467,6 +1475,11 @@ class GlobalVariable : public Variable {
         self->tag = "GlobalVariable";
         self->is_global = true;
         return self;
+    }
+
+    void Detach() override {
+        Value::Detach();
+        this->parent_module = nullptr;
     }
 
    public:

@@ -93,7 +93,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         this->name = other.name;
         this->fullname = other.fullname;
 
-        this->parent_block = nullptr;
+        this->parent_block;
         this->instruction_with_index_list.clear();
         this->llvm_value = nullptr;
     }
@@ -113,8 +113,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     virtual void Detach() {
         // 只是解除依赖, 不是销毁数据,
         this->instruction_with_index_list.clear();
-        this->parent_block = nullptr;
-        this->parent_function = nullptr;
+        this->parent_block.reset();
     }
 
     /// @brief 实例需要销毁前调用
@@ -149,7 +148,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
    public:
     std::shared_ptr<Type> type = nullptr;
     std::unordered_map<std::string, std::list<std::string>> annotation_dict;
-    std::shared_ptr<Block> parent_block = nullptr;
+    std::weak_ptr<Block> parent_block;
     std::list<InstructionAndOperandIndex> instruction_with_index_list;
     ast::SourceLocation source_location;
     llvm::Value* llvm_value = nullptr;
@@ -423,18 +422,18 @@ class Block : public Value {
     }
 
     iterator find(std::shared_ptr<ir::Value> ir_value) {
-        PRAJNA_ASSERT(ir_value->parent_block.get() == this);
+        PRAJNA_ASSERT(Lock(ir_value->parent_block).get() == this);
         return std::find(RANGE(this->values), ir_value);
     }
 
     iterator erase(iterator iter) {
-        PRAJNA_ASSERT((*iter) && (*iter)->parent_block == shared_from_this());
-        (*iter)->parent_block = nullptr;
+        PRAJNA_ASSERT((*iter) && (*iter)->parent_block.lock() == shared_from_this());
+        (*iter)->parent_block.reset();
         return this->values.erase(iter);
     }
 
     void remove(std::shared_ptr<ir::Value> ir_value) {
-        ir_value->parent_block = nullptr;
+        ir_value->parent_block.reset();
         this->values.erase(std::find(RANGE(this->values), ir_value));
     }
 
@@ -1745,8 +1744,8 @@ class InlineAsm : public Value {
 inline std::shared_ptr<Function> Value::GetParentFunction() {
     if (this->parent_function) {
         return this->parent_function;
-    } else if (this->parent_block) {
-        return this->parent_block->GetParentFunction();
+    } else if (!this->parent_block.expired()) {
+        return Lock(parent_block)->GetParentFunction();
     } else {
         PRAJNA_UNREACHABLE;
         return nullptr;
@@ -1754,24 +1753,26 @@ inline std::shared_ptr<Function> Value::GetParentFunction() {
 }
 
 inline std::shared_ptr<Block> Value::GetRootBlock() {
-    if (!this->parent_block) {
+    if (parent_block.expired()) {
         if (Is<Block>(shared_from_this())) {
             return Cast<Block>(shared_from_this());
         } else {
             return nullptr;
         }
     }
-    PRAJNA_ASSERT(this->parent_block);
-    auto root = this->parent_block;
-    while (root->parent_block) {
-        root = root->parent_block;
+    auto root = Lock(this->parent_block);
+    while (true) {
+        auto next = root->parent_block.lock();
+        if (!next) break;
+        root = next;
     }
     return root;
 }
 
 inline std::list<std::shared_ptr<ir::Value>>::iterator Value::GetBlockIterator() {
-    auto iter = std::find(RANGE(this->parent_block->values), this->shared_from_this());
-    PRAJNA_ASSERT(iter != this->parent_block->values.end());
+    auto parent = Lock(parent_block);
+    auto iter = std::find(RANGE(parent->values), this->shared_from_this());
+    PRAJNA_ASSERT(iter != parent->values.end());
     return iter;
 }
 
@@ -1798,7 +1799,7 @@ inline std::shared_ptr<ir::Value> Block::Clone(std::shared_ptr<FunctionCloner> f
     }
 
     ir_new->parent_function = Cast<Function>(function_cloner->value_dict[this->parent_function]);
-    ir_new->parent_block = Cast<Block>(function_cloner->value_dict[this->parent_block]);
+    ir_new->parent_block = Cast<Block>(function_cloner->value_dict[this->parent_block.lock()]);
 
     return ir_new;
 }

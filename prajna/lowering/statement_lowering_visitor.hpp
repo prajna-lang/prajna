@@ -352,7 +352,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                       this->AllBranchIsTerminated(ir_if->FalseBlock(), ir_type);
             if (re) {
                 // //插入一个Return协助判断
-                ir_builder->PushBlock(ir_if->parent_block);
+                ir_builder->PushBlock(ir_if->parent_block.lock());
                 auto ir_variable = ir_builder->Create<ir::LocalVariable>(ir_type);
                 auto ir_return = ir_builder->Create<ir::Return>(ir_variable);
                 ir_builder->PopBlock();

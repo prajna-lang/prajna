@@ -400,7 +400,7 @@ class LlvmCodegen {
 
     void EmitInstruction(std::shared_ptr<ir::Instruction> ir_instruction, ir::Target ir_target) {
         auto llvm_basic_block =
-            static_cast<llvm::BasicBlock *>(ir_instruction->parent_block->llvm_value);
+            static_cast<llvm::BasicBlock *>(Lock(ir_instruction->parent_block)->llvm_value);
         PRAJNA_ASSERT(llvm_basic_block);
 
         if (auto ir_call = Cast<ir::Call>(ir_instruction)) {
@@ -480,7 +480,7 @@ class LlvmCodegen {
             return;
         }
         if (auto ir_jump_branch = Cast<ir::JumpBranch>(ir_instruction)) {
-            PRAJNA_ASSERT(ir_jump_branch->parent_block->parent_function ==
+            PRAJNA_ASSERT(Lock(ir_jump_branch->parent_block)->parent_function ==
                           ir_jump_branch->NextBlock()->parent_function);
 
             this->EmitBlock(ir_jump_branch->NextBlock(), ir_target);

@@ -241,7 +241,7 @@ inline bool FlatternBlock(std::shared_ptr<ir::Module> ir_module) {
 
         for (auto ir_block : ir_function->blocks) {
             ir_block->parent_function = ir_function;
-            ir_block->parent_block = nullptr;
+            ir_block->parent_block.reset();
         }
     }
 

@@ -62,4 +62,11 @@ inline auto Clone(Type t) -> std::decay_t<Type> {
     return t;
 }
 
+template <typename T>
+std::shared_ptr<T> Lock(std::weak_ptr<T>& weak) {
+    auto ptr = weak.lock();
+    PRAJNA_ASSERT(ptr);
+    return ptr;
+}
+
 }  // namespace prajna

@@ -15,7 +15,8 @@ namespace prajna::transform {
 inline void VerifyBlockImpl(std::shared_ptr<ir::Block> ir_block,
                             std::set<std::shared_ptr<ir::Value>>& defined_values) {
     for (auto ir_value : ir_block->values) {
-        PRAJNA_ASSERT(ir_value->parent_block == ir_block);
+        auto parent = ir_value->parent_block.lock();
+        PRAJNA_ASSERT(parent == ir_block);
         PRAJNA_ASSERT(defined_values.count(ir_value) == 0);
         defined_values.insert(ir_value);
 
@@ -94,9 +95,9 @@ inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
                     if (ir_operand->GetRootBlock()->instruction_with_index_list.size() > 0) {
                         continue;
                     }
-
-                    PRAJNA_ASSERT(std::find(RANGE(ir_operand->parent_block->values), ir_operand) !=
-                                  ir_operand->parent_block->values.end());
+                    auto parent = Lock(ir_operand->parent_block);
+                    PRAJNA_ASSERT(std::find(RANGE(parent->values), ir_operand) !=
+                                  parent->values.end());
 
                     auto ir_function_tmp = ir_operand->GetParentFunction();
                     PRAJNA_ASSERT(ir_function_tmp == ir_function);

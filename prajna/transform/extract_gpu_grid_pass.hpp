@@ -160,7 +160,7 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
         auto [ir_kernel_function, ir_captured_variables_list] =
             ConvertGpuForToKernelCall(ir_gpu_for, idx);
 
-        auto ir_gpu_parent_block = ir_gpu_for->parent_block;
+        auto ir_gpu_parent_block = Lock(ir_gpu_for->parent_block);
         auto iter_gpu_for = std::find(RANGE(ir_gpu_parent_block->values), ir_gpu_for);
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->PushBlock(ir_gpu_parent_block);

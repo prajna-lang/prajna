@@ -146,7 +146,7 @@ inline void InsertDestroyForCall(std::shared_ptr<ir::Module> ir_module) {
                 FinalizeVariableLikedCallback(ir_call, ir_builder);
             } else {
                 auto ir_instruction_use_call =
-                    ir_call->instruction_with_index_list.back().instruction;
+                    Lock(ir_call->instruction_with_index_list.back().instruction);
                 // 返回值则不进行destroy处理, 相应的在return时也不会有copy处理,
                 // 因为return后再destroy是无效的.
                 if (Is<ir::Return>(ir_instruction_use_call)) {
@@ -156,11 +156,11 @@ inline void InsertDestroyForCall(std::shared_ptr<ir::Module> ir_module) {
                 if (ir_instruction_use_call->annotation_dict.count("DisableReferenceCount")) {
                     auto ir_write_variable_liked =
                         Cast<ir::WriteVariableLiked>(ir_instruction_use_call);
-                    auto ir_object_pointer = ir_write_variable_liked->variable()
+                    auto ir_object_pointer = Lock(ir_write_variable_liked->variable()
                                                  ->instruction_with_index_list.back()
-                                                 .instruction;
+                                                 .instruction);
                     ir_instruction_use_call =
-                        ir_object_pointer->instruction_with_index_list.back().instruction;
+                        Lock(ir_object_pointer->instruction_with_index_list.back().instruction);
                     PRAJNA_ASSERT(Is<ir::Call>(ir_instruction_use_call));
                 }
 

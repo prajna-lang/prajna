@@ -54,7 +54,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
             std::find(RANGE(ir_block->values), ir_access_property);
 
         for (auto instruction_with_index : Clone(ir_access_property->instruction_with_index_list)) {
-            auto ir_inst = instruction_with_index.instruction;
+            auto ir_inst = Lock(instruction_with_index.instruction);
             int64_t op_idx = instruction_with_index.operand_index;
 
             PRAJNA_ASSERT(!Is<ir::GetAddressOfVariableLiked>(ir_inst));
@@ -344,8 +344,9 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
                     auto instruction_with_index_list_copy =
                         ir_function->instruction_with_index_list;
                     for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
-                        if (ir_instruction->GetParentFunction()->parent_module == ir_module) {
-                            ir_instruction->SetOperand(op_idx, ir_decl_function);
+                        auto iter_instruction = Lock(ir_instruction);
+                        if (iter_instruction->GetParentFunction()->parent_module == ir_module) {
+                            iter_instruction->SetOperand(op_idx, ir_decl_function);
                         }
                     }
                 }
@@ -648,7 +649,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 
         for (auto [ir_instruction, op_idx] :
              Clone(ir_shared_variable->instruction_with_index_list)) {
-            ir_instruction->SetOperand(op_idx, ir_deference_pointer);
+            Lock(ir_instruction)->SetOperand(op_idx, ir_deference_pointer);
         }
 
         utility::RemoveFromParent(ir_shared_variable);

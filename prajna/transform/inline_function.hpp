@@ -51,7 +51,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
                 auto ir_parameter_inst_idx = ir_parameter->instruction_with_index_list;
                 for (auto &inst_idx : ir_parameter_inst_idx) {
                     auto [inst, op_idx] = inst_idx;
-                    inst->SetOperand(op_idx, ir_argument);
+                    Lock(inst)->SetOperand(op_idx, ir_argument);
                 }
                 ir_parameter->Finalize();
             }
@@ -82,13 +82,13 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
                 }
             }
 
-            ir_new_callee->blocks.front()->parent_function = nullptr;
+            ir_new_callee->blocks.front()->parent_function.reset();
             Lock(ir_call->parent_block)->insert(iter, ir_new_callee->blocks.front());
 
             auto ir_call_inst_idx = ir_call->instruction_with_index_list;
             for (auto [inst, op_idx] : ir_call_inst_idx) {
                 PRAJNA_ASSERT(ir_return_variable);
-                inst->SetOperand(op_idx, ir_return_variable);
+                Lock(inst)->SetOperand(op_idx, ir_return_variable);
             }
 
             utility::RemoveFromParent(ir_call);

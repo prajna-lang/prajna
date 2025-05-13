@@ -67,7 +67,7 @@ inline bool ConvertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_mod
             // 改变使用它的
             for (auto instruction_with_index_list :
                  Clone(ir_variable->instruction_with_index_list)) {
-                auto ir_inst = instruction_with_index_list.instruction;
+                auto ir_inst = Lock(instruction_with_index_list.instruction);
                 int64_t op_idx = instruction_with_index_list.operand_index;
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_alloca);
@@ -100,7 +100,7 @@ inline bool ConvertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Modu
 
             for (auto instruction_with_index_list :
                  Clone(ir_access_field->instruction_with_index_list)) {
-                auto ir_inst = instruction_with_index_list.instruction;
+                auto ir_inst = Lock(instruction_with_index_list.instruction);
                 int64_t op_idx = instruction_with_index_list.operand_index;
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_struct_get_element_ptr);
@@ -136,7 +136,7 @@ inline bool ConvertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Module
 
             for (auto instruction_with_index_list :
                  Clone(ir_index_array->instruction_with_index_list)) {
-                auto ir_inst = instruction_with_index_list.instruction;
+                auto ir_inst = Lock(instruction_with_index_list.instruction);
                 int64_t op_idx = instruction_with_index_list.operand_index;
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_array_get_element_ptr);
@@ -172,7 +172,7 @@ inline bool ConvertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Mo
 
             for (auto instruction_with_index_list :
                  Clone(ir_index_pointer->instruction_with_index_list)) {
-                auto ir_inst = instruction_with_index_list.instruction;
+                auto ir_inst = Lock(instruction_with_index_list.instruction);
                 int64_t op_idx = instruction_with_index_list.operand_index;
 
                 auto ir_deference_pointer =
@@ -206,7 +206,7 @@ inline bool ConvertGetAddressOfVaraibleLikedToPointer(std::shared_ptr<ir::Module
             changed = true;
             for (auto instruction_with_index_list :
                  Clone(ir_get_address->instruction_with_index_list)) {
-                auto ir_inst = instruction_with_index_list.instruction;
+                auto ir_inst = Lock(instruction_with_index_list.instruction);
                 int64_t op_idx = instruction_with_index_list.operand_index;
 
                 ir_deference_pointer->Pointer();
@@ -237,7 +237,7 @@ inline bool ConvertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
                 Lock(ir_deference_pointer->parent_block)->find(ir_deference_pointer);
             for (auto instruction_with_index :
                  Clone(ir_deference_pointer->instruction_with_index_list)) {
-                auto ir_inst = instruction_with_index.instruction;
+                auto ir_inst = Lock(instruction_with_index.instruction);
                 int64_t op_idx = instruction_with_index.operand_index;
 
                 if (Is<ir::WriteVariableLiked>(ir_inst) && op_idx == 1) {

@@ -46,13 +46,13 @@ inline Target StringToTarget(std::string str_target) {
 class Instruction;
 
 struct InstructionAndOperandIndex {
-    std::shared_ptr<Instruction> instruction;
+    std::weak_ptr<Instruction> instruction;
     int64_t operand_index;
 };
 
 inline bool operator==(prajna::ir::InstructionAndOperandIndex lhs,
                        prajna::ir::InstructionAndOperandIndex rhs) {
-    return lhs.instruction == rhs.instruction && lhs.operand_index == rhs.operand_index;
+    return prajna::Lock(lhs.instruction) == prajna::Lock(rhs.instruction) && lhs.operand_index == rhs.operand_index;
 }
 
 }  // namespace prajna::ir
@@ -61,7 +61,7 @@ template <>
 struct std::hash<prajna::ir::InstructionAndOperandIndex> {
     std::int64_t operator()(prajna::ir::InstructionAndOperandIndex inst_with_idx) const noexcept {
         std::int64_t h1 =
-            std::hash<std::shared_ptr<prajna::ir::Instruction>>{}(inst_with_idx.instruction);
+            std::hash<std::shared_ptr<prajna::ir::Instruction>>{}(prajna::Lock(inst_with_idx.instruction));
         std::int64_t h2 = std::hash<int64_t>{}(inst_with_idx.operand_index);
         // 这里哈希函数应该不重要, 应该不会导致性能问题
         return h1 ^ (h2 << 1);
@@ -154,7 +154,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     llvm::Value* llvm_value = nullptr;
     // 用于方便调试, 否则无法有效辨别他们
     std::string tag = "";
-    std::shared_ptr<Function> parent_function = nullptr;
+    std::weak_ptr<Function> parent_function;
     // 用于判断是否是closure, 用于辅助closure的生成
     bool is_closure = false;
     bool is_global = false;
@@ -449,7 +449,7 @@ class Block : public Value {
 
     void Detach() override {
         Value::Detach();
-        this->parent_function = nullptr;
+        this->parent_function.reset();
     }
 
     virtual std::shared_ptr<ir::Value> Clone(
@@ -1742,10 +1742,10 @@ class InlineAsm : public Value {
 };
 
 inline std::shared_ptr<Function> Value::GetParentFunction() {
-    if (this->parent_function) {
-        return this->parent_function;
-    } else if (!this->parent_block.expired()) {
-        return Lock(parent_block)->GetParentFunction();
+    if (auto func = this->parent_function.lock()) {
+        return func;
+    } else if (auto bock = this->parent_block.lock()) {
+        return bock->GetParentFunction();
     } else {
         PRAJNA_UNREACHABLE;
         return nullptr;
@@ -1798,8 +1798,8 @@ inline std::shared_ptr<ir::Value> Block::Clone(std::shared_ptr<FunctionCloner> f
         ir_new->PushBack(function_cloner->value_dict[ir_value]);
     }
 
-    ir_new->parent_function = Cast<Function>(function_cloner->value_dict[this->parent_function]);
-    ir_new->parent_block = Cast<Block>(function_cloner->value_dict[this->parent_block.lock()]);
+    ir_new->parent_function = Cast<Function>(function_cloner->value_dict[Lock(this->parent_function)]);
+    ir_new->parent_block = Cast<Block>(function_cloner->value_dict[Lock(this->parent_block)]);
 
     return ir_new;
 }

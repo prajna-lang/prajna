@@ -47,13 +47,14 @@ std::shared_ptr<ir::Module> SperateModule(std::shared_ptr<ir::Module> ir_module)
 inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module) {
     auto ir_access_properties = utility::GetValuesInModule<ir::AccessProperty>(ir_module);
     for (auto ir_access_property : ir_access_properties) {
-        auto ir_block = ir_access_property->parent_block;
+        auto ir_block = Lock(ir_access_property->parent_block);
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->PushBlock(ir_block);
-        ir_builder->inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
+        ir_builder->inserter_iterator =
+            std::find(RANGE(ir_block->values), ir_access_property);
 
         for (auto instruction_with_index : Clone(ir_access_property->instruction_with_index_list)) {
-            auto ir_inst = instruction_with_index.instruction;
+            auto ir_inst = Lock(instruction_with_index.instruction);
             int64_t op_idx = instruction_with_index.operand_index;
 
             PRAJNA_ASSERT(!Is<ir::GetAddressOfVariableLiked>(ir_inst));
@@ -105,7 +106,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             auto ir_grid_shape = ir_kernel_function_call->GridShape();
             auto ir_block_shape = ir_kernel_function_call->BlockShape();
             // auto ir_arguments = ir_kernel_function_call->parameters();
-            auto ir_block = ir_kernel_function_call->parent_block;
+            auto ir_block = Lock(ir_kernel_function_call->parent_block);
 
             auto ir_builder =
                 lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
@@ -238,7 +239,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
                     }
 
                     auto ir_deference_pointer = ir::DeferencePointer::Create(ir_global_alloca);
-                    auto ir_block = ir_instruction->parent_block;
+                    auto ir_block = Lock(ir_instruction->parent_block);
                     auto iter =
                         std::find(ir_block->values.begin(), ir_block->values.end(), ir_instruction);
                     ir_block->insert(iter, ir_deference_pointer);
@@ -343,8 +344,9 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
                     auto instruction_with_index_list_copy =
                         ir_function->instruction_with_index_list;
                     for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
-                        if (ir_instruction->GetParentFunction()->parent_module == ir_module) {
-                            ir_instruction->SetOperand(op_idx, ir_decl_function);
+                        auto iter_instruction = Lock(ir_instruction);
+                        if (iter_instruction->GetParentFunction()->parent_module == ir_module) {
+                            iter_instruction->SetOperand(op_idx, ir_decl_function);
                         }
                     }
                 }
@@ -360,9 +362,9 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         ir_builder->symbol_table = ir_module->symbol_table;
         // 只需要对数组循环进行处理
         if (!ir_builder->IsArrayI64Type(ir_for->IndexVariable()->type)) continue;
-
-        ir_builder->PushBlock(ir_for->parent_block);
-        ir_builder->inserter_iterator = ir_for->parent_block->find(ir_for);
+        auto parent = Lock(ir_for->parent_block);
+        ir_builder->PushBlock(parent);
+        ir_builder->inserter_iterator = parent->find(ir_for);
         auto ir_layout_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
             ir_builder->GetSymbolByPath(true, {"tensor", "Layout"}));
         PRAJNA_ASSERT(ir_layout_template_struct);
@@ -476,9 +478,9 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
                         auto ir_field = ir_value_field_map[ir_operand];
                         auto ir_access_field =
                             ir::AccessField::Create(ir_this, ir_value_field_map[ir_operand]);
-                        ir_instruction->parent_block->values.insert(
-                            ir_instruction->GetBlockIterator(), ir_access_field);
-                        ir_access_field->parent_block = ir_instruction->parent_block;
+                        auto parent = Lock(ir_instruction->parent_block);
+                        parent->values.insert(ir_instruction->GetBlockIterator(), ir_access_field);
+                        ir_access_field->parent_block = parent;
                         ir_instruction->SetOperand(i, ir_access_field);
                     }
                 }
@@ -497,7 +499,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
         auto ir_closure = ir_function->closure;
         PRAJNA_ASSERT(ir_closure);
         auto ir_builder = lowering::IrBuilder::Create();
-        ir_builder->PushBlock(ir_closure->parent_block);
+        ir_builder->PushBlock(ir_closure->parent_block.lock());
         ir_builder->inserter_iterator = std::next(ir_closure->GetBlockIterator());
         for (auto [ir_value, ir_field] : ir_value_field_map) {
             auto ir_access_filed =
@@ -585,8 +587,8 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
         auto ir_top_block = ir_function->blocks.front();
         auto ir_allocas = utility::GetValuesInFunction<ir::Alloca>(ir_function);
         for (auto ir_alloca : ir_allocas) {
-            if (ir_alloca->parent_block != ir_top_block &&
-                Is<ir::ConstantInt>(ir_alloca->Length())) {
+            auto parent = Lock(ir_alloca->parent_block);
+            if ((parent && parent != ir_top_block) && Is<ir::ConstantInt>(ir_alloca->Length())) {
                 utility::RemoveFromParent(ir_alloca);
                 ir_top_block->PushFront(ir_alloca);
                 utility::RemoveFromParent(ir_alloca->Length());
@@ -636,9 +638,10 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
         ir_module->global_allocas.push_back(ir_global_alloca);
 
         auto ir_builder = lowering::IrBuilder::Create();
-        ir_builder->PushBlock(ir_shared_variable->parent_block);
+        auto parent = Lock(ir_shared_variable->parent_block);
+        ir_builder->PushBlock(parent);
         // 在最开始插入就行, 留意AddressCast是不是统一转换一次就行了
-        ir_builder->inserter_iterator = ir_shared_variable->parent_block->values.begin();
+        ir_builder->inserter_iterator = parent->values.begin();
         auto ir_address_cast =
             ir_builder->Create<ir::CastInstruction>(ir::CastInstruction::Operation::AddrSpaceCast,
                                                     ir_global_alloca, ir_global_alloca->type);
@@ -646,7 +649,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 
         for (auto [ir_instruction, op_idx] :
              Clone(ir_shared_variable->instruction_with_index_list)) {
-            ir_instruction->SetOperand(op_idx, ir_deference_pointer);
+            Lock(ir_instruction)->SetOperand(op_idx, ir_deference_pointer);
         }
 
         utility::RemoveFromParent(ir_shared_variable);
@@ -662,7 +665,7 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
                 auto iter = ir_call->GetBlockIterator();
                 auto ir_builder =
                     lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
-                ir_builder->PushBlock(ir_call->parent_block);
+                ir_builder->PushBlock(ir_call->parent_block.lock());
                 ir_builder->inserter_iterator = iter;
                 auto position = ir_call->source_location.first_position;
                 auto filename = ir_builder->GetString(position.file);
@@ -681,7 +684,7 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
                 auto iter = ir_call->GetBlockIterator();
                 auto ir_builder =
                     lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
-                ir_builder->PushBlock(ir_call->parent_block);
+                ir_builder->PushBlock(ir_call->parent_block.lock());
                 ir_builder->inserter_iterator = iter;
                 auto position = ir_call->source_location.first_position;
                 auto filename = ir_builder->GetString(position.file);

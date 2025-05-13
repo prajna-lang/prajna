@@ -383,7 +383,7 @@ class ExpressionLoweringVisitor {
             }
 
             // 移除, 在末尾插入, 应为参数应该在属性访问的前面
-            ir_access_property->parent_block->values.remove(ir_access_property);
+            ir_access_property->parent_block.lock()->values.remove(ir_access_property);
             ir_builder->CurrentBlock()->values.push_back(ir_access_property);
             ir_access_property->Arguments(ir_arguments);
             return ir_access_property;

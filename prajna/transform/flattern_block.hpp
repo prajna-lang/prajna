@@ -97,7 +97,8 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_builder->PushBlock(ir_block);
 
             for (auto [ir_instruction, op_idx] : Clone(ir_while->instruction_with_index_list)) {
-                if (auto ir_break = Cast<ir::Break>(ir_instruction)) {
+                auto iter_ir_instruction = Lock(ir_instruction);
+                if (auto ir_break = Cast<ir::Break>(iter_ir_instruction)) {
                     ir_builder->inserter_iterator = ir_break->GetBlockIterator();
                     ir_builder->Create<ir::JumpBranch>(ir_label_after_loop);
                     utility::RemoveFromParent(ir_break);
@@ -105,7 +106,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
                     continue;
                 }
 
-                if (auto ir_continue = Cast<ir::Continue>(ir_instruction)) {
+                if (auto ir_continue = Cast<ir::Continue>(iter_ir_instruction)) {
                     ir_builder->inserter_iterator = ir_continue->GetBlockIterator();
                     ir_builder->Create<ir::JumpBranch>(ir_label_condition_entry);
                     utility::RemoveFromParent(ir_continue);
@@ -173,7 +174,8 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_block->insert(iter, ir_label_after_loop);
 
             for (auto [ir_instruction, op_idx] : Clone(ir_for->instruction_with_index_list)) {
-                if (auto ir_break = Cast<ir::Break>(ir_instruction)) {
+                auto iter_ir_instruction = Lock(ir_instruction);
+                if (auto ir_break = Cast<ir::Break>(iter_ir_instruction)) {
                     ir_builder->inserter_iterator = ir_break->GetBlockIterator();
                     ir_builder->Create<ir::JumpBranch>(ir_label_after_loop);
                     utility::RemoveFromParent(ir_break);
@@ -181,7 +183,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
                     continue;
                 }
 
-                if (auto ir_continue = Cast<ir::Continue>(ir_instruction)) {
+                if (auto ir_continue = Cast<ir::Continue>(iter_ir_instruction)) {
                     ir_builder->inserter_iterator = ir_continue->GetBlockIterator();
                     ir_builder->Create<ir::JumpBranch>(ir_label_condition_entry);
                     utility::RemoveFromParent(ir_continue);
@@ -216,7 +218,7 @@ inline std::list<std::shared_ptr<ir::Block>> splitBlock(std::shared_ptr<ir::Bloc
             // ir_label作为操作时修改时(移除或添加), 都会改变instructions_with_index的值,
             // 故应该先拷贝一份
             for (auto inst_with_idx : Clone(ir_label->instruction_with_index_list)) {
-                inst_with_idx.instruction->SetOperand(inst_with_idx.operand_index, blocks.back());
+                Lock(inst_with_idx.instruction)->SetOperand(inst_with_idx.operand_index, blocks.back());
             }
         } else {
             blocks.back()->PushBack(ir_value);
@@ -241,7 +243,7 @@ inline bool FlatternBlock(std::shared_ptr<ir::Module> ir_module) {
 
         for (auto ir_block : ir_function->blocks) {
             ir_block->parent_function = ir_function;
-            ir_block->parent_block = nullptr;
+            ir_block->parent_block.reset();
         }
     }
 

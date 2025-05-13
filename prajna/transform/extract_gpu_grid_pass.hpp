@@ -78,11 +78,11 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
         auto instruction_with_index_inner_list = ir_captured_variable->instruction_with_index_list;
         instruction_with_index_inner_list.remove_if(
             [=](ir::InstructionAndOperandIndex instruction_with_operand_index) -> bool {
-                return instruction_with_operand_index.instruction->GetRootBlock() !=
+                return Lock(instruction_with_operand_index.instruction)->GetRootBlock() !=
                        ir_gpu_for->LoopBlock();
             });
         for (auto instruction_with_operand_index : instruction_with_index_inner_list) {
-            auto ir_instruction = instruction_with_operand_index.instruction;
+            auto ir_instruction = Lock(instruction_with_operand_index.instruction);
             auto operand_index = instruction_with_operand_index.operand_index;
             PRAJNA_ASSERT(variables_dict.count(ir_captured_variable));
             ir_instruction->SetOperand(operand_index, variables_dict[ir_captured_variable]);
@@ -92,7 +92,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
     auto ir_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetInt64Type());
     ir_index->name = "i";
     for (auto inst_with_idx : Clone(ir_gpu_for->IndexVariable()->instruction_with_index_list)) {
-        auto ir_instruction = inst_with_idx.instruction;
+        auto ir_instruction = Lock(inst_with_idx.instruction);
         // ir_gpu_for将被移除, 不能再使用ir_index
         if (ir_instruction == ir_gpu_for) continue;
 
@@ -131,7 +131,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
         // 插入ir_gpu_for里的逻辑
         auto ir_kernel_while = Cast<ir::While>(*std::prev(ir_block->values.end(), 2));
         PRAJNA_ASSERT(ir_kernel_while);
-        ir_kernel_while->ConditionBlock()->parent_function = nullptr;
+        ir_kernel_while->ConditionBlock()->parent_function.reset();
         auto ir_kernel_while_loop_block =
             Cast<ir::Block>(ir_kernel_while->LoopBlock()->values.front());
         PRAJNA_ASSERT(ir_kernel_while_loop_block);
@@ -160,7 +160,7 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
         auto [ir_kernel_function, ir_captured_variables_list] =
             ConvertGpuForToKernelCall(ir_gpu_for, idx);
 
-        auto ir_gpu_parent_block = ir_gpu_for->parent_block;
+        auto ir_gpu_parent_block = Lock(ir_gpu_for->parent_block);
         auto iter_gpu_for = std::find(RANGE(ir_gpu_parent_block->values), ir_gpu_for);
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->PushBlock(ir_gpu_parent_block);

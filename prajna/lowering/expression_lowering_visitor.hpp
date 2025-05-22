@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <regex>
 #include <stdexcept>
 
 #include "boost/range/combine.hpp"
@@ -56,78 +57,30 @@ class ExpressionLoweringVisitor {
     std::shared_ptr<ir::Value> operator()(ast::IntLiteralPostfix ast_int_literal_postfix) {
         std::string postfix = ast_int_literal_postfix.postfix;
         auto value = ast_int_literal_postfix.int_literal.value;
-        if (postfix == "i8") {
-            auto ir_type = ir::IntType::Create(8, true);
-            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
-        }
-        if (postfix == "i16") {
-            auto ir_type = ir::IntType::Create(16, true);
-            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
-        }
-        if (postfix == "i32") {
-            auto ir_type = ir::IntType::Create(32, true);
-            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
-        }
-        if (postfix == "i64") {
-            auto ir_type = ir::IntType::Create(64, true);
-            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
-        }
-        if (postfix == "u8") {
-            auto ir_type = ir::IntType::Create(8, false);
-            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
-        }
-        if (postfix == "u16") {
-            auto ir_type = ir::IntType::Create(16, false);
-            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
-        }
-        if (postfix == "u32") {
-            auto ir_type = ir::IntType::Create(32, false);
-            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
-        }
-        if (postfix == "u64") {
-            auto ir_type = ir::IntType::Create(64, false);
-            return ir_builder->Create<ir::ConstantInt>(ir_type, value);
-        }
 
-        auto ir_float = CreateFloatLiteralPostfix(postfix, static_cast<double>(value));
-        if (ir_float) {
-            return ir_float;
-        }
+        std::regex int_type_pattern("([i|u|f])([0-9]+)");
+        std::smatch matchs;
+        PRAJNA_VERIFY(std::regex_search(postfix, matchs, int_type_pattern));
+        PRAJNA_ASSERT(matchs.size() == 3);
+        int64_t bits = std::stoll(matchs[2]);
 
-        logger->Error(fmt::format("{} is invalid number postfix", postfix),
-                      ast_int_literal_postfix.postfix);
-        return nullptr;
+        bool is_signed = matchs[1] == "i";
+        auto ir_int_type = ir::IntType::Create(bits, is_signed);
+        return ir_builder->Create<ir::ConstantInt>(ir_int_type, value);
     };
-
-    std::shared_ptr<ir::Value> CreateFloatLiteralPostfix(std::string postfix, double value) {
-        if (postfix == "f16") {
-            auto ir_type = ir::FloatType::Create(16);
-            return ir_builder->Create<ir::ConstantFloat>(ir_type, value);
-        }
-        if (postfix == "f32") {
-            auto ir_type = ir::FloatType::Create(32);
-            return ir_builder->Create<ir::ConstantFloat>(ir_type, value);
-        }
-        if (postfix == "f64") {
-            auto ir_type = ir::FloatType::Create(64);
-            return ir_builder->Create<ir::ConstantFloat>(ir_type, value);
-        }
-
-        return nullptr;
-    }
 
     std::shared_ptr<ir::Value> operator()(ast::FloatLiteralPostfix ast_float_literal_postfix) {
         std::string postfix = ast_float_literal_postfix.postfix;
         auto value = ast_float_literal_postfix.float_literal.value;
 
-        auto ir_float = CreateFloatLiteralPostfix(postfix, value);
-        if (ir_float) {
-            return ir_float;
-        } else {
-            logger->Error(fmt::format("{} is invalid number postfix", postfix),
-                          ast_float_literal_postfix.postfix);
-            return nullptr;
-        }
+        std::regex int_type_pattern("f([0-9]+)");
+        std::smatch matchs;
+        PRAJNA_VERIFY(std::regex_search(postfix, matchs, int_type_pattern));
+        PRAJNA_ASSERT(matchs.size() == 2);
+        int64_t bits = std::stoll(matchs[1]);
+
+        auto ir_foalt_type = ir::FloatType::Create(bits);
+        return ir_builder->Create<ir::ConstantFloat>(ir_foalt_type, value);
     };
 
     std::shared_ptr<ir::Value> operator()(ast::FloatLiteral ast_float_literal) {

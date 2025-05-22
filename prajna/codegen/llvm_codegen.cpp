@@ -41,11 +41,13 @@ namespace prajna::codegen {
 static llvm::LLVMContext static_llvm_context;
 
 class LlvmCodegen : public prajna::ir::Visitor {
+   protected:
     LlvmCodegen() {}
 
    public:
-    static std::shared_ptr<LlvmCodegen> Create() {
+    static std::shared_ptr<LlvmCodegen> Create(prajna::ir::Target ir_target) {
         std::shared_ptr<LlvmCodegen> self(new LlvmCodegen);
+        self->ir_target = ir_target;
         return self;
     }
 
@@ -156,7 +158,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         PRAJNA_TODO;
     }
 
-    void Visit(std::shared_ptr<ir::Module> ir_module, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Module> ir_module) override {
         PRAJNA_ASSERT(!ir_module->llvm_module);
         ir_module->llvm_module = new llvm::Module(ir_module->name, static_llvm_context);
         if (ir_target == prajna::ir::Target::nvptx) {
@@ -165,11 +167,11 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
         for (auto ir_global_alloca : ir_module->global_allocas) {
             // this->EmitGlobalAlloca(ir_global_alloca);
-            ir_global_alloca->ApplyVisitor(this->shared_from_this(), ir_target);
+            ir_global_alloca->ApplyVisitor(this->shared_from_this());
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            this->EmitFunctionDeclaration(ir_function, ir_target);
+            this->EmitFunctionDeclaration(ir_function, this->ir_target);
             if (ir_function->annotation_dict.count("kernel")) {
                 auto md_node = llvm::MDNode::get(
                     static_llvm_context, {llvm::ValueAsMetadata::get(ir_function->llvm_value),
@@ -184,14 +186,13 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
             if (!ir_function->IsDeclaration()) {
-                // this->EmitFunction(ir_function, ir_target);
-                ir_function->ApplyVisitor(this->shared_from_this(), ir_target);
+                // this->EmitFunction(ir_function);
+                ir_function->ApplyVisitor(this->shared_from_this());
             }
         }
     }
 
-    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function,
-                                 prajna::ir::Target ir_target) {
+    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, prajna::ir::Target ir_target) {
         auto function_fullname = ir_target == prajna::ir::Target::nvptx
                                      ? MangleNvvmName(ir_function->fullname)
                                      : ir_function->fullname;
@@ -205,7 +206,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         ir_function->llvm_value = llvm_fun;
     }
 
-    void Visit(std::shared_ptr<ir::Function> ir_function, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Function> ir_function) override {
         llvm::Function *llvm_fun = static_cast<llvm::Function *>(ir_function->llvm_value);
         PRAJNA_ASSERT(llvm_fun);
         PRAJNA_ASSERT(ir_function->parameters.size() == llvm_fun->arg_size());
@@ -230,12 +231,12 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
 
         for (auto block : ir_function->blocks) {
-            // EmitBlock(block, ir_target);
-            block->ApplyVisitor(this->shared_from_this(), ir_target);
+            // EmitBlock(block);
+            block->ApplyVisitor(this->shared_from_this());
         }
     }
 
-    void Visit(std::shared_ptr<ir::Block> ir_block, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Block> ir_block) override {
         auto weak_parent_function = Lock(ir_block->parent_function);
         PRAJNA_ASSERT(ir_block && weak_parent_function);
 
@@ -253,41 +254,35 @@ class LlvmCodegen : public prajna::ir::Visitor {
             if (Is<ir::Function>(ir_value)) {
                 return;
             }
-            ir_value->ApplyVisitor(this->shared_from_this(), ir_target);
+            ir_value->ApplyVisitor(this->shared_from_this());
         }
     }
 
-    void Visit(std::shared_ptr<ir::Parameter> value, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Parameter> value) override {
         // Do nothing
     }
-    void Visit(std::shared_ptr<ir::VoidValue> value, prajna::ir::Target ir_target) override {
-        value->llvm_value = nullptr;
-    }
+    void Visit(std::shared_ptr<ir::VoidValue> value) override { value->llvm_value = nullptr; }
 
-    void Visit(std::shared_ptr<ir::ConstantChar> ir_constant,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::ConstantChar> ir_constant) override {
         PRAJNA_ASSERT(ir_constant->type->llvm_type);
         ir_constant->llvm_value =
             llvm::ConstantInt::get(ir_constant->type->llvm_type, ir_constant->value);
     }
 
-    void Visit(std::shared_ptr<ir::ConstantBool> ir_constant_bool,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::ConstantBool> ir_constant_bool) override {
         PRAJNA_ASSERT(ir_constant_bool->type->llvm_type);
         ir_constant_bool->llvm_value =
             llvm::ConstantInt::get(ir_constant_bool->type->llvm_type, ir_constant_bool->value);
     }
 
-    void Visit(std::shared_ptr<ir::ConstantInt> ir_constant_int,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::ConstantInt> ir_constant_int) override {
         PRAJNA_ASSERT(ir_constant_int->type->llvm_type);
         ir_constant_int->llvm_value =
             llvm::ConstantInt::get(ir_constant_int->type->llvm_type, ir_constant_int->value,
                                    Cast<ir::IntType>(ir_constant_int->type)->is_signed);
     }
 
-    void Visit(std::shared_ptr<ir::ConstantFloat> ir_constant_float,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::ConstantFloat> ir_constant_float) override {
         PRAJNA_ASSERT(ir_constant_float->type->llvm_type);
         // 提前返回float的最大数或最小数
         llvm::APFloat::Semantics semantics;
@@ -340,8 +335,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
     }
 
-    void Visit(std::shared_ptr<ir::ConstantArray> ir_constant_array,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::ConstantArray> ir_constant_array) override {
         std::vector<llvm::Constant *> llvm_contants(ir_constant_array->initialize_constants.size());
         std::transform(RANGE(ir_constant_array->initialize_constants), llvm_contants.begin(),
                        [=](auto ir_init) {
@@ -354,8 +348,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
             static_cast<llvm::ArrayType *>(ir_constant_array->type->llvm_type), llvm_contants);
     }
 
-    void Visit(std::shared_ptr<ir::ConstantVector> ir_constant_vector,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::ConstantVector> ir_constant_vector) override {
         std::vector<llvm::Constant *> llvm_contants(
             ir_constant_vector->initialize_constants.size());
         std::transform(RANGE(ir_constant_vector->initialize_constants), llvm_contants.begin(),
@@ -368,15 +361,14 @@ class LlvmCodegen : public prajna::ir::Visitor {
         ir_constant_vector->llvm_value = llvm::ConstantVector::get(llvm_contants);
     }
 
-    void Visit(std::shared_ptr<ir::Constant> ir_constant, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Constant> ir_constant) override {
         if (ir_constant->llvm_value) {
             return;
         }
-        ir_constant->ApplyVisitor(this->shared_from_this(), ir_target);
+        ir_constant->ApplyVisitor(this->shared_from_this());
     }
 
-    void Visit(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) override {
         auto ir_value_type = Cast<ir::PointerType>(ir_global_alloca->type)->value_type;
         PRAJNA_ASSERT(ir_value_type && ir_value_type->llvm_type);
         PRAJNA_ASSERT(ir_global_alloca->parent_module->llvm_module);
@@ -392,7 +384,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         ir_global_alloca->llvm_value = llvm_global_variable;
     }
 
-    void Visit(std::shared_ptr<ir::Call> ir_call, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Call> ir_call) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_call);
         auto ir_function_type = ir_call->Function()->GetFunctionType();
         std::vector<llvm::Value *> llvm_arguments(ir_call->ArgumentSize());
@@ -407,13 +399,13 @@ class LlvmCodegen : public prajna::ir::Visitor {
             ir_call->Function()->llvm_value, llvm_arguments, "", llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::Return> ir_return, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Return> ir_return) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_return);
         auto llvm_return = llvm::ReturnInst::Create(
             static_llvm_context, ir_return->Value()->llvm_value, llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::Alloca> ir_alloca, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Alloca> ir_alloca) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_alloca);
         auto ir_alloca_type = Cast<ir::PointerType>(ir_alloca->type);
         PRAJNA_ASSERT(ir_alloca_type && ir_alloca_type->value_type->llvm_type);
@@ -429,8 +421,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
     }
 
-    void Visit(std::shared_ptr<ir::LoadPointer> ir_load_pointer,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::LoadPointer> ir_load_pointer) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_load_pointer);
         PRAJNA_ASSERT(ir_load_pointer->type->llvm_type);
         PRAJNA_ASSERT(ir_load_pointer->Pointer()->llvm_value);
@@ -440,8 +431,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         ir_load_pointer->llvm_value = llvm_load_ptr;
     }
 
-    void Visit(std::shared_ptr<ir::StorePointer> ir_store_pointer,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::StorePointer> ir_store_pointer) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_store_pointer);
         PRAJNA_ASSERT(ir_store_pointer->Value()->llvm_value);
         PRAJNA_ASSERT(ir_store_pointer->Pointer()->llvm_value);
@@ -452,13 +442,12 @@ class LlvmCodegen : public prajna::ir::Visitor {
         ir_store_pointer->llvm_value = llvm_store_ptr;
     }
 
-    void Visit(std::shared_ptr<ir::ConditionBranch> ir_condition_branch,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::ConditionBranch> ir_condition_branch) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_condition_branch);
         // 需要处理, 因为true/falseBlock在ir_condition_branch的后面
-        ir_condition_branch->TrueBlock()->ApplyVisitor(this->shared_from_this(), ir_target);
+        ir_condition_branch->TrueBlock()->ApplyVisitor(this->shared_from_this());
 
-        ir_condition_branch->FalseBlock()->ApplyVisitor(this->shared_from_this(), ir_target);
+        ir_condition_branch->FalseBlock()->ApplyVisitor(this->shared_from_this());
 
         PRAJNA_ASSERT(ir_condition_branch->TrueBlock()->llvm_value);
         PRAJNA_ASSERT(ir_condition_branch->FalseBlock()->llvm_value);
@@ -469,13 +458,12 @@ class LlvmCodegen : public prajna::ir::Visitor {
             ir_condition_branch->Condition()->llvm_value, llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::JumpBranch> ir_jump_branch,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::JumpBranch> ir_jump_branch) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_jump_branch);
         PRAJNA_ASSERT(Lock(Lock(ir_jump_branch->parent_block)->parent_function) ==
                       Lock(ir_jump_branch->NextBlock()->parent_function));
 
-        ir_jump_branch->NextBlock()->ApplyVisitor(this->shared_from_this(), ir_target);
+        ir_jump_branch->NextBlock()->ApplyVisitor(this->shared_from_this());
 
         PRAJNA_ASSERT(ir_jump_branch->NextBlock()->llvm_value);
         ir_jump_branch->llvm_value = llvm::BranchInst::Create(
@@ -483,8 +471,8 @@ class LlvmCodegen : public prajna::ir::Visitor {
             llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::GetStructElementPointer> ir_get_struct_element_pointer,
-               prajna::ir::Target ir_target) override {
+    void Visit(
+        std::shared_ptr<ir::GetStructElementPointer> ir_get_struct_element_pointer) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_get_struct_element_pointer);
         std::vector<llvm::Value *> llvm_idx_list(2);
         llvm_idx_list[0] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
@@ -502,8 +490,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
                                             llvm_idx_list, "", llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::GetArrayElementPointer> ir_get_array_element_pointer,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::GetArrayElementPointer> ir_get_array_element_pointer) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_get_array_element_pointer);
         std::vector<llvm::Value *> llvm_idx_list(2);
         llvm_idx_list[0] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
@@ -517,8 +504,8 @@ class LlvmCodegen : public prajna::ir::Visitor {
                                             llvm_idx_list, "", llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::GetPointerElementPointer> ir_get_pointer_element_pointer,
-               prajna::ir::Target ir_target) override {
+    void Visit(
+        std::shared_ptr<ir::GetPointerElementPointer> ir_get_pointer_element_pointer) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_get_pointer_element_pointer);
         std::vector<llvm::Value *> llvm_idx_list(1);
         llvm_idx_list[0] = ir_get_pointer_element_pointer->IndexVariable()->llvm_value;
@@ -534,7 +521,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
                                             llvm_idx_list, "", llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::BitCast> ir_bit_cast, prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::BitCast> ir_bit_cast) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_bit_cast);
         PRAJNA_ASSERT(ir_bit_cast->Value()->llvm_value);
         PRAJNA_ASSERT(ir_bit_cast->type->llvm_type);
@@ -542,8 +529,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
             ir_bit_cast->Value()->llvm_value, ir_bit_cast->type->llvm_type, "", llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::CastInstruction> ir_cast_instruction,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::CastInstruction> ir_cast_instruction) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_cast_instruction);
         std::unordered_map<ir::CastInstruction::Operation, llvm::CastInst::CastOps>
             cast_operator_dict = {
@@ -568,8 +554,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
                                    ir_cast_instruction->type->llvm_type, "", llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::CompareInstruction> ir_compare_instruction,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::CompareInstruction> ir_compare_instruction) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_compare_instruction);
         std::unordered_map<std::string, llvm::CmpInst::OtherOps> cmp_inst_other_ops = {
             {"ICmp", llvm::CmpInst::OtherOps::ICmp}, {"FCmp", llvm::CmpInst::OtherOps::FCmp}};
@@ -647,8 +632,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
             ir_compare_instruction->GetOperand(1)->llvm_value, "", llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::BinaryOperator> ir_binary_operator,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::BinaryOperator> ir_binary_operator) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_binary_operator);
         std::unordered_map<ir::BinaryOperator::Operation, llvm::BinaryOperator::BinaryOps>
             binary_operator_dict = {
@@ -681,8 +665,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
             ir_binary_operator->GetOperand(1)->llvm_value, "", llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::ShuffleVector> ir_shuffle_vector,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::ShuffleVector> ir_shuffle_vector) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_shuffle_vector);
         ir_shuffle_vector->llvm_value = new llvm::ShuffleVectorInst(
             ir_shuffle_vector->Value()->llvm_value, ir_shuffle_vector->Mask()->llvm_value, "",
@@ -696,35 +679,35 @@ class LlvmCodegen : public prajna::ir::Visitor {
         return llvm_basic_block;
     }
 
-    void Visit(std::shared_ptr<ir::Instruction> ir_instruction,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::Instruction> ir_instruction) override {
         if (auto ir_global_alloca = Cast<ir::GlobalAlloca>(ir_instruction)) {
             PRAJNA_UNREACHABLE;
         }
-        ir_instruction->ApplyVisitor(this->shared_from_this(), ir_target);
+        ir_instruction->ApplyVisitor(this->shared_from_this());
         PRAJNA_ASSERT(false, ir_instruction->tag);
     }
 
-    void Visit(std::shared_ptr<ir::InlineAsm> ir_inline_asm,
-               prajna::ir::Target ir_target) override {
+    void Visit(std::shared_ptr<ir::InlineAsm> ir_inline_asm) override {
         ir_inline_asm->llvm_value =
             llvm::InlineAsm::get(static_cast<llvm::FunctionType *>(ir_inline_asm->type->llvm_type),
                                  ir_inline_asm->str_asm, ir_inline_asm->str_constrains,
                                  ir_inline_asm->has_side_effects, ir_inline_asm->is_align_stack);
         ;
     }
+
+   private:
+    prajna::ir::Target ir_target;
 };
 
 std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module,
                                         prajna::ir::Target ir_target) {
-    auto llvm_codegen = LlvmCodegen::Create();
+    auto llvm_codegen = LlvmCodegen::Create(ir_target);
 
     // emit type
     for (auto type : ir::global_context.created_types) {
         llvm_codegen->EmitType(type);
     }
-    ir_module->ApplyVisitor(llvm_codegen, ir_target);
-    // llvm_codegen->Visit(ir_module, ir_target);
+    ir_module->ApplyVisitor(llvm_codegen);
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (ir_sub_module == nullptr) continue;

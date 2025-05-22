@@ -60,8 +60,8 @@ class CompareInstruction : public Instruction {
         return ir_new;
     }
 
-    void ApplyVisitor(std::shared_ptr<Visitor> interpreter, Target ir_target) override {
-        interpreter->Visit(Cast<CompareInstruction>(this->shared_from_this()), ir_target);
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<CompareInstruction>(this->shared_from_this()));
     }
 
     Operation operation;
@@ -117,8 +117,8 @@ class BinaryOperator : public Instruction {
         return ir_new;
     }
 
-    void ApplyVisitor(std::shared_ptr<Visitor> interpreter, Target ir_target) override {
-        interpreter->Visit(Cast<BinaryOperator>(this->shared_from_this()), ir_target);
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<BinaryOperator>(this->shared_from_this()));
     }
 
     Operation operation;
@@ -167,8 +167,8 @@ class CastInstruction : public Instruction {
         return ir_new;
     }
 
-    void ApplyVisitor(std::shared_ptr<Visitor> interpreter, Target ir_target) override {
-        interpreter->Visit(Cast<CastInstruction>(this->shared_from_this()), ir_target);
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<CastInstruction>(this->shared_from_this()));
     }
 
    public:

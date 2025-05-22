@@ -60,6 +60,10 @@ class CompareInstruction : public Instruction {
         return ir_new;
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<CompareInstruction>(this->shared_from_this()));
+    }
+
     Operation operation;
 };
 
@@ -113,6 +117,10 @@ class BinaryOperator : public Instruction {
         return ir_new;
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<BinaryOperator>(this->shared_from_this()));
+    }
+
     Operation operation;
 };
 
@@ -157,6 +165,10 @@ class CastInstruction : public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<CastInstruction>(this->shared_from_this()));
     }
 
    public:

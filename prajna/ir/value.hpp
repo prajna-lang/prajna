@@ -15,33 +15,11 @@
 #include "prajna/helper.hpp"
 #include "prajna/ir/cloner.hpp"
 #include "prajna/ir/global_context.h"
+#include "prajna/ir/target.hpp"
 #include "prajna/ir/type.hpp"
+#include "prajna/ir/visitor.hpp"
 
 namespace prajna::ir {
-
-enum struct Target { none, host, nvptx };
-
-inline std::string TargetToString(Target ir_target) {
-    switch (ir_target) {
-        case Target::none:
-            PRAJNA_UNREACHABLE;
-            return "";
-        case Target::host:
-            return "host";
-        case Target::nvptx:
-            return "nvptx";
-    }
-
-    return "";
-}
-
-inline Target StringToTarget(std::string str_target) {
-    if (str_target == "host") return Target::host;
-    if (str_target == "nvptx") return Target::nvptx;
-
-    PRAJNA_UNREACHABLE;
-    return Target::none;
-}
 
 class Instruction;
 
@@ -93,6 +71,8 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
 
         this->name = other.name;
         this->fullname = other.fullname;
+
+        this->parent_block.reset();
         this->instruction_with_index_list.clear();
         this->llvm_value = nullptr;
     }
@@ -141,6 +121,8 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         return nullptr;
     }
 
+    virtual void ApplyVisitor(std::shared_ptr<Visitor> interpreter) { PRAJNA_UNREACHABLE; }
+
    private:
     bool is_finalized = false;
 
@@ -176,6 +158,10 @@ class VoidValue : public Value {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<VoidValue>(this->shared_from_this()));
+    }
 };
 
 class Parameter : public Value {
@@ -195,6 +181,10 @@ class Parameter : public Value {
         std::shared_ptr<Parameter> ir_new(new Parameter(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Parameter>(this->shared_from_this()));
     }
 
    public:
@@ -229,6 +219,9 @@ class ConstantBool : public Constant {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
     }
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ConstantBool>(this->shared_from_this()));
+    }
 
    public:
     bool value;
@@ -259,6 +252,10 @@ class ConstantInt : public ConstantRealNumber {
         return ir_new;
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ConstantInt>(this->shared_from_this()));
+    }
+
    public:
     uint64_t value;
 };
@@ -283,6 +280,10 @@ class ConstantFloat : public Constant {
         std::shared_ptr<ConstantFloat> ir_new(new ConstantFloat(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ConstantFloat>(this->shared_from_this()));
     }
 
    public:
@@ -310,6 +311,10 @@ class ConstantChar : public Constant {
         return ir_new;
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ConstantChar>(this->shared_from_this()));
+    }
+
    public:
     char value;
 };
@@ -324,6 +329,10 @@ class ConstantNull : public Constant {
         self->type = PointerType::Create(nullptr);
         self->tag = "ConstantNull";
         return self;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ConstantNull>(this->shared_from_this()));
     }
 };
 
@@ -360,6 +369,10 @@ class ConstantArray : public Constant {
         return ir_new;
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ConstantArray>(this->shared_from_this()));
+    }
+
     std::list<std::shared_ptr<Constant>> initialize_constants;
 };
 
@@ -394,6 +407,10 @@ class ConstantVector : public Constant {
             ConstantVector::Create(Cast<VectorType>(this->type), new_initialize_constants);
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ConstantVector>(this->shared_from_this()));
     }
 
     std::list<std::shared_ptr<Constant>> initialize_constants;
@@ -454,6 +471,10 @@ class Block : public Value {
     virtual std::shared_ptr<ir::Value> Clone(
         std::shared_ptr<FunctionCloner> function_cloner) override;
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Block>(this->shared_from_this()));
+    }
+
    public:
     std::list<std::shared_ptr<ir::Value>> values;
 };
@@ -505,6 +526,10 @@ class Function : public Value {
     }
 
     bool IsDeclaration() { return this->blocks.empty(); }
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        auto self = this->shared_from_this();
+        interpreter->Visit(Cast<Function>(self));
+    }
 
    public:
     std::shared_ptr<FunctionType> function_type = nullptr;
@@ -532,6 +557,10 @@ class MemberFunctionWithThisPointer : public Value {
         return self;
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<MemberFunctionWithThisPointer>(this->shared_from_this()));
+    }
+
     std::shared_ptr<ir::Value> this_pointer = nullptr;
     std::shared_ptr<Function> function_prototype = nullptr;
 };
@@ -542,16 +571,31 @@ class WriteReadAble : virtual public Value {
 
     bool is_readable = true;
     bool is_writeable = true;
+
+   public:
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<WriteReadAble>(this->shared_from_this()));
+    }
 };
 
 class VariableLiked : virtual public WriteReadAble {
    protected:
     VariableLiked() = default;
+
+   public:
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<VariableLiked>(this->shared_from_this()));
+    }
 };
 
 class Variable : public VariableLiked {
    protected:
     Variable() = default;
+
+   public:
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Variable>(this->shared_from_this()));
+    }
 };
 
 class LocalVariable : public Variable {
@@ -571,6 +615,9 @@ class LocalVariable : public Variable {
         std::shared_ptr<LocalVariable> ir_new(new LocalVariable(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
+    }
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<LocalVariable>(this->shared_from_this()));
     }
 };
 
@@ -636,6 +683,10 @@ class Instruction : virtual public Value {
         }
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Instruction>(this->shared_from_this()));
+    }
+
    protected:
     std::vector<std::shared_ptr<ir::Value>> operands;
 };
@@ -668,6 +719,10 @@ class AccessField : virtual public VariableLiked, virtual public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<AccessField>(this->shared_from_this()));
     }
 
    public:
@@ -708,6 +763,10 @@ class IndexArray : virtual public VariableLiked, virtual public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<IndexArray>(this->shared_from_this()));
     }
 };
 
@@ -750,6 +809,10 @@ class IndexPointer : virtual public VariableLiked, virtual public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<IndexPointer>(this->shared_from_this()));
+    }
 };
 
 class GetStructElementPointer : public Instruction {
@@ -783,6 +846,10 @@ class GetStructElementPointer : public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<GetStructElementPointer>(this->shared_from_this()));
     }
 };
 
@@ -829,6 +896,10 @@ class GetArrayElementPointer : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<GetArrayElementPointer>(this->shared_from_this()));
+    }
 };
 
 class GetPointerElementPointer : public Instruction {
@@ -866,6 +937,10 @@ class GetPointerElementPointer : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<GetPointerElementPointer>(this->shared_from_this()));
+    }
 };
 
 /// @brief 解指针, 可以认为是C语言里的*p, 可读写
@@ -894,6 +969,10 @@ class DeferencePointer : virtual public VariableLiked, virtual public Instructio
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<DeferencePointer>(this->shared_from_this()));
     }
 };
 
@@ -935,6 +1014,10 @@ class WriteVariableLiked : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<WriteVariableLiked>(this->shared_from_this()));
+    }
 };
 
 class GetAddressOfVariableLiked : public Instruction {
@@ -964,6 +1047,9 @@ class GetAddressOfVariableLiked : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<GetAddressOfVariableLiked>(this->shared_from_this()));
+    }
 };
 
 class Alloca : public Instruction {
@@ -989,6 +1075,10 @@ class Alloca : public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Alloca>(this->shared_from_this()));
     }
 
     std::shared_ptr<Value> Length() { return this->GetOperand(0); }
@@ -1028,6 +1118,10 @@ class GlobalAlloca : public Instruction {
         this->parent_module = nullptr;
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<GlobalAlloca>(this->shared_from_this()));
+    }
+
    public:
     bool is_external = false;
     uint32_t address_space = 0;
@@ -1063,6 +1157,10 @@ class LoadPointer : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<LoadPointer>(this->shared_from_this()));
+    }
 };
 
 class StorePointer : public Instruction {
@@ -1097,6 +1195,10 @@ class StorePointer : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<StorePointer>(this->shared_from_this()));
+    }
 };
 
 class Return : public Instruction {
@@ -1123,6 +1225,10 @@ class Return : public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Return>(this->shared_from_this()));
     }
 };
 
@@ -1152,6 +1258,10 @@ class BitCast : public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<BitCast>(this->shared_from_this()));
     }
 };
 
@@ -1198,6 +1308,10 @@ class Call : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Call>(this->shared_from_this()));
+    }
 };
 
 class ConditionBranch : public Instruction {
@@ -1235,6 +1349,10 @@ class ConditionBranch : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ConditionBranch>(this->shared_from_this()));
+    }
 };
 
 class JumpBranch : public Instruction {
@@ -1260,6 +1378,10 @@ class JumpBranch : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<JumpBranch>(this->shared_from_this()));
+    }
 };
 
 /// @brief 仅仅用于辅助IR的转换, 在最终的IR里不应当出现
@@ -1278,6 +1400,10 @@ class Label : public Block {
         std::shared_ptr<Label> ir_new(new Label(*this));
         function_cloner->value_dict[shared_from_this()] = ir_new;
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Label>(this->shared_from_this()));
     }
 };
 
@@ -1319,6 +1445,10 @@ class If : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<If>(this->shared_from_this()));
+    }
 };
 
 class While : public Instruction {
@@ -1355,6 +1485,10 @@ class While : public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<While>(this->shared_from_this()));
     }
 };
 
@@ -1397,6 +1531,10 @@ class For : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<For>(this->shared_from_this()));
+    }
 };
 
 class Break : public Instruction {
@@ -1421,6 +1559,10 @@ class Break : public Instruction {
         function_cloner->value_dict[shared_from_this()] = ir_new;
         ir_new->CloneOperands(function_cloner);
         return ir_new;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Break>(this->shared_from_this()));
     }
 };
 
@@ -1447,6 +1589,10 @@ class Continue : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Continue>(this->shared_from_this()));
+    }
 };
 
 /**
@@ -1469,6 +1615,10 @@ class GlobalVariable : public Variable {
     void Detach() override {
         Value::Detach();
         this->parent_module = nullptr;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<GlobalVariable>(this->shared_from_this()));
     }
 
    public:
@@ -1531,6 +1681,10 @@ class AccessProperty : public WriteReadAble, virtual public Instruction {
         return ir_new;
     }
 
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<AccessProperty>(this->shared_from_this()));
+    }
+
    public:
     std::shared_ptr<ir::Property> property = nullptr;
 };
@@ -1568,6 +1722,10 @@ class WriteProperty : public Instruction {
         ir_new->CloneOperands(function_cloner);
         return ir_new;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<WriteProperty>(this->shared_from_this()));
+    }
 };
 
 class ShuffleVector : public Instruction {
@@ -1595,6 +1753,10 @@ class ShuffleVector : public Instruction {
 
     std::shared_ptr<ir::Value> Mask() { return this->GetOperand(1); }
     void Mask(std::shared_ptr<ir::Value> ir_mask) { this->SetOperand(1, ir_mask); }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ShuffleVector>(this->shared_from_this()));
+    }
 };
 
 class Module : public Named, public std::enable_shared_from_this<Module> {
@@ -1604,8 +1766,11 @@ class Module : public Named, public std::enable_shared_from_this<Module> {
    public:
     static std::shared_ptr<Module> Create() {
         auto self = std::shared_ptr<Module>(new Module);
-        self->modules[ir::Target::nvptx] = std::shared_ptr<Module>(new Module);
+        self->modules[Target::nvptx] = std::shared_ptr<Module>(new Module);
         return self;
+    }
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) {
+        interpreter->Visit(Cast<Module>(this->shared_from_this()));
     }
 
     std::list<std::shared_ptr<Function>> functions;
@@ -1627,6 +1792,9 @@ class ValueAny : public Value {
         self->any = any;
         return self;
     };
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<ValueAny>(this->shared_from_this()));
+    }
 
     std::any any;
 };
@@ -1690,6 +1858,10 @@ class KernelFunctionCall : public Instruction {
 
         return arguments_re;
     }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<KernelFunctionCall>(this->shared_from_this()));
+    }
 };
 
 class Closure : public Value {
@@ -1703,6 +1875,10 @@ class Closure : public Value {
         self->type = PointerType::Create(function_type);
         self->tag = "Closure";
         return self;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Closure>(this->shared_from_this()));
     }
 
    public:
@@ -1723,6 +1899,10 @@ class InlineAsm : public Value {
         self->str_asm = str_asm;
         self->str_constrains = str_constrains;
         return self;
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<InlineAsm>(this->shared_from_this()));
     }
 
     std::string str_asm;

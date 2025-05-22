@@ -29,6 +29,8 @@
 #include "llvm/Support/Debug.h"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
+#include "prajna/ir/target.hpp"
+#include "prajna/ir/visitor.hpp"
 #include "third_party/llvm-project/llvm/include/llvm-c/Target.h"
 #include "third_party/llvm-project/llvm/include/llvm/Analysis/AliasAnalysis.h"
 #include "third_party/llvm-project/llvm/include/llvm/IR/AutoUpgrade.h"
@@ -38,12 +40,14 @@ namespace prajna::codegen {
 /// llvm的全局context, 若放在局部不是特别容易管理, 故直接搞成全局变量
 static llvm::LLVMContext static_llvm_context;
 
-class LlvmCodegen {
+class LlvmCodegen : public prajna::ir::Visitor {
+   protected:
     LlvmCodegen() {}
 
    public:
-    static std::shared_ptr<LlvmCodegen> Create() {
+    static std::shared_ptr<LlvmCodegen> Create(prajna::ir::Target ir_target) {
         std::shared_ptr<LlvmCodegen> self(new LlvmCodegen);
+        self->ir_target = ir_target;
         return self;
     }
 
@@ -154,19 +158,20 @@ class LlvmCodegen {
         PRAJNA_TODO;
     }
 
-    void EmitModule(std::shared_ptr<ir::Module> ir_module, ir::Target ir_target) {
+    void Visit(std::shared_ptr<ir::Module> ir_module) override {
         PRAJNA_ASSERT(!ir_module->llvm_module);
         ir_module->llvm_module = new llvm::Module(ir_module->name, static_llvm_context);
-        if (ir_target == ir::Target::nvptx) {
+        if (ir_target == prajna::ir::Target::nvptx) {
             ir_module->llvm_module->setTargetTriple("nvptx64-nvidia-cuda");
         }
 
         for (auto ir_global_alloca : ir_module->global_allocas) {
-            this->EmitGlobalAlloca(ir_global_alloca);
+            // this->EmitGlobalAlloca(ir_global_alloca);
+            ir_global_alloca->ApplyVisitor(this->shared_from_this());
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            this->EmitFunctionDeclaration(ir_function, ir_target);
+            this->EmitFunctionDeclaration(ir_function, this->ir_target);
             if (ir_function->annotation_dict.count("kernel")) {
                 auto md_node = llvm::MDNode::get(
                     static_llvm_context, {llvm::ValueAsMetadata::get(ir_function->llvm_value),
@@ -181,13 +186,14 @@ class LlvmCodegen {
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
             if (!ir_function->IsDeclaration()) {
-                this->EmitFunction(ir_function, ir_target);
+                // this->EmitFunction(ir_function);
+                ir_function->ApplyVisitor(this->shared_from_this());
             }
         }
     }
 
-    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
-        auto function_fullname = ir_target == ir::Target::nvptx
+    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, prajna::ir::Target ir_target) {
+        auto function_fullname = ir_target == prajna::ir::Target::nvptx
                                      ? MangleNvvmName(ir_function->fullname)
                                      : ir_function->fullname;
 
@@ -200,7 +206,7 @@ class LlvmCodegen {
         ir_function->llvm_value = llvm_fun;
     }
 
-    void EmitFunction(std::shared_ptr<ir::Function> ir_function, ir::Target ir_target) {
+    void Visit(std::shared_ptr<ir::Function> ir_function) override {
         llvm::Function *llvm_fun = static_cast<llvm::Function *>(ir_function->llvm_value);
         PRAJNA_ASSERT(llvm_fun);
         PRAJNA_ASSERT(ir_function->parameters.size() == llvm_fun->arg_size());
@@ -225,11 +231,12 @@ class LlvmCodegen {
         }
 
         for (auto block : ir_function->blocks) {
-            EmitBlock(block, ir_target);
+            // EmitBlock(block);
+            block->ApplyVisitor(this->shared_from_this());
         }
     }
 
-    void EmitBlock(std::shared_ptr<ir::Block> ir_block, ir::Target ir_target) {
+    void Visit(std::shared_ptr<ir::Block> ir_block) override {
         auto weak_parent_function = Lock(ir_block->parent_function);
         PRAJNA_ASSERT(ir_block && weak_parent_function);
 
@@ -243,147 +250,125 @@ class LlvmCodegen {
             static_cast<llvm::Function *>(weak_parent_function->llvm_value), nullptr);
 
         for (auto ir_value : ir_block->values) {
-            EmitValue(ir_value, ir_target);
+            // EmitValue(ir_value, ir_target);
+            if (Is<ir::Function>(ir_value)) {
+                return;
+            }
+            ir_value->ApplyVisitor(this->shared_from_this());
         }
     }
 
-    void EmitValue(std::shared_ptr<ir::Value> ir_value, ir::Target ir_target) {
-        if (Is<ir::Parameter>(ir_value) || Is<ir::Function>(ir_value)) {
-            return;
-        }
+    void Visit(std::shared_ptr<ir::Parameter> value) override {
+        // Do nothing
+    }
+    void Visit(std::shared_ptr<ir::VoidValue> value) override { value->llvm_value = nullptr; }
 
-        if (auto ir_constant = Cast<ir::Constant>(ir_value)) {
-            EmitConstant(ir_constant, ir_target);
-            return;
-        }
-
-        PRAJNA_ASSERT(ir_value->llvm_value == nullptr);
-
-        if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
-            EmitInstruction(ir_instruction, ir_target);
-            return;
-        }
-
-        if (auto ir_null_value = Cast<ir::VoidValue>(ir_value)) {
-            ir_null_value->llvm_value = nullptr;
-            return;
-        }
-
-        PRAJNA_ASSERT(false, ir_value->tag);
+    void Visit(std::shared_ptr<ir::ConstantChar> ir_constant) override {
+        PRAJNA_ASSERT(ir_constant->type->llvm_type);
+        ir_constant->llvm_value =
+            llvm::ConstantInt::get(ir_constant->type->llvm_type, ir_constant->value);
     }
 
-    void EmitConstant(std::shared_ptr<ir::Constant> ir_constant, ir::Target ir_target) {
+    void Visit(std::shared_ptr<ir::ConstantBool> ir_constant_bool) override {
+        PRAJNA_ASSERT(ir_constant_bool->type->llvm_type);
+        ir_constant_bool->llvm_value =
+            llvm::ConstantInt::get(ir_constant_bool->type->llvm_type, ir_constant_bool->value);
+    }
+
+    void Visit(std::shared_ptr<ir::ConstantInt> ir_constant_int) override {
+        PRAJNA_ASSERT(ir_constant_int->type->llvm_type);
+        ir_constant_int->llvm_value =
+            llvm::ConstantInt::get(ir_constant_int->type->llvm_type, ir_constant_int->value,
+                                   Cast<ir::IntType>(ir_constant_int->type)->is_signed);
+    }
+
+    void Visit(std::shared_ptr<ir::ConstantFloat> ir_constant_float) override {
+        PRAJNA_ASSERT(ir_constant_float->type->llvm_type);
+        // 提前返回float的最大数或最小数
+        llvm::APFloat::Semantics semantics;
+        switch (ir_constant_float->type->bytes) {
+            case 2:
+                semantics = llvm::APFloat::Semantics::S_IEEEhalf;
+                break;
+            case 4:
+                semantics = llvm::APFloat::Semantics::S_IEEEsingle;
+                break;
+            case 8:
+                semantics = llvm::APFloat::Semantics::S_IEEEdouble;
+                break;
+            case 16:
+                semantics = llvm::APFloat::Semantics::S_IEEEquad;
+                break;
+            default:
+                PRAJNA_UNREACHABLE;
+        }
+
+        switch (ir_constant_float->special_value) {
+            case ir::ConstantFloat::None:
+                ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                    ir_constant_float->type->llvm_type, ir_constant_float->value);
+                return;
+            case ir::ConstantFloat::Smallest:
+                ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                    ir_constant_float->type->llvm_type,
+                    llvm::APFloat::getSmallest(llvm::APFloat::EnumToSemantics(semantics),
+                                               ir_constant_float->is_negative));
+                return;
+            case ir::ConstantFloat::Largest:
+                ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                    ir_constant_float->type->llvm_type,
+                    llvm::APFloat::getLargest(llvm::APFloat::EnumToSemantics(semantics),
+                                              ir_constant_float->is_negative));
+                return;
+            case ir::ConstantFloat::NaN:
+                ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                    ir_constant_float->type->llvm_type,
+                    llvm::APFloat::getNaN(llvm::APFloat::EnumToSemantics(semantics),
+                                          ir_constant_float->is_negative));
+                return;
+            case ir::ConstantFloat::Inf:
+                ir_constant_float->llvm_value = llvm::ConstantFP::get(
+                    ir_constant_float->type->llvm_type,
+                    llvm::APFloat::getInf(llvm::APFloat::EnumToSemantics(semantics),
+                                          ir_constant_float->is_negative));
+                return;
+        }
+    }
+
+    void Visit(std::shared_ptr<ir::ConstantArray> ir_constant_array) override {
+        std::vector<llvm::Constant *> llvm_contants(ir_constant_array->initialize_constants.size());
+        std::transform(RANGE(ir_constant_array->initialize_constants), llvm_contants.begin(),
+                       [=](auto ir_init) {
+                           auto llvm_constant = static_cast<llvm::Constant *>(ir_init->llvm_value);
+                           PRAJNA_ASSERT(llvm_constant);
+                           return llvm_constant;
+                       });
+        PRAJNA_ASSERT(ir_constant_array->type->llvm_type);
+        ir_constant_array->llvm_value = llvm::ConstantArray::get(
+            static_cast<llvm::ArrayType *>(ir_constant_array->type->llvm_type), llvm_contants);
+    }
+
+    void Visit(std::shared_ptr<ir::ConstantVector> ir_constant_vector) override {
+        std::vector<llvm::Constant *> llvm_contants(
+            ir_constant_vector->initialize_constants.size());
+        std::transform(RANGE(ir_constant_vector->initialize_constants), llvm_contants.begin(),
+                       [=](auto ir_init) {
+                           auto llvm_constant = static_cast<llvm::Constant *>(ir_init->llvm_value);
+                           PRAJNA_ASSERT(llvm_constant);
+                           return llvm_constant;
+                       });
+        PRAJNA_ASSERT(ir_constant_vector->type->llvm_type);
+        ir_constant_vector->llvm_value = llvm::ConstantVector::get(llvm_contants);
+    }
+
+    void Visit(std::shared_ptr<ir::Constant> ir_constant) override {
         if (ir_constant->llvm_value) {
             return;
         }
-
-        if (auto ir_constant_char = Cast<ir::ConstantChar>(ir_constant)) {
-            PRAJNA_ASSERT(ir_constant_char->type->llvm_type);
-            ir_constant_char->llvm_value =
-                llvm::ConstantInt::get(ir_constant_char->type->llvm_type, ir_constant_char->value);
-            return;
-        }
-        if (auto ir_constant_bool = Cast<ir::ConstantBool>(ir_constant)) {
-            PRAJNA_ASSERT(ir_constant_bool->type->llvm_type);
-            ir_constant_bool->llvm_value =
-                llvm::ConstantInt::get(ir_constant_bool->type->llvm_type, ir_constant_bool->value);
-            return;
-        }
-        if (auto ir_constant_int = Cast<ir::ConstantInt>(ir_constant)) {
-            PRAJNA_ASSERT(ir_constant_int->type->llvm_type);
-            ir_constant_int->llvm_value =
-                llvm::ConstantInt::get(ir_constant_int->type->llvm_type, ir_constant_int->value,
-                                       Cast<ir::IntType>(ir_constant_int->type)->is_signed);
-            return;
-        }
-        if (auto ir_constant_float = Cast<ir::ConstantFloat>(ir_constant)) {
-            PRAJNA_ASSERT(ir_constant_float->type->llvm_type);
-            // 提前返回float的最大数或最小数
-            llvm::APFloat::Semantics semantics;
-            switch (ir_constant_float->type->bytes) {
-                case 2:
-                    semantics = llvm::APFloat::Semantics::S_IEEEhalf;
-                    break;
-                case 4:
-                    semantics = llvm::APFloat::Semantics::S_IEEEsingle;
-                    break;
-                case 8:
-                    semantics = llvm::APFloat::Semantics::S_IEEEdouble;
-                    break;
-                case 16:
-                    semantics = llvm::APFloat::Semantics::S_IEEEquad;
-                    break;
-                default:
-                    PRAJNA_UNREACHABLE;
-            }
-
-            switch (ir_constant_float->special_value) {
-                case ir::ConstantFloat::None:
-                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
-                        ir_constant_float->type->llvm_type, ir_constant_float->value);
-                    return;
-                case ir::ConstantFloat::Smallest:
-                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
-                        ir_constant_float->type->llvm_type,
-                        llvm::APFloat::getSmallest(llvm::APFloat::EnumToSemantics(semantics),
-                                                   ir_constant_float->is_negative));
-                    return;
-                case ir::ConstantFloat::Largest:
-                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
-                        ir_constant_float->type->llvm_type,
-                        llvm::APFloat::getLargest(llvm::APFloat::EnumToSemantics(semantics),
-                                                  ir_constant_float->is_negative));
-                    return;
-                case ir::ConstantFloat::NaN:
-                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
-                        ir_constant_float->type->llvm_type,
-                        llvm::APFloat::getNaN(llvm::APFloat::EnumToSemantics(semantics),
-                                              ir_constant_float->is_negative));
-                    return;
-                case ir::ConstantFloat::Inf:
-                    ir_constant_float->llvm_value = llvm::ConstantFP::get(
-                        ir_constant_float->type->llvm_type,
-                        llvm::APFloat::getInf(llvm::APFloat::EnumToSemantics(semantics),
-                                              ir_constant_float->is_negative));
-                    return;
-            }
-        }
-
-        if (auto ir_constant_array = Cast<ir::ConstantArray>(ir_constant)) {
-            std::vector<llvm::Constant *> llvm_contants(
-                ir_constant_array->initialize_constants.size());
-            std::transform(RANGE(ir_constant_array->initialize_constants), llvm_contants.begin(),
-                           [=](auto ir_init) {
-                               auto llvm_constant =
-                                   static_cast<llvm::Constant *>(ir_init->llvm_value);
-                               PRAJNA_ASSERT(llvm_constant);
-                               return llvm_constant;
-                           });
-            PRAJNA_ASSERT(ir_constant_array->type->llvm_type);
-            ir_constant_array->llvm_value = llvm::ConstantArray::get(
-                static_cast<llvm::ArrayType *>(ir_constant_array->type->llvm_type), llvm_contants);
-            return;
-        }
-
-        if (auto ir_constant_vector = Cast<ir::ConstantVector>(ir_constant)) {
-            std::vector<llvm::Constant *> llvm_contants(
-                ir_constant_vector->initialize_constants.size());
-            std::transform(RANGE(ir_constant_vector->initialize_constants), llvm_contants.begin(),
-                           [=](auto ir_init) {
-                               auto llvm_constant =
-                                   static_cast<llvm::Constant *>(ir_init->llvm_value);
-                               PRAJNA_ASSERT(llvm_constant);
-                               return llvm_constant;
-                           });
-            PRAJNA_ASSERT(ir_constant_vector->type->llvm_type);
-            ir_constant_vector->llvm_value = llvm::ConstantVector::get(llvm_contants);
-            return;
-        }
-
-        PRAJNA_TODO;
+        ir_constant->ApplyVisitor(this->shared_from_this());
     }
 
-    void EmitGlobalAlloca(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) {
+    void Visit(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) override {
         auto ir_value_type = Cast<ir::PointerType>(ir_global_alloca->type)->value_type;
         PRAJNA_ASSERT(ir_value_type && ir_value_type->llvm_type);
         PRAJNA_ASSERT(ir_global_alloca->parent_module->llvm_module);
@@ -399,328 +384,330 @@ class LlvmCodegen {
         ir_global_alloca->llvm_value = llvm_global_variable;
     }
 
-    void EmitInstruction(std::shared_ptr<ir::Instruction> ir_instruction, ir::Target ir_target) {
+    void Visit(std::shared_ptr<ir::Call> ir_call) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_call);
+        auto ir_function_type = ir_call->Function()->GetFunctionType();
+        std::vector<llvm::Value *> llvm_arguments(ir_call->ArgumentSize());
+        for (int64_t i = 0; i < llvm_arguments.size(); ++i) {
+            llvm_arguments[i] = ir_call->Argument(i)->llvm_value;
+            PRAJNA_ASSERT(llvm_arguments[i]);
+        }
+        PRAJNA_ASSERT(ir_call->Function()->GetFunctionType()->llvm_type);
+        PRAJNA_ASSERT(ir_call->Function()->llvm_value);
+        ir_call->llvm_value = llvm::CallInst::Create(
+            static_cast<llvm::FunctionType *>(ir_call->Function()->GetFunctionType()->llvm_type),
+            ir_call->Function()->llvm_value, llvm_arguments, "", llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::Return> ir_return) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_return);
+        auto llvm_return = llvm::ReturnInst::Create(
+            static_llvm_context, ir_return->Value()->llvm_value, llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::Alloca> ir_alloca) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_alloca);
+        auto ir_alloca_type = Cast<ir::PointerType>(ir_alloca->type);
+        PRAJNA_ASSERT(ir_alloca_type && ir_alloca_type->value_type->llvm_type);
+        if (ir_alloca->alignment > 0) {
+            ir_alloca->llvm_value = new llvm::AllocaInst(
+                ir_alloca_type->value_type->llvm_type, 0, ir_alloca->Length()->llvm_value,
+                llvm::Align(ir_alloca->alignment), ir_alloca->name, llvm_basic_block);
+        } else {
+            // llvm会使用当前平台的默认alignment
+            ir_alloca->llvm_value = new llvm::AllocaInst(ir_alloca_type->value_type->llvm_type, 0,
+                                                         ir_alloca->Length()->llvm_value,
+                                                         ir_alloca->name, llvm_basic_block);
+        }
+    }
+
+    void Visit(std::shared_ptr<ir::LoadPointer> ir_load_pointer) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_load_pointer);
+        PRAJNA_ASSERT(ir_load_pointer->type->llvm_type);
+        PRAJNA_ASSERT(ir_load_pointer->Pointer()->llvm_value);
+        auto llvm_load_ptr =
+            new llvm::LoadInst(ir_load_pointer->type->llvm_type,
+                               ir_load_pointer->Pointer()->llvm_value, "", llvm_basic_block);
+        ir_load_pointer->llvm_value = llvm_load_ptr;
+    }
+
+    void Visit(std::shared_ptr<ir::StorePointer> ir_store_pointer) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_store_pointer);
+        PRAJNA_ASSERT(ir_store_pointer->Value()->llvm_value);
+        PRAJNA_ASSERT(ir_store_pointer->Pointer()->llvm_value);
+
+        auto llvm_store_ptr =
+            new llvm::StoreInst(ir_store_pointer->Value()->llvm_value,
+                                ir_store_pointer->Pointer()->llvm_value, false, llvm_basic_block);
+        ir_store_pointer->llvm_value = llvm_store_ptr;
+    }
+
+    void Visit(std::shared_ptr<ir::ConditionBranch> ir_condition_branch) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_condition_branch);
+        // 需要处理, 因为true/falseBlock在ir_condition_branch的后面
+        ir_condition_branch->TrueBlock()->ApplyVisitor(this->shared_from_this());
+
+        ir_condition_branch->FalseBlock()->ApplyVisitor(this->shared_from_this());
+
+        PRAJNA_ASSERT(ir_condition_branch->TrueBlock()->llvm_value);
+        PRAJNA_ASSERT(ir_condition_branch->FalseBlock()->llvm_value);
+        PRAJNA_ASSERT(ir_condition_branch->Condition()->llvm_value);
+        ir_condition_branch->llvm_value = llvm::BranchInst::Create(
+            static_cast<llvm::BasicBlock *>(ir_condition_branch->TrueBlock()->llvm_value),
+            static_cast<llvm::BasicBlock *>(ir_condition_branch->FalseBlock()->llvm_value),
+            ir_condition_branch->Condition()->llvm_value, llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::JumpBranch> ir_jump_branch) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_jump_branch);
+        PRAJNA_ASSERT(Lock(Lock(ir_jump_branch->parent_block)->parent_function) ==
+                      Lock(ir_jump_branch->NextBlock()->parent_function));
+
+        ir_jump_branch->NextBlock()->ApplyVisitor(this->shared_from_this());
+
+        PRAJNA_ASSERT(ir_jump_branch->NextBlock()->llvm_value);
+        ir_jump_branch->llvm_value = llvm::BranchInst::Create(
+            static_cast<llvm::BasicBlock *>(ir_jump_branch->NextBlock()->llvm_value),
+            llvm_basic_block);
+    }
+
+    void Visit(
+        std::shared_ptr<ir::GetStructElementPointer> ir_get_struct_element_pointer) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_get_struct_element_pointer);
+        std::vector<llvm::Value *> llvm_idx_list(2);
+        llvm_idx_list[0] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
+        // 结构体的偏移下标必须使用32位整型
+        llvm_idx_list[1] = llvm::ConstantInt::get(llvm::Type::getInt32Ty(static_llvm_context),
+                                                  ir_get_struct_element_pointer->field->index);
+
+        auto ir_pointer_type =
+            Cast<ir::PointerType>(ir_get_struct_element_pointer->Pointer()->type);
+        PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
+        PRAJNA_ASSERT(ir_get_struct_element_pointer->Pointer()->llvm_value);
+        ir_get_struct_element_pointer->llvm_value =
+            llvm::GetElementPtrInst::Create(ir_pointer_type->value_type->llvm_type,
+                                            ir_get_struct_element_pointer->Pointer()->llvm_value,
+                                            llvm_idx_list, "", llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::GetArrayElementPointer> ir_get_array_element_pointer) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_get_array_element_pointer);
+        std::vector<llvm::Value *> llvm_idx_list(2);
+        llvm_idx_list[0] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
+        llvm_idx_list[1] = ir_get_array_element_pointer->IndexVariable()->llvm_value;
+        auto ir_pointer_type = Cast<ir::PointerType>(ir_get_array_element_pointer->Pointer()->type);
+        PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
+        PRAJNA_ASSERT(ir_get_array_element_pointer->Pointer()->llvm_value);
+        ir_get_array_element_pointer->llvm_value =
+            llvm::GetElementPtrInst::Create(ir_pointer_type->value_type->llvm_type,
+                                            ir_get_array_element_pointer->Pointer()->llvm_value,
+                                            llvm_idx_list, "", llvm_basic_block);
+    }
+
+    void Visit(
+        std::shared_ptr<ir::GetPointerElementPointer> ir_get_pointer_element_pointer) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_get_pointer_element_pointer);
+        std::vector<llvm::Value *> llvm_idx_list(1);
+        llvm_idx_list[0] = ir_get_pointer_element_pointer->IndexVariable()->llvm_value;
+        PRAJNA_ASSERT(ir_get_pointer_element_pointer->type->llvm_type);
+        PRAJNA_ASSERT(ir_get_pointer_element_pointer->Pointer()->llvm_value);
+        auto llvm_pointer = new llvm::LoadInst(
+            ir_get_pointer_element_pointer->type->llvm_type,
+            ir_get_pointer_element_pointer->Pointer()->llvm_value, "", llvm_basic_block);
+        auto ir_pointer_type = Cast<ir::PointerType>(ir_get_pointer_element_pointer->type);
+        PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
+        ir_get_pointer_element_pointer->llvm_value =
+            llvm::GetElementPtrInst::Create(ir_pointer_type->value_type->llvm_type, llvm_pointer,
+                                            llvm_idx_list, "", llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::BitCast> ir_bit_cast) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_bit_cast);
+        PRAJNA_ASSERT(ir_bit_cast->Value()->llvm_value);
+        PRAJNA_ASSERT(ir_bit_cast->type->llvm_type);
+        ir_bit_cast->llvm_value = new llvm::BitCastInst(
+            ir_bit_cast->Value()->llvm_value, ir_bit_cast->type->llvm_type, "", llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::CastInstruction> ir_cast_instruction) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_cast_instruction);
+        std::unordered_map<ir::CastInstruction::Operation, llvm::CastInst::CastOps>
+            cast_operator_dict = {
+                {ir::CastInstruction::Operation::Trunc, llvm::CastInst::Trunc},
+                {ir::CastInstruction::Operation::ZExt, llvm::CastInst::ZExt},
+                {ir::CastInstruction::Operation::SExt, llvm::CastInst::SExt},
+                {ir::CastInstruction::Operation::FPToUI, llvm::CastInst::FPToUI},
+                {ir::CastInstruction::Operation::FPToSI, llvm::CastInst::FPToSI},
+                {ir::CastInstruction::Operation::UIToFP, llvm::CastInst::UIToFP},
+                {ir::CastInstruction::Operation::SIToFP, llvm::CastInst::SIToFP},
+                {ir::CastInstruction::Operation::FPTrunc, llvm::CastInst::FPTrunc},
+                {ir::CastInstruction::Operation::FPExt, llvm::CastInst::FPExt},
+                {ir::CastInstruction::Operation::PtrToInt, llvm::CastInst::PtrToInt},
+                {ir::CastInstruction::Operation::IntToPtr, llvm::CastInst::IntToPtr},
+                {ir::CastInstruction::Operation::BitCast, llvm::CastInst::BitCast},
+                {ir::CastInstruction::Operation::AddrSpaceCast, llvm::CastInst::AddrSpaceCast},
+            };
+        PRAJNA_ASSERT(cast_operator_dict.count(ir_cast_instruction->operation));
+        auto cast_op = cast_operator_dict[ir_cast_instruction->operation];
+        ir_cast_instruction->llvm_value =
+            llvm::CastInst::Create(cast_op, ir_cast_instruction->GetOperand(0)->llvm_value,
+                                   ir_cast_instruction->type->llvm_type, "", llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::CompareInstruction> ir_compare_instruction) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_compare_instruction);
+        std::unordered_map<std::string, llvm::CmpInst::OtherOps> cmp_inst_other_ops = {
+            {"ICmp", llvm::CmpInst::OtherOps::ICmp}, {"FCmp", llvm::CmpInst::OtherOps::FCmp}};
+
+        std::unordered_map<ir::CompareInstruction::Operation, llvm::CmpInst::OtherOps>
+            llvm_compare_other_ops_dict = {
+                {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_OEQ, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_OGT, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_OGE, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_OLT, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_OLE, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_ONE, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_ORD, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_UNO, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_UEQ, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_UGT, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_UGE, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_ULT, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_ULE, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_UNE, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::FCMP_TRUE, llvm::CmpInst::OtherOps::FCmp},
+                {ir::CompareInstruction::Operation::ICMP_EQ, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_NE, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_UGT, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_UGE, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_ULT, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_ULE, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_SGT, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_SGE, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_SLT, llvm::CmpInst::OtherOps::ICmp},
+                {ir::CompareInstruction::Operation::ICMP_SLE, llvm::CmpInst::OtherOps::ICmp},
+            };
+
+        // clang-format off
+        std::unordered_map<ir::CompareInstruction::Operation, llvm::ICmpInst::Predicate>
+            llvm_compare_predicator_dict = {
+                {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::Predicate::FCMP_FALSE},
+                {ir::CompareInstruction::Operation::FCMP_OEQ, llvm::CmpInst::Predicate::FCMP_OEQ},
+                {ir::CompareInstruction::Operation::FCMP_OGT, llvm::CmpInst::Predicate::FCMP_OGT},
+                {ir::CompareInstruction::Operation::FCMP_OGE, llvm::CmpInst::Predicate::FCMP_OGE},
+                {ir::CompareInstruction::Operation::FCMP_OLT, llvm::CmpInst::Predicate::FCMP_OLT},
+                {ir::CompareInstruction::Operation::FCMP_OLE, llvm::CmpInst::Predicate::FCMP_OLE},
+                {ir::CompareInstruction::Operation::FCMP_ONE, llvm::CmpInst::Predicate::FCMP_ONE},
+                {ir::CompareInstruction::Operation::FCMP_ORD, llvm::CmpInst::Predicate::FCMP_ORD},
+                {ir::CompareInstruction::Operation::FCMP_UNO, llvm::CmpInst::Predicate::FCMP_UNO},
+                {ir::CompareInstruction::Operation::FCMP_UEQ, llvm::CmpInst::Predicate::FCMP_UEQ},
+                {ir::CompareInstruction::Operation::FCMP_UGT, llvm::CmpInst::Predicate::FCMP_UGT},
+                {ir::CompareInstruction::Operation::FCMP_UGE, llvm::CmpInst::Predicate::FCMP_UGE},
+                {ir::CompareInstruction::Operation::FCMP_ULT, llvm::CmpInst::Predicate::FCMP_ULT},
+                {ir::CompareInstruction::Operation::FCMP_ULE, llvm::CmpInst::Predicate::FCMP_ULE},
+                {ir::CompareInstruction::Operation::FCMP_UNE, llvm::CmpInst::Predicate::FCMP_UNE},
+                {ir::CompareInstruction::Operation::FCMP_TRUE, llvm::CmpInst::Predicate::FCMP_TRUE},
+                {ir::CompareInstruction::Operation::ICMP_EQ, llvm::CmpInst::Predicate::ICMP_EQ},
+                {ir::CompareInstruction::Operation::ICMP_NE, llvm::CmpInst::Predicate::ICMP_NE},
+                {ir::CompareInstruction::Operation::ICMP_UGT, llvm::CmpInst::Predicate::ICMP_UGT},
+                {ir::CompareInstruction::Operation::ICMP_UGE, llvm::CmpInst::Predicate::ICMP_UGE},
+                {ir::CompareInstruction::Operation::ICMP_ULT, llvm::CmpInst::Predicate::ICMP_ULT},
+                {ir::CompareInstruction::Operation::ICMP_ULE, llvm::CmpInst::Predicate::ICMP_ULE},
+                {ir::CompareInstruction::Operation::ICMP_SGT, llvm::CmpInst::Predicate::ICMP_SGT},
+                {ir::CompareInstruction::Operation::ICMP_SGE, llvm::CmpInst::Predicate::ICMP_SGE},
+                {ir::CompareInstruction::Operation::ICMP_SLT, llvm::CmpInst::Predicate::ICMP_SLT},
+                {ir::CompareInstruction::Operation::ICMP_SLE, llvm::CmpInst::Predicate::ICMP_SLE},
+            };
+        // clang-format on
+        PRAJNA_ASSERT(llvm_compare_other_ops_dict.count(ir_compare_instruction->operation));
+        PRAJNA_ASSERT(llvm_compare_predicator_dict.count(ir_compare_instruction->operation));
+        auto llvm_compare_other_ops =
+            llvm_compare_other_ops_dict[ir_compare_instruction->operation];
+        auto llvm_compare_predicator =
+            llvm_compare_predicator_dict[ir_compare_instruction->operation];
+        ir_compare_instruction->llvm_value = llvm::CmpInst::Create(
+            llvm_compare_other_ops, llvm_compare_predicator,
+            ir_compare_instruction->GetOperand(0)->llvm_value,
+            ir_compare_instruction->GetOperand(1)->llvm_value, "", llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::BinaryOperator> ir_binary_operator) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_binary_operator);
+        std::unordered_map<ir::BinaryOperator::Operation, llvm::BinaryOperator::BinaryOps>
+            binary_operator_dict = {
+                {ir::BinaryOperator::Operation::Add, llvm::BinaryOperator::BinaryOps::Add},
+                {ir::BinaryOperator::Operation::Sub, llvm::BinaryOperator::BinaryOps::Sub},
+                {ir::BinaryOperator::Operation::Mul, llvm::BinaryOperator::BinaryOps::Mul},
+                {ir::BinaryOperator::Operation::SDiv, llvm::BinaryOperator::BinaryOps::SDiv},
+                {ir::BinaryOperator::Operation::UDiv, llvm::BinaryOperator::BinaryOps::UDiv},
+                {ir::BinaryOperator::Operation::SRem, llvm::BinaryOperator::BinaryOps::SRem},
+                {ir::BinaryOperator::Operation::URem, llvm::BinaryOperator::BinaryOps::URem},
+                {ir::BinaryOperator::Operation::And, llvm::BinaryOperator::BinaryOps::And},
+                {ir::BinaryOperator::Operation::Or, llvm::BinaryOperator::BinaryOps::Or},
+                {ir::BinaryOperator::Operation::Shl, llvm::BinaryOperator::BinaryOps::Shl},
+                {ir::BinaryOperator::Operation::LShr, llvm::BinaryOperator::BinaryOps::LShr},
+                {ir::BinaryOperator::Operation::AShr, llvm::BinaryOperator::BinaryOps::AShr},
+                {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
+                {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
+                {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
+                {ir::BinaryOperator::Operation::FAdd, llvm::BinaryOperator::BinaryOps::FAdd},
+                {ir::BinaryOperator::Operation::FSub, llvm::BinaryOperator::BinaryOps::FSub},
+                {ir::BinaryOperator::Operation::FMul, llvm::BinaryOperator::BinaryOps::FMul},
+                {ir::BinaryOperator::Operation::FDiv, llvm::BinaryOperator::BinaryOps::FDiv},
+                {ir::BinaryOperator::Operation::FRem, llvm::BinaryOperator::BinaryOps::FRem},
+            };
+
+        PRAJNA_ASSERT(binary_operator_dict.count(ir_binary_operator->operation));
+        auto llvm_binary_operator_operation = binary_operator_dict[ir_binary_operator->operation];
+        ir_binary_operator->llvm_value = llvm::BinaryOperator::Create(
+            llvm_binary_operator_operation, ir_binary_operator->GetOperand(0)->llvm_value,
+            ir_binary_operator->GetOperand(1)->llvm_value, "", llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::ShuffleVector> ir_shuffle_vector) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_shuffle_vector);
+        ir_shuffle_vector->llvm_value = new llvm::ShuffleVectorInst(
+            ir_shuffle_vector->Value()->llvm_value, ir_shuffle_vector->Mask()->llvm_value, "",
+            llvm_basic_block);
+    }
+
+    llvm::BasicBlock *GetLlvmBasicBlock(std::shared_ptr<ir::Instruction> ir_instruction) {
         auto llvm_basic_block =
             static_cast<llvm::BasicBlock *>(Lock(ir_instruction->parent_block)->llvm_value);
         PRAJNA_ASSERT(llvm_basic_block);
+        return llvm_basic_block;
+    }
 
-        if (auto ir_call = Cast<ir::Call>(ir_instruction)) {
-            auto ir_function_type = ir_call->Function()->GetFunctionType();
-            std::vector<llvm::Value *> llvm_arguments(ir_call->ArgumentSize());
-            for (int64_t i = 0; i < llvm_arguments.size(); ++i) {
-                llvm_arguments[i] = ir_call->Argument(i)->llvm_value;
-                PRAJNA_ASSERT(llvm_arguments[i]);
-            }
-            PRAJNA_ASSERT(ir_call->Function()->GetFunctionType()->llvm_type);
-            PRAJNA_ASSERT(ir_call->Function()->llvm_value);
-            ir_call->llvm_value = llvm::CallInst::Create(
-                static_cast<llvm::FunctionType *>(
-                    ir_call->Function()->GetFunctionType()->llvm_type),
-                ir_call->Function()->llvm_value, llvm_arguments, "", llvm_basic_block);
-            return;
-        }
-
-        if (auto ir_return = Cast<ir::Return>(ir_instruction)) {
-            auto llvm_return = llvm::ReturnInst::Create(
-                static_llvm_context, ir_return->Value()->llvm_value, llvm_basic_block);
-            return;
-        }
-        if (auto ir_alloca = Cast<ir::Alloca>(ir_instruction)) {
-            auto ir_alloca_type = Cast<ir::PointerType>(ir_alloca->type);
-            PRAJNA_ASSERT(ir_alloca_type && ir_alloca_type->value_type->llvm_type);
-            if (ir_alloca->alignment > 0) {
-                ir_alloca->llvm_value = new llvm::AllocaInst(
-                    ir_alloca_type->value_type->llvm_type, 0, ir_alloca->Length()->llvm_value,
-                    llvm::Align(ir_alloca->alignment), ir_alloca->name, llvm_basic_block);
-                return;
-            } else {
-                // llvm会使用当前平台的默认alignment
-                ir_alloca->llvm_value = new llvm::AllocaInst(ir_alloca_type->value_type->llvm_type,
-                                                             0, ir_alloca->Length()->llvm_value,
-                                                             ir_alloca->name, llvm_basic_block);
-                return;
-            }
-        }
-
+    void Visit(std::shared_ptr<ir::Instruction> ir_instruction) override {
         if (auto ir_global_alloca = Cast<ir::GlobalAlloca>(ir_instruction)) {
             PRAJNA_UNREACHABLE;
         }
-
-        if (auto ir_load_pointer = Cast<ir::LoadPointer>(ir_instruction)) {
-            PRAJNA_ASSERT(ir_load_pointer->type->llvm_type);
-            PRAJNA_ASSERT(ir_load_pointer->Pointer()->llvm_value);
-            auto llvm_load_ptr =
-                new llvm::LoadInst(ir_load_pointer->type->llvm_type,
-                                   ir_load_pointer->Pointer()->llvm_value, "", llvm_basic_block);
-            ir_load_pointer->llvm_value = llvm_load_ptr;
-            return;
-        }
-
-        if (auto ir_store_pointer = Cast<ir::StorePointer>(ir_instruction)) {
-            PRAJNA_ASSERT(ir_store_pointer->Value()->llvm_value);
-            PRAJNA_ASSERT(ir_store_pointer->Pointer()->llvm_value);
-
-            auto llvm_store_ptr = new llvm::StoreInst(ir_store_pointer->Value()->llvm_value,
-                                                      ir_store_pointer->Pointer()->llvm_value,
-                                                      false, llvm_basic_block);
-            ir_store_pointer->llvm_value = llvm_store_ptr;
-            return;
-        }
-
-        if (auto ir_condition_branch = Cast<ir::ConditionBranch>(ir_instruction)) {
-            // 需要处理, 因为true/falseBlock在ir_condition_branch的后面
-            this->EmitBlock(ir_condition_branch->TrueBlock(), ir_target);
-            this->EmitBlock(ir_condition_branch->FalseBlock(), ir_target);
-            PRAJNA_ASSERT(ir_condition_branch->TrueBlock()->llvm_value);
-            PRAJNA_ASSERT(ir_condition_branch->FalseBlock()->llvm_value);
-            PRAJNA_ASSERT(ir_condition_branch->Condition()->llvm_value);
-            ir_condition_branch->llvm_value = llvm::BranchInst::Create(
-                static_cast<llvm::BasicBlock *>(ir_condition_branch->TrueBlock()->llvm_value),
-                static_cast<llvm::BasicBlock *>(ir_condition_branch->FalseBlock()->llvm_value),
-                ir_condition_branch->Condition()->llvm_value, llvm_basic_block);
-            return;
-        }
-        if (auto ir_jump_branch = Cast<ir::JumpBranch>(ir_instruction)) {
-            PRAJNA_ASSERT(Lock(Lock(ir_jump_branch->parent_block)->parent_function) ==
-                          Lock(ir_jump_branch->NextBlock()->parent_function));
-
-            this->EmitBlock(ir_jump_branch->NextBlock(), ir_target);
-            PRAJNA_ASSERT(ir_jump_branch->NextBlock()->llvm_value);
-            ir_jump_branch->llvm_value = llvm::BranchInst::Create(
-                static_cast<llvm::BasicBlock *>(ir_jump_branch->NextBlock()->llvm_value),
-                llvm_basic_block);
-            return;
-        }
-
-        if (auto ir_get_struct_element_pointer =
-                Cast<ir::GetStructElementPointer>(ir_instruction)) {
-            std::vector<llvm::Value *> llvm_idx_list(2);
-            llvm_idx_list[0] =
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
-            // 结构体的偏移下标必须使用32位整型
-            llvm_idx_list[1] = llvm::ConstantInt::get(llvm::Type::getInt32Ty(static_llvm_context),
-                                                      ir_get_struct_element_pointer->field->index);
-
-            auto ir_pointer_type =
-                Cast<ir::PointerType>(ir_get_struct_element_pointer->Pointer()->type);
-            PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
-            PRAJNA_ASSERT(ir_get_struct_element_pointer->Pointer()->llvm_value);
-            ir_get_struct_element_pointer->llvm_value = llvm::GetElementPtrInst::Create(
-                ir_pointer_type->value_type->llvm_type,
-                ir_get_struct_element_pointer->Pointer()->llvm_value, llvm_idx_list, "",
-                llvm_basic_block);
-            return;
-        }
-
-        if (auto ir_get_array_element_pointer = Cast<ir::GetArrayElementPointer>(ir_instruction)) {
-            std::vector<llvm::Value *> llvm_idx_list(2);
-            llvm_idx_list[0] =
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(static_llvm_context), 0);
-            llvm_idx_list[1] = ir_get_array_element_pointer->IndexVariable()->llvm_value;
-            auto ir_pointer_type =
-                Cast<ir::PointerType>(ir_get_array_element_pointer->Pointer()->type);
-            PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
-            PRAJNA_ASSERT(ir_get_array_element_pointer->Pointer()->llvm_value);
-            ir_get_array_element_pointer->llvm_value =
-                llvm::GetElementPtrInst::Create(ir_pointer_type->value_type->llvm_type,
-                                                ir_get_array_element_pointer->Pointer()->llvm_value,
-                                                llvm_idx_list, "", llvm_basic_block);
-            return;
-        }
-
-        if (auto ir_get_pointer_element_pointer =
-                Cast<ir::GetPointerElementPointer>(ir_instruction)) {
-            std::vector<llvm::Value *> llvm_idx_list(1);
-            llvm_idx_list[0] = ir_get_pointer_element_pointer->IndexVariable()->llvm_value;
-            PRAJNA_ASSERT(ir_get_pointer_element_pointer->type->llvm_type);
-            PRAJNA_ASSERT(ir_get_pointer_element_pointer->Pointer()->llvm_value);
-            auto llvm_pointer = new llvm::LoadInst(
-                ir_get_pointer_element_pointer->type->llvm_type,
-                ir_get_pointer_element_pointer->Pointer()->llvm_value, "", llvm_basic_block);
-            auto ir_pointer_type = Cast<ir::PointerType>(ir_get_pointer_element_pointer->type);
-            PRAJNA_ASSERT(ir_pointer_type && ir_pointer_type->value_type->llvm_type);
-            ir_get_pointer_element_pointer->llvm_value =
-                llvm::GetElementPtrInst::Create(ir_pointer_type->value_type->llvm_type,
-                                                llvm_pointer, llvm_idx_list, "", llvm_basic_block);
-            return;
-        }
-
-        if (auto ir_bit_cast = Cast<ir::BitCast>(ir_instruction)) {
-            PRAJNA_ASSERT(ir_bit_cast->Value()->llvm_value);
-            PRAJNA_ASSERT(ir_bit_cast->type->llvm_type);
-            ir_bit_cast->llvm_value =
-                new llvm::BitCastInst(ir_bit_cast->Value()->llvm_value,
-                                      ir_bit_cast->type->llvm_type, "", llvm_basic_block);
-            return;
-        }
-
-        if (auto ir_cast_instruction = Cast<ir::CastInstruction>(ir_instruction)) {
-            std::unordered_map<ir::CastInstruction::Operation, llvm::CastInst::CastOps>
-                cast_operator_dict = {
-                    {ir::CastInstruction::Operation::Trunc, llvm::CastInst::Trunc},
-                    {ir::CastInstruction::Operation::ZExt, llvm::CastInst::ZExt},
-                    {ir::CastInstruction::Operation::SExt, llvm::CastInst::SExt},
-                    {ir::CastInstruction::Operation::FPToUI, llvm::CastInst::FPToUI},
-                    {ir::CastInstruction::Operation::FPToSI, llvm::CastInst::FPToSI},
-                    {ir::CastInstruction::Operation::UIToFP, llvm::CastInst::UIToFP},
-                    {ir::CastInstruction::Operation::SIToFP, llvm::CastInst::SIToFP},
-                    {ir::CastInstruction::Operation::FPTrunc, llvm::CastInst::FPTrunc},
-                    {ir::CastInstruction::Operation::FPExt, llvm::CastInst::FPExt},
-                    {ir::CastInstruction::Operation::PtrToInt, llvm::CastInst::PtrToInt},
-                    {ir::CastInstruction::Operation::IntToPtr, llvm::CastInst::IntToPtr},
-                    {ir::CastInstruction::Operation::BitCast, llvm::CastInst::BitCast},
-                    {ir::CastInstruction::Operation::AddrSpaceCast, llvm::CastInst::AddrSpaceCast},
-                };
-            PRAJNA_ASSERT(cast_operator_dict.count(ir_cast_instruction->operation));
-            auto cast_op = cast_operator_dict[ir_cast_instruction->operation];
-            ir_cast_instruction->llvm_value =
-                llvm::CastInst::Create(cast_op, ir_cast_instruction->GetOperand(0)->llvm_value,
-                                       ir_cast_instruction->type->llvm_type, "", llvm_basic_block);
-            return;
-        }
-
-        if (auto ir_compare_instruction = Cast<ir::CompareInstruction>(ir_instruction)) {
-            std::unordered_map<std::string, llvm::CmpInst::OtherOps> cmp_inst_other_ops = {
-                {"ICmp", llvm::CmpInst::OtherOps::ICmp}, {"FCmp", llvm::CmpInst::OtherOps::FCmp}};
-
-            std::unordered_map<ir::CompareInstruction::Operation, llvm::CmpInst::OtherOps>
-                llvm_compare_other_ops_dict = {
-                    {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_OEQ, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_OGT, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_OGE, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_OLT, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_OLE, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_ONE, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_ORD, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_UNO, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_UEQ, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_UGT, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_UGE, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_ULT, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_ULE, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_UNE, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::FCMP_TRUE, llvm::CmpInst::OtherOps::FCmp},
-                    {ir::CompareInstruction::Operation::ICMP_EQ, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_NE, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_UGT, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_UGE, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_ULT, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_ULE, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_SGT, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_SGE, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_SLT, llvm::CmpInst::OtherOps::ICmp},
-                    {ir::CompareInstruction::Operation::ICMP_SLE, llvm::CmpInst::OtherOps::ICmp},
-                };
-
-            // clang-format off
-            std::unordered_map<ir::CompareInstruction::Operation, llvm::ICmpInst::Predicate>
-                llvm_compare_predicator_dict = {
-                    {ir::CompareInstruction::Operation::FCMP_FALSE, llvm::CmpInst::Predicate::FCMP_FALSE},
-                    {ir::CompareInstruction::Operation::FCMP_OEQ, llvm::CmpInst::Predicate::FCMP_OEQ},
-                    {ir::CompareInstruction::Operation::FCMP_OGT, llvm::CmpInst::Predicate::FCMP_OGT},
-                    {ir::CompareInstruction::Operation::FCMP_OGE, llvm::CmpInst::Predicate::FCMP_OGE},
-                    {ir::CompareInstruction::Operation::FCMP_OLT, llvm::CmpInst::Predicate::FCMP_OLT},
-                    {ir::CompareInstruction::Operation::FCMP_OLE, llvm::CmpInst::Predicate::FCMP_OLE},
-                    {ir::CompareInstruction::Operation::FCMP_ONE, llvm::CmpInst::Predicate::FCMP_ONE},
-                    {ir::CompareInstruction::Operation::FCMP_ORD, llvm::CmpInst::Predicate::FCMP_ORD},
-                    {ir::CompareInstruction::Operation::FCMP_UNO, llvm::CmpInst::Predicate::FCMP_UNO},
-                    {ir::CompareInstruction::Operation::FCMP_UEQ, llvm::CmpInst::Predicate::FCMP_UEQ},
-                    {ir::CompareInstruction::Operation::FCMP_UGT, llvm::CmpInst::Predicate::FCMP_UGT},
-                    {ir::CompareInstruction::Operation::FCMP_UGE, llvm::CmpInst::Predicate::FCMP_UGE},
-                    {ir::CompareInstruction::Operation::FCMP_ULT, llvm::CmpInst::Predicate::FCMP_ULT},
-                    {ir::CompareInstruction::Operation::FCMP_ULE, llvm::CmpInst::Predicate::FCMP_ULE},
-                    {ir::CompareInstruction::Operation::FCMP_UNE, llvm::CmpInst::Predicate::FCMP_UNE},
-                    {ir::CompareInstruction::Operation::FCMP_TRUE, llvm::CmpInst::Predicate::FCMP_TRUE},
-                    {ir::CompareInstruction::Operation::ICMP_EQ, llvm::CmpInst::Predicate::ICMP_EQ},
-                    {ir::CompareInstruction::Operation::ICMP_NE, llvm::CmpInst::Predicate::ICMP_NE},
-                    {ir::CompareInstruction::Operation::ICMP_UGT, llvm::CmpInst::Predicate::ICMP_UGT},
-                    {ir::CompareInstruction::Operation::ICMP_UGE, llvm::CmpInst::Predicate::ICMP_UGE},
-                    {ir::CompareInstruction::Operation::ICMP_ULT, llvm::CmpInst::Predicate::ICMP_ULT},
-                    {ir::CompareInstruction::Operation::ICMP_ULE, llvm::CmpInst::Predicate::ICMP_ULE},
-                    {ir::CompareInstruction::Operation::ICMP_SGT, llvm::CmpInst::Predicate::ICMP_SGT},
-                    {ir::CompareInstruction::Operation::ICMP_SGE, llvm::CmpInst::Predicate::ICMP_SGE},
-                    {ir::CompareInstruction::Operation::ICMP_SLT, llvm::CmpInst::Predicate::ICMP_SLT},
-                    {ir::CompareInstruction::Operation::ICMP_SLE, llvm::CmpInst::Predicate::ICMP_SLE},
-                };
-            // clang-format on
-            PRAJNA_ASSERT(llvm_compare_other_ops_dict.count(ir_compare_instruction->operation));
-            PRAJNA_ASSERT(llvm_compare_predicator_dict.count(ir_compare_instruction->operation));
-            auto llvm_compare_other_ops =
-                llvm_compare_other_ops_dict[ir_compare_instruction->operation];
-            auto llvm_compare_predicator =
-                llvm_compare_predicator_dict[ir_compare_instruction->operation];
-            ir_compare_instruction->llvm_value = llvm::CmpInst::Create(
-                llvm_compare_other_ops, llvm_compare_predicator,
-                ir_compare_instruction->GetOperand(0)->llvm_value,
-                ir_compare_instruction->GetOperand(1)->llvm_value, "", llvm_basic_block);
-            return;
-        }
-
-        if (auto ir_binary_operator = Cast<ir::BinaryOperator>(ir_instruction)) {
-            std::unordered_map<ir::BinaryOperator::Operation, llvm::BinaryOperator::BinaryOps>
-                binary_operator_dict = {
-                    {ir::BinaryOperator::Operation::Add, llvm::BinaryOperator::BinaryOps::Add},
-                    {ir::BinaryOperator::Operation::Sub, llvm::BinaryOperator::BinaryOps::Sub},
-                    {ir::BinaryOperator::Operation::Mul, llvm::BinaryOperator::BinaryOps::Mul},
-                    {ir::BinaryOperator::Operation::SDiv, llvm::BinaryOperator::BinaryOps::SDiv},
-                    {ir::BinaryOperator::Operation::UDiv, llvm::BinaryOperator::BinaryOps::UDiv},
-                    {ir::BinaryOperator::Operation::SRem, llvm::BinaryOperator::BinaryOps::SRem},
-                    {ir::BinaryOperator::Operation::URem, llvm::BinaryOperator::BinaryOps::URem},
-                    {ir::BinaryOperator::Operation::And, llvm::BinaryOperator::BinaryOps::And},
-                    {ir::BinaryOperator::Operation::Or, llvm::BinaryOperator::BinaryOps::Or},
-                    {ir::BinaryOperator::Operation::Shl, llvm::BinaryOperator::BinaryOps::Shl},
-                    {ir::BinaryOperator::Operation::LShr, llvm::BinaryOperator::BinaryOps::LShr},
-                    {ir::BinaryOperator::Operation::AShr, llvm::BinaryOperator::BinaryOps::AShr},
-                    {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
-                    {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
-                    {ir::BinaryOperator::Operation::Xor, llvm::BinaryOperator::BinaryOps::Xor},
-                    {ir::BinaryOperator::Operation::FAdd, llvm::BinaryOperator::BinaryOps::FAdd},
-                    {ir::BinaryOperator::Operation::FSub, llvm::BinaryOperator::BinaryOps::FSub},
-                    {ir::BinaryOperator::Operation::FMul, llvm::BinaryOperator::BinaryOps::FMul},
-                    {ir::BinaryOperator::Operation::FDiv, llvm::BinaryOperator::BinaryOps::FDiv},
-                    {ir::BinaryOperator::Operation::FRem, llvm::BinaryOperator::BinaryOps::FRem},
-                };
-
-            PRAJNA_ASSERT(binary_operator_dict.count(ir_binary_operator->operation));
-            auto llvm_binary_operator_operation =
-                binary_operator_dict[ir_binary_operator->operation];
-            ir_binary_operator->llvm_value = llvm::BinaryOperator::Create(
-                llvm_binary_operator_operation, ir_binary_operator->GetOperand(0)->llvm_value,
-                ir_binary_operator->GetOperand(1)->llvm_value, "", llvm_basic_block);
-
-            return;
-        }
-
-        if (auto ir_shuffle_vector = Cast<ir::ShuffleVector>(ir_instruction)) {
-            ir_shuffle_vector->llvm_value = new llvm::ShuffleVectorInst(
-                ir_shuffle_vector->Value()->llvm_value, ir_shuffle_vector->Mask()->llvm_value, "",
-                llvm_basic_block);
-            return;
-        }
-
+        ir_instruction->ApplyVisitor(this->shared_from_this());
         PRAJNA_ASSERT(false, ir_instruction->tag);
     }
 
-    void EmitInlineAsm(std::shared_ptr<ir::InlineAsm> ir_inline_asm) {
+    void Visit(std::shared_ptr<ir::InlineAsm> ir_inline_asm) override {
         ir_inline_asm->llvm_value =
             llvm::InlineAsm::get(static_cast<llvm::FunctionType *>(ir_inline_asm->type->llvm_type),
                                  ir_inline_asm->str_asm, ir_inline_asm->str_constrains,
                                  ir_inline_asm->has_side_effects, ir_inline_asm->is_align_stack);
         ;
     }
+
+   private:
+    prajna::ir::Target ir_target;
 };
 
 std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module,
-                                        ir::Target ir_target) {
-    auto llvm_codegen = LlvmCodegen::Create();
+                                        prajna::ir::Target ir_target) {
+    auto llvm_codegen = LlvmCodegen::Create(ir_target);
 
     // emit type
     for (auto type : ir::global_context.created_types) {
         llvm_codegen->EmitType(type);
     }
-
-    llvm_codegen->EmitModule(ir_module, ir_target);
+    ir_module->ApplyVisitor(llvm_codegen);
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (ir_sub_module == nullptr) continue;
@@ -782,7 +769,7 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     // PRAJNA_ASSERT(verify_result);
 #endif
 
-    auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
+    auto ir_nvptx_module = ir_module->modules[prajna::ir::Target::nvptx];
     if (ir_nvptx_module && ir_nvptx_module->llvm_module) {
         llvm::Linker linker(*ir_nvptx_module->llvm_module);
         llvm::SMDiagnostic err;

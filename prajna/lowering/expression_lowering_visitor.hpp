@@ -311,8 +311,8 @@ class ExpressionLoweringVisitor {
 
             ir_arguments.insert(ir_arguments.begin(),
                                 ir_member_function_with_this_pointer->this_pointer);
-            return ir_builder->Create<ir::Call>(
-                ir_member_function_with_this_pointer->function_prototype, ir_arguments);
+            return ir_builder->Call(ir_member_function_with_this_pointer->function_prototype,
+                                    ir_arguments);
         }
 
         if (ir_lhs->IsFunction()) {
@@ -331,7 +331,7 @@ class ExpressionLoweringVisitor {
                 }
             }
 
-            return ir_builder->Create<ir::Call>(ir_lhs, ir_arguments);
+            return ir_builder->Call(ir_lhs, ir_arguments);
         }
 
         if (auto ir_member_function = ir_builder->GetMemberFunction(ir_lhs->type, "__call__")) {
@@ -355,7 +355,7 @@ class ExpressionLoweringVisitor {
             }
 
             ir_arguments.insert(ir_arguments.begin(), ir_builder->GetAddressOf(ir_lhs));
-            return ir_builder->Create<ir::Call>(ir_member_function, ir_arguments);
+            return ir_builder->Call(ir_member_function, ir_arguments);
         }
 
         if (auto ir_access_property = Cast<ir::AccessProperty>(ir_lhs)) {
@@ -466,7 +466,7 @@ class ExpressionLoweringVisitor {
         auto ir_this_pointer = ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         std::list<std::shared_ptr<ir::Value>> ir_arguemnts;
         ir_arguemnts.push_back(ir_this_pointer);
-        return ir_builder->Create<ir::Call>(ir_function, ir_arguemnts);
+        return ir_builder->Call(ir_function, ir_arguemnts);
     }
 
     std::shared_ptr<ir::Type> ApplyType(ast::Type ast_type) {
@@ -782,7 +782,7 @@ class ExpressionLoweringVisitor {
                                       ir_arguemnts.back()->type->fullname),
                           ast_binary_operation.operand);
         }
-        return ir_builder->Create<ir::Call>(ir_function, ir_arguemnts);
+        return ir_builder->Call(ir_function, ir_arguemnts);
     }
 
     std::shared_ptr<ir::Value> operator()(ast::Closure ast_closure);

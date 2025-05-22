@@ -50,8 +50,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
         auto ir_block = Lock(ir_access_property->parent_block);
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->PushBlock(ir_block);
-        ir_builder->inserter_iterator =
-            std::find(RANGE(ir_block->values), ir_access_property);
+        ir_builder->inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
 
         for (auto instruction_with_index : Clone(ir_access_property->instruction_with_index_list)) {
             auto ir_inst = Lock(instruction_with_index.instruction);
@@ -86,8 +85,8 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
         if (unused) {
             auto ir_arguments = ir_access_property->Arguments();
             ir_arguments.insert(ir_arguments.begin(), ir_access_property->ThisPointer());
-            auto ir_getter_call = ir_builder->Create<ir::Call>(
-                ir_access_property->property->get_function, ir_arguments);
+            auto ir_getter_call =
+                ir_builder->Call(ir_access_property->property->get_function, ir_arguments);
         }
 
         utility::RemoveFromParent(ir_access_property);
@@ -146,7 +145,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_index0),
                 ir::PointerType::Create(ir::PointerType::Create(ir::IntType::Create(8, true))));
             ir_arguments.push_back(ir_array_address);
-            auto ir_kernel_call = ir_builder->Create<ir::Call>(ir_launch_function, ir_arguments);
+            auto ir_kernel_call = ir_builder->Call(ir_launch_function, ir_arguments);
             auto ir_zero = ir_builder->GetInt64Constant(0);
             auto ir_condition = ir_builder->CallBinaryOperator(ir_kernel_call, "!=", ir_zero);
             auto ir_if =
@@ -392,7 +391,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
             ir_array_one_template->Instantiate({ir_array_template_arguments.back()}, ir_module));
 
         // TODO: 可能涉及模板特化, 后面再做处理
-        auto ir_array_one = ir_builder->Create<ir::Call>(ir_array_one_fun);
+        auto ir_array_one = ir_builder->Call(ir_array_one_fun);
         auto ir_array_range = ir_builder->CallBinaryOperator(
             ir_builder->CallBinaryOperator(ir_array_last, "-", ir_array_first), "-", ir_array_one);
         auto ir_linear_last = ir_builder->CallBinaryOperator(
@@ -602,9 +601,7 @@ inline bool DetachValues(std::shared_ptr<ir::Module> ir_module) {
     ir_module->symbol_table = nullptr;
     ir_module->parent_module = nullptr;
 
-    utility::EachValue(ir_module, [](std::shared_ptr<ir::Value> ir_value) {
-        ir_value->Detach();
-    });
+    utility::EachValue(ir_module, [](std::shared_ptr<ir::Value> ir_value) { ir_value->Detach(); });
 
     return true;
 }

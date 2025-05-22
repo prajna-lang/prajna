@@ -1182,15 +1182,6 @@ class Call : public Instruction {
         return self;
     }
 
-    static std::shared_ptr<Call> Create(std::shared_ptr<ir::Value> ir_value,
-                                        std::shared_ptr<ir::Value> ir_argument) {
-        return Create(ir_value, std::list<std::shared_ptr<ir::Value>>{ir_argument});
-    }
-
-    static std::shared_ptr<Call> Create(std::shared_ptr<ir::Value> ir_value) {
-        return Create(ir_value, std::list<std::shared_ptr<ir::Value>>{});
-    }
-
     std::shared_ptr<ir::Value> Function() { return this->GetOperand(0); }
     void Function(std::shared_ptr<ir::Value> ir_value) { this->SetOperand(0, ir_value); }
 

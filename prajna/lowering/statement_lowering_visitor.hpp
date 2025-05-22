@@ -246,7 +246,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         if (ast_variable_declaration.type_optional) {
             ir_type = this->ApplyType(ast_variable_declaration.type_optional.get());
         }
-        //确定变量的type
+        // 确定变量的type
         if (ast_variable_declaration.initialize_optional) {
             ir_initial_value = expression_lowering_visitor->Apply(
                 ast_variable_declaration.initialize_optional.get());
@@ -784,7 +784,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                                std::back_inserter(ir_arguments),
                                [](auto x) -> std::shared_ptr<ir::Value> { return x; });
                 ir_arguments.front() = ir_this_pointer;
-                auto ir_call = ir_builder->Create<ir::Call>(ir_function, ir_arguments);
+                auto ir_call = ir_builder->Call(ir_function, ir_arguments);
                 if (Is<ir::VoidType>(ir_call->type)) {
                     ir_builder->Create<ir::Return>(ir_builder->Create<ir::VoidValue>());
                 } else {
@@ -1194,7 +1194,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_function->annotation_dict["inline"];
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
 
-            ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Create<ir::Call>(
+            ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Call(
                 ir_intrinsic_function, ListCast<ir::Value>(ir_function->parameters)));
             return ir_function;
         };
@@ -1356,7 +1356,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_function->annotation_dict["inline"];
 
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
-            ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Create<ir::Call>(
+            ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Call(
                 ir_interface->dynamic_type_creator, ListCast<ir::Value>(ir_function->parameters)));
             return ir_function;
         };
@@ -1417,11 +1417,11 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->Instantiate(
                 {ir_interface_implement_function0->type, ir_tmp_builder->GetInt64Type()},
                 ir_tmp_builder->module));
-            auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
-                ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
+            auto ir_rawptr_i64_0 = ir_tmp_builder->Call(ir_rawptr_to_i64_cast_function,
+                                                        ir_interface_implement_function0);
 
             auto ir_dynamic_object = ir_function->parameters.front();
-            auto ir_rawptr_i64_1 = ir_tmp_builder->Create<ir::Call>(
+            auto ir_rawptr_i64_1 = ir_tmp_builder->Call(
                 ir_rawptr_to_i64_cast_function,
                 ir_tmp_builder->AccessField(
                     ir_dynamic_object, ir_interface_implement->functions.front()->name + "/fp"));
@@ -1434,18 +1434,16 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             ir_tmp_builder->PushBlock(ir_if->TrueBlock());
             ir_tmp_builder->Create<ir::WriteVariableLiked>(
-                ir_tmp_builder->Create<ir::Call>(
+                ir_tmp_builder->Call(
                     ir_tmp_builder->GetMemberFunction(ir_target_ptr_type, "FromUndef"),
-                    std::list<std::shared_ptr<ir::Value>>{
-                        ir_tmp_builder->AccessField(ir_dynamic_object, "object_pointer")}),
+                    ir_tmp_builder->AccessField(ir_dynamic_object, "object_pointer")),
                 ir_ptr);
             ir_tmp_builder->PopBlock();
 
             ir_tmp_builder->PushBlock(ir_if->FalseBlock());
             ir_tmp_builder->ExitWithPrintErrorMessage("invalid cast dynamic cast");
-            auto ir_nullptr = ir_tmp_builder->Create<ir::Call>(
-                ir_tmp_builder->GetMemberFunction(ir_ptr->type, "Null"),
-                std::list<std::shared_ptr<ir::Value>>{});
+            auto ir_nullptr =
+                ir_tmp_builder->Call(ir_tmp_builder->GetMemberFunction(ir_ptr->type, "Null"));
             ir_tmp_builder->Create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
             ir_tmp_builder->PopBlock();
             ir_tmp_builder->Create<ir::Return>(ir_ptr);
@@ -1509,11 +1507,11 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_rawptr_to_i64_cast_function = SymbolGet<ir::Value>(template_cast->Instantiate(
                 {ir_interface_implement_function0->type, ir_tmp_builder->GetInt64Type()},
                 ir_tmp_builder->module));
-            auto ir_rawptr_i64_0 = ir_tmp_builder->Create<ir::Call>(
-                ir_rawptr_to_i64_cast_function, ir_interface_implement_function0);
+            auto ir_rawptr_i64_0 = ir_tmp_builder->Call(ir_rawptr_to_i64_cast_function,
+                                                        ir_interface_implement_function0);
 
             auto ir_dynamic_object = ir_function->parameters.front();
-            auto ir_rawptr_i64_1 = ir_tmp_builder->Create<ir::Call>(
+            auto ir_rawptr_i64_1 = ir_tmp_builder->Call(
                 ir_rawptr_to_i64_cast_function,
                 ir_tmp_builder->AccessField(
                     ir_dynamic_object, ir_interface_implement->functions.front()->name + "/fp"));
@@ -2149,7 +2147,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     ir_builder->Create<ir::DeferencePointer>(ir_this_pointer),
                     field_object_pointer),
                 "raw_ptr");
-            auto ir_function_call = ir_builder->Create<ir::Call>(ir_function_pointer, ir_arguments);
+            auto ir_function_call = ir_builder->Call(ir_function_pointer, ir_arguments);
             if (!Is<ir::VoidType>(ir_function_call->type)) {
                 ir_builder->Create<ir::Return>(ir_function_call);
             } else {

@@ -353,7 +353,7 @@ class IrBuilder {
         auto ir_variable_liked = this->VariableLikedNormalize(ir_object);
         auto ir_this_pointer = this->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
         ir_arguments.insert(ir_arguments.begin(), ir_this_pointer);
-        return this->Create<ir::Call>(ir_member_function, ir_arguments);
+        return this->Call(ir_member_function, ir_arguments);
     }
 
     std::shared_ptr<ir::Function> GetUnaryOperator(std::shared_ptr<ir::Type> ir_type,
@@ -394,7 +394,20 @@ class IrBuilder {
         ir_arguments.insert(ir_arguments.begin(), ir_this_pointer);
         auto ir_member_function = GetBinaryOperator(ir_object->type, binary_operator_name);
         PRAJNA_ASSERT(ir_member_function);
-        return this->Create<ir::Call>(ir_member_function, ir_arguments);
+        return this->Call(ir_member_function, ir_arguments);
+    }
+
+    std::shared_ptr<ir::Call> Call(std::shared_ptr<ir::Value> ir_function,
+                                   std::list<std::shared_ptr<ir::Value>> ir_arguments) {
+        auto ir_call = this->Create<ir::Call>(ir_function, ir_arguments);
+        return ir_call;
+    }
+
+    template <typename... Args>
+    std::shared_ptr<ir::Call> Call(std::shared_ptr<ir::Value> ir_function, Args&&... __args) {
+        auto ir_call = this->Call(
+            ir_function, std::list<std::shared_ptr<ir::Value>>{std::forward<Args>(__args)...});
+        return ir_call;
     }
 
     void PushSymbolTable() {

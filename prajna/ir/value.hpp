@@ -1951,9 +1951,13 @@ inline std::shared_ptr<ir::Value> Block::Clone(std::shared_ptr<FunctionCloner> f
         ir_new->PushBack(function_cloner->value_dict[ir_value]);
     }
 
-    ir_new->parent_function =
-        Cast<Function>(function_cloner->value_dict[Lock(this->parent_function)]);
-    ir_new->parent_block = Cast<Block>(function_cloner->value_dict[Lock(this->parent_block)]);
+    if (!this->parent_function.expired()) {
+        ir_new->parent_function =
+            Cast<Function>(function_cloner->value_dict[Lock(this->parent_function)]);
+    }
+    if (!this->parent_block.expired()) {
+        ir_new->parent_block = Cast<Block>(function_cloner->value_dict[Lock(this->parent_block)]);
+    }
 
     return ir_new;
 }

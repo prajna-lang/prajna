@@ -319,23 +319,6 @@ class ConstantChar : public Constant {
     char value;
 };
 
-class ConstantNull : public Constant {
-   protected:
-    ConstantNull() = default;
-
-   public:
-    static std::shared_ptr<ConstantNull> Create() {
-        std::shared_ptr<ConstantNull> self(new ConstantNull);
-        self->type = PointerType::Create(nullptr);
-        self->tag = "ConstantNull";
-        return self;
-    }
-
-    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
-        interpreter->Visit(Cast<ConstantNull>(this->shared_from_this()));
-    }
-};
-
 class ConstantArray : public Constant {
    protected:
     ConstantArray() = default;

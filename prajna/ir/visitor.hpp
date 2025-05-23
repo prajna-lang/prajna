@@ -18,7 +18,6 @@ class ConstantRealNumber;
 class ConstantInt;
 class ConstantFloat;
 class ConstantChar;
-class ConstantNull;
 class ConstantArray;
 class ConstantVector;
 class Block;
@@ -82,7 +81,6 @@ class Visitor : public std::enable_shared_from_this<Visitor> {
     virtual void Visit(std::shared_ptr<ConstantInt> ir_constant_int) {}
     virtual void Visit(std::shared_ptr<ConstantFloat> ir_constant_float) {}
     virtual void Visit(std::shared_ptr<ConstantChar> ir_constant_char) {}
-    virtual void Visit(std::shared_ptr<ConstantNull> ir_constant_null) {}
     virtual void Visit(std::shared_ptr<ConstantArray> ir_constant_array) {}
     virtual void Visit(std::shared_ptr<ConstantVector> ir_constant_vector) {}
     virtual void Visit(std::shared_ptr<MemberFunctionWithThisPointer> ir_member_function) {}

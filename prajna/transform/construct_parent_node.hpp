@@ -18,7 +18,7 @@ class ConstructParentNodeVisitor : public ir::Visitor {
     }
 
     void Visit(std::shared_ptr<ir::Block> ir_block) override {
-        for (auto ir_value : Clone(ir_block->values)) {  // Each的过程中会修改
+        for (auto ir_value : Clone(ir_block->values)) {
             ir_value->parent_block = ir_block;
             ir_value->ApplyVisitor(this->shared_from_this());
         }
@@ -39,19 +39,19 @@ class ConstructParentNodeVisitor : public ir::Visitor {
     }
 
     void Visit(std::shared_ptr<ir::Function> ir_function) override {
-        for (auto ir_block : Clone(ir_function->blocks)) {  // Each的过程中会修改
+        for (auto ir_block : Clone(ir_function->blocks)) {
             ir_block->parent_function = ir_function;
             ir_block->ApplyVisitor(this->shared_from_this());
         }
     }
 
     void Visit(std::shared_ptr<ir::Module> ir_module) override {
-        for (auto ir_function : Clone(ir_module->functions)) {  // Each的过程中会修改
+        for (auto ir_function : Clone(ir_module->functions)) {
             ir_function->parent_module = ir_module;
             ir_function->ApplyVisitor(this->shared_from_this());
         }
 
-        for (auto ir_global_variable : Clone(ir_module->global_variables)) {  // Each的过程中会修改
+        for (auto ir_global_variable : Clone(ir_module->global_variables)) {
             ir_global_variable->parent_module = ir_module;
         }
     }

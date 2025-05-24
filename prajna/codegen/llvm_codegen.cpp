@@ -192,7 +192,8 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
     }
 
-    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function, prajna::ir::Target ir_target) {
+    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function,
+                                 prajna::ir::Target ir_target) {
         auto function_fullname = ir_target == prajna::ir::Target::nvptx
                                      ? MangleNvvmName(ir_function->fullname)
                                      : ir_function->fullname;
@@ -731,14 +732,14 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     LLVMInitializeNativeAsmPrinter();
 
     auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
-    PRAJNA_ASSERT(JTMB);
+    PRAJNA_VERIFY(JTMB);
     JTMB->setCPU("");
     JTMB->setRelocationModel(std::nullopt);
     JTMB->setCodeModel(std::nullopt);
     JTMB->setCodeGenOptLevel(llvm::CodeGenOpt::None);
     JTMB->addFeatures(std::vector<std::string>());
     auto TM = JTMB->createTargetMachine();
-    PRAJNA_ASSERT(TM && TM.get());
+    PRAJNA_VERIFY(TM && TM.get());
 
     // Create the analysis managers.    llvm::LoopAnalysisManager LAM;
     llvm::FunctionAnalysisManager FAM;

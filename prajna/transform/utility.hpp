@@ -4,75 +4,15 @@
 #include <memory>
 
 #include "prajna/ir/ir.hpp"
+#include "prajna/transform/each.hpp"
 
 namespace prajna::transform::utility {
-
-inline void EachValue(std::shared_ptr<ir::Block> ir_block,
-                      std::function<void(std::shared_ptr<ir::Value>)> callback) {
-    for (auto &ir_value : ir_block->values) {
-        callback(ir_value);
-
-        if (auto ir_block = Cast<ir::Block>(ir_value)) {
-            EachValue(ir_block, callback);
-        }
-
-        if (auto ir_if = Cast<ir::If>(ir_value)) {
-            EachValue(ir_if->TrueBlock(), callback);
-            EachValue(ir_if->FalseBlock(), callback);
-        }
-
-        if (auto ir_while = Cast<ir::While>(ir_value)) {
-            EachValue(ir_while->ConditionBlock(), callback);
-            EachValue(ir_while->LoopBlock(), callback);
-        }
-
-        if (auto ir_for = Cast<ir::For>(ir_value)) {
-            EachValue(ir_for->LoopBlock(), callback);
-        }
-    }
-
-    callback(ir_block);
-}
-
-inline void EachValue(std::shared_ptr<ir::Function> ir_function,
-                      std::function<void(std::shared_ptr<ir::Value>)> callback) {
-    for (auto &ir_block : ir_function->blocks) {
-        EachValue(ir_block, callback);
-    }
-
-    callback(ir_function);
-}
-
-inline void EachValue(std::shared_ptr<ir::Module> ir_module,
-                      std::function<void(std::shared_ptr<ir::Value>)> callback) {
-    for (auto ir_value : ir_module->global_variables) {
-        callback(ir_value);
-    }
-
-    for (auto ir_value : ir_module->global_allocas) {
-        callback(ir_value);
-    }
-
-    for (auto ir_function : ir_module->functions) {
-        EachValue(ir_function, callback);
-    }
-}
-
-template <typename Value_>
-inline void Each(std::shared_ptr<ir::Module> ir_module,
-                 std::function<void(std::shared_ptr<Value_>)> ir_callback) {
-    EachValue(ir_module, [=](auto ir_e) {
-        if (auto ir_target = Cast<Value_>(ir_e)) {
-            ir_callback(ir_target);
-        }
-    });
-}
 
 template <typename Value_>
 inline std::list<std::shared_ptr<Value_>> GetValuesInFunction(
     std::shared_ptr<ir::Function> ir_function) {
     std::list<std::shared_ptr<Value_>> ir_values;
-    utility::EachValue(ir_function, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
+    Each<ir::Value>(ir_function, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
         if (auto ir_target_value = Cast<Value_>(ir_value)) {
             ir_values.push_back(ir_target_value);
         }
@@ -84,7 +24,7 @@ inline std::list<std::shared_ptr<Value_>> GetValuesInFunction(
 template <typename Value_>
 inline std::list<std::shared_ptr<Value_>> GetValuesInModule(std::shared_ptr<ir::Module> ir_module) {
     std::list<std::shared_ptr<Value_>> ir_values;
-    EachValue(ir_module, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
+    Each<ir::Value>(ir_module, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
         if (auto ir_target_value = Cast<Value_>(ir_value)) {
             ir_values.push_back(ir_target_value);
         }
@@ -112,7 +52,7 @@ inline std::list<std::shared_ptr<ir::Value>> CaptureExternalValueInClosure(
 
     if (!ir_function->is_closure) return ir_values;
 
-    utility::EachValue(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
+    Each<ir::Value>(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
         if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
             for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 auto ir_operand = ir_instruction->GetOperand(i);

@@ -321,7 +321,7 @@ inline void RemoveValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
 }
 
 inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
-    utility::Each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
+    Each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
         for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->GetOperand(i);
 
@@ -466,7 +466,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
         auto ir_this = ir::DeferencePointer::Create(ir_function->parameters.front());
         ir_function->blocks.front()->PushFront(ir_this);
 
-        utility::EachValue(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
+        Each<ir::Value>(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
             if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
                 for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                     auto ir_operand = ir_instruction->GetOperand(i);

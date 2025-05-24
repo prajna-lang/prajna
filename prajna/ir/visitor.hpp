@@ -64,9 +64,6 @@ class CompareInstruction;
 class BinaryOperator;
 
 class Visitor : public std::enable_shared_from_this<Visitor> {
-   private:
-    ;
-
    public:
     virtual void Visit(std::shared_ptr<Instruction> ir_instruction) {}
     virtual void Visit(std::shared_ptr<Block> ir_block) {}

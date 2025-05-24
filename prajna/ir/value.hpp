@@ -1742,7 +1742,7 @@ class ShuffleVector : public Instruction {
     }
 };
 
-class Module : public Named, public std::enable_shared_from_this<Module> {
+class Module : public Value {
    protected:
     Module() = default;
 

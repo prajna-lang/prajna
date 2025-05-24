@@ -48,10 +48,10 @@ inline bool ConvertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_mod
 
     for (auto ir_function : ir_module->functions) {
         //
-        auto ir_variables = utility::GetValuesInFunction<ir::LocalVariable>(ir_function);
+        auto ir_variables = utility::GetAll<ir::LocalVariable>(ir_function);
 
         for (auto ir_variable : ir_variables) {
-            //改变它自己
+            // 改变它自己
             changed = true;
             auto ir_constant_1 = ir::ConstantInt::Create(ir::IntType::Create(64, false), 1);
             std::shared_ptr<ir::Value> ir_alloca =
@@ -87,7 +87,7 @@ inline bool ConvertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_mod
 inline bool ConvertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Module> ir_module) {
     bool changed = false;
     for (auto ir_function : ir_module->functions) {
-        auto ir_access_fields = utility::GetValuesInFunction<ir::AccessField>(ir_function);
+        auto ir_access_fields = utility::GetAll<ir::AccessField>(ir_function);
 
         for (auto ir_access_field : ir_access_fields) {
             auto ir_object_deference_ptr0 = (ir_access_field->object());
@@ -123,7 +123,7 @@ inline bool ConvertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Module
 
     for (auto ir_function : ir_module->functions) {
         //
-        auto ir_index_arrays = utility::GetValuesInFunction<ir::IndexArray>(ir_function);
+        auto ir_index_arrays = utility::GetAll<ir::IndexArray>(ir_function);
 
         for (auto ir_index_array : ir_index_arrays) {
             changed = true;
@@ -159,7 +159,7 @@ inline bool ConvertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Mo
 
     for (auto ir_function : ir_module->functions) {
         //
-        auto ir_index_pointers = utility::GetValuesInFunction<ir::IndexPointer>(ir_function);
+        auto ir_index_pointers = utility::GetAll<ir::IndexPointer>(ir_function);
 
         for (auto ir_index_pointer : ir_index_pointers) {
             changed = true;
@@ -196,8 +196,7 @@ inline bool ConvertGetAddressOfVaraibleLikedToPointer(std::shared_ptr<ir::Module
 
     for (auto ir_function : ir_module->functions) {
         //
-        auto ir_get_addresses =
-            utility::GetValuesInFunction<ir::GetAddressOfVariableLiked>(ir_function);
+        auto ir_get_addresses = utility::GetAll<ir::GetAddressOfVariableLiked>(ir_function);
 
         for (auto ir_get_address : ir_get_addresses) {
             auto ir_deference_pointer = Cast<ir::DeferencePointer>(ir_get_address->variable());
@@ -227,8 +226,7 @@ inline bool ConvertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
 
     for (auto ir_function : ir_module->functions) {
         //
-        auto ir_deference_pointers =
-            utility::GetValuesInFunction<ir::DeferencePointer>(ir_function);
+        auto ir_deference_pointers = utility::GetAll<ir::DeferencePointer>(ir_function);
 
         for (auto ir_deference_pointer : ir_deference_pointers) {
             changed = true;

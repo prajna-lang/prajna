@@ -47,7 +47,7 @@ std::shared_ptr<ir::Module> MakeCompatiableWithLlvm(std::shared_ptr<ir::Module> 
 std::shared_ptr<ir::Module> SperateModule(std::shared_ptr<ir::Module> ir_module);
 
 inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module) {
-    auto ir_access_properties = utility::GetValuesInModule<ir::AccessProperty>(ir_module);
+    auto ir_access_properties = utility::GetAll<ir::AccessProperty>(ir_module);
     for (auto ir_access_property : ir_access_properties) {
         auto ir_block = Lock(ir_access_property->parent_block);
         auto ir_builder = lowering::IrBuilder::Create();
@@ -100,8 +100,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
 
 inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
-        auto ir_kernel_function_calls =
-            utility::GetValuesInFunction<ir::KernelFunctionCall>(ir_function);
+        auto ir_kernel_function_calls = utility::GetAll<ir::KernelFunctionCall>(ir_function);
         for (auto ir_kernel_function_call : ir_kernel_function_calls) {
             auto ir_kernel_function = ir_kernel_function_call->Function();
             auto ir_grid_shape = ir_kernel_function_call->GridShape();
@@ -167,7 +166,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
 
 inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
-        auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
+        auto ir_instructions = utility::GetAll<ir::Instruction>(ir_function);
 
         for (auto ir_instruction : ir_instructions) {
             for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
@@ -217,7 +216,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
     ir_module->global_variables.clear();
 
     for (auto ir_function : ir_module->functions) {
-        auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
+        auto ir_instructions = utility::GetAll<ir::Instruction>(ir_function);
         for (auto ir_instruction : ir_instructions) {
             for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 // @note 全局变量目前遵循如果使用其他module的则自身为external的原则
@@ -357,7 +356,7 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
 }
 
 inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
-    auto ir_fors = utility::GetValuesInModule<ir::For>(ir_module);
+    auto ir_fors = utility::GetAll<ir::For>(ir_module);
     for (auto ir_for : ir_fors) {
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->symbol_table = ir_module->symbol_table;
@@ -546,7 +545,7 @@ inline void TopologicalSortFunctionVisit(
     std::set<std::shared_ptr<ir::Function>> &ir_gray_function_set) {
     // 标记要访问的函数
     ir_gray_function_set.insert(ir_function);
-    auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
+    auto ir_instructions = utility::GetAll<ir::Instruction>(ir_function);
     for (auto ir_instruction : ir_instructions) {
         for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->GetOperand(i);
@@ -586,7 +585,7 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
         if (ir_function->blocks.empty()) continue;
 
         auto ir_top_block = ir_function->blocks.front();
-        auto ir_allocas = utility::GetValuesInFunction<ir::Alloca>(ir_function);
+        auto ir_allocas = utility::GetAll<ir::Alloca>(ir_function);
         for (auto ir_alloca : ir_allocas) {
             auto parent = Lock(ir_alloca->parent_block);
             if ((parent && parent != ir_top_block) && Is<ir::ConstantInt>(ir_alloca->Length())) {
@@ -613,7 +612,7 @@ inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_m
 }
 
 inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::Module> ir_module) {
-    auto ir_shared_variable_list = utility::GetValuesInModule<ir::LocalVariable>(ir_module);
+    auto ir_shared_variable_list = utility::GetAll<ir::LocalVariable>(ir_module);
     ir_shared_variable_list.remove_if([](auto ir_local_variable) {
         return ir_local_variable->annotation_dict.count("shared") == 0;
     });
@@ -648,7 +647,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 }
 
 inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
-    auto ir_calls = utility::GetValuesInModule<ir::Call>(ir_module);
+    auto ir_calls = utility::GetAll<ir::Call>(ir_module);
     for (auto ir_call : ir_calls) {
         if (auto ir_callee = Cast<ir::Function>(ir_call->Function())) {
             if (ir_callee->fullname == "::test::Assert") {

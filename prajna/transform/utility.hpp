@@ -9,22 +9,9 @@
 namespace prajna::transform::utility {
 
 template <typename Value_>
-inline std::list<std::shared_ptr<Value_>> GetValuesInFunction(
-    std::shared_ptr<ir::Function> ir_function) {
+inline std::list<std::shared_ptr<Value_>> GetAll(std::shared_ptr<ir::Value> ir_value) {
     std::list<std::shared_ptr<Value_>> ir_values;
-    Each<ir::Value>(ir_function, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
-        if (auto ir_target_value = Cast<Value_>(ir_value)) {
-            ir_values.push_back(ir_target_value);
-        }
-    });
-
-    return ir_values;
-}
-
-template <typename Value_>
-inline std::list<std::shared_ptr<Value_>> GetValuesInModule(std::shared_ptr<ir::Module> ir_module) {
-    std::list<std::shared_ptr<Value_>> ir_values;
-    Each<ir::Value>(ir_module, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
+    Each<ir::Value>(ir_value, [&ir_values](std::shared_ptr<ir::Value> ir_value) {
         if (auto ir_target_value = Cast<Value_>(ir_value)) {
             ir_values.push_back(ir_target_value);
         }

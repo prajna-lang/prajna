@@ -77,7 +77,7 @@ inline bool VerifyModule(std::shared_ptr<ir::Module> ir_module) {
     }
 
     for (auto ir_function : ir_module->functions) {
-        auto ir_instructions = utility::GetValuesInFunction<ir::Instruction>(ir_function);
+        auto ir_instructions = utility::GetAll<ir::Instruction>(ir_function);
         for (auto ir_instruction : ir_instructions) {
             if (Is<ir::For>(ir_instruction)) {
                 continue;

@@ -22,7 +22,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         VerifyFunction(ir_function);
 
-        auto ir_calls = utility::GetValuesInFunction<ir::Call>(ir_function);
+        auto ir_calls = utility::GetAll<ir::Call>(ir_function);
         for (auto ir_call : ir_calls) {
             auto ir_callee = Cast<ir::Function>(ir_call->Function());
             if (!ir_callee || ir_callee->IsDeclaration()) continue;
@@ -56,7 +56,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
                 ir_parameter->Finalize();
             }
 
-            auto ir_returns = utility::GetValuesInFunction<ir::Return>(ir_new_callee);
+            auto ir_returns = utility::GetAll<ir::Return>(ir_new_callee);
             bool has_return =
                 !ir_returns.empty() && !Is<ir::VoidValue>(ir_returns.front()->Value());
             std::shared_ptr<ir::LocalVariable> ir_return_variable = nullptr;

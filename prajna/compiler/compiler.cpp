@@ -247,16 +247,15 @@ std::shared_ptr<ir::Module> Compiler::CompileProgram(
 
 Compiler::~Compiler() {
     this->_symbol_table->Each([](lowering::Symbol symbol) {
-        boost::apply_visitor(
-            overloaded{[](auto) {},
-                       [](std::shared_ptr<ir::Module> ir_module) {
-                           auto ir_values =
-                               transform::utility::GetValuesInModule<ir::Value>(ir_module);
-                           for (auto ir_value : ir_values) {
-                               ir_value->Finalize();
-                           }
-                       }},
-            symbol);
+        boost::apply_visitor(overloaded{[](auto) {},
+                                        [](std::shared_ptr<ir::Module> ir_module) {
+                                            auto ir_values =
+                                                transform::utility::GetAll<ir::Value>(ir_module);
+                                            for (auto ir_value : ir_values) {
+                                                ir_value->Finalize();
+                                            }
+                                        }},
+                             symbol);
     });
 
     this->_symbol_table->Finalize();

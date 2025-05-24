@@ -43,8 +43,8 @@ endif()
 
 
 
-if (PRAJNA_DISABLE_ASSERTS)
-    target_compile_definitions(prajna_config_target INTERFACE PRAJNA_DISABLE_ASSERTS=1)
+if (PRAJNA_DISABLE_ASSERT)
+    target_compile_definitions(prajna_config_target INTERFACE PRAJNA_DISABLE_ASSERT=1)
 endif()
 
 # 需要禁止一些函数才能很好工作, mac下不支持detect-leaks

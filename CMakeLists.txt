@@ -72,7 +72,7 @@ option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" OFF)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_ENABLE_LLVM_DUMP "Enable Prajna LLVM dump" OFF)
 option(PRAJNA_ENABLE_LLVM_VERIFY "Enable Prajna LLVM verify" OFF)
-option(PRAJNA_DISABLE_ASSERTS "Disable Prajna ASSERTS" OFF)
+option(PRAJNA_DISABLE_ASSERT "Disable Prajna ASSERTS" OFF)
 
 add_subdirectory(prajna)
 if (PRAJNA_WITH_JUPYTER)

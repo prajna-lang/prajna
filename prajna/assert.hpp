@@ -41,7 +41,7 @@ inline void raise_assert_failed(const std::string& expr, const std::string& func
 
 }  // namespace prajna
 
-#if defined(PRAJNA_DISABLE_ASSERTS)
+#if defined(PRAJNA_DISABLE_ASSERT)
 #define PRAJNA_ASSERT(expr, ...) ((void)0)
 #else
 #define PRAJNA_ASSERT(expr, ...)                                                            \

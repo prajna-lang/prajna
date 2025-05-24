@@ -104,7 +104,6 @@ void Compiler::GenLlvm(std::shared_ptr<ir::Module> ir_module) {
     auto ir_ssa_module = prajna::transform::transform(ir_module);
     auto ir_codegen_module = prajna::codegen::LlvmCodegen(ir_ssa_module, ir::Target::host);
     // 调用Value::Detach 解除循环引用
-    transform::RecursiveTransformModule(ir_module, transform::DetachValues);
     auto ir_llvm_optimize_module = prajna::codegen::LlvmPass(ir_codegen_module);
 #ifdef PRAJNA_ENABLE_LLVM_DUMP
     ir_module->llvm_module->dump();

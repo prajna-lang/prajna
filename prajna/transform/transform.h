@@ -599,15 +599,6 @@ inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {
     }
 }
 
-inline bool DetachValues(std::shared_ptr<ir::Module> ir_module) {
-    ir_module->symbol_table = nullptr;
-    ir_module->parent_module = nullptr;
-
-    utility::EachValue(ir_module, [](std::shared_ptr<ir::Value> ir_value) { ir_value->Detach(); });
-
-    return true;
-}
-
 inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_module) {
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
     if (!ir_nvptx_module) return;

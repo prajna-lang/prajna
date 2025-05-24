@@ -8,6 +8,7 @@
 #include "prajna/logger.hpp"
 #include "prajna/lowering/statement_lowering_visitor.hpp"
 #include "prajna/parser/parse.h"
+#include "prajna/transform/construct_parent_node.hpp"
 #include "prajna/transform/extract_gpu_grid_pass.hpp"
 #include "prajna/transform/flattern_block.hpp"
 #include "prajna/transform/inline_function.hpp"
@@ -15,6 +16,7 @@
 #include "prajna/transform/transform_pass.hpp"
 #include "prajna/transform/utility.hpp"
 #include "prajna/transform/verify.hpp"
+
 namespace prajna::ir {
 class Module;
 }
@@ -703,6 +705,8 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
 }
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
+    auto construct_parent_node_visitor = ConstructParentNodeVisitor::Create();
+    ir_module->ApplyVisitor(construct_parent_node_visitor);
     RecursiveTransformModule(ir_module, ConvertClosure);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
@@ -724,7 +728,9 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     PRAJNA_ASSERT(VerifyModule(ir_module));
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
     PRAJNA_ASSERT(VerifyModule(ir_module));
+    ir_module->ApplyVisitor(construct_parent_node_visitor);
     RecursiveTransformModule(ir_module, InlineFunction);
+    ir_module->ApplyVisitor(construct_parent_node_visitor);
     PRAJNA_ASSERT(VerifyModule(ir_module));
     RecursiveTransformModule(ir_module, FlatternBlock);
     PRAJNA_ASSERT(VerifyModule(ir_module));

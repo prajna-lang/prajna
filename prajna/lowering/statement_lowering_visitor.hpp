@@ -352,7 +352,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                       this->AllBranchIsTerminated(ir_if->FalseBlock(), ir_type);
             if (re) {
                 // //插入一个Return协助判断
-                ir_builder->PushBlock(ir_if->parent_block.lock());
+                ir_builder->PushBlock(ir_if->GetParentBlock());
                 auto ir_variable = ir_builder->Create<ir::LocalVariable>(ir_type);
                 auto ir_return = ir_builder->Create<ir::Return>(ir_variable);
                 ir_builder->PopBlock();
@@ -498,8 +498,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto ir_condition = ApplyExpression(ast_if.condition);
         auto ir_if =
             ir_builder->Create<ir::If>(ir_condition, ir::Block::Create(), ir::Block::Create());
-        ir_if->TrueBlock()->parent_function = ir_builder->function_stack.top();
-        ir_if->FalseBlock()->parent_function = ir_builder->function_stack.top();
+        ir_if->TrueBlock()->parent = ir_if;
+        ir_if->FalseBlock()->parent = ir_if;
 
         ir_builder->PushBlock(ir_if->TrueBlock());
         (*this)(ast_if.then);
@@ -516,7 +516,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
     Symbol operator()(ast::While ast_while) {
         auto ir_condition_block = ir::Block::Create();
-        ir_condition_block->parent_function = ir_builder->function_stack.top();
         ir_builder->PushBlock(ir_condition_block);
         auto ir_condition = ApplyExpression(ast_while.condition);
         ir_builder->PopBlock();
@@ -524,6 +523,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto ir_loop_block = ir::Block::Create();
         auto ir_while =
             ir_builder->Create<ir::While>(ir_condition, ir_condition_block, ir_loop_block);
+        ir_condition->parent = ir_while;
         ir_builder->loop_stack.push(ir_while);
         ir_builder->PushBlock(ir_while->LoopBlock());
         (*this)(ast_while.body);
@@ -1429,8 +1429,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 ir_tmp_builder->CallBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
             auto ir_if = ir_tmp_builder->Create<ir::If>(ir_condition, ir::Block::Create(),
                                                         ir::Block::Create());
-            ir_if->TrueBlock()->parent_function = ir_tmp_builder->function_stack.top();
-            ir_if->FalseBlock()->parent_function = ir_tmp_builder->function_stack.top();
+            ir_if->TrueBlock()->parent = ir_tmp_builder->function_stack.top();
+            ir_if->FalseBlock()->parent = ir_tmp_builder->function_stack.top();
 
             ir_tmp_builder->PushBlock(ir_if->TrueBlock());
             ir_tmp_builder->Create<ir::WriteVariableLiked>(

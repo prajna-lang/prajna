@@ -238,17 +238,17 @@ class LlvmCodegen : public prajna::ir::Visitor {
     }
 
     void Visit(std::shared_ptr<ir::Block> ir_block) override {
-        auto weak_parent_function = Lock(ir_block->parent_function);
-        PRAJNA_ASSERT(ir_block && weak_parent_function);
+        auto ir_parent_function = ir_block->GetParentFunction();
+        PRAJNA_ASSERT(ir_block && ir_parent_function);
 
         if (ir_block->llvm_value != nullptr) {
             return;
         }
 
-        PRAJNA_ASSERT(weak_parent_function->llvm_value);
+        PRAJNA_ASSERT(ir_parent_function->llvm_value);
         ir_block->llvm_value = llvm::BasicBlock::Create(
-            static_llvm_context, "",
-            static_cast<llvm::Function *>(weak_parent_function->llvm_value), nullptr);
+            static_llvm_context, "", static_cast<llvm::Function *>(ir_parent_function->llvm_value),
+            nullptr);
 
         for (auto ir_value : ir_block->values) {
             // EmitValue(ir_value, ir_target);
@@ -461,8 +461,8 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
     void Visit(std::shared_ptr<ir::JumpBranch> ir_jump_branch) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_jump_branch);
-        PRAJNA_ASSERT(Lock(Lock(ir_jump_branch->parent_block)->parent_function) ==
-                      Lock(ir_jump_branch->NextBlock()->parent_function));
+        PRAJNA_ASSERT(Lock(ir_jump_branch->GetParentBlock()->parent) ==
+                      Lock(ir_jump_branch->NextBlock()->parent));
 
         ir_jump_branch->NextBlock()->ApplyVisitor(this->shared_from_this());
 
@@ -675,7 +675,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
     llvm::BasicBlock *GetLlvmBasicBlock(std::shared_ptr<ir::Instruction> ir_instruction) {
         auto llvm_basic_block =
-            static_cast<llvm::BasicBlock *>(Lock(ir_instruction->parent_block)->llvm_value);
+            static_cast<llvm::BasicBlock *>(ir_instruction->GetParentBlock()->llvm_value);
         PRAJNA_ASSERT(llvm_basic_block);
         return llvm_basic_block;
     }

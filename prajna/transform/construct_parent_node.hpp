@@ -19,7 +19,7 @@ class ConstructParentNodeVisitor : public ir::Visitor {
 
     void Visit(std::shared_ptr<ir::Block> ir_block) override {
         for (auto ir_value : Clone(ir_block->values)) {
-            ir_value->parent_block = ir_block;
+            ir_value->parent = ir_block;
             ir_value->ApplyVisitor(this->shared_from_this());
         }
     }
@@ -40,7 +40,7 @@ class ConstructParentNodeVisitor : public ir::Visitor {
 
     void Visit(std::shared_ptr<ir::Function> ir_function) override {
         for (auto ir_block : Clone(ir_function->blocks)) {
-            ir_block->parent_function = ir_function;
+            ir_block->parent = ir_function;
             ir_block->ApplyVisitor(this->shared_from_this());
         }
     }

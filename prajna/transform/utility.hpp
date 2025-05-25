@@ -21,11 +21,11 @@ inline std::list<std::shared_ptr<Value_>> GetAll(std::shared_ptr<ir::Value> ir_v
 }
 
 inline void RemoveFromParent(std::shared_ptr<ir::Value> ir_value) {
-    Lock(ir_value->parent_block)->remove(ir_value);
+    ir_value->GetParentBlock()->remove(ir_value);
 }
 
 inline void ReplaceInBlock(std::shared_ptr<ir::Value> ir_org, std::shared_ptr<ir::Value> ir_new) {
-    auto ir_block = Lock(ir_org->parent_block);
+    auto ir_block = ir_org->GetParentBlock();
     auto iter = std::find(ir_block->values.begin(), ir_block->values.end(), ir_org);
     PRAJNA_ASSERT(iter != ir_block->values.end());
     ir_block->insert(iter, ir_new);
@@ -64,7 +64,7 @@ inline std::list<std::shared_ptr<ir::Variable>> CaptureExternalVariablesInBlock(
         if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
             for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 auto ir_operand = ir_instruction->GetOperand(i);
-                if (Lock(ir_operand->parent_block) != ir_block) {
+                if (ir_operand->GetParentBlock() != ir_block) {
                     if (auto ir_local_variable = Cast<ir::Variable>(ir_operand)) {
                         ir_variables.push_back(ir_local_variable);
                     }

@@ -80,7 +80,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             auto ir_jump_branch = ir::JumpBranch::Create(ir_label_condition_entry);
             ir_while->LoopBlock()->PushBack(ir_jump_branch);
 
-            //在while开始的地方, 需要jump到conditionBlock(),
+            // 在while开始的地方, 需要jump到conditionBlock(),
             auto ir_concat_branch = ir::JumpBranch::Create(ir_label_condition_entry);
             ir_block->insert(iter, ir_concat_branch);
             ir_block->insert(iter, ir_label_condition_entry);
@@ -218,7 +218,8 @@ inline std::list<std::shared_ptr<ir::Block>> splitBlock(std::shared_ptr<ir::Bloc
             // ir_label作为操作时修改时(移除或添加), 都会改变instructions_with_index的值,
             // 故应该先拷贝一份
             for (auto inst_with_idx : Clone(ir_label->instruction_with_index_list)) {
-                Lock(inst_with_idx.instruction)->SetOperand(inst_with_idx.operand_index, blocks.back());
+                Lock(inst_with_idx.instruction)
+                    ->SetOperand(inst_with_idx.operand_index, blocks.back());
             }
         } else {
             blocks.back()->PushBack(ir_value);
@@ -242,8 +243,8 @@ inline bool FlatternBlock(std::shared_ptr<ir::Module> ir_module) {
         ir_function->blocks = blocks;
 
         for (auto ir_block : ir_function->blocks) {
-            ir_block->parent_function = ir_function;
-            ir_block->parent_block.reset();
+            ir_block->parent = ir_function;
+            ir_block->parent.reset();
         }
     }
 

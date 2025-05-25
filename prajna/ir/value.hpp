@@ -72,7 +72,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         this->name = other.name;
         this->fullname = other.fullname;
 
-        this->parent_block.reset();
+        this->parent.reset();
         this->instruction_with_index_list.clear();
         this->llvm_value = nullptr;
     }
@@ -92,7 +92,7 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     virtual void Detach() {
         // 只是解除依赖, 不是销毁数据,
         this->instruction_with_index_list.clear();
-        this->parent_block.reset();
+        this->parent.reset();
     }
 
     /// @brief 实例需要销毁前调用
@@ -114,6 +114,12 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
 
     std::shared_ptr<Block> GetRootBlock();
 
+    std::shared_ptr<Block> GetParentBlock() {
+        auto ir_parent_block = Cast<ir::Block>(Lock(this->parent));
+        PRAJNA_ASSERT(ir_parent_block);
+        return ir_parent_block;
+    }
+
     bool IsFunction() { return GetFunctionType() != nullptr; }
 
     virtual std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) {
@@ -129,13 +135,13 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
    public:
     std::shared_ptr<Type> type = nullptr;
     std::unordered_map<std::string, std::list<std::string>> annotation_dict;
-    std::weak_ptr<Block> parent_block;
+    std::weak_ptr<Value> parent;
+
     std::list<InstructionAndOperandIndex> instruction_with_index_list;
     ast::SourceLocation source_location;
     llvm::Value* llvm_value = nullptr;
     // 用于方便调试, 否则无法有效辨别他们
     std::string tag = "";
-    std::weak_ptr<Function> parent_function;
     // 用于判断是否是closure, 用于辅助closure的生成
     bool is_closure = false;
     bool is_global = false;
@@ -416,39 +422,39 @@ class Block : public Value {
     }
 
     iterator insert(iterator iter, std::shared_ptr<ir::Value> ir_value) {
-        ir_value->parent_block = Cast<Block>(this->shared_from_this());
+        ir_value->parent = Cast<Block>(this->shared_from_this());
         return this->values.insert(iter, ir_value);
     }
 
     iterator find(std::shared_ptr<ir::Value> ir_value) {
-        PRAJNA_ASSERT(Lock(ir_value->parent_block).get() == this);
+        PRAJNA_ASSERT(ir_value->GetParentBlock().get() == this);
         return std::find(RANGE(this->values), ir_value);
     }
 
     iterator erase(iterator iter) {
-        PRAJNA_ASSERT((*iter) && (*iter)->parent_block.lock() == shared_from_this());
-        (*iter)->parent_block.reset();
+        PRAJNA_ASSERT((*iter) && (*iter)->GetParentBlock() == shared_from_this());
+        (*iter)->parent.reset();
         return this->values.erase(iter);
     }
 
     void remove(std::shared_ptr<ir::Value> ir_value) {
-        ir_value->parent_block.reset();
+        ir_value->parent.reset();
         this->values.erase(std::find(RANGE(this->values), ir_value));
     }
 
     void PushFront(std::shared_ptr<ir::Value> ir_value) {
-        ir_value->parent_block = Cast<Block>(this->shared_from_this());
+        ir_value->parent = Cast<Block>(this->shared_from_this());
         this->values.push_front(ir_value);
     }
 
     void PushBack(std::shared_ptr<ir::Value> ir_value) {
-        ir_value->parent_block = Cast<Block>(this->shared_from_this());
+        ir_value->parent = Cast<Block>(this->shared_from_this());
         this->values.push_back(ir_value);
     }
 
     void Detach() override {
         Value::Detach();
-        this->parent_function.reset();
+        this->parent.reset();
     }
 
     virtual std::shared_ptr<ir::Value> Clone(
@@ -484,8 +490,7 @@ class Function : public Value {
         std::transform(RANGE(function_type->parameter_types), this->parameters.begin(),
                        [=](std::shared_ptr<Type> ir_argument_type) {
                            auto ir_parameter = Parameter::Create(ir_argument_type);
-                           ir_parameter->parent_function =
-                               Cast<ir::Function>(this->shared_from_this());
+                           ir_parameter->parent = Cast<ir::Function>(this->shared_from_this());
                            return ir_parameter;
                        });
     }
@@ -1895,37 +1900,25 @@ class InlineAsm : public Value {
 };
 
 inline std::shared_ptr<Function> Value::GetParentFunction() {
-    if (auto func = this->parent_function.lock()) {
-        return func;
-    } else if (auto bock = this->parent_block.lock()) {
-        return bock->GetParentFunction();
+    auto ir_parent = Lock(this->parent);
+    PRAJNA_ASSERT(ir_parent);
+    if (auto ir_function = Cast<Function>(ir_parent)) {
+        return ir_function;
     } else {
-        PRAJNA_UNREACHABLE;
-        return nullptr;
+        return ir_parent->GetParentFunction();
     }
 }
 
 inline std::shared_ptr<Block> Value::GetRootBlock() {
-    if (parent_block.expired()) {
-        if (Is<Block>(shared_from_this())) {
-            return Cast<Block>(shared_from_this());
-        } else {
-            return nullptr;
-        }
-    }
-    auto root = Lock(this->parent_block);
-    while (true) {
-        auto next = root->parent_block.lock();
-        if (!next) break;
-        root = next;
-    }
-    return root;
+    auto ir_parent_function = this->GetParentFunction();
+    PRAJNA_ASSERT(ir_parent_function->blocks.size() == 1);
+    return ir_parent_function->blocks.front();
 }
 
 inline std::list<std::shared_ptr<ir::Value>>::iterator Value::GetBlockIterator() {
-    auto parent = Lock(parent_block);
-    auto iter = std::find(RANGE(parent->values), this->shared_from_this());
-    PRAJNA_ASSERT(iter != parent->values.end());
+    auto ir_parent_block = Cast<ir::Block>(this->GetParentBlock());
+    auto iter = std::find(RANGE(ir_parent_block->values), this->shared_from_this());
+    PRAJNA_ASSERT(iter != ir_parent_block->values.end());
     return iter;
 }
 
@@ -1951,12 +1944,8 @@ inline std::shared_ptr<ir::Value> Block::Clone(std::shared_ptr<FunctionCloner> f
         ir_new->PushBack(function_cloner->value_dict[ir_value]);
     }
 
-    if (!this->parent_function.expired()) {
-        ir_new->parent_function =
-            Cast<Function>(function_cloner->value_dict[Lock(this->parent_function)]);
-    }
-    if (!this->parent_block.expired()) {
-        ir_new->parent_block = Cast<Block>(function_cloner->value_dict[Lock(this->parent_block)]);
+    if (!this->parent.expired()) {
+        ir_new->parent = Cast<Function>(function_cloner->value_dict[Lock(this->parent)]);
     }
 
     return ir_new;

@@ -473,7 +473,7 @@ class IrBuilder {
         this->function_stack.push(ir_function);
         auto ir_block = ir::Block::Create();
         this->function_stack.top()->blocks.push_back(ir_block);
-        ir_block->parent_function = this->function_stack.top();
+        ir_block->parent = this->function_stack.top();
         this->PushBlock(ir_block);
         this->inserter_iterator = ir_block->values.end();
         return ir_block;

@@ -6,7 +6,6 @@
 #include "prajna/logger.hpp"
 #include "prajna/lowering/statement_lowering_visitor.hpp"
 #include "prajna/transform/utility.hpp"
-#include "prajna/transform/verify.hpp"
 
 namespace prajna::transform {
 
@@ -20,8 +19,6 @@ inline bool InlineCheck(std::shared_ptr<ir::Function> ir_function) {
 inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
     bool re = false;
     for (auto ir_function : ir_module->functions) {
-        VerifyFunction(ir_function);
-
         auto ir_calls = utility::GetAll<ir::Call>(ir_function);
         for (auto ir_call : ir_calls) {
             auto ir_callee = Cast<ir::Function>(ir_call->Function());
@@ -29,18 +26,16 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
             if (!InlineCheck(ir_callee)) continue;
 
             re = true;
-            auto iter = std::find(RANGE(Lock(ir_call->parent_block)->values), ir_call);
+            auto iter = std::find(RANGE(ir_call->GetParentBlock()->values), ir_call);
             auto function_cloner = ir::FunctionCloner::Create(ir_module);
             function_cloner->shallow = true;
             auto ir_new_callee = Cast<ir::Function>(ir_callee->Clone(function_cloner));
-            VerifyFunction(ir_callee);
-            VerifyFunction(ir_new_callee);
 
             // 不能加入到module里
             function_cloner->module->functions.remove(ir_new_callee);
 
             auto ir_builder = lowering::IrBuilder::Create();
-            ir_builder->PushBlock(Lock(ir_call->parent_block));
+            ir_builder->PushBlock(ir_call->GetParentBlock());
             ir_builder->inserter_iterator = iter;
 
             auto ir_parameter_iter = ir_new_callee->parameters.begin();
@@ -73,7 +68,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
                         ir_new_callee->function_type->return_type);
                     auto ir_return_builder = lowering::IrBuilder::Create();
                     auto ir_return_iter = ir_return->GetBlockIterator();
-                    ir_return_builder->PushBlock(Lock(ir_return->parent_block));
+                    ir_return_builder->PushBlock(ir_return->GetParentBlock());
                     ir_return_builder->inserter_iterator = ir_return_iter;
                     ir_return_builder->Create<ir::WriteVariableLiked>(ir_return->Value(),
                                                                       ir_return_variable);
@@ -82,8 +77,8 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
                 }
             }
 
-            ir_new_callee->blocks.front()->parent_function.reset();
-            Lock(ir_call->parent_block)->insert(iter, ir_new_callee->blocks.front());
+            ir_new_callee->blocks.front()->parent.reset();
+            ir_call->GetParentBlock()->insert(iter, ir_new_callee->blocks.front());
 
             auto ir_call_inst_idx = ir_call->instruction_with_index_list;
             for (auto [inst, op_idx] : ir_call_inst_idx) {
@@ -94,8 +89,6 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
             utility::RemoveFromParent(ir_call);
             ir_call->Finalize();
         }
-
-        VerifyFunction(ir_function);
     }
 
     return re;

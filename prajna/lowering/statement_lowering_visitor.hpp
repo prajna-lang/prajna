@@ -343,7 +343,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
     bool AllBranchIsTerminated(std::shared_ptr<ir::Block> ir_block,
                                std::shared_ptr<ir::Type> ir_type) {
         PRAJNA_ASSERT(!Is<ir::VoidType>(ir_type));
-        auto ir_last_value = ir_block->values.back();
+        auto ir_last_value = ir_block->back();
         if (auto ir_return = Cast<ir::Return>(ir_last_value)) {
             return ir_return->Value() && ir_return->Value()->type == ir_type;
         }

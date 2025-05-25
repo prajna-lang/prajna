@@ -51,7 +51,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
         auto ir_block = ir_access_property->GetParentBlock();
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->PushBlock(ir_block);
-        ir_builder->inserter_iterator = std::find(RANGE(ir_block->values), ir_access_property);
+        ir_builder->inserter_iterator = std::find(RANGE((*ir_block)), ir_access_property);
 
         for (auto instruction_with_index : Clone(ir_access_property->instruction_with_index_list)) {
             auto ir_inst = Lock(instruction_with_index.instruction);
@@ -68,7 +68,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
                 auto ir_tmp_builder = lowering::IrBuilder::Create();
                 ir_tmp_builder->PushBlock(ir_block);
                 ir_tmp_builder->inserter_iterator =
-                    std::find(RANGE(ir_block->values), ir_write_property);
+                    std::find(RANGE((*ir_block)), ir_write_property);
                 auto ir_setter_call = ir_tmp_builder->Create<ir::Call>(
                     ir_access_property->property->set_function, ir_arguments);
                 utility::RemoveFromParent(ir_write_property);
@@ -110,8 +110,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             auto ir_builder =
                 lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
             ir_builder->PushBlock(ir_block);
-            ir_builder->inserter_iterator =
-                std::find(RANGE(ir_block->values), ir_kernel_function_call);
+            ir_builder->inserter_iterator = std::find(RANGE((*ir_block)), ir_kernel_function_call);
 
             // 构建::cuda::launchKernel的逻辑
             auto ir_kernel_arguments_address_array_i8ptr = ir_builder->Create<ir::LocalVariable>(
@@ -239,9 +238,8 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
 
                     auto ir_deference_pointer = ir::DeferencePointer::Create(ir_global_alloca);
                     auto ir_block = ir_instruction->GetParentBlock();
-                    auto iter =
-                        std::find(ir_block->values.begin(), ir_block->values.end(), ir_instruction);
-                    ir_block->insert(iter, ir_deference_pointer);
+                    auto iter = std::find(ir_block->begin(), ir_block->end(), ir_instruction);
+                    ir_block->Insert(iter, ir_deference_pointer);
                     ir_instruction->SetOperand(i, ir_deference_pointer);
                 }
             }
@@ -308,11 +306,11 @@ inline void DefineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module) {
 inline void RemoveValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         for (auto ir_block : ir_function->blocks) {
-            auto iter_return = std::find_if(RANGE(ir_block->values), [](auto x) {
+            auto iter_return = std::find_if(RANGE((*ir_block)), [](auto x) {
                 return Is<ir::Return>(x) || Is<ir::JumpBranch>(x) || Is<ir::ConditionBranch>(x);
             });
-            if (iter_return != ir_block->values.end()) {
-                ir_block->values.erase(std::next(iter_return), ir_block->values.end());
+            if (iter_return != ir_block->end()) {
+                ir_block->erase(std::next(iter_return), ir_block->end());
             }
         }
     }
@@ -363,7 +361,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         if (!ir_builder->IsArrayI64Type(ir_for->IndexVariable()->type)) continue;
         auto parent = ir_for->GetParentBlock();
         ir_builder->PushBlock(parent);
-        ir_builder->inserter_iterator = parent->find(ir_for);
+        ir_builder->inserter_iterator = parent->Find(ir_for);
         auto ir_layout_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
             ir_builder->GetSymbolByPath(true, {"tensor", "Layout"}));
         PRAJNA_ASSERT(ir_layout_template_struct);
@@ -407,9 +405,9 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         auto ir_array_first_variable = ir_builder->VariableLikedNormalize(ir_array_first);
         auto ir_layout_variable = ir_builder->VariableLikedNormalize(ir_layout);
         ir_builder->PushBlock(ir_for->LoopBlock());
-        ir_builder->inserter_iterator = ir_for->LoopBlock()->values.begin();
+        ir_builder->inserter_iterator = ir_for->LoopBlock()->begin();
         utility::RemoveFromParent(ir_array_index);
-        ir_builder->insert(ir_array_index);
+        ir_builder->Insert(ir_array_index);
         ir_builder->Create<ir::WriteVariableLiked>(
             ir_builder->CallBinaryOperator(
                 ir_builder->CallMemberFunction(ir_layout_variable, "LinearIndexToArrayIndex",
@@ -478,7 +476,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
                         auto ir_access_field =
                             ir::AccessField::Create(ir_this, ir_value_field_map[ir_operand]);
                         auto parent = ir_instruction->GetParentBlock();
-                        parent->values.insert(ir_instruction->GetBlockIterator(), ir_access_field);
+                        parent->Insert(ir_instruction->GetBlockIterator(), ir_access_field);
                         ir_access_field->parent = parent;
                         ir_instruction->SetOperand(i, ir_access_field);
                     }
@@ -629,7 +627,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
         auto parent = ir_shared_variable->GetParentBlock();
         ir_builder->PushBlock(parent);
         // 在最开始插入就行, 留意AddressCast是不是统一转换一次就行了
-        ir_builder->inserter_iterator = parent->values.begin();
+        ir_builder->inserter_iterator = parent->begin();
         auto ir_address_cast =
             ir_builder->Create<ir::CastInstruction>(ir::CastInstruction::Operation::AddrSpaceCast,
                                                     ir_global_alloca, ir_global_alloca->type);

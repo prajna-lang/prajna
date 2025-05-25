@@ -250,7 +250,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
             static_llvm_context, "", static_cast<llvm::Function *>(ir_parent_function->llvm_value),
             nullptr);
 
-        for (auto ir_value : ir_block->values) {
+        for (auto ir_value : *ir_block) {
             // EmitValue(ir_value, ir_target);
             if (Is<ir::Function>(ir_value)) {
                 return;

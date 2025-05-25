@@ -55,7 +55,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
 
     auto ir_builder = lowering::IrBuilder::Create();
     ir_builder->PushBlock(ir_block);
-    ir_builder->inserter_iterator = ir_block->values.end();
+    ir_builder->inserter_iterator = ir_block->end();
 
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> variables_dict;
     auto iter_captured_variable = ir_captured_variables_list.begin();
@@ -129,18 +129,17 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
         statement_lowering_visitor->Apply(ast);
 
         // 插入ir_gpu_for里的逻辑
-        auto ir_kernel_while = Cast<ir::While>(*std::prev(ir_block->values.end(), 2));
+        auto ir_kernel_while = Cast<ir::While>(*std::prev(ir_block->end(), 2));
         PRAJNA_ASSERT(ir_kernel_while);
         ir_kernel_while->ConditionBlock()->parent.reset();
-        auto ir_kernel_while_loop_block =
-            Cast<ir::Block>(ir_kernel_while->LoopBlock()->values.front());
+        auto ir_kernel_while_loop_block = Cast<ir::Block>(ir_kernel_while->LoopBlock()->front());
         PRAJNA_ASSERT(ir_kernel_while_loop_block);
         auto ir_while_builder = lowering::IrBuilder::Create();
         ir_while_builder->PushBlock(ir_kernel_while_loop_block);
         // 末尾应该有个Label, 故在开始插入
-        ir_while_builder->inserter_iterator = ir_kernel_while_loop_block->values.begin();
-        for (auto ir_value : ir_gpu_for->LoopBlock()->values) {
-            ir_while_builder->insert(ir_value);
+        ir_while_builder->inserter_iterator = ir_kernel_while_loop_block->begin();
+        for (auto ir_value : *ir_gpu_for->LoopBlock()) {
+            ir_while_builder->Insert(ir_value);
         }
     }
 
@@ -161,7 +160,7 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
             ConvertGpuForToKernelCall(ir_gpu_for, idx);
 
         auto ir_gpu_parent_block = ir_gpu_for->GetParentBlock();
-        auto iter_gpu_for = std::find(RANGE(ir_gpu_parent_block->values), ir_gpu_for);
+        auto iter_gpu_for = std::find(RANGE((*ir_gpu_parent_block)), ir_gpu_for);
         auto ir_builder = lowering::IrBuilder::Create();
         ir_builder->PushBlock(ir_gpu_parent_block);
         ir_builder->inserter_iterator = iter_gpu_for;

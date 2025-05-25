@@ -19,7 +19,7 @@ class EachTensorVisitor : public ir::CallbackVisitor {
 
     void Visit(std::shared_ptr<ir::Block> ir_block) override {
         this->callback(ir_block);
-        for (auto ir_value : Clone(ir_block->values)) {  // Each的过程中会修改
+        for (auto ir_value : Clone(*ir_block)) {  // Each的过程中会修改
             ir_value->ApplyVisitor(this->shared_from_this());
         }
     }

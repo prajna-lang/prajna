@@ -406,7 +406,7 @@ class ConstantVector : public Constant {
 };
 
 /// @brief  和高级语言里的块是对应的
-class Block : public Value {
+class Block : public Value, public std::list<std::shared_ptr<ir::Value>> {
    protected:
     Block() = default;
 
@@ -415,41 +415,40 @@ class Block : public Value {
 
     static std::shared_ptr<Block> Create() {
         std::shared_ptr<Block> self(new Block);
-        auto p = self->shared_from_this();
         self->type = nullptr;
         self->tag = "Block";
         return self;
     }
 
-    iterator insert(iterator iter, std::shared_ptr<ir::Value> ir_value) {
+    iterator Insert(iterator iter, std::shared_ptr<ir::Value> ir_value) {
         ir_value->parent = Cast<Block>(this->shared_from_this());
-        return this->values.insert(iter, ir_value);
+        return this->insert(iter, ir_value);
     }
 
-    iterator find(std::shared_ptr<ir::Value> ir_value) {
+    iterator Find(std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(ir_value->GetParentBlock().get() == this);
-        return std::find(RANGE(this->values), ir_value);
+        return std::find(RANGE((*this)), ir_value);
     }
 
-    iterator erase(iterator iter) {
+    iterator Erase(iterator iter) {
         PRAJNA_ASSERT((*iter) && (*iter)->GetParentBlock() == shared_from_this());
         (*iter)->parent.reset();
-        return this->values.erase(iter);
+        return this->erase(iter);
     }
 
-    void remove(std::shared_ptr<ir::Value> ir_value) {
+    void Remove(std::shared_ptr<ir::Value> ir_value) {
         ir_value->parent.reset();
-        this->values.erase(std::find(RANGE(this->values), ir_value));
+        this->Erase(std::find(RANGE((*this)), ir_value));
     }
 
     void PushFront(std::shared_ptr<ir::Value> ir_value) {
         ir_value->parent = Cast<Block>(this->shared_from_this());
-        this->values.push_front(ir_value);
+        this->push_front(ir_value);
     }
 
     void PushBack(std::shared_ptr<ir::Value> ir_value) {
         ir_value->parent = Cast<Block>(this->shared_from_this());
-        this->values.push_back(ir_value);
+        this->push_back(ir_value);
     }
 
     void Detach() override {
@@ -463,9 +462,6 @@ class Block : public Value {
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<Block>(this->shared_from_this()));
     }
-
-   public:
-    std::list<std::shared_ptr<ir::Value>> values;
 };
 
 class Function : public Value {
@@ -1917,8 +1913,8 @@ inline std::shared_ptr<Block> Value::GetRootBlock() {
 
 inline std::list<std::shared_ptr<ir::Value>>::iterator Value::GetBlockIterator() {
     auto ir_parent_block = Cast<ir::Block>(this->GetParentBlock());
-    auto iter = std::find(RANGE(ir_parent_block->values), this->shared_from_this());
-    PRAJNA_ASSERT(iter != ir_parent_block->values.end());
+    auto iter = std::find(RANGE((*ir_parent_block)), this->shared_from_this());
+    PRAJNA_ASSERT(iter != ir_parent_block->end());
     return iter;
 }
 
@@ -1933,8 +1929,8 @@ inline std::shared_ptr<ir::Value> Block::Clone(std::shared_ptr<FunctionCloner> f
     std::shared_ptr<Block> ir_new(new Block(*this));
     function_cloner->value_dict[shared_from_this()] = ir_new;
 
-    ir_new->values.clear();
-    for (auto ir_value : values) {
+    ir_new->clear();
+    for (auto ir_value : *this) {
         // (branch导致)存在递归, 故有的值已被处理, 此外参数也在函数里处理
         if (!function_cloner->value_dict.count(ir_value)) {
             auto ir_new_value = ir_value->Clone(function_cloner);

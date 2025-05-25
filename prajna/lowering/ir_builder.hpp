@@ -211,12 +211,12 @@ class IrBuilder {
         auto ir_value = Value_::Create(std::forward<Args_>(__args)...);
 
         static_assert(std::is_base_of<ir::Value, Value_>::value);
-        this->insert(ir_value);
+        this->Insert(ir_value);
         return ir_value;
     }
 
-    void insert(std::shared_ptr<ir::Value> ir_value) {
-        CurrentBlock()->insert(this->inserter_iterator, ir_value);
+    void Insert(std::shared_ptr<ir::Value> ir_value) {
+        CurrentBlock()->Insert(this->inserter_iterator, ir_value);
         if (this->create_callback) {
             this->create_callback(ir_value);
         }
@@ -421,7 +421,7 @@ class IrBuilder {
         PRAJNA_ASSERT(!block_stack.empty());
         block_stack.pop();
         if (!block_stack.empty()) {
-            inserter_iterator = CurrentBlock()->values.end();
+            inserter_iterator = CurrentBlock()->end();
         }
     }
 
@@ -431,12 +431,12 @@ class IrBuilder {
             block_stack.top()->PushBack(ir_block);
         }
         block_stack.push(ir_block);
-        inserter_iterator = ir_block->values.end();
+        inserter_iterator = ir_block->end();
     }
 
     void PushBlock(std::shared_ptr<ir::Block> ir_block) {
         block_stack.push(ir_block);
-        inserter_iterator = ir_block->values.end();
+        inserter_iterator = ir_block->end();
     }
 
     std::shared_ptr<ir::Block> CurrentBlock() {
@@ -475,7 +475,7 @@ class IrBuilder {
         this->function_stack.top()->blocks.push_back(ir_block);
         ir_block->parent = this->function_stack.top();
         this->PushBlock(ir_block);
-        this->inserter_iterator = ir_block->values.end();
+        this->inserter_iterator = ir_block->end();
         return ir_block;
     }
 

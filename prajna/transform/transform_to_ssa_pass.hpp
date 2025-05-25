@@ -18,8 +18,8 @@ inline bool InsertValueToBlock(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         std::set<std::shared_ptr<ir::Value>> ir_values;
         for (auto ir_block : ir_function->blocks) {
-            for (auto iter_ir_value = ir_block->values.begin();
-                 iter_ir_value != ir_block->values.end(); ++iter_ir_value) {
+            for (auto iter_ir_value = ir_block->begin(); iter_ir_value != ir_block->end();
+                 ++iter_ir_value) {
                 auto ir_value = *iter_ir_value;
                 ir_values.insert(ir_value);
 
@@ -30,7 +30,7 @@ inline bool InsertValueToBlock(std::shared_ptr<ir::Module> ir_module) {
                             // 模板实例化时会产生非Block的Constant,并且会被使用
                             if (Is<ir::ConstantInt>(ir_operand)) {
                                 changed = true;
-                                ir_block->insert(iter_ir_value, ir_operand);
+                                ir_block->Insert(iter_ir_value, ir_operand);
                                 ir_values.insert(ir_operand);
                             }
                         }
@@ -72,8 +72,8 @@ inline bool ConvertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_mod
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_alloca);
                 auto ir_block = ir_inst->GetParentBlock();
-                auto iter = std::find(ir_block->values.begin(), ir_block->values.end(), ir_inst);
-                ir_block->insert(iter, ir_deference_pointer);
+                auto iter = std::find(ir_block->begin(), ir_block->end(), ir_inst);
+                ir_block->Insert(iter, ir_deference_pointer);
                 ir_inst->SetOperand(op_idx, ir_deference_pointer);
             }
 
@@ -105,8 +105,8 @@ inline bool ConvertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Modu
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_struct_get_element_ptr);
                 auto parent = ir_inst->GetParentBlock();
-                auto iter_inst = std::find(RANGE(parent->values), ir_inst);
-                parent->insert(iter_inst, ir_deference_pointer);
+                auto iter_inst = std::find(RANGE((*parent)), ir_inst);
+                parent->Insert(iter_inst, ir_deference_pointer);
                 ir_inst->SetOperand(op_idx, ir_deference_pointer);
             }
 
@@ -141,8 +141,8 @@ inline bool ConvertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Module
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_array_get_element_ptr);
                 auto parent = ir_inst->GetParentBlock();
-                auto iter_inst = std::find(RANGE(parent->values), ir_inst);
-                parent->insert(iter_inst, ir_deference_pointer);
+                auto iter_inst = std::find(RANGE((*parent)), ir_inst);
+                parent->Insert(iter_inst, ir_deference_pointer);
                 ir_inst->SetOperand(op_idx, ir_deference_pointer);
             }
 
@@ -178,8 +178,8 @@ inline bool ConvertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Mo
                 auto ir_deference_pointer =
                     ir::DeferencePointer::Create(ir_pointer_get_element_ptr);
                 auto parent = ir_inst->GetParentBlock();
-                auto iter_inst = std::find(RANGE(parent->values), ir_inst);
-                parent->insert(iter_inst, ir_deference_pointer);
+                auto iter_inst = std::find(RANGE((*parent)), ir_inst);
+                parent->Insert(iter_inst, ir_deference_pointer);
                 ir_inst->SetOperand(op_idx, ir_deference_pointer);
             }
 
@@ -232,7 +232,7 @@ inline bool ConvertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
             changed = true;
             auto ir_pointer = ir_deference_pointer->Pointer();
             auto iter_deference_pointer =
-                ir_deference_pointer->GetParentBlock()->find(ir_deference_pointer);
+                ir_deference_pointer->GetParentBlock()->Find(ir_deference_pointer);
             for (auto instruction_with_index :
                  Clone(ir_deference_pointer->instruction_with_index_list)) {
                 auto ir_inst = Lock(instruction_with_index.instruction);
@@ -245,11 +245,11 @@ inline bool ConvertDeferencePointerToStoreAndLoadPointer(std::shared_ptr<ir::Mod
                     utility::ReplaceInBlock(ir_write_variable_liked, ir_store);
                 } else {
                     auto ir_load = ir::LoadPointer::Create(ir_pointer);
-                    ir_inst->GetParentBlock()->insert(ir_inst->GetBlockIterator(), ir_load);
+                    ir_inst->GetParentBlock()->Insert(ir_inst->GetBlockIterator(), ir_load);
                     ir_inst->SetOperand(op_idx, ir_load);
                 }
             }
-            ir_deference_pointer->GetParentBlock()->erase(iter_deference_pointer);
+            ir_deference_pointer->GetParentBlock()->Erase(iter_deference_pointer);
             ir_deference_pointer->Finalize();
         }
     }

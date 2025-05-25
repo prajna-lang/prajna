@@ -26,10 +26,10 @@ inline void RemoveFromParent(std::shared_ptr<ir::Value> ir_value) {
 
 inline void ReplaceInBlock(std::shared_ptr<ir::Value> ir_org, std::shared_ptr<ir::Value> ir_new) {
     auto ir_block = ir_org->GetParentBlock();
-    auto iter = std::find(ir_block->values.begin(), ir_block->values.end(), ir_org);
-    PRAJNA_ASSERT(iter != ir_block->values.end());
-    ir_block->insert(iter, ir_new);
-    ir_block->erase(iter);
+    auto iter = std::find(ir_block->begin(), ir_block->end(), ir_org);
+    PRAJNA_ASSERT(iter != ir_block->end());
+    ir_block->Insert(iter, ir_new);
+    ir_block->Erase(iter);
     ir_org->Finalize();
 }
 
@@ -58,7 +58,7 @@ inline std::list<std::shared_ptr<ir::Value>> CaptureExternalValueInClosure(
 inline std::list<std::shared_ptr<ir::Variable>> CaptureExternalVariablesInBlock(
     std::shared_ptr<ir::Block> ir_block) {
     std::list<std::shared_ptr<ir::Variable>> ir_variables;
-    for (auto ir_value : ir_block->values) {
+    for (auto ir_value : *ir_block) {
         // 先判断是否是ir::For, 因为ir::For本身也是ir::Instruction
         PRAJNA_ASSERT(!Is<ir::For>(ir_value));
         if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {

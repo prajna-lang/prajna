@@ -4,10 +4,10 @@ use fs;
 func TestFs() {
     var str_hello_world = "Hello World!";
     {
-        fs::Write("fs_test.txt", str_hello_world);
+        fs::Write(".fs_test.txt", str_hello_world);
     }
     {
-        var str = fs::Read("fs_test.txt");
+        var str = fs::Read(".fs_test.txt");
         __assert(str == str_hello_world);
     }
 }

@@ -1103,7 +1103,7 @@ class GlobalAlloca : public Instruction {
 
     void Detach() override {
         Value::Detach();
-        this->parent_module = nullptr;
+        this->parent_module.reset();
     }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
@@ -1113,7 +1113,7 @@ class GlobalAlloca : public Instruction {
    public:
     bool is_external = false;
     uint32_t address_space = 0;
-    std::shared_ptr<Module> parent_module;
+    std::weak_ptr<Module> parent_module;
     // std::shared_ptr<GlobalVariable> link_to_global_variable = nullptr;
 };
 

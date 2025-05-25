@@ -372,10 +372,10 @@ class LlvmCodegen : public prajna::ir::Visitor {
     void Visit(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) override {
         auto ir_value_type = Cast<ir::PointerType>(ir_global_alloca->type)->value_type;
         PRAJNA_ASSERT(ir_value_type && ir_value_type->llvm_type);
-        PRAJNA_ASSERT(ir_global_alloca->parent_module->llvm_module);
+        PRAJNA_ASSERT(Lock(ir_global_alloca->parent_module)->llvm_module);
         // 事实上llvm::GlobalVariable其实获取一个个指针
         auto llvm_global_variable = new llvm::GlobalVariable(
-            *(ir_global_alloca->parent_module->llvm_module), ir_value_type->llvm_type, false,
+            *(Lock(ir_global_alloca->parent_module)->llvm_module), ir_value_type->llvm_type, false,
             llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, ir_global_alloca->fullname,
             nullptr, llvm::GlobalValue::NotThreadLocal, ir_global_alloca->address_space, false);
         if (!ir_global_alloca->is_external) {

@@ -28,10 +28,7 @@ std::shared_ptr<ir::Value> ExpressionLoweringVisitor::operator()(ast::Closure as
 
     auto ir_closure_function =
         Cast<ir::Function>(SymbolGet<ir::Value>((*statement_lowering_visitor)(ast_function_tmp)));
-    ir_closure_function->is_closure = true;
-
     auto ir_closure = this->ir_builder->Create<ir::LocalVariable>(ir_closure_struct_type);
-    ir_closure->is_closure = true;
     ir_closure_function->closure = ir_closure;
     return ir_closure;
 }

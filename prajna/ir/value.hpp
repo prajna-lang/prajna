@@ -143,7 +143,6 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     // 用于方便调试, 否则无法有效辨别他们
     std::string tag = "";
     // 用于判断是否是closure, 用于辅助closure的生成
-    bool is_closure = false;
     bool is_global = false;
 };
 

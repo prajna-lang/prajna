@@ -37,7 +37,7 @@ inline std::list<std::shared_ptr<ir::Value>> CaptureExternalValueInClosure(
     std::shared_ptr<ir::Function> ir_function) {
     std::list<std::shared_ptr<ir::Value>> ir_values;
 
-    if (!ir_function->is_closure) return ir_values;
+    if (!ir_function->closure) return ir_values;
 
     Each<ir::Value>(ir_function, [&](std::shared_ptr<ir::Value> ir_value) {
         if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {

@@ -453,7 +453,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
     for (auto iter_function = ir_module->functions.rbegin();
          iter_function != ir_module->functions.rend(); ++iter_function) {
         auto ir_function = *iter_function;
-        if (!ir_function->is_closure) continue;
+        if (!ir_function->closure) continue;
 
         auto ir_external_values = utility::CaptureExternalValueInClosure(ir_function);
         std::map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Field>> ir_value_field_map;

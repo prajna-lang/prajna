@@ -157,7 +157,7 @@ template FloatTest <Bits> {
     }
 
     @test
-    func TestFloatPinter() {
+    func TestFloatPrinter() {
         0.000000016.Cast<Float<Bits>>().ToString().PrintLine();
         1000000.000000016.Cast<Float<Bits>>().ToString().PrintLine();
         0.0016.Cast<Float<Bits>>().ToString().PrintLine();

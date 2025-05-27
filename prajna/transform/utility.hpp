@@ -43,7 +43,7 @@ inline std::list<std::shared_ptr<ir::Value>> CaptureExternalValueInClosure(
         if (auto ir_instruction = Cast<ir::Instruction>(ir_value)) {
             for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
                 auto ir_operand = ir_instruction->GetOperand(i);
-                if (ir_operand->is_global) continue;
+                if (ir::IsGlobal(ir_operand)) continue;
                 if (ir_operand->GetParentFunction() != ir_function) {
                     ir_values.push_back(ir_operand);
                 }

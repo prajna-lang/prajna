@@ -142,8 +142,6 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
     llvm::Value* llvm_value = nullptr;
     // 用于方便调试, 否则无法有效辨别他们
     std::string tag = "";
-    // 用于判断是否是closure, 用于辅助closure的生成
-    bool is_global = false;
 };
 
 class VoidValue : public Value {
@@ -474,7 +472,6 @@ class Function : public Value {
         self->function_type = function_type;
         self->Update();
         self->tag = "Function";
-        self->is_global = true;
         return self;
     }
 
@@ -1086,7 +1083,6 @@ class GlobalAlloca : public Instruction {
         self->OperandResize(0);
         self->type = PointerType::Create(type);
         self->tag = "GlobalAlloca";
-        self->is_global = true;
         return self;
     }
 
@@ -1591,7 +1587,6 @@ class GlobalVariable : public Variable {
         std::shared_ptr<GlobalVariable> self(new GlobalVariable);
         self->type = ir_type;
         self->tag = "GlobalVariable";
-        self->is_global = true;
         return self;
     }
 
@@ -2017,6 +2012,18 @@ inline std::shared_ptr<ir::Value> Function::Clone(std::shared_ptr<FunctionCloner
 inline bool IsTerminated(std::shared_ptr<ir::Value> ir_value) {
     return Is<Return>(ir_value) || Is<Break>(ir_value) || Is<Continue>(ir_value) ||
            Is<JumpBranch>(ir_value) || Is<ConditionBranch>(ir_value);
+}
+
+inline bool IsGlobal(std::shared_ptr<ir::Value> ir_value) {
+    if (auto ir_function = Cast<ir::Function>(ir_value)) {
+        return true;
+    } else if (auto ir_global_variable = Cast<ir::GlobalVariable>(ir_value)) {
+        return true;
+    } else if (auto ir_global_alloca = Cast<ir::GlobalAlloca>(ir_value)) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 }  // namespace prajna::ir

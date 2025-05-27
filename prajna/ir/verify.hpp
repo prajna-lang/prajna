@@ -5,21 +5,21 @@
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
 
-namespace prajna::transform {
+namespace prajna::ir {
 
-class ConstructParentNodeVisitor : public ir::Visitor {
+class VerifyVisitor : public ir::Visitor {
    protected:
-    ConstructParentNodeVisitor() = default;
+    VerifyVisitor() = default;
 
    public:
-    static std::shared_ptr<ConstructParentNodeVisitor> Create() {
-        auto self = std::shared_ptr<ConstructParentNodeVisitor>(new ConstructParentNodeVisitor);
+    static std::shared_ptr<VerifyVisitor> Create() {
+        auto self = std::shared_ptr<VerifyVisitor>(new VerifyVisitor);
         return self;
     }
 
     void Visit(std::shared_ptr<ir::Block> ir_block) override {
         for (auto ir_value : Clone(*ir_block)) {
-            ir_value->parent = ir_block;
+            PRAJNA_VERIFY(Lock(ir_value->parent) == ir_block);
             ir_value->ApplyVisitor(this->shared_from_this());
         }
     }
@@ -40,19 +40,19 @@ class ConstructParentNodeVisitor : public ir::Visitor {
 
     void Visit(std::shared_ptr<ir::Function> ir_function) override {
         for (auto ir_block : Clone(ir_function->blocks)) {
-            ir_block->parent = ir_function;
+            PRAJNA_VERIFY(Lock(ir_block->parent) == ir_function);
             ir_block->ApplyVisitor(this->shared_from_this());
         }
     }
 
     void Visit(std::shared_ptr<ir::Module> ir_module) override {
         for (auto ir_function : Clone(ir_module->functions)) {
-            ir_function->parent = ir_module;
+            PRAJNA_VERIFY(Lock(ir_function->parent) == ir_module);
             ir_function->ApplyVisitor(this->shared_from_this());
         }
 
         for (auto ir_global_variable : Clone(ir_module->global_variables)) {
-            ir_global_variable->parent = ir_module;
+            PRAJNA_VERIFY(Lock(ir_global_variable->parent) == ir_module);
         }
     }
 
@@ -60,4 +60,11 @@ class ConstructParentNodeVisitor : public ir::Visitor {
     std::function<void(std::shared_ptr<ir::Value>)> callback_;
 };
 
-}  // namespace prajna::transform
+inline bool Verify(std::shared_ptr<ir::Value> ir_value) {
+    PRAJNA_VERIFY(ir_value);
+    auto visitor = VerifyVisitor::Create();
+    ir_value->ApplyVisitor(visitor);
+    return true;
+}
+
+}  // namespace prajna::ir

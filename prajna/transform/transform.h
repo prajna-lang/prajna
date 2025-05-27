@@ -8,7 +8,6 @@
 #include "prajna/logger.hpp"
 #include "prajna/lowering/statement_lowering_visitor.hpp"
 #include "prajna/parser/parse.h"
-#include "prajna/transform/construct_parent_node.hpp"
 #include "prajna/transform/extract_gpu_grid_pass.hpp"
 #include "prajna/transform/flattern_block.hpp"
 #include "prajna/transform/inline_function.hpp"
@@ -266,12 +265,14 @@ inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
                      return ir_function->annotation_dict.count("kernel");
                  });
 
-    auto function_cloner = ir::FunctionCloner::Create(ir_nvptx_module);
+    auto function_cloner = ir::FunctionCloner::Create();
     for (auto ir_kernel_function : ir_kernel_function_list) {
         // 会把生成的函数直接插入到module里
-        ir_kernel_function->Clone(function_cloner);
+        auto ir_kernel_function_new =
+            Cast<ir::Function>(function_cloner->Clone(ir_kernel_function));
         // 移除原来的核函数
         ir_nvptx_module->functions.remove(ir_kernel_function);
+        ir_nvptx_module->AddFunction(ir_kernel_function_new);
     }
 }
 
@@ -686,8 +687,9 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
 }
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
-    auto construct_parent_node_visitor = ConstructParentNodeVisitor::Create();
+    auto construct_parent_node_visitor = ir::ConstructParentNodeVisitor::Create();
     ir_module->ApplyVisitor(construct_parent_node_visitor);
+    PRAJNA_ASSERT(ir::Verify(ir_module));
     RecursiveTransformModule(ir_module, ConvertClosure);
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
     RecursiveTransformModule(ir_module, ExternCFunction);
@@ -699,9 +701,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     // ExtractGpuFor(ir_module);
     ConvertKernelFunctionOperandToAddress(ir_module);
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
-    ir_module->ApplyVisitor(construct_parent_node_visitor);
     RecursiveTransformModule(ir_module, InlineFunction);
-    ir_module->ApplyVisitor(construct_parent_node_visitor);
     RecursiveTransformModule(ir_module, FlatternBlock);
     RemoveValuesAfterReturn(ir_module);
     RecursiveTransformModule(ir_module, ConvertPropertyToFunctionCall);

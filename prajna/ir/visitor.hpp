@@ -1,6 +1,4 @@
 #pragma once
-#include "operation_instruction.hpp"
-#include "prajna/ir/target.hpp"
 #include "value.hpp"
 
 namespace prajna::ir {

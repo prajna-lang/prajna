@@ -64,6 +64,7 @@ inline auto Clone(Type t) -> std::decay_t<Type> {
 
 template <typename T>
 std::shared_ptr<T> Lock(std::weak_ptr<T>& weak) {
+    PRAJNA_ASSERT(!weak.expired());
     auto ptr = weak.lock();
     PRAJNA_ASSERT(ptr);
     return ptr;

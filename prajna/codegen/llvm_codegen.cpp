@@ -201,9 +201,10 @@ class LlvmCodegen : public prajna::ir::Visitor {
         PRAJNA_ASSERT(ir_function->function_type->llvm_type);
         llvm::FunctionType *llvm_fun_type =
             static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
+
         llvm::Function *llvm_fun =
             llvm::Function::Create(llvm_fun_type, llvm::Function::ExternalLinkage,
-                                   function_fullname, ir_function->parent_module->llvm_module);
+                                   function_fullname, ir_function->GetParentModule()->llvm_module);
         ir_function->llvm_value = llvm_fun;
     }
 
@@ -372,12 +373,15 @@ class LlvmCodegen : public prajna::ir::Visitor {
     void Visit(std::shared_ptr<ir::GlobalAlloca> ir_global_alloca) override {
         auto ir_value_type = Cast<ir::PointerType>(ir_global_alloca->type)->value_type;
         PRAJNA_ASSERT(ir_value_type && ir_value_type->llvm_type);
-        PRAJNA_ASSERT(Lock(ir_global_alloca->parent_module)->llvm_module);
+
+        auto ir_llvm_module = ir_global_alloca->GetParentModule()->llvm_module;
+        PRAJNA_ASSERT(ir_llvm_module);
         // 事实上llvm::GlobalVariable其实获取一个个指针
         auto llvm_global_variable = new llvm::GlobalVariable(
-            *(Lock(ir_global_alloca->parent_module)->llvm_module), ir_value_type->llvm_type, false,
+            *ir_llvm_module, ir_value_type->llvm_type, false,
             llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, ir_global_alloca->fullname,
             nullptr, llvm::GlobalValue::NotThreadLocal, ir_global_alloca->address_space, false);
+
         if (!ir_global_alloca->is_external) {
             // @note 需要初始化, 否则符号会找到不到. 也就是说如果不初始化, 则其为external
             llvm_global_variable->setInitializer(llvm::UndefValue::get(ir_value_type->llvm_type));

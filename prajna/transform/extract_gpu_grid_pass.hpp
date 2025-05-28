@@ -13,7 +13,7 @@
 namespace prajna::transform {
 
 inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64_t idx) {
-    auto ir_module = ir_gpu_for->GetParentFunction()->parent_module;
+    auto ir_module = ir_gpu_for->GetParentModule();
     auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
 
     auto ir_captured_variables_list =
@@ -44,7 +44,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
     ir_kernel_function->name = ir_kernel_function->fullname;
     ir_kernel_function_type->fullname = ir_kernel_function->fullname;
     ir_kernel_function_type->name = ir_kernel_function->fullname;
-    ir_kernel_function->parent_module = ir_nvptx_module;
+    ir_kernel_function->parent = ir_nvptx_module;
     ir_kernel_function->annotation_dict["target"].push_back("nvptx");
     ir_kernel_function->annotation_dict.insert({"kernel", {}});
     ir_nvptx_module->functions.push_back(ir_kernel_function);

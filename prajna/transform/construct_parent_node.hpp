@@ -47,12 +47,12 @@ class ConstructParentNodeVisitor : public ir::Visitor {
 
     void Visit(std::shared_ptr<ir::Module> ir_module) override {
         for (auto ir_function : Clone(ir_module->functions)) {
-            ir_function->parent_module = ir_module;
+            ir_function->parent = ir_module;
             ir_function->ApplyVisitor(this->shared_from_this());
         }
 
         for (auto ir_global_variable : Clone(ir_module->global_variables)) {
-            ir_global_variable->parent_module = ir_module;
+            ir_global_variable->parent = ir_module;
         }
     }
 

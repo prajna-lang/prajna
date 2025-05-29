@@ -11,7 +11,7 @@ std::shared_ptr<ir::Value> ExpressionLoweringVisitor::operator()(ast::Closure as
     ir_builder->PushSymbolTable();
     ir_builder->symbol_table->name = "closure." + std::to_string(ir_builder->closure_id);
     ++ir_builder->closure_id;
-    auto guard = ScopeGuard::Create([this]() {
+    auto guard = ScopeExit::Create([this]() {
         this->ir_builder->PopSymbolTable();
         this->ir_builder->current_implement_type = nullptr;
     });

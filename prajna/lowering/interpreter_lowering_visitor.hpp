@@ -36,7 +36,7 @@ class InterpreterLoweringVisitor {
         return _statement_lowering_visitor->ir_builder->module;
     }
 
-    std::unique_ptr<ScopeGuard> WrapCommandLineWithFunction() {
+    std::unique_ptr<ScopeExit> WrapCommandLineWithFunction() {
         auto ir_fun_type = ir::FunctionType::Create({}, ir::VoidType::Create());
         auto ir_function = ir::Function::Create(ir_fun_type);
         ir_function->annotation_dict.insert({"\\command", {}});
@@ -53,7 +53,7 @@ class InterpreterLoweringVisitor {
         ir_function->blocks.push_back(ir_block);
 
         // 打印结果
-        return ScopeGuard::Create([=, ir_builder = _statement_lowering_visitor->ir_builder]() {
+        return ScopeExit::Create([=, ir_builder = _statement_lowering_visitor->ir_builder]() {
             boost::apply_visitor(
                 overloaded{[=](auto x) {},
                            [=](std::shared_ptr<ir::Value> ir_result_value) {

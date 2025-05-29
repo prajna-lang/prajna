@@ -42,8 +42,7 @@ class InterpreterLoweringVisitor {
         ir_function->annotation_dict.insert({"\\command", {}});
         ir_function->name = "\\command" + std::to_string(_command_id++);
         ir_function->fullname = ir_function->name;
-        ir_function->parent = _statement_lowering_visitor->ir_builder->module;
-        _statement_lowering_visitor->ir_builder->module->functions.push_back(ir_function);
+        _statement_lowering_visitor->ir_builder->module->AddFunction(ir_function);
 
         auto ir_builder = _statement_lowering_visitor->ir_builder;
         auto ir_block = ir::Block::Create();

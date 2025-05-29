@@ -44,10 +44,9 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
     ir_kernel_function->name = ir_kernel_function->fullname;
     ir_kernel_function_type->fullname = ir_kernel_function->fullname;
     ir_kernel_function_type->name = ir_kernel_function->fullname;
-    ir_kernel_function->parent = ir_nvptx_module;
     ir_kernel_function->annotation_dict["target"].push_back("nvptx");
     ir_kernel_function->annotation_dict.insert({"kernel", {}});
-    ir_nvptx_module->functions.push_back(ir_kernel_function);
+    ir_nvptx_module->AddFunction(ir_kernel_function);
 
     auto ir_block = ir::Block::Create();
     ir_block->parent = ir_kernel_function;

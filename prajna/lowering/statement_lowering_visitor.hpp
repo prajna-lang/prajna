@@ -271,8 +271,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         std::shared_ptr<ir::VariableLiked> ir_variable_liked;
         if (use_global_variable) {
             auto ir_global_variable = ir::GlobalVariable::Create(ir_type);
-            ir_global_variable->parent = ir_builder->module;
-            ir_builder->module->global_variables.push_back(ir_global_variable);
+            ir_builder->module->AddGlobalVariable(ir_global_variable);
             ir_variable_liked = ir_global_variable;
         } else {
             ir_variable_liked = ir_builder->Create<ir::LocalVariable>(ir_type);
@@ -1184,8 +1183,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             // 声明所需intrinsic
             auto ir_intrinsic_function = ir::Function::Create(ir_function_type);
             ir_intrinsic_function->fullname = "llvm." + intrinsic_name + "." + ir_float_type->name;
-            ir_intrinsic_function->parent = ir_module;
-            ir_module->functions.push_back(ir_intrinsic_function);
+            ir_module->AddFunction(ir_intrinsic_function);
 
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_function = ir_tmp_builder->CreateFunction(

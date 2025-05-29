@@ -53,7 +53,7 @@ class EachTensorVisitor : public ir::CallbackVisitor {
     void Visit(std::shared_ptr<ir::Module> ir_module) override {
         // this->callback(ir_module);
         for (auto ir_function : Clone(ir_module->functions)) {  // Each的过程中会修改
-            ir_function->parent_module = ir_module;
+            ir_function->parent = ir_module;
             ir_function->ApplyVisitor(this->shared_from_this());
         }
 

@@ -184,7 +184,7 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
                             ir_global_variable = ir::GlobalVariable::Create(ir_function->type);
                             ir_global_variable->name = global_variable_fullname;
                             ir_global_variable->fullname = ir_global_variable->name;
-                            ir_global_variable->parent_module = ir_module;
+                            ir_global_variable->parent = ir_module;
                             // 如果不是同一个module的, 则为external, 目前所有的nvptx
                             // IR都会迁移的使用的Module里去
                             // ir_global_variable->is_external =
@@ -205,7 +205,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_global_variable->type);
         ir_global_alloca->name = ir_global_variable->name;
         ir_global_alloca->fullname = ir_global_variable->fullname;
-        ir_global_alloca->parent_module = ir_module;
+        ir_global_alloca->parent = ir_module;
         // ir_global_variable->is_external默认为false
         ir_global_alloca->is_external = ir_global_variable->is_external;
         ir_module->global_allocas.push_back(ir_global_alloca);
@@ -231,7 +231,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
                         ir_global_alloca = ir::GlobalAlloca::Create(ir_global_variable->type);
                         ir_global_alloca->name = ir_global_variable->name;
                         ir_global_alloca->fullname = ir_global_variable->fullname;
-                        ir_global_alloca->parent_module = ir_module;
+                        ir_global_alloca->parent = ir_module;
                         ir_global_alloca->is_external = true;
                         ir_module->global_allocas.push_back(ir_global_alloca);
                     }
@@ -257,7 +257,7 @@ inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
     ir_module->global_allocas.remove_if([=](auto ir_global_alloca) -> bool {
         if (ir_global_alloca->address_space == 3) {
             ir_nvptx_module->global_allocas.push_back(ir_global_alloca);
-            ir_global_alloca->parent_module = ir_nvptx_module;
+            ir_global_alloca->parent = ir_nvptx_module;
             return true;
         } else {
             return false;
@@ -295,7 +295,7 @@ inline void DefineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module) {
                 auto ir_global_variable = ir::GlobalVariable::Create(ir_function->type);
                 ir_global_variable->name = global_variable_fullname;
                 ir_global_variable->fullname = ir_global_variable->name;
-                ir_global_variable->parent_module = ir_module;
+                ir_global_variable->parent = ir_module;
                 ir_module->global_variables.push_back(ir_global_variable);
             }
         }
@@ -322,7 +322,7 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
             auto ir_operand = ir_instruction->GetOperand(i);
 
             if (auto ir_function = Cast<ir::Function>(ir_operand)) {
-                if (ir_function->parent_module != ir_module) {
+                if (ir_function->GetParentModule() != ir_module) {
                     std::shared_ptr<ir::Function> ir_decl_function = nullptr;
                     auto iter_fun = std::find_if(RANGE(ir_module->functions), [=](auto ir_x) {
                         return ir_x->fullname == ir_function->fullname;
@@ -334,7 +334,7 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
                         ir_decl_function = ir::Function::Create(ir_function->function_type);
                         ir_decl_function->fullname = ir_function->fullname;
                         ir_decl_function->name = ir_function->name;
-                        ir_decl_function->parent_module = ir_module;
+                        ir_decl_function->parent = ir_module;
                         ir_module->functions.push_front(ir_decl_function);
                     }
 
@@ -342,7 +342,7 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
                         ir_function->instruction_with_index_list;
                     for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
                         auto iter_instruction = Lock(ir_instruction);
-                        if (iter_instruction->GetParentFunction()->parent_module == ir_module) {
+                        if (iter_instruction->GetParentFunction()->GetParentModule() == ir_module) {
                             iter_instruction->SetOperand(op_idx, ir_decl_function);
                         }
                     }
@@ -426,7 +426,7 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
             auto intrinsic_function_name = ir_function->annotation_dict["intrinsic"].front();
             auto ir_decl_function = ir::Function::Create(ir_function->function_type);
             ir_decl_function->fullname = intrinsic_function_name;
-            ir_decl_function->parent_module = ir_module;
+            ir_decl_function->parent = ir_module;
             ir_module->functions.push_front(ir_decl_function);
 
             ir_function->annotation_dict["inline"];
@@ -548,7 +548,7 @@ inline void TopologicalSortFunctionVisit(
             auto ir_operand = ir_instruction->GetOperand(i);
             if (auto ir_tmp_function = Cast<ir::Function>(ir_operand)) {
                 // 值排序同一个module里的函数
-                if (ir_tmp_function->parent_module == ir_function->parent_module) {
+                if (ir_tmp_function->parent.lock() == ir_function->parent.lock()) {
                     // 没访问的进行深度搜索
                     if (ir_gray_function_set.count(ir_tmp_function)) continue;
 
@@ -620,7 +620,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
         ir_global_alloca->name = ir_shared_variable->name;
         ir_global_alloca->fullname = MangleNvvmName(ir_shared_variable->fullname);
         ir_global_alloca->is_external = false;
-        ir_global_alloca->parent_module = ir_module;
+        ir_global_alloca->parent = ir_module;
         ir_module->global_allocas.push_back(ir_global_alloca);
 
         auto ir_builder = lowering::IrBuilder::Create();

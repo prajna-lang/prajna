@@ -120,6 +120,8 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         return ir_parent_block;
     }
 
+    std::shared_ptr<Module> GetParentModule() { return Cast<ir::Module>(this->parent.lock()); }
+
     bool IsFunction() { return GetFunctionType() != nullptr; }
 
     virtual std::shared_ptr<ir::Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) {
@@ -494,12 +496,12 @@ class Function : public Value {
         for (auto& ir_parameter : this->parameters) {
             ir_parameter->Detach();
         }
-        this->parent_module = nullptr;
+        this->parent.reset();
     }
 
     void Finalize() override {
         Value::Finalize();
-        this->parent_module = nullptr;
+        this->parent.reset();
         this->function_type = nullptr;
         this->parameters.clear();
         this->blocks.clear();
@@ -515,8 +517,6 @@ class Function : public Value {
     std::shared_ptr<FunctionType> function_type = nullptr;
     std::list<std::shared_ptr<ir::Parameter>> parameters;
     std::list<std::shared_ptr<Block>> blocks;
-    std::shared_ptr<Module> parent_module = nullptr;
-
     std::shared_ptr<ir::Value> closure = nullptr;
 };
 
@@ -1094,7 +1094,7 @@ class GlobalAlloca : public Instruction {
 
     void Detach() override {
         Value::Detach();
-        this->parent_module.reset();
+        this->parent.reset();
     }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
@@ -1104,7 +1104,6 @@ class GlobalAlloca : public Instruction {
    public:
     bool is_external = false;
     uint32_t address_space = 0;
-    std::weak_ptr<Module> parent_module;
     // std::shared_ptr<GlobalVariable> link_to_global_variable = nullptr;
 };
 
@@ -1592,7 +1591,7 @@ class GlobalVariable : public Variable {
 
     void Detach() override {
         Value::Detach();
-        this->parent_module = nullptr;
+        this->parent.reset();
     }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
@@ -1601,8 +1600,6 @@ class GlobalVariable : public Variable {
 
    public:
     bool is_external = false;
-
-    std::shared_ptr<Module> parent_module = nullptr;
 };
 
 class AccessProperty : public WriteReadAble, virtual public Instruction {
@@ -1755,7 +1752,6 @@ class Module : public Value {
     std::list<std::shared_ptr<GlobalVariable>> global_variables;
     std::list<std::shared_ptr<GlobalAlloca>> global_allocas;
     std::shared_ptr<lowering::SymbolTable> symbol_table = nullptr;
-    std::shared_ptr<Module> parent_module = nullptr;
     std::unordered_map<Target, std::shared_ptr<Module>> modules;
     llvm::Module* llvm_module = nullptr;
 };
@@ -1984,7 +1980,7 @@ inline std::shared_ptr<ir::Value> Function::Clone(std::shared_ptr<FunctionCloner
     std::shared_ptr<Function> ir_new(new Function(*this));
     function_cloner->value_dict[shared_from_this()] = ir_new;
 
-    ir_new->parent_module = function_cloner->module;
+    ir_new->parent = function_cloner->module;
     ir_new->parameters.clear();
     std::transform(RANGE(parameters), std::back_inserter(ir_new->parameters),
                    [=](auto ir_parameter) {

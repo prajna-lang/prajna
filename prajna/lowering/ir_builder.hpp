@@ -463,8 +463,7 @@ class IrBuilder {
         auto ir_function = ir::Function::Create(ir_function_type);
         // 函数必须指定名字, 否则其在module里的名字会混乱和重复
         this->SetSymbolWithTemplateArgumentsPostify(ir_function, ast_identifier);
-        ir_function->parent = this->module;
-        this->module->functions.push_back(ir_function);
+        this->module->AddFunction(ir_function);
         return ir_function;
     }
 

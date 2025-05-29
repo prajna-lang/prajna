@@ -1748,6 +1748,21 @@ class Module : public Value {
         interpreter->Visit(Cast<Module>(this->shared_from_this()));
     }
 
+    void AddFunction(std::shared_ptr<Function> ir_function) {
+        ir_function->parent = shared_from_this();
+        this->functions.push_back(ir_function);
+    }
+
+    void AddGlobalVariable(std::shared_ptr<GlobalVariable> ir_global_variable) {
+        ir_global_variable->parent = shared_from_this();
+        this->global_variables.push_back(ir_global_variable);
+    }
+
+    void AddGlobalAlloca(std::shared_ptr<GlobalAlloca> ir_global_alloca) {
+        ir_global_alloca->parent = shared_from_this();
+        this->global_allocas.push_back(ir_global_alloca);
+    }
+
     std::list<std::shared_ptr<Function>> functions;
     std::list<std::shared_ptr<GlobalVariable>> global_variables;
     std::list<std::shared_ptr<GlobalAlloca>> global_allocas;
@@ -1980,7 +1995,6 @@ inline std::shared_ptr<ir::Value> Function::Clone(std::shared_ptr<FunctionCloner
     std::shared_ptr<Function> ir_new(new Function(*this));
     function_cloner->value_dict[shared_from_this()] = ir_new;
 
-    ir_new->parent = function_cloner->module;
     ir_new->parameters.clear();
     std::transform(RANGE(parameters), std::back_inserter(ir_new->parameters),
                    [=](auto ir_parameter) {
@@ -2001,7 +2015,7 @@ inline std::shared_ptr<ir::Value> Function::Clone(std::shared_ptr<FunctionCloner
     }
 
     // 在后面加入module, 否则顺序不对
-    function_cloner->module->functions.push_back(ir_new);
+    function_cloner->module->AddFunction(ir_new);
     return ir_new;
 }
 

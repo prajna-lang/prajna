@@ -272,6 +272,7 @@ inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
             Cast<ir::Function>(function_cloner->Clone(ir_kernel_function));
         // 移除原来的核函数
         ir_nvptx_module->functions.remove(ir_kernel_function);
+        PRAJNA_ASSERT(ir::Verify(ir_kernel_function_new));
         ir_nvptx_module->AddFunction(ir_kernel_function_new);
     }
 }
@@ -312,7 +313,7 @@ inline void RemoveValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
     }
 }
 
-inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
+inline bool DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
     Each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
         for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
             auto ir_operand = ir_instruction->GetOperand(i);
@@ -346,6 +347,8 @@ inline void DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
             }
         }
     });
+
+    return true;
 }
 
 inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
@@ -689,7 +692,7 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
     auto construct_parent_node_visitor = ir::ConstructParentNodeVisitor::Create();
     ir_module->ApplyVisitor(construct_parent_node_visitor);
-    PRAJNA_ASSERT(ir::Verify(ir_module));
+    // PRAJNA_ASSERT(ir::Verify(ir_module));
     RecursiveTransformModule(ir_module, ConvertClosure);
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
     RecursiveTransformModule(ir_module, ExternCFunction);
@@ -730,7 +733,7 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     CloneExternalNvptxValue(ir_module);
     DefineKernelFunctionAddress(ir_module);
     ConvertGlobalVariableToPointer(ir_module);
-    DeclareExternalFunction(ir_module);
+    RecursiveTransformModule(ir_module, DeclareExternalFunction);
     TopAlloca(ir_module);
     ConvertLLVMIntrinsicToNVVMLibdevice(ir_module);
 

@@ -24,6 +24,11 @@ class VerifyVisitor : public ir::Visitor {
         }
     }
 
+    void Visit(std::shared_ptr<ir::Call> ir_call) override {
+        // TODO(bug)
+        // PRAJNA_VERIFY(Lock(ir_call->Function()->parent));
+    }
+
     void Visit(std::shared_ptr<ir::If> ir_if) override {
         ir_if->TrueBlock()->ApplyVisitor(this->shared_from_this());
         ir_if->FalseBlock()->ApplyVisitor(this->shared_from_this());

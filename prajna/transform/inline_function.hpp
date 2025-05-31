@@ -27,12 +27,11 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
 
             re = true;
             auto iter = std::find(RANGE((*ir_call->GetParentBlock())), ir_call);
-            auto function_cloner = ir::FunctionCloner::Create(ir_module);
-            function_cloner->shallow = true;
-            auto ir_new_callee = Cast<ir::Function>(ir_callee->Clone(function_cloner));
-
-            // 不能加入到module里
-            function_cloner->module->functions.remove(ir_new_callee);
+            PRAJNA_ASSERT(ir::Verify(ir_call));
+            auto ir_clone_visitor = ir::FunctionCloner::Create();
+            ir_clone_visitor->shallow = true;
+            auto ir_new_callee = Cast<ir::Function>(ir_clone_visitor->Clone(ir_callee));
+            PRAJNA_ASSERT(ir::Verify(ir_new_callee));
 
             auto ir_builder = lowering::IrBuilder::Create();
             ir_builder->PushBlock(ir_call->GetParentBlock());

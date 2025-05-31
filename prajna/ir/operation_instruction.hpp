@@ -53,12 +53,6 @@ class CompareInstruction : public Instruction {
         return self;
     }
 
-    std::shared_ptr<Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<Self> ir_new(new Self(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-        ir_new->CloneOperands(function_cloner);
-        return ir_new;
-    }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<CompareInstruction>(this->shared_from_this()));
@@ -110,12 +104,6 @@ class BinaryOperator : public Instruction {
         return self;
     }
 
-    std::shared_ptr<Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<Self> ir_new(new Self(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-        ir_new->CloneOperands(function_cloner);
-        return ir_new;
-    }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<BinaryOperator>(this->shared_from_this()));
@@ -159,13 +147,6 @@ class CastInstruction : public Instruction {
         self->tag = "CastInstruction";
         return self;
     };
-
-    std::shared_ptr<Value> Clone(std::shared_ptr<FunctionCloner> function_cloner) override {
-        std::shared_ptr<Self> ir_new(new Self(*this));
-        function_cloner->value_dict[shared_from_this()] = ir_new;
-        ir_new->CloneOperands(function_cloner);
-        return ir_new;
-    }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<CastInstruction>(this->shared_from_this()));

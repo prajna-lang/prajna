@@ -522,7 +522,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto ir_loop_block = ir::Block::Create();
         auto ir_while =
             ir_builder->Create<ir::While>(ir_condition, ir_condition_block, ir_loop_block);
-        ir_condition->parent = ir_while;
         ir_builder->loop_stack.push(ir_while);
         ir_builder->PushBlock(ir_while->LoopBlock());
         (*this)(ast_while.body);

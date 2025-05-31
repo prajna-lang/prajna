@@ -690,9 +690,7 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
 }
 
 inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_module) {
-    auto construct_parent_node_visitor = ir::ConstructParentNodeVisitor::Create();
-    ir_module->ApplyVisitor(construct_parent_node_visitor);
-    // PRAJNA_ASSERT(ir::Verify(ir_module));
+    PRAJNA_ASSERT(ir::Verify(ir_module));
     RecursiveTransformModule(ir_module, ConvertClosure);
     RecursiveTransformModule(ir_module, WrapIntrinsicFunction);
     RecursiveTransformModule(ir_module, ExternCFunction);

@@ -497,8 +497,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto ir_condition = ApplyExpression(ast_if.condition);
         auto ir_if =
             ir_builder->Create<ir::If>(ir_condition, ir::Block::Create(), ir::Block::Create());
-        ir_if->TrueBlock()->parent = ir_if;
-        ir_if->FalseBlock()->parent = ir_if;
 
         ir_builder->PushBlock(ir_if->TrueBlock());
         (*this)(ast_if.then);
@@ -1426,8 +1424,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 ir_tmp_builder->CallBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
             auto ir_if = ir_tmp_builder->Create<ir::If>(ir_condition, ir::Block::Create(),
                                                         ir::Block::Create());
-            ir_if->TrueBlock()->parent = ir_tmp_builder->function_stack.top();
-            ir_if->FalseBlock()->parent = ir_tmp_builder->function_stack.top();
 
             ir_tmp_builder->PushBlock(ir_if->TrueBlock());
             ir_tmp_builder->Create<ir::WriteVariableLiked>(

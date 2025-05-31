@@ -1195,10 +1195,16 @@ class If : public Instruction {
     void condition(std::shared_ptr<ir::Value> ir_condition) { this->SetOperand(0, ir_condition); }
 
     std::shared_ptr<Block> TrueBlock() { return Cast<Block>(this->GetOperand(1)); }
-    void TrueBlock(std::shared_ptr<Block> ir_true_block) { this->SetOperand(1, ir_true_block); }
+    void TrueBlock(std::shared_ptr<Block> ir_true_block) {
+        ir_true_block->parent = this->shared_from_this();
+        this->SetOperand(1, ir_true_block);
+    }
 
     std::shared_ptr<Block> FalseBlock() { return Cast<Block>(this->GetOperand(2)); }
-    void FalseBlock(std::shared_ptr<Block> ir_false_block) { this->SetOperand(2, ir_false_block); }
+    void FalseBlock(std::shared_ptr<Block> ir_false_block) {
+        ir_false_block->parent = this->shared_from_this();
+        this->SetOperand(2, ir_false_block);
+    }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<If>(this->shared_from_this()));
@@ -1232,11 +1238,15 @@ class While : public Instruction {
     /// @brief 用于存放条件表达式的块
     std::shared_ptr<Block> ConditionBlock() { return Cast<Block>(this->GetOperand(1)); }
     void ConditionBlock(std::shared_ptr<Block> ir_condition_block) {
+        ir_condition_block->parent = this->shared_from_this();
         this->SetOperand(1, ir_condition_block);
     }
 
     std::shared_ptr<Block> LoopBlock() { return Cast<Block>(this->GetOperand(2)); }
-    void LoopBlock(std::shared_ptr<Block> ir_true_block) { this->SetOperand(2, ir_true_block); }
+    void LoopBlock(std::shared_ptr<Block> ir_true_block) {
+        ir_true_block->parent = this->shared_from_this();
+        this->SetOperand(2, ir_true_block);
+    }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<While>(this->shared_from_this()));
@@ -1277,7 +1287,10 @@ class For : public Instruction {
     void Last(std::shared_ptr<ir::Value> ir_last) { this->SetOperand(2, ir_last); }
 
     std::shared_ptr<Block> LoopBlock() { return Cast<Block>(this->GetOperand(3)); }
-    void LoopBlock(std::shared_ptr<Block> ir_loop_block) { this->SetOperand(3, ir_loop_block); }
+    void LoopBlock(std::shared_ptr<Block> ir_loop_block) {
+        this->parent = this->shared_from_this();
+        this->SetOperand(3, ir_loop_block);
+    }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<For>(this->shared_from_this()));

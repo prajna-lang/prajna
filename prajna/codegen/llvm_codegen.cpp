@@ -253,7 +253,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         for (auto ir_value : *ir_block) {
             // EmitValue(ir_value, ir_target);
             if (Is<ir::Function>(ir_value)) {
-                return;
+                continue;
             }
             ir_value->ApplyVisitor(this->shared_from_this());
         }

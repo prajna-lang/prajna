@@ -335,14 +335,7 @@ inline bool DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
                         ir_module->functions.push_front(ir_decl_function);
                     }
 
-                    auto instruction_with_index_list_copy =
-                        ir_function->instruction_with_index_list;
-                    for (auto [ir_instruction, op_idx] : instruction_with_index_list_copy) {
-                        auto iter_instruction = Lock(ir_instruction);
-                        if (iter_instruction->GetParentFunction()->GetParentModule() == ir_module) {
-                            iter_instruction->SetOperand(op_idx, ir_decl_function);
-                        }
-                    }
+                    ir_instruction->SetOperand(i, ir_decl_function);
                 }
             }
         }

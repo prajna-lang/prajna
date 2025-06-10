@@ -191,7 +191,7 @@ void Compiler::AddPackageDirectoryPath(std::string package_directory) {
     if (!std::filesystem::is_directory(std::filesystem::path(package_directory))) {
         auto error_message = fmt::format("{} is not a valid package directory",
                                          fmt::styled(package_directory, fmt::fg(fmt::color::red)));
-        fmt::print(error_message);
+        fmt::print(fmt::runtime(error_message));
         throw std::runtime_error(error_message);
     }
     package_directories.push_back(std::filesystem::path(package_directory));

@@ -40,7 +40,7 @@ int prajna_exe_main(int argc, char* argv[]) {
         return 0;
     }
 
-    fmt::print(options.help({""}));
+    fmt::print(fmt::runtime(options.help({""})));
     return 0;
 
     return 0;
@@ -57,7 +57,7 @@ int prajna_jupyter_main(int argc, char* argv[]) {
                      std::filesystem::absolute(std::string(argv[0])).parent_path() / "xeus_prajna";
     if (!std::filesystem::is_regular_file(xeus_path)) {
         fmt::print(
-            "xeus_prajna is not found, please configure cmake with -DPRAJNA_WITH_JUPYTER=ON");
+            fmt::runtime("xeus_prajna is not found, please configure cmake with -DPRAJNA_WITH_JUPYTER=ON"));
     }
 
     if (result.count("install")) {
@@ -70,7 +70,7 @@ int prajna_jupyter_main(int argc, char* argv[]) {
         std::future<std::string> future_jupyter_data_dir;
         auto jupyter_path = boost::process::search_path("jupyter");
         if (jupyter_path.empty()) {
-            fmt::print("please install jupyter first");
+            fmt::print(fmt::runtime("please install jupyter first"));
         }
         boost::process::system(fmt::format("{} --data-dir", jupyter_path.string()),
                                boost::process::std_out > future_jupyter_data_dir);
@@ -80,18 +80,18 @@ int prajna_jupyter_main(int argc, char* argv[]) {
         std::filesystem::create_directories(jupyter_data_dir + "/kernels/prajna");
         std::ofstream kernel_json_ofs(jupyter_data_dir + "/kernels/prajna/kernel.json");
         if (!kernel_json_ofs.good()) {
-            fmt::print("failed to create jupyter prajna kernel.jsonf file: {}\n",
+            fmt::print(fmt::runtime("failed to create jupyter prajna kernel.jsonf file: {}\n"),
                        jupyter_data_dir + "/kernels/prajna/kernel.json");
             return -1;
         }
         kernel_json_ofs << prajna_kernel_json;
-        fmt::print("success to install jupyter prajna kernel in {}\n",
+        fmt::print(fmt::runtime("success to install jupyter prajna kernel in {}\n"),
                    jupyter_data_dir + "/kernels/prajna");
 
         return 0;
     }
 
-    fmt::print(options.help({""}));
+    fmt::print(fmt::runtime(options.help({""})));
     return 0;
 }
 
@@ -129,14 +129,14 @@ int main(int argc, char* argv[]) {
             return prajna_jupyter_main(sub_argc, sub_argv.data());
         }
 
-        fmt::print("unsupported sub command {}\n",
+        fmt::print(fmt::runtime("unsupported sub command {}\n"),
                    fmt::styled(sub_command, fmt::fg(fmt::color::red)));
     }
 
     if (result.count("help") || result.arguments().empty()) {
-        fmt::print(options.help({""}));
-        fmt::print("Avaliabled sub commands: exe, repl, jupyter\n");
-        fmt::print("Sub command usage:\n prajna exe --help\n");
+        fmt::print(fmt::runtime(options.help({""})));
+        fmt::print(fmt::runtime("Avaliabled sub commands: exe, repl, jupyter\n"));
+        fmt::print(fmt::runtime("Sub command usage:\n prajna exe --help\n"));
         return 0;
     }
 

@@ -100,7 +100,7 @@ class ExpressionLoweringVisitor {
         auto symbol = ir_builder->symbol_table->Get(ast_identifier);
         if (!SymbolIs<ir::Value>(symbol)) {
             PRAJNA_UNREACHABLE;
-            logger->Error(fmt::format("{} is not a valid value"), ast_identifier);
+            logger->Error(fmt::format(fmt::runtime("{} is not a valid value")), ast_identifier);
         }
 
         return SymbolGet<ir::Value>(symbol);

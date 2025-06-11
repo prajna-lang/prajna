@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -11,11 +12,11 @@ class GlobalConfig {
    public:
     static GlobalConfig& Instance();
 
-    bool Load(std::string& config_path = ".matazure_config.hson");
+    bool Load(const std::string& config_path = "");
 
     nlohmann::json& GetConfig() { return config_; }
 
-    std::string GetOutDir() { return "Temp"; }
+    std::string GetOutputDir() { return "Temp"; }
 
    private:
     GlobalConfig() = default;
@@ -31,10 +32,19 @@ GlobalConfig& GlobalConfig::Instance() {
     return instance;
 }
 
-bool GlobalConfig::Load(std::string& config_path) {
-    std::ifstream file(config_path);
+bool GlobalConfig::Load(const std::string& config_path) {
+    std::string actual_path = config_path;
+    if (config_path.empty()) {
+        // 默认路径是与当前源文件（global_config.cpp）同目录
+        std::filesystem::path base_path = std::filesystem::path(__FILE__).parent_path();
+        actual_path = (base_path / ".matazure_config.json").string();
+    }
+
+    std::cout << "Trying to load: " << actual_path << std::endl;
+
+    std::ifstream file(actual_path);
     if (!file.is_open()) {
-        std::cerr << "Failed to open config file: " << config_path << std::endl;
+        std::cerr << "Failed to open config file: " << actual_path << std::endl;
         return false;
     }
     try {

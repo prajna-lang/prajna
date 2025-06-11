@@ -446,7 +446,7 @@ class IrBuilder {
 
     void SetSymbol(Symbol symbol, ast::Identifier ast_identifier) {
         if (symbol_table->CurrentTableHas(ast_identifier)) {
-            logger->Error(fmt::format("the symbol {} is defined already", ast_identifier),
+            logger->Error(std::format("the symbol {} is defined already", ast_identifier),
                           ast_identifier);
         }
 

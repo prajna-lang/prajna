@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <format>
 #include <fstream>
 
 #include "fmt/printf.h"
@@ -47,12 +48,16 @@ TEST_P(PrajnaTests, TestSourceFile) {
     auto t0 = std::chrono::high_resolution_clock::now();
     compiler->CompileBuiltinSourceFiles("builtin_packages");
     auto t1 = std::chrono::high_resolution_clock::now();
-    fmt::print("compiling cost time: {}ms\n",
-               std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
+    // fmt::print("compiling cost time: {}ms\n",
+    //            std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
+    std::cout << std::format("compiling cost time: {}ms\n",
+                             std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
     compiler->RunTests(prajna_source_path);
     auto t2 = std::chrono::high_resolution_clock::now();
-    fmt::print("execution cost time: {}ms\n",
-               std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
+    // fmt::print("execution cost time: {}ms\n",
+    //            std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
+    std::cout << std::format("execution cost time: {}ms\n",
+                             std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
 }
 
 // 会遍历整个文件夹里的文件

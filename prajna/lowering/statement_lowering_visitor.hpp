@@ -255,7 +255,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 ir_type = ir_initial_value->type;
             } else {
                 if (ir_type != ir_initial_value->type) {
-                    logger->Error(fmt::format("the declaration type is \"{}\", but the initialize "
+                    logger->Error(std::format("the declaration type is \"{}\", but the initialize "
                                               "value's type is \"{}\"",
                                               ir_type->name, ir_initial_value->type->name),
                                   ast_variable_declaration.initialize_optional.get());
@@ -485,7 +485,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         auto ir_return_type = ir_builder->function_stack.top()->function_type->return_type;
         if (ir_return->type != ir_return_type) {
-            logger->Error(fmt::format("the type is {} , but then function return type is {}",
+            logger->Error(std::format("the type is {} , but then function return type is {}",
                                       ir_return->type->fullname, ir_return_type->fullname),
                           ast_return);
         }
@@ -1337,7 +1337,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 return x.second->prototype == ir_interface_prototype;
             });
             if (iter_interface == ir_value_type->interface_dict.end()) {
-                logger->Error(fmt::format("the interface {} is not implemented",
+                logger->Error(std::format("the interface {} is not implemented",
                                           ir_interface_prototype->fullname));
             }
 

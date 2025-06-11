@@ -8,6 +8,7 @@
 #include <atomic>
 #include <chrono>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <unordered_map>
 
@@ -163,8 +164,10 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 #else
         auto llc_exe = boost::dll::program_location().parent_path() / "llc";
 #endif
-        std::string llc_cmd = fmt::format("{}  -mcpu=sm_86 {file_base}.ll -o {file_base}.ptx",
-                                          llc_exe.string(), fmt::arg("file_base", file_base));
+        // std::string llc_cmd = fmt::format("{}  -mcpu=sm_86 {file_base}.ll -o {file_base}.ptx",
+        //                                   llc_exe.string(), fmt::arg("file_base", file_base));
+        std::string llc_cmd = std::format("{}  -mcpu=sm_86 {0}.ll -o {0}.ptx",
+                                          llc_exe.string(), file_base);
         PRAJNA_VERIFY(std::system(llc_cmd.c_str()) == 0);
 
 #ifdef _WIN32
@@ -184,7 +187,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 
         int64_t cu_library = 0;
         auto cu_re2 =
-            cu_library_load_from_file(&cu_library, fmt::format("{}.ptx", file_base).c_str(),
+            cu_library_load_from_file(&cu_library, std::format("{}.ptx", file_base).c_str(),
                                       nullptr, nullptr, 0, nullptr, nullptr, 0);
         PRAJNA_ASSERT(cu_re2 == 0, std::to_string(cu_re2));
 

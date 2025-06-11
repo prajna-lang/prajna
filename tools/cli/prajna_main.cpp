@@ -1,3 +1,4 @@
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -40,7 +41,8 @@ int prajna_exe_main(int argc, char* argv[]) {
         return 0;
     }
 
-    fmt::print(fmt::runtime(options.help({""})));
+    // fmt::print(fmt::runtime(options.help({""})));
+    std::cout << std::format(options.help({""}));
     return 0;
 
     return 0;
@@ -56,8 +58,10 @@ int prajna_jupyter_main(int argc, char* argv[]) {
     auto xeus_path = std::filesystem::current_path() /
                      std::filesystem::absolute(std::string(argv[0])).parent_path() / "xeus_prajna";
     if (!std::filesystem::is_regular_file(xeus_path)) {
-        fmt::print(
-            fmt::runtime("xeus_prajna is not found, please configure cmake with -DPRAJNA_WITH_JUPYTER=ON"));
+        // fmt::print(
+        //     fmt::runtime("xeus_prajna is not found, please configure cmake with -DPRAJNA_WITH_JUPYTER=ON"));
+        std::cout <<
+            std::format("xeus_prajna is not found, please configure cmake with -DPRAJNA_WITH_JUPYTER=ON");
     }
 
     if (result.count("install")) {
@@ -70,9 +74,10 @@ int prajna_jupyter_main(int argc, char* argv[]) {
         std::future<std::string> future_jupyter_data_dir;
         auto jupyter_path = boost::process::search_path("jupyter");
         if (jupyter_path.empty()) {
-            fmt::print(fmt::runtime("please install jupyter first"));
+            // fmt::print(fmt::runtime("please install jupyter first"));
+            std::cout << std::format("please install jupyter first");
         }
-        boost::process::system(fmt::format("{} --data-dir", jupyter_path.string()),
+        boost::process::system(std::format("{} --data-dir", jupyter_path.string()),
                                boost::process::std_out > future_jupyter_data_dir);
         auto jupyter_data_dir = future_jupyter_data_dir.get();
         // 末尾存在换行符, 将其删除
@@ -80,18 +85,23 @@ int prajna_jupyter_main(int argc, char* argv[]) {
         std::filesystem::create_directories(jupyter_data_dir + "/kernels/prajna");
         std::ofstream kernel_json_ofs(jupyter_data_dir + "/kernels/prajna/kernel.json");
         if (!kernel_json_ofs.good()) {
-            fmt::print(fmt::runtime("failed to create jupyter prajna kernel.jsonf file: {}\n"),
-                       jupyter_data_dir + "/kernels/prajna/kernel.json");
+            // fmt::print(fmt::runtime("failed to create jupyter prajna kernel.jsonf file: {}\n"),
+            //            jupyter_data_dir + "/kernels/prajna/kernel.json");
+            std::cout << std::format("failed to create jupyter prajna kernel.jsonf file: {}\n",
+                                     jupyter_data_dir + "/kernels/prajna/kernel.json");
             return -1;
         }
         kernel_json_ofs << prajna_kernel_json;
-        fmt::print(fmt::runtime("success to install jupyter prajna kernel in {}\n"),
-                   jupyter_data_dir + "/kernels/prajna");
+        // fmt::print(fmt::runtime("success to install jupyter prajna kernel in {}\n"),
+        //            jupyter_data_dir + "/kernels/prajna");
+        std::cout << std::format("success to install jupyter prajna kernel in {}\n",
+                                 jupyter_data_dir + "/kernels/prajna");
 
         return 0;
     }
 
-    fmt::print(fmt::runtime(options.help({""})));
+    // fmt::print(fmt::runtime(options.help({""})));
+    std::cout << std::format(options.help({""}));
     return 0;
 }
 
@@ -129,14 +139,20 @@ int main(int argc, char* argv[]) {
             return prajna_jupyter_main(sub_argc, sub_argv.data());
         }
 
-        fmt::print(fmt::runtime("unsupported sub command {}\n"),
-                   fmt::styled(sub_command, fmt::fg(fmt::color::red)));
+        // fmt::print(fmt::runtime("unsupported sub command {}\n"),
+        //            fmt::styled(sub_command, fmt::fg(fmt::color::red)));
+        
+        std::cout << std::format("unsupported sub command {}\n",
+                                  subcommand);
     }
 
     if (result.count("help") || result.arguments().empty()) {
-        fmt::print(fmt::runtime(options.help({""})));
-        fmt::print(fmt::runtime("Avaliabled sub commands: exe, repl, jupyter\n"));
-        fmt::print(fmt::runtime("Sub command usage:\n prajna exe --help\n"));
+        // fmt::print(fmt::runtime(options.help({""})));
+        // fmt::print(fmt::runtime("Avaliabled sub commands: exe, repl, jupyter\n"));
+        // fmt::print(fmt::runtime("Sub command usage:\n prajna exe --help\n"));
+        std::cout << std::format("options.help({""})");
+        std::cout << std::format("Available sub commands: exe, repl, jupyter\n");
+        std::cout << std::format("Sub command usage: \n prajna exe --help\n");
         return 0;
     }
 

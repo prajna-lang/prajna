@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/algorithm/string.hpp>
+#include <format>
 #include <unordered_map>
 
 #include "fmt/color.h"
@@ -20,37 +21,62 @@ enum struct LogLevel {
 };
 }
 
-namespace fmt {
+// namespace fmt {
 
-// @ref https://fmt.dev/latest/api.html#formatting-user-defined-types
+// // @ref https://fmt.dev/latest/api.html#formatting-user-defined-types
+// template <>
+// struct formatter<prajna::LogLevel> {
+//     constexpr auto Parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+//         auto it = ctx.begin(), end = ctx.end();
+//         if (it != end && *it != '}') throw format_error("invalid format");
+//         return it;
+//     }
+
+//     template <typename FormatContext>
+//     auto Format(const prajna::LogLevel& level, FormatContext& ctx) const -> decltype(ctx.out()) {
+//         // ctx.out() is an output iterator to write to.
+//         switch (level) {
+//             case prajna::LogLevel::info:
+//                 return fmt::format_to(ctx.out(), "{}",
+//                                       fmt::styled("info", fmt::fg(fmt::color::gray)));
+//             case prajna::LogLevel::warning:
+//                 return fmt::format_to(ctx.out(), "{}",
+//                                       fmt::styled("warning", fmt::fg(fmt::color::orange)));
+//             case prajna::LogLevel::error:
+//                 return fmt::format_to(ctx.out(), "{}",
+//                                       fmt::styled("error", fmt::fg(fmt::color::red)));
+//         }
+
+//         return ctx.out();
+//     }
+// };
+
+// }  // namespace fmt
+
 template <>
-struct formatter<prajna::LogLevel> {
-    constexpr auto Parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+struct std::formatter<prajna::LogLevel> {
+    constexpr auto parse(std::format_parse_context& ctx) {
         auto it = ctx.begin(), end = ctx.end();
-        if (it != end && *it != '}') throw format_error("invalid format");
+        if(it != end && *it != '}') throw format_error("Invalid format");
         return it;
     }
 
     template <typename FormatContext>
-    auto Format(const prajna::LogLevel& level, FormatContext& ctx) const -> decltype(ctx.out()) {
+    auto format(const prajna::LogLevel& level, FormatContext& ctx) const {
         // ctx.out() is an output iterator to write to.
+        // color is not supported in std format and currently not implemented.
         switch (level) {
             case prajna::LogLevel::info:
-                return fmt::format_to(ctx.out(), "{}",
-                                      fmt::styled("info", fmt::fg(fmt::color::gray)));
+                return std::format_to(ctx.out(), "{}", "info");
             case prajna::LogLevel::warning:
-                return fmt::format_to(ctx.out(), "{}",
-                                      fmt::styled("warning", fmt::fg(fmt::color::orange)));
+                return std::format_to(ctx.out(), "{}", "warning");
             case prajna::LogLevel::error:
-                return fmt::format_to(ctx.out(), "{}",
-                                      fmt::styled("error", fmt::fg(fmt::color::red)));
+                return std::format_to(ctx.out(), "{}", "error");
         }
 
         return ctx.out();
     }
 };
-
-}  // namespace fmt
 
 namespace prajna {
 
@@ -70,10 +96,10 @@ class Logger {
              bool throw_error) {
         std::string what_message;
         if (first_position.file.empty()) {
-            what_message = fmt::format("{}:{}: {}: {}\n", first_position.line,
+            what_message = std::format("{}:{}: {}: {}\n", first_position.line,
                                        first_position.column, prompt, message);
         } else {
-            what_message = fmt::format("{}:{}:{}: {}: {}\n", first_position.file,
+            what_message = std::format("{}:{}:{}: {}: {}\n", first_position.file,
                                        first_position.line, first_position.column, prompt, message);
         }
 
@@ -119,12 +145,14 @@ class Logger {
 
     void Error(std::string message, ast::SourcePosition first_position,
                ast::SourcePosition last_position, std::string locator_ascii_color) {
-        auto error_prompt = fmt::format("{}", fmt::styled("error", fmt::fg(fmt::color::red)));
+        // auto error_prompt = fmt::format("{}", fmt::styled("error", fmt::fg(fmt::color::red)));
+        auto error_prompt = std::format("{}", "error");
         this->Log(message, first_position, last_position, error_prompt, locator_ascii_color, true);
     }
 
     void Error(std::string message) {
-        fmt::print("{}: {}\n", fmt::styled("error", fmt::fg(fmt::color::red)), message);
+        // fmt::print("{}: {}\n", fmt::styled("error", fmt::fg(fmt::color::red)), message);
+        std::cout << std::format("{}: {}\n", "error", message);
         throw CompileError();
     }
 
@@ -145,7 +173,8 @@ class Logger {
 
     void Warning(std::string message, ast::SourceLocation source_location) {
         auto warning_prompt =
-            fmt::format("{}", fmt::styled("warning", fmt::fg(fmt::color::orange)));
+            // fmt::format("{}", fmt::styled("warning", fmt::fg(fmt::color::orange)));
+            std::format("{}", "warning");
         this->Log(message, source_location.first_position, source_location.last_position,
                   warning_prompt, std::string(BLU), false);
     }
@@ -155,7 +184,8 @@ class Logger {
     }
 
     void Note(ast::SourceLocation source_location) {
-        auto warning_prompt = fmt::format("{}", fmt::styled("note", fmt::fg(fmt::color::gray)));
+        // auto warning_prompt = fmt::format("{}", fmt::styled("note", fmt::fg(fmt::color::gray)));
+        auto warning_prompt = std::format("{}", "");
         this->Log("", source_location.first_position, source_location.last_position, warning_prompt,
                   std::string(YEL), false);
     }

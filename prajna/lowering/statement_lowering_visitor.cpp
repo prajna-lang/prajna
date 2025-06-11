@@ -123,7 +123,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                                     }
                                 }
 
-                                logger->Error(fmt::format("{} is not found in {}", identifier,
+                                logger->Error(std::format("{} is not found in {}", identifier,
                                                           symbol_table->Fullname()),
                                               iter_ast_identifier->identifier);
                                 return nullptr;
@@ -166,7 +166,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                     // 如果符号存在且不是同一个符号报错
                     if (ir_builder->symbol_table->CurrentTableHas(id)) {
                         if (ir_builder->symbol_table->Get(id) != tmp_symbol) {
-                            logger->Error(fmt::format("{} has defined", id),
+                            logger->Error(std::format("{} has defined", id),
                                           *ast_import.star_match_optional);
                         }
                     } else {
@@ -197,12 +197,12 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
     // 编译时输出消息
     if (ast_pragma.name == "error") {
         std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-        logger->Error(fmt::format("pragma error: {}", msg), ast_pragma);
+        logger->Error(std::format("pragma error: {}", msg), ast_pragma);
         return nullptr;
     }
     if (ast_pragma.name == "warning") {
         std::string msg = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
-        logger->Warning(fmt::format("pragma warning: {}", msg), ast_pragma);
+        logger->Warning(std::format("pragma warning: {}", msg), ast_pragma);
         return nullptr;
     }
 
@@ -276,7 +276,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
         }
 
         if (!this->compiler->jit_engine->LoadDynamicLib(dynamic_lib_fullname)) {
-            this->logger->Error(fmt::format("failed to link dynamic lib {}", dynamic_lib_fullname),
+            this->logger->Error(std::format("failed to link dynamic lib {}", dynamic_lib_fullname),
                                 ast_pragma);
         }
         return nullptr;

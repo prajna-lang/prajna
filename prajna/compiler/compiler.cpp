@@ -189,9 +189,11 @@ int64_t Compiler::GetSymbolValue(std::string symbol_name) {
 
 void Compiler::AddPackageDirectoryPath(std::string package_directory) {
     if (!std::filesystem::is_directory(std::filesystem::path(package_directory))) {
-        auto error_message = fmt::format("{} is not a valid package directory",
-                                         fmt::styled(package_directory, fmt::fg(fmt::color::red)));
-        fmt::print(fmt::runtime(error_message));
+        auto error_message = std::format("{} is not a valid package directory",
+                                        //  fmt::styled(package_directory, fmt::fg(fmt::color::red)));
+                                         package_directory);
+        // fmt::print(fmt::runtime(error_message));
+        std::cout << error_message;
         throw std::runtime_error(error_message);
     }
     package_directories.push_back(std::filesystem::path(package_directory));
@@ -224,7 +226,7 @@ std::shared_ptr<ir::Module> Compiler::CompileProgram(
 
     if (prajna_source_path.empty()) {
         logger->Error(
-            fmt::format("{} is invalid program file\n", prajna_source_package_path.string()));
+            std::format("{} is invalid program file\n", prajna_source_package_path.string()));
         throw CompileError();
         return nullptr;
     }

@@ -94,13 +94,13 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> operator()(ast::Identifier ast_identifier) {
         if (!ir_builder->symbol_table->Has(ast_identifier)) {
-            logger->Error(fmt::format("{} not found", ast_identifier), ast_identifier);
+            logger->Error(std::format("{} not found", ast_identifier), ast_identifier);
         }
 
         auto symbol = ir_builder->symbol_table->Get(ast_identifier);
         if (!SymbolIs<ir::Value>(symbol)) {
             PRAJNA_UNREACHABLE;
-            logger->Error(fmt::format(fmt::runtime("{} is not a valid value")), ast_identifier);
+            logger->Error(std::format("{} is not a valid value"), ast_identifier);
         }
 
         return SymbolGet<ir::Value>(symbol);
@@ -171,7 +171,7 @@ class ExpressionLoweringVisitor {
             }
 
             logger->Error(
-                fmt::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
+                std::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
                 ast_binary_operation.operand);
         } catch (CompileError compile_error) {
             this->logger->Note(ast_binary_operation);
@@ -192,7 +192,7 @@ class ExpressionLoweringVisitor {
         auto ir_index = ir_arguments.front();
         if (ir_index->type != ir_builder->GetInt64Type()) {
             logger->Error(
-                fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
+                std::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
         }
         // 之所以没包装成模板函数, 是因为需要包装成属性过于复杂了. 这样反而比较简单
@@ -246,7 +246,7 @@ class ExpressionLoweringVisitor {
                 ir_member_function_with_this_pointer->function_prototype->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
                 logger->Error(
-                    fmt::format(
+                    std::format(
                         "the arguments size is not matched, require {} argument, but give {}",
                         ir_function_type->parameter_types.size() - 1, ir_arguments.size()),
                     ast_expressions);
@@ -272,7 +272,7 @@ class ExpressionLoweringVisitor {
             auto ir_function_type = ir_lhs->GetFunctionType();
             if (ir_arguments.size() != ir_function_type->parameter_types.size()) {
                 logger->Error(
-                    fmt::format(
+                    std::format(
                         "the arguments size is not matched, require {} argument, but give {}",
                         ir_function_type->parameter_types.size(), ir_arguments.size()),
                     ast_expressions);
@@ -291,7 +291,7 @@ class ExpressionLoweringVisitor {
             auto ir_function_type = ir_member_function->function_type;
             if (ir_arguments.size() + 1 != ir_function_type->parameter_types.size()) {
                 logger->Error(
-                    fmt::format(
+                    std::format(
                         "the arguments size is not matched, require {} argument, but give {}",
                         ir_function_type->parameter_types.size() - 1, ir_arguments.size()),
                     ast_expressions);
@@ -317,7 +317,7 @@ class ExpressionLoweringVisitor {
                 ir_access_property->property->get_function->function_type;
             if (ir_arguments.size() != ir_getter_function_type->parameter_types.size() - 1) {
                 logger->Error(
-                    fmt::format("the property arguments size is not matched, require {} argument, "
+                    std::format("the property arguments size is not matched, require {} argument, "
                                 "but give {}",
                                 ir_getter_function_type->parameter_types.size() - 1,
                                 ir_arguments.size()),
@@ -524,7 +524,7 @@ class ExpressionLoweringVisitor {
                         if (ir_member_fun) return ir_member_fun;
 
                         logger->Error(
-                            fmt::format("the static/member function {} is not exit in type {}",
+                            std::format("the static/member function {} is not exit in type {}",
                                         name, ir_type->fullname),
                             name);
 
@@ -602,7 +602,7 @@ class ExpressionLoweringVisitor {
                     return ir_builder->GetInt64Constant(ir_constant_int->value);
                 },
                 [=](auto x) {
-                    logger->Error(fmt::format("use invalid symbol as a value"),
+                    logger->Error(std::format("use invalid symbol as a value"),
                                   ast_identifier_path);
                     return nullptr;
                 }},
@@ -678,7 +678,7 @@ class ExpressionLoweringVisitor {
 
             if (ir_arguments.size() != ir_function_type->parameter_types.size()) {
                 logger->Error(
-                    fmt::format("the arguments size is not matched, require {} "
+                    std::format("the arguments size is not matched, require {} "
                                 "argument, but give {}",
                                 ir_function_type->parameter_types.size(), ir_arguments.size()),
                     ast_kernel_function_call.operation->arguments);
@@ -722,7 +722,7 @@ class ExpressionLoweringVisitor {
             ir_builder->GetBinaryOperator(ir_variable_liked->type, binary_operator_name);
         if (!ir_function) {
             logger->Error(
-                fmt::format("{} operator not found", ast_binary_operation.operator_.string_token),
+                std::format("{} operator not found", ast_binary_operation.operator_.string_token),
                 ast_binary_operation.operator_);
         }
         auto ir_this_pointer = ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
@@ -730,7 +730,7 @@ class ExpressionLoweringVisitor {
         ir_arguemnts.front() = ir_this_pointer;
         ir_arguemnts.back() = this->applyOperand(ast_binary_operation.operand);
         if (ir_arguemnts.back()->type != ir_function->function_type->parameter_types.back()) {
-            logger->Error(fmt::format("the types {}, {} are not matched",
+            logger->Error(std::format("the types {}, {} are not matched",
                                       ir_function->function_type->parameter_types.back()->fullname,
                                       ir_arguemnts.back()->type->fullname),
                           ast_binary_operation.operand);

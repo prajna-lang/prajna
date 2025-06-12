@@ -1,0 +1,5 @@
+{
+    "prajna": {
+        "dump_llvm_ir": false
+    }
+}

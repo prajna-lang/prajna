@@ -90,6 +90,9 @@ uuid \
 variant \
 variant2 \
 winapi \
+serialization \
+multi_index \
+property_tree \
 
 popd
 popd

@@ -22,11 +22,3 @@ target_link_libraries(prajna_codegen
     PUBLIC LLVMPasses
     PUBLIC LLVMCore # Module在头文件暴露了
 )
-
-
-if (PRAJNA_ENABLE_LLVM_DUMP)
-    target_compile_definitions(prajna_codegen PRIVATE PRAJNA_ENABLE_LLVM_DUMP=1)
-endif()
-if (PRAJNA_ENABLE_LLVM_VERIFY)
-    target_compile_definitions(prajna_codegen PRIVATE PRAJNA_ENABLE_LLVM_VERIFY=1)
-endif()

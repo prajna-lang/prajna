@@ -9,7 +9,7 @@ cmake . \
 -B build_${build_configure} \
 -DCMAKE_BUILD_TYPE=${build_configure} \
 -DCMAKE_INSTALL_PREFIX=build_${build_configure}/install \
--DBOOST_INCLUDE_LIBRARIES="algorithm;variant;optional;fusion;spirit;multiprecision;process;dll" \
+-DBOOST_INCLUDE_LIBRARIES="algorithm;variant;optional;fusion;spirit;multiprecision;process;dll;property_tree" \
 -DLLVM_INCLUDE_TESTS=OFF \
 -DLLVM_ENABLE_DUMP=ON \
 -DLLVM_INCLUDE_BENCHMARKS=OFF \

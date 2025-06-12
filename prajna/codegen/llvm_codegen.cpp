@@ -27,6 +27,7 @@
 #include "llvm/Linker/Linker.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/Debug.h"
+#include "prajna/global_config.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
 #include "prajna/ir/target.hpp"
@@ -758,19 +759,15 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     llvm::ModulePassManager MPM =
         PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O2, true);
 
-    // MPM.printPipeline(llvm::errs(), [](auto x) { return x; });
-
     MPM.run(*ir_module->llvm_module, MAM);
 
-#ifdef PRAJNA_ENABLE_LLVM_DUMP
-    ir_module->llvm_module->dump();
-#endif
+    if (GlobalConfig::Instance().get<bool>("prajna.dump_llvm_ir", false)) {
+        ir_module->llvm_module->dump();
+    }
 
-#ifdef PRAJNA_ENABLE_LLVM_VERIFY
-    auto verify_result = llvm::verifyModule(*ir_module->llvm_module, &llvm::errs());
-    // 总是返回false, 应该是llvm本身的问题
+    // TODO: 存在未知错误
+    // auto verify_result = llvm::verifyModule(*ir_module->llvm_module, &llvm::errs());
     // PRAJNA_ASSERT(verify_result);
-#endif
 
     auto ir_nvptx_module = ir_module->modules[prajna::ir::Target::nvptx];
     if (ir_nvptx_module && ir_nvptx_module->llvm_module) {

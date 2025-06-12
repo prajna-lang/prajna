@@ -1,9 +1,0 @@
-{
-  "prajna": {
-    "dump_ir": true,
-    "verify_llvm": true
-  },
-  "galois": {
-    "multithread": "enable"
-  }
-}

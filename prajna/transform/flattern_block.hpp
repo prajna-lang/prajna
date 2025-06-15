@@ -158,13 +158,12 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             auto ir_condition_branch = ir_builder->Create<ir::ConditionBranch>(
                 ir_condition, ir_label_loop, ir_label_after_loop);
 
-            ir_builder->PushBlock(ir_for->LoopBlock());
+            auto scope = ir_builder->PushBlockRAII(ir_for->LoopBlock());
             // 给ir_for->IndexVariable()赋值
             ir_builder->inserter_iterator = ir_builder->CurrentBlock()->begin();
             ir_builder->Create<ir::WriteVariableLiked>(ir_index_count, ir_for->IndexVariable());
             // 需要在后面执行, 插入到最前面去
             ir_for->LoopBlock()->PushFront(ir_label_loop);
-            ir_builder->PopBlock();
 
             auto ir_jump_branch = ir::JumpBranch::Create(ir_label_condition_entry);
             ir_for->LoopBlock()->PushBack(ir_jump_branch);

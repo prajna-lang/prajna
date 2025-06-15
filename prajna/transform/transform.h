@@ -149,11 +149,10 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             auto ir_if =
                 ir_builder->Create<ir::If>(ir_condition, ir::Block::Create(), ir::Block::Create());
 
-            ir_builder->PushBlock(ir_if->TrueBlock());
+            auto scope = ir_builder->PushBlockRAII(ir_if->TrueBlock());
             auto ir_str = ir_builder->GetString("Failed launch kernel: ret: ");
             ir_builder->CallMemberFunction(ir_str, "Print", {});
             ir_builder->CallMemberFunction(ir_kernel_call, "PrintLine", {});
-            ir_builder->PopBlock();
 
             utility::RemoveFromParent(ir_kernel_function_call);
             ir_kernel_function_call->Finalize();

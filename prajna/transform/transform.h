@@ -49,7 +49,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
     for (auto ir_access_property : ir_access_properties) {
         auto ir_block = ir_access_property->GetParentBlock();
         auto ir_builder = lowering::IrBuilder::Create();
-        ir_builder->PushBlock(ir_block);
+        auto scope = ir_builder->PushBlockRAII(ir_block);
         ir_builder->inserter_iterator = std::find(RANGE((*ir_block)), ir_access_property);
 
         for (auto instruction_with_index : Clone(ir_access_property->instruction_with_index_list)) {
@@ -65,7 +65,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
                 ir_arguments.push_back(ir_write_property->Value());
                 // 需要在write操作前插入
                 auto ir_tmp_builder = lowering::IrBuilder::Create();
-                ir_tmp_builder->PushBlock(ir_block);
+                auto scope_tmp = ir_tmp_builder->PushBlockRAII(ir_block);
                 ir_tmp_builder->inserter_iterator =
                     std::find(RANGE((*ir_block)), ir_write_property);
                 auto ir_setter_call = ir_tmp_builder->Create<ir::Call>(
@@ -108,7 +108,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
 
             auto ir_builder =
                 lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
-            ir_builder->PushBlock(ir_block);
+            auto scope_0 = ir_builder->PushBlockRAII(ir_block);
             ir_builder->inserter_iterator = std::find(RANGE((*ir_block)), ir_kernel_function_call);
 
             // 构建::cuda::launchKernel的逻辑
@@ -149,7 +149,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             auto ir_if =
                 ir_builder->Create<ir::If>(ir_condition, ir::Block::Create(), ir::Block::Create());
 
-            auto scope = ir_builder->PushBlockRAII(ir_if->TrueBlock());
+            auto scope_1 = ir_builder->PushBlockRAII(ir_if->TrueBlock());
             auto ir_str = ir_builder->GetString("Failed launch kernel: ret: ");
             ir_builder->CallMemberFunction(ir_str, "Print", {});
             ir_builder->CallMemberFunction(ir_kernel_call, "PrintLine", {});
@@ -351,7 +351,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         // 只需要对数组循环进行处理
         if (!ir_builder->IsArrayI64Type(ir_for->IndexVariable()->type)) continue;
         auto parent = ir_for->GetParentBlock();
-        ir_builder->PushBlock(parent);
+        auto scope_0 = ir_builder->PushBlockRAII(parent);
         ir_builder->inserter_iterator = parent->Find(ir_for);
         auto ir_layout_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
             ir_builder->GetSymbolByPath(true, {"tensor", "Layout"}));
@@ -395,7 +395,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
 
         auto ir_array_first_variable = ir_builder->VariableLikedNormalize(ir_array_first);
         auto ir_layout_variable = ir_builder->VariableLikedNormalize(ir_layout);
-        ir_builder->PushBlock(ir_for->LoopBlock());
+        auto scope_1 = ir_builder->PushBlockRAII(ir_for->LoopBlock());
         ir_builder->inserter_iterator = ir_for->LoopBlock()->begin();
         utility::RemoveFromParent(ir_array_index);
         ir_builder->Insert(ir_array_index);
@@ -487,7 +487,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
         auto ir_closure = ir_function->closure;
         PRAJNA_ASSERT(ir_closure);
         auto ir_builder = lowering::IrBuilder::Create();
-        ir_builder->PushBlock(ir_closure->GetParentBlock());
+        auto scope = ir_builder->PushBlockRAII(ir_closure->GetParentBlock());
         ir_builder->inserter_iterator = std::next(ir_closure->GetBlockIterator());
         for (auto [ir_value, ir_field] : ir_value_field_map) {
             auto ir_access_filed =
@@ -615,7 +615,7 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 
         auto ir_builder = lowering::IrBuilder::Create();
         auto parent = ir_shared_variable->GetParentBlock();
-        ir_builder->PushBlock(parent);
+        auto scope = ir_builder->PushBlockRAII(parent);
         // 在最开始插入就行, 留意AddressCast是不是统一转换一次就行了
         ir_builder->inserter_iterator = parent->begin();
         auto ir_address_cast =
@@ -641,7 +641,7 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
                 auto iter = ir_call->GetBlockIterator();
                 auto ir_builder =
                     lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
-                ir_builder->PushBlock(ir_call->GetParentBlock());
+                auto scope_0 = ir_builder->PushBlockRAII(ir_call->GetParentBlock());
                 ir_builder->inserter_iterator = iter;
                 auto position = ir_call->source_location.first_position;
                 auto filename = ir_builder->GetString(position.file);
@@ -660,7 +660,7 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
                 auto iter = ir_call->GetBlockIterator();
                 auto ir_builder =
                     lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
-                ir_builder->PushBlock(ir_call->GetParentBlock());
+                auto scope_1 = ir_builder->PushBlockRAII(ir_call->GetParentBlock());
                 ir_builder->inserter_iterator = iter;
                 auto position = ir_call->source_location.first_position;
                 auto filename = ir_builder->GetString(position.file);

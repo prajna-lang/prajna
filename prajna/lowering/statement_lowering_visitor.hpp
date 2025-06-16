@@ -507,6 +507,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
     Symbol operator()(ast::While ast_while) {
         auto ir_condition_block = ir::Block::Create();
+        // 此处改用RAII版本的PushBlock会抛出错误
         ir_builder->PushBlock(ir_condition_block);
         auto ir_condition = ApplyExpression(ast_while.condition);
         ir_builder->PopBlock();
@@ -547,9 +548,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_builder->loop_stack.push(ir_for);
             ir_builder->PushSymbolTable();
             ir_builder->SetSymbol(ir_index, ast_for.index);
-            ir_builder->PushBlock(ir_for->LoopBlock());
+            auto scope = ir_builder->PushBlockRAII(ir_for->LoopBlock());
             auto guard = ScopeExit::Create([this]() {
-                this->ir_builder->PopBlock();
                 this->ir_builder->PopSymbolTable();
                 this->ir_builder->loop_stack.pop();
             });

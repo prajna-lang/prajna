@@ -94,7 +94,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             ir_block->Insert(iter, ir_label_after_loop);
 
             auto ir_builder = lowering::IrBuilder::Create();
-            ir_builder->PushBlock(ir_block);
+            auto scope_0 = ir_builder->PushBlockRAII(ir_block);
 
             for (auto [ir_instruction, op_idx] : Clone(ir_while->instruction_with_index_list)) {
                 auto iter_ir_instruction = Lock(ir_instruction);
@@ -134,7 +134,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             }
 
             auto ir_builder = lowering::IrBuilder::Create();
-            ir_builder->PushBlock(ir_block);
+            auto scope_1 = ir_builder->PushBlockRAII(ir_block);
             ir_builder->inserter_iterator = iter;
 
             // 创建用于记录迭代的变量,

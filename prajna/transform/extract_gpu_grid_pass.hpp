@@ -53,7 +53,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
     ir_kernel_function->blocks.push_back(ir_block);
 
     auto ir_builder = lowering::IrBuilder::Create();
-    ir_builder->PushBlock(ir_block);
+    auto scope = ir_builder->PushBlockRAII(ir_block);
     ir_builder->inserter_iterator = ir_block->end();
 
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> variables_dict;
@@ -117,7 +117,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
         auto ir_tmp_builder = statement_lowering_visitor->ir_builder;
         ir_tmp_builder->function_stack.push(ir_kernel_function);
         ir_tmp_builder->PushSymbolTable();
-        ir_tmp_builder->PushBlock(ir_block);
+        auto scope_tmp = ir_tmp_builder->PushBlockRAII(ir_block);
 
         ir_tmp_builder->symbol_table->Set(ir_index, "i");
         ir_tmp_builder->symbol_table->Set(ir_first, "first");
@@ -134,7 +134,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
         auto ir_kernel_while_loop_block = Cast<ir::Block>(ir_kernel_while->LoopBlock()->front());
         PRAJNA_ASSERT(ir_kernel_while_loop_block);
         auto ir_while_builder = lowering::IrBuilder::Create();
-        ir_while_builder->PushBlock(ir_kernel_while_loop_block);
+        auto scope_while = ir_while_builder->PushBlockRAII(ir_kernel_while_loop_block);
         // 末尾应该有个Label, 故在开始插入
         ir_while_builder->inserter_iterator = ir_kernel_while_loop_block->begin();
         for (auto ir_value : *ir_gpu_for->LoopBlock()) {
@@ -161,7 +161,7 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
         auto ir_gpu_parent_block = ir_gpu_for->GetParentBlock();
         auto iter_gpu_for = std::find(RANGE((*ir_gpu_parent_block)), ir_gpu_for);
         auto ir_builder = lowering::IrBuilder::Create();
-        ir_builder->PushBlock(ir_gpu_parent_block);
+        auto scope = ir_builder->PushBlockRAII(ir_gpu_parent_block);
         ir_builder->inserter_iterator = iter_gpu_for;
         ir_builder->symbol_table = ir_module->symbol_table;
 

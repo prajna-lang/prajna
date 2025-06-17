@@ -228,11 +228,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
     Symbol operator()(ast::Block block) {
         ir_builder->PushSymbolTable();
-        ir_builder->CreateAndPushBlock();
-        auto guard = ScopeExit::Create([this]() {
-            this->ir_builder->PopSymbolTable();
-            this->ir_builder->PopBlock();
-        });
+        auto scope = ir_builder->CreateBlock();
+        auto guard = ScopeExit::Create([this]() { this->ir_builder->PopSymbolTable(); });
 
         (*this)(block.statements);
         auto ir_block = ir_builder->CurrentBlock();
@@ -351,10 +348,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                       this->AllBranchIsTerminated(ir_if->FalseBlock(), ir_type);
             if (re) {
                 // //插入一个Return协助判断
-                ir_builder->PushBlock(ir_if->GetParentBlock());
+                auto scope = ir_builder->PushBlockRAII(ir_if->GetParentBlock());
                 auto ir_variable = ir_builder->Create<ir::LocalVariable>(ir_type);
                 auto ir_return = ir_builder->Create<ir::Return>(ir_variable);
-                ir_builder->PopBlock();
 
                 return true;
             } else {
@@ -498,21 +494,25 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto ir_if =
             ir_builder->Create<ir::If>(ir_condition, ir::Block::Create(), ir::Block::Create());
 
-        ir_builder->PushBlock(ir_if->TrueBlock());
-        (*this)(ast_if.then);
-        ir_builder->PopBlock();
-
-        ir_builder->PushBlock(ir_if->FalseBlock());
-        if (ast_if.else_optional) {
-            (*this)(ast_if.else_optional.get());
+        {
+            auto scope = ir_builder->PushBlockRAII(ir_if->TrueBlock());
+            (*this)(ast_if.then);
         }
-        ir_builder->PopBlock();
+
+        {
+            auto scope = ir_builder->PushBlockRAII(ir_if->FalseBlock());
+            if (ast_if.else_optional) {
+                (*this)(ast_if.else_optional.get());
+            }
+        }
 
         return ir_if;
     }
 
     Symbol operator()(ast::While ast_while) {
         auto ir_condition_block = ir::Block::Create();
+
+        // 此处使用RAII版本的PushBlock会出错
         ir_builder->PushBlock(ir_condition_block);
         auto ir_condition = ApplyExpression(ast_while.condition);
         ir_builder->PopBlock();
@@ -521,9 +521,12 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto ir_while =
             ir_builder->Create<ir::While>(ir_condition, ir_condition_block, ir_loop_block);
         ir_builder->loop_stack.push(ir_while);
-        ir_builder->PushBlock(ir_while->LoopBlock());
-        (*this)(ast_while.body);
-        ir_builder->PopBlock();
+
+        {
+            auto scope = ir_builder->PushBlockRAII(ir_while->LoopBlock());
+            (*this)(ast_while.body);
+        }
+
         ir_builder->loop_stack.pop();
 
         return ir_while;
@@ -552,9 +555,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_builder->loop_stack.push(ir_for);
             ir_builder->PushSymbolTable();
             ir_builder->SetSymbol(ir_index, ast_for.index);
-            ir_builder->PushBlock(ir_for->LoopBlock());
+            auto scope = ir_builder->PushBlockRAII(ir_for->LoopBlock());
             auto guard = ScopeExit::Create([this]() {
-                this->ir_builder->PopBlock();
                 this->ir_builder->PopSymbolTable();
                 this->ir_builder->loop_stack.pop();
             });
@@ -1425,21 +1427,23 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_if = ir_tmp_builder->Create<ir::If>(ir_condition, ir::Block::Create(),
                                                         ir::Block::Create());
 
-            ir_tmp_builder->PushBlock(ir_if->TrueBlock());
-            ir_tmp_builder->Create<ir::WriteVariableLiked>(
-                ir_tmp_builder->Call(
-                    ir_tmp_builder->GetMemberFunction(ir_target_ptr_type, "FromUndef"),
-                    ir_tmp_builder->AccessField(ir_dynamic_object, "object_pointer")),
-                ir_ptr);
-            ir_tmp_builder->PopBlock();
+            {
+                auto scope = ir_tmp_builder->PushBlockRAII(ir_if->TrueBlock());
+                ir_tmp_builder->Create<ir::WriteVariableLiked>(
+                    ir_tmp_builder->Call(
+                        ir_tmp_builder->GetMemberFunction(ir_target_ptr_type, "FromUndef"),
+                        ir_tmp_builder->AccessField(ir_dynamic_object, "object_pointer")),
+                    ir_ptr);
+            }
 
-            ir_tmp_builder->PushBlock(ir_if->FalseBlock());
-            ir_tmp_builder->ExitWithPrintErrorMessage("invalid cast dynamic cast");
-            auto ir_nullptr =
-                ir_tmp_builder->Call(ir_tmp_builder->GetMemberFunction(ir_ptr->type, "Null"));
-            ir_tmp_builder->Create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
-            ir_tmp_builder->PopBlock();
-            ir_tmp_builder->Create<ir::Return>(ir_ptr);
+            {
+                auto scope = ir_tmp_builder->PushBlockRAII(ir_if->FalseBlock());
+                ir_tmp_builder->ExitWithPrintErrorMessage("invalid cast dynamic cast");
+                auto ir_nullptr =
+                    ir_tmp_builder->Call(ir_tmp_builder->GetMemberFunction(ir_ptr->type, "Null"));
+                ir_tmp_builder->Create<ir::WriteVariableLiked>(ir_nullptr, ir_ptr);
+                ir_tmp_builder->Create<ir::Return>(ir_ptr);
+            }
 
             return ir_function;
         };

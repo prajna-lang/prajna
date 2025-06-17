@@ -34,7 +34,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
             PRAJNA_ASSERT(ir::Verify(ir_new_callee));
 
             auto ir_builder = lowering::IrBuilder::Create();
-            ir_builder->PushBlock(ir_call->GetParentBlock());
+            auto scope = ir_builder->PushBlockRAII(ir_call->GetParentBlock());
             ir_builder->inserter_iterator = iter;
 
             auto ir_parameter_iter = ir_new_callee->parameters.begin();
@@ -67,7 +67,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
                         ir_new_callee->function_type->return_type);
                     auto ir_return_builder = lowering::IrBuilder::Create();
                     auto ir_return_iter = ir_return->GetBlockIterator();
-                    ir_return_builder->PushBlock(ir_return->GetParentBlock());
+                    auto scope = ir_return_builder->PushBlockRAII(ir_return->GetParentBlock());
                     ir_return_builder->inserter_iterator = ir_return_iter;
                     ir_return_builder->Create<ir::WriteVariableLiked>(ir_return->Value(),
                                                                       ir_return_variable);

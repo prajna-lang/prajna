@@ -42,7 +42,7 @@ inline void InsertLocalVariableInitialize(std::shared_ptr<ir::Module> ir_module)
         for (auto ir_local_variable : ir_local_variables) {
             auto ir_builder = MakeIRbuilder();
             auto parent = ir_local_variable->GetParentBlock();
-            ir_builder->PushBlock(parent);
+            auto scope = ir_builder->PushBlockRAII(parent);
             auto iter = std::find(RANGE((*parent)), ir_local_variable);
             PRAJNA_ASSERT(iter != parent->end());
             // 应该在变量后面插入
@@ -55,7 +55,7 @@ inline void InsertLocalVariableInitialize(std::shared_ptr<ir::Module> ir_module)
 
 inline void InsertFinalizeLocalVariableForBlock(std::shared_ptr<ir::Block> ir_block) {
     auto ir_builder = lowering::IrBuilder::Create();
-    ir_builder->PushBlock(ir_block);
+    auto scope = ir_builder->PushBlockRAII(ir_block);
     ir_builder->inserter_iterator =
         std::find_if(RANGE((*ir_block)), [](auto x) { return ir::IsTerminated(x); });
 
@@ -118,7 +118,7 @@ inline void InsertVariableIncrementReferenceCount(std::shared_ptr<ir::Module> ir
         for (auto ir_write_variable_liked : ir_write_variable_likes) {
             auto ir_builder = MakeIRbuilder();
             auto parent = ir_write_variable_liked->GetParentBlock();
-            ir_builder->PushBlock(parent);
+            auto scope = ir_builder->PushBlockRAII(parent);
             auto iter = std::find(RANGE((*parent)), ir_write_variable_liked);
             ir_builder->inserter_iterator = iter;
             FinalizeVariableLikedCallback(ir_write_variable_liked->variable(), ir_builder);
@@ -133,7 +133,7 @@ inline void InsertDestroyForCall(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_call : ir_calls) {
         if (lowering::HasFinalize(ir_call->type)) {
             auto ir_builder = MakeIRbuilder();
-            ir_builder->PushBlock(ir_call->GetParentBlock());
+            auto scope = ir_builder->PushBlockRAII(ir_call->GetParentBlock());
 
             // 插入copy函数时, 需要normlizeVariableLiked, 这样会产生一个WriteVaribleLiked引用它
             PRAJNA_ASSERT(ir_call->instruction_with_index_list.size() <= 1);
@@ -181,7 +181,7 @@ inline void InsertCopyForReturn(std::shared_ptr<ir::Module> ir_module) {
 
                 auto ir_builder = MakeIRbuilder();
                 auto parent = ir_return->GetParentBlock();
-                ir_builder->PushBlock(parent);
+                auto scope = ir_builder->PushBlockRAII(parent);
                 auto iter = std::find(RANGE((*parent)), ir_return);
                 ir_builder->inserter_iterator = iter;
                 CopyVariableLikedCallback(ir_return->Value(), ir_builder);

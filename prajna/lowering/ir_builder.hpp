@@ -434,9 +434,19 @@ class IrBuilder {
         inserter_iterator = ir_block->end();
     }
 
+    std::unique_ptr<ScopeExit> CreateBlock() {
+        this->CreateAndPushBlock();
+        return std::move(ScopeExit::Create([&]() { this->PopBlock(); }));
+    }
+
     void PushBlock(std::shared_ptr<ir::Block> ir_block) {
         block_stack.push(ir_block);
         inserter_iterator = ir_block->end();
+    }
+
+    std::unique_ptr<ScopeExit> PushBlockRAII(std::shared_ptr<ir::Block> ir_block) {
+        this->PushBlock(ir_block);
+        return std::move(ScopeExit::Create([&]() { this->PopBlock(); }));
     }
 
     std::shared_ptr<ir::Block> CurrentBlock() {

@@ -47,7 +47,8 @@ class InterpreterLoweringVisitor {
         auto ir_builder = _statement_lowering_visitor->ir_builder;
         auto ir_block = ir::Block::Create();
         ir_block->parent = ir_function;
-        ir_builder->PushBlock(ir_block);
+        ir_builder->PushBlock(
+            ir_block);  // 此处使用PushBlockRAII会在lambda执行前折构，导致提前PopBlock
         ir_builder->function_stack.push(ir_function);
         ir_function->blocks.push_back(ir_block);
 

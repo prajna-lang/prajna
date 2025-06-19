@@ -1,0 +1,6 @@
+@test
+func TestLogicalOperator() {
+    var num0: i64 = 0;
+    test::Assert(num0 == 0i64 && num0 != 0i64);
+    test::Assert(num0 == 0i64 || num0 != 0i64);
+}

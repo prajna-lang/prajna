@@ -2,7 +2,6 @@ add_library(prajna_jit OBJECT
     execution_engine.cpp
 )
 
-add_dependencies(prajna_jit llc)
 
 target_link_libraries(prajna_jit
     PUBLIC prajna_config_target
@@ -26,6 +25,11 @@ target_link_libraries(prajna_jit
     PRIVATE LLVMAArch64Desc
     PRIVATE LLVMCore
     PUBLIC LLVMLinker
+    PRIVATE LLVMNVPTXCodeGen  # 添加 NVPTX 后端支持
+    PRIVATE LLVMNVPTXDesc     # NVPTX 目标描述
+    PRIVATE LLVMNVPTXInfo     # NVPTX 目标信息
+    PRIVATE LLVMAsmPrinter    # 支持 PTX 汇编输出
+    PRIVATE cuda
 )
 
 if (UNIX AND NOT APPLE)

@@ -95,8 +95,8 @@ add_subdirectory(examples_in_cpp)
 include(CMakePackageConfigHelpers)
 
 install(TARGETS prajna EXPORT ${PROJECT_NAME}-targets)
-install(TARGETS llc EXPORT ${PROJECT_NAME}-targets)
-install(TARGETS llc RUNTIME DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+# install(TARGETS llc EXPORT ${PROJECT_NAME}-targets)
+# install(TARGETS llc RUNTIME DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 # install(TARGETS prajna_shared EXPORT ${PROJECT_NAME}-targets)
 # xeus_prajna依赖
 install(TARGETS nlohmann_json EXPORT ${PROJECT_NAME}-targets)

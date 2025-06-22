@@ -3,7 +3,6 @@
         "dump_llvm_ir": false
     },
     "target": {
-        "triple":"nvptx64-nvidia-cuda",
-        "cpu":"sm_86"
+        "triple": "nvptx64-nvidia-cuda"
     }
 }

@@ -49,4 +49,9 @@ if (APPLE AND UNIX)
     # target_link_libraries(prajna_jit PRIVATE /usr/local/gfortran/lib/libgfortran.dylib)
 endif()
 
+
+if (PRAJNA_WITH_CUDA)
+    target_compile_definitions(prajna_jit PRIVATE PRAJNA_WITH_CUDA)
+endif()
+
 target_include_directories(prajna_jit PRIVATE /usr/local/cuda/include)

@@ -1,6 +1,6 @@
 
 #include "prajna/jit/execution_engine.h"
-#include <cuda.h>
+
 #include <setjmp.h>
 #include <stdio.h>
 
@@ -23,10 +23,8 @@
 #include "prajna/assert.hpp"
 #include "prajna/compiler/compiler.h"
 #include "prajna/exception.hpp"
-#include "prajna/global_config.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
-#include "prajna/jit/cuda_runtime_loader.hpp"
 #include "prajna/jit/gpu_compiler.hpp"
 
 #if defined(__linux__) || defined(WIN32)
@@ -82,12 +80,13 @@ ExecutionEngine::ExecutionEngine() {
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
     // LLVMInitializeNativeAsmParser();
-
+ #ifdef PRAJNA_WITH_CUDA
     // 初始化NVPTX目标
     LLVMInitializeNVPTXTarget();
     LLVMInitializeNVPTXTargetInfo();
     LLVMInitializeNVPTXTargetMC();
     LLVMInitializeNVPTXAsmPrinter();
+#endif
 
     auto lljit_builder = llvm::orc::LLJITBuilder();
     auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
@@ -161,14 +160,38 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
         // 目前仅支持nvptx后端的gpu
         PRAJNA_ASSERT(ir_target == ir::Target::nvptx);
 
-        // === 使用 LLVM API 生成 PTX 字符串 ===
-        auto *llvm_module = ir_sub_module->llvm_module;
-
         GpuCompiler gpu_compiler;
-        CudaRuntimeLoader cuda_loader;
-        cuda_loader.Initialize();
-        auto ptx_code = gpu_compiler.CompileToPTX(llvm_module);
-        auto cu_module = cuda_loader.LoadPTX(ptx_code);
+        auto ptx_code = gpu_compiler.CompileToPTX(ir_sub_module->llvm_module);
+
+        auto file_base = (std::filesystem::temp_directory_path() /
+                          std::filesystem::path(ir_sub_module->name).stem())
+                             .string();
+        std::error_code err_code;
+        llvm::raw_fd_ostream ptx_fs(file_base + ".ptx", err_code);
+        PRAJNA_ASSERT(!err_code && "Failed to open file for PTX output");
+        ptx_fs << ptx_code;
+        ptx_fs.close();
+
+#ifdef _WIN32
+        boost::dll::shared_library cuda_so("C:\\Windows\\System32\\nvcuda.dll");
+#else
+        boost::dll::shared_library cuda_so("/usr/lib/x86_64-linux-gnu/libcuda.so");
+#endif
+
+        auto cu_init = cuda_so.get<int(int)>("cuInit");
+        cu_init(0);
+
+        auto cu_library_load_from_file =
+            cuda_so.get<int(int64_t *, const char *, int *, int *, int, int *, int *, int)>(
+                "cuLibraryLoadFromFile");
+        auto cu_library_get_kernel =
+            cuda_so.get<int(int64_t *, int64_t, const char *)>("cuLibraryGetKernel");
+
+        int64_t cu_library = 0;
+        auto cu_re2 =
+            cu_library_load_from_file(&cu_library, fmt::format("{}.ptx", file_base).c_str(),
+                                      nullptr, nullptr, 0, nullptr, nullptr, 0);
+        PRAJNA_ASSERT(cu_re2 == 0, std::to_string(cu_re2));
 
         for (auto ir_function : ir_sub_module->functions) {
             if (ir_function->annotation_dict.count("kernel")) {
@@ -176,15 +199,9 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                 auto test_kernel_fun =
                     reinterpret_cast<int64_t *>(this->GetValue(kernel_fun_address_name));
                 std::string function_name = MangleNvvmName(ir_function->fullname);
-
-                CUfunction cu_function;
-                CUresult res_func =
-                    cuModuleGetFunction(&cu_function, cu_module, function_name.c_str());
-                PRAJNA_ASSERT(res_func == CUDA_SUCCESS,
-                              "cuModuleGetFunction failed: " + std::to_string(res_func));
-
-                *test_kernel_fun = reinterpret_cast<int64_t>(cu_function);
-                ;
+                auto cu_re =
+                    cu_library_get_kernel(test_kernel_fun, cu_library, function_name.c_str());
+                PRAJNA_ASSERT(cu_re == 0, std::to_string(cu_re));
             }
         }
     }

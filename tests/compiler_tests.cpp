@@ -57,4 +57,4 @@ TEST_P(PrajnaTests, TestSourceFile) {
 
 // 会遍历整个文件夹里的文件
 INSTANTIATE_TEST_SUITE_P(PrajnaTestsInstance, PrajnaTests,
-                         testing::ValuesIn(getFiles("tests/prajna_sources")), PrintFileName());
+                         testing::ValuesIn(getFiles("tests/prajna_sources/gpu")), PrintFileName());

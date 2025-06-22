@@ -25,11 +25,7 @@ target_link_libraries(prajna_jit
     PRIVATE LLVMAArch64Desc
     PRIVATE LLVMCore
     PUBLIC LLVMLinker
-    PRIVATE LLVMNVPTXCodeGen  # 添加 NVPTX 后端支持
-    PRIVATE LLVMNVPTXDesc     # NVPTX 目标描述
-    PRIVATE LLVMNVPTXInfo     # NVPTX 目标信息
-    PRIVATE LLVMAsmPrinter    # 支持 PTX 汇编输出
-    PRIVATE cuda
+    
 )
 
 if (UNIX AND NOT APPLE)
@@ -51,7 +47,13 @@ endif()
 
 
 if (PRAJNA_WITH_CUDA)
+    target_link_libraries(prajna_jit 
+        PRIVATE LLVMNVPTXCodeGen  # 添加 NVPTX 后端支持
+        PRIVATE LLVMNVPTXDesc     # NVPTX 目标描述
+        PRIVATE LLVMNVPTXInfo     # NVPTX 目标信息
+        PRIVATE LLVMAsmPrinter    # 支持 PTX 汇编输出
+    )
     target_compile_definitions(prajna_jit PRIVATE PRAJNA_WITH_CUDA)
 endif()
 
-target_include_directories(prajna_jit PRIVATE /usr/local/cuda/include)
+# target_include_directories(prajna_jit PRIVATE /usr/local/cuda/include)

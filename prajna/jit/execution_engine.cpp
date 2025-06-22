@@ -9,6 +9,8 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <unordered_map>
 
 #include "boost/dll/shared_library.hpp"
@@ -40,6 +42,15 @@ std::unordered_map<void *, std::atomic<int64_t>> ptr_count_dict;
 }  // namespace prajna
 
 namespace prajna::jit {
+
+inline std::string GetTimeStr() {
+    // 生成时间字符串：20240622_194540
+    auto now = std::chrono::system_clock::now();
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    std::stringstream time_ss;
+    time_ss << std::put_time(std::localtime(&now_time_t), "_%Y%m%d_%H%M%S");
+    return time_ss.str();
+}
 
 jmp_buf buf;
 
@@ -80,7 +91,7 @@ ExecutionEngine::ExecutionEngine() {
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
     // LLVMInitializeNativeAsmParser();
- #ifdef PRAJNA_WITH_CUDA
+#ifdef PRAJNA_WITH_CUDA
     // 初始化NVPTX目标
     LLVMInitializeNVPTXTarget();
     LLVMInitializeNVPTXTargetInfo();
@@ -166,6 +177,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
         auto file_base = (std::filesystem::temp_directory_path() /
                           std::filesystem::path(ir_sub_module->name).stem())
                              .string();
+        file_base += GetTimeStr();
         std::error_code err_code;
         llvm::raw_fd_ostream ptx_fs(file_base + ".ptx", err_code);
         PRAJNA_ASSERT(!err_code && "Failed to open file for PTX output");

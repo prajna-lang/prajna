@@ -28,11 +28,11 @@ class FunctionCloner : public Visitor {
         }
 
         auto ir_new = Block::Create();
+        value_dict[ir_block] = ir_new;
         for (auto ir_tensor : *ir_block) {
             ir_tensor->ApplyVisitor(this->shared_from_this());
             ir_new->PushBack(value_dict[ir_tensor]);
         }
-        value_dict[ir_block] = ir_new;
     }
 
     void Visit(std::shared_ptr<Function> ir_function) override {

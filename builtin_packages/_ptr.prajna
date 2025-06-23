@@ -88,13 +88,6 @@ implement Ptr<Type>{
     }
 
     @static
-    func MkPtr(address: ptr<Type>)->Ptr<Type>{
-        var self: Ptr<Type> = Ptr<Type>::New();
-        self.raw_ptr = address;
-        return self;
-    }
-
-    @static
     func Null()->Ptr<Type>{
         var self: Ptr<Type>;
         self.raw_ptr = ptr<Type>::Null();

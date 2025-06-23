@@ -93,44 +93,19 @@ func TestCircularReference() {
    var node1: Node<i64>;
    node1.object = 4201;
 
-   {
-       var node0_ptr = Ptr<Node<i64>>::MkPtr(&node0);
-       var node1_ptr = Ptr<Node<i64>>::MkPtr(&node1);
+   var node0_ptr = Ptr<Node<i64>>::New();
+   node0_ptr.raw_ptr = &node0;
 
-       "node0 reference count: ".Print();
-       node0_ptr.ReferenceCount().PrintLine();
-       "node1 reference count: ".Print();
-       node1_ptr.ReferenceCount().PrintLine();
+   var node1_shared_ptr = Ptr<Node<i64>>::New();
+   node1_shared_ptr.raw_ptr = &node1;
+   var node1_ptr = WeakPtr<Node<i64>>::FromPtr(node1_shared_ptr);
 
-       node0.next_shared = node1_ptr;
-       node1.next_shared = node0_ptr;
+   test::Assert(node0_ptr.ReferenceCount() == 1);
+   test::Assert(node1_ptr.ReferenceCount() == 1);
 
-       "node0 reference count: ".Print();
-       node0_ptr.ReferenceCount().PrintLine();
-       "node1 reference count: ".Print();
-       node1_ptr.ReferenceCount().PrintLine();
-   }
+   node0.next_weak = node1_ptr;
+   node1.next_shared = node0_ptr;
 
-   "".PrintLine();
-
-   {
-       var node0_ptr = Ptr<Node<i64>>::MkPtr(&node0);
-       var node1_shared_ptr = Ptr<Node<i64>>::MkPtr(&node1);
-       var node1_ptr = WeakPtr<Node<i64>>::FromPtr(node1_shared_ptr);
-
-       "node0 reference count: ".Print();
-       node0_ptr.ReferenceCount().PrintLine();
-       "node1 reference count: ".Print();
-       node1_ptr.ReferenceCount().PrintLine();
-
-       node0.next_weak = node1_ptr;
-       node1.next_shared = node0_ptr;
-
-       "node0 reference count: ".Print();
-       node0_ptr.ReferenceCount().PrintLine();
-       "node1 reference count: ".Print();
-       node1_ptr.ReferenceCount().PrintLine();
-   }
-
-
+   test::Assert(node0_ptr.ReferenceCount() == 2);
+   test::Assert(node1_ptr.ReferenceCount() == 1);
 }

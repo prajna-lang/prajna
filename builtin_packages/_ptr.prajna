@@ -51,11 +51,16 @@ implement ptr<Type> {
     }
 }
 
+struct ControlBlock{
+    strong_count: i64;
+    weak_count: i64;
+}
+
 template <Type>
 struct Ptr{
     raw_ptr: ptr<Type>;
     size: i64;
-    _reference_counter: ptr<i64>;
+    _control_block: ptr<ControlBlock>;
 }
 
 template <Type>
@@ -70,8 +75,10 @@ implement Ptr<Type>{
             initialize<Type>(&self.raw_ptr[i]);
         }
 
-        // self._reference_count; //不需要再次申请, Initialize的时候会产生.
-        *self._reference_counter = 1;
+        self._control_block = ptr<ControlBlock>::New();
+        self._control_block->strong_count = 1;
+        self._control_block->weak_count = 0;
+
         return self;
     }
 
@@ -95,8 +102,8 @@ implement Ptr<Type>{
     func ToUndef()->Ptr<undef>{
         var undef_ptr: Ptr<undef>;
         undef_ptr.raw_ptr = bit_cast<ptr<Type> ,ptr<undef>>(this.raw_ptr);
-        undef_ptr._reference_counter = this._reference_counter;
-        *undef_ptr._reference_counter = *undef_ptr._reference_counter + 1;
+        undef_ptr._control_block = this._control_block;
+        undef_ptr._control_block->strong_count = undef_ptr._control_block->strong_count + 1;
         return undef_ptr;
     }
 
@@ -104,8 +111,8 @@ implement Ptr<Type>{
     func FromUndef(undef_ptr: Ptr<undef>)->Ptr<Type>{
         var self: Ptr<Type>;
         self.raw_ptr = bit_cast<ptr<undef> ,ptr<Type>>(undef_ptr.raw_ptr);
-        self._reference_counter = undef_ptr._reference_counter;
-        *self._reference_counter = *self._reference_counter + 1;
+        self._control_block = undef_ptr._control_block;
+        self._control_block->strong_count = self._control_block->strong_count + 1;
         return self;
     }
 
@@ -118,7 +125,11 @@ implement Ptr<Type>{
     }
 
     func ReferenceCount()->i64 {
-        return *this._reference_counter;
+        return this._control_block->strong_count;
+    }
+
+    func WeakReferenceCount()->i64 {
+        return this._control_block->weak_count;
     }
 
     template <Interface>
@@ -134,6 +145,7 @@ implement Ptr<Type>{
     func __get_linear_index__(index: i64)->Type {
         return  this.raw_ptr[index];
     }
+
     @inline
     func __set_linear_index__(index: i64, value: Type) {
         this.raw_ptr[index] = value;
@@ -150,28 +162,142 @@ implement Ptr<Type>{
     func __initialize__() {
         this.raw_ptr = ptr<Type>::Null();
         // 需要申请, 判断的时候需要用到
-        this._reference_counter = ptr<i64>::New();
+        this._control_block = ptr<ControlBlock>::New();
         this.size = 0;
-        *this._reference_counter = 1;
+        this._control_block->strong_count = 1;
+        this._control_block->weak_count = 0;
     }
 
     func __copy__() {
-        *this._reference_counter = *this._reference_counter + 1;
+        this._control_block->strong_count = this._control_block->strong_count + 1;
     }
 
     func __finalize__() {
-        *this._reference_counter = *this._reference_counter - 1;
-        if (*this._reference_counter == 0){
+        this._control_block->strong_count = this._control_block->strong_count - 1;
+        if (this._control_block->strong_count == 0){
             if (this.IsNull()) {
                 for i in 0 to this.size {
                     finalize<Type>(&this.raw_ptr[i]);
                 }
 
                 this.raw_ptr.Free();
-                if (this._reference_counter.IsValid()) { // 这里有bug, 释放的顺序有问题, 存在二次释放的问题, 回头修复
-                    this._reference_counter.Free();
+
+                if (this._control_block->weak_count == 0) {
+                    if (this._control_block.IsValid()) { // 这里有bug, 释放的顺序有问题, 存在二次释放的问题, 回头修复
+                        this._control_block.Free();
+                    }
                 }
             }
         }
     }
+}
+
+template <Type>
+struct WeakPtr{
+    raw_ptr: ptr<Type>;
+    size: i64;
+    _control_block: ptr<ControlBlock>;
+}
+
+template <Type>
+implement WeakPtr<Type> {
+    @static
+    func FromPtr(shared: Ptr<Type>)->WeakPtr<Type> {
+        var self: WeakPtr<Type>;
+        self.raw_ptr = shared.raw_ptr;
+        self.size = shared.size;
+        self._control_block = shared._control_block;
+        self._control_block->weak_count = self._control_block->weak_count + 1;
+        return self;
+    }
+
+    @static
+    func Null()->WeakPtr<Type> {
+        var self: WeakPtr<Type>;
+        self.raw_ptr = ptr<Type>::Null();
+        return self;
+    }
+
+    func IsNull()->bool {
+        return this.raw_ptr.IsNull();
+    }
+
+    func ToInt64()->i64{
+        return this.raw_ptr.ToInt64();
+    }
+
+    func Lock()->Ptr<Type> {
+        if ((this._control_block->strong_count == 0) | this.IsNull()) {
+            return Ptr<Type>::Null();
+        }
+
+        var shared: Ptr<Type>;
+        shared.raw_ptr = this.raw_ptr;
+        shared.size = this.size;
+        shared._control_block = this._control_block;
+        shared._control_block->strong_count = shared._control_block->strong_count + 1;
+        return shared;
+    }
+
+    func IsExpired()->bool {
+        return (this._control_block->strong_count == 0) | this.IsNull();
+    }
+
+    func ReferenceCount()->i64 {
+        return this._control_block->strong_count;
+    }
+
+    func WeakReferenceCount()->i64 {
+        return this._control_block->weak_count;
+    }
+
+    template <Interface>
+    func As()->Dynamic<Interface> {
+        return __as<Type, Interface>(this);
+    }
+
+    func __arrow__()->ptr<Type> {
+        return this.raw_ptr;
+    }
+
+    @inline
+    func __get_linear_index__(index: i64)->Type {
+        return  this.raw_ptr[index];
+    }
+
+    @inline
+    func __set_linear_index__(index: i64, value: Type) {
+        this.raw_ptr[index] = value;
+    }
+
+    func __equal__(operand: WeakPtr<Type>) -> bool {
+        return this.ToInt64() == operand.ToInt64();
+    }
+
+    func __not_equal__(operand: WeakPtr<Type>) -> bool {
+        return !(this == operand);
+    }
+
+    func __initialize__() {
+        this.raw_ptr = ptr<Type>::Null();
+        this._control_block = ptr<ControlBlock>::New();
+        this.size = 0;
+    }
+
+    func __copy__() {
+        if (!this.IsNull() & this._control_block.IsValid()) {
+            this._control_block->weak_count = this._control_block->weak_count + 1;
+        }
+    }
+
+    func __finalize__() {
+        if (!this.IsNull() & this._control_block.IsValid()) {
+            this._control_block->weak_count = this._control_block->weak_count - 1;
+
+            if ((this._control_block->strong_count == 0) & (this._control_block->weak_count == 0)) {
+                this._control_block.Free();
+            }
+        }
+    }
+
 }

@@ -1,5 +1,3 @@
-
-
 @test
 func TestMain(){
     var p: Ptr<i64>;
@@ -80,3 +78,34 @@ func TestAllocate() {
     p_ts1->tmp;
 }
 
+template <Type>
+struct Node{
+    object: Type;
+    next_shared: Ptr<Node<Type>>;
+    next_weak: WeakPtr<Node<Type>>;
+}
+
+@test
+func TestCircularReference() {
+   var node0: Node<i64>;
+   node0.object = 1024;
+
+   var node1: Node<i64>;
+   node1.object = 4201;
+
+   var node0_ptr = Ptr<Node<i64>>::New();
+   node0_ptr.raw_ptr = &node0;
+
+   var node1_shared_ptr = Ptr<Node<i64>>::New();
+   node1_shared_ptr.raw_ptr = &node1;
+   var node1_ptr = WeakPtr<Node<i64>>::FromPtr(node1_shared_ptr);
+
+   test::Assert(node0_ptr.ReferenceCount() == 1);
+   test::Assert(node1_ptr.ReferenceCount() == 1);
+
+   node0.next_weak = node1_ptr;
+   node1.next_shared = node0_ptr;
+
+   test::Assert(node0_ptr.ReferenceCount() == 2);
+   test::Assert(node1_ptr.ReferenceCount() == 1);
+}

@@ -64,6 +64,8 @@ use hashdict::HashDict;
 use stack::Stack;
 use optional::Optional;
 
+use queue::Queue;
+
 use io::Input;
 
 use fs;

@@ -1,0 +1,42 @@
+template <ValueType>
+struct Queue {
+    _list: List<ValueType>;
+}
+
+template <ValueType>
+implement Queue<ValueType> {
+    func IsEmpty() -> bool {
+        return this._list.Begin() == this._list.End();
+    }
+
+    func Enqueue(value: ValueType) {
+        this._list.PushBack(value);
+    }
+
+    func Dequeue() -> ValueType {
+        var front_node = this._list.Begin();
+        var value = (*front_node).value;
+        this._list.PopFront();
+        return value;
+    }
+
+    func Length() -> i64 {
+        return this._list.Length();
+    }
+
+    func Peek() -> ValueType {
+        var front_node = this._list.Begin();
+        return (*front_node).value;
+    }
+
+    func Back() -> ValueType {
+        var last_node = this._list.End()->prev;
+        return (*last_node).value;
+    }
+
+    func Clear() {
+        while (!this.IsEmpty()) {
+            this._list.PopFront();
+        }
+    }
+}

@@ -1,0 +1,16 @@
+@test
+func TestQueue() {
+    var sample: Queue<i64>;
+
+    test::Assert(sample.IsEmpty());
+
+    sample.Enqueue(10);
+    sample.Enqueue(20);
+    sample.Enqueue(30);
+
+    test::Assert(sample.Length() == 3);
+    test::Assert(sample.Back() == 30);
+    test::Assert(sample.Peek() == 10);
+
+    test::Assert(sample.Dequeue() == 10);
+}

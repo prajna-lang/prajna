@@ -1,0 +1,63 @@
+@test
+func TestSetAddAndRemove() {
+    var sample: Set<i64>;
+    sample.Add(10);
+    test::Assert(sample.Contains(10) & (sample.Count() == 1));
+    sample.Add(20);
+    test::Assert(sample.Contains(20) & (sample.Count() == 2));
+    sample.Add(20);
+    test::Assert(sample.Count() == 2);
+    sample.Remove(10);
+    test::Assert(!sample.Contains(10) & (sample.Count() == 1));
+}
+
+@test
+func TestSetUnion() {
+    var set1: Set<i64>;
+    set1.Add(1);
+    set1.Add(2);
+    set1.Add(3);
+
+    var set2: Set<i64>;
+    set2.Add(2);
+    set2.Add(3);
+    set2.Add(4);
+
+    var set3 = set1.Union(set2);
+
+    test::Assert((set3.Count() == 4) & set3.Contains(1) & set3.Contains(2) & set3.Contains(3) & set3.Contains(4));
+}
+
+@test
+func TestSetIntersection() {
+    var set1: Set<i64>;
+    set1.Add(1);
+    set1.Add(2);
+    set1.Add(3);
+
+    var set2: Set<i64>;
+    set2.Add(2);
+    set2.Add(3);
+    set2.Add(4);
+
+    var set3 = set1.Intersection(set2);
+
+    test::Assert((set3.Count() == 2) & set3.Contains(2) & set3.Contains(3));
+}
+
+@test
+func TestSetDifference() {
+    var set1: Set<i64>;
+    set1.Add(1);
+    set1.Add(2);
+    set1.Add(3);
+
+    var set2: Set<i64>;
+    set2.Add(2);
+    set2.Add(3);
+    set2.Add(4);
+
+    var set3 = set1.Difference(set2);
+
+    test::Assert((set3.Count() == 1) & set3.Contains(1));
+}

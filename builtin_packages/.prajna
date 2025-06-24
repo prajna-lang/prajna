@@ -40,6 +40,8 @@ use dynamic_array::DynamicArray;
 
 use string::String;
 
+use set::Set;
+
 use serializable::Serializable;
 use serialize;
 use hash::Hashable;

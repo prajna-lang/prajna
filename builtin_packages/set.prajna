@@ -1,0 +1,97 @@
+template <ElementType>
+struct Set {
+    dict: HashDict<ElementType, bool>;
+}
+
+template <ElementType>
+implement Set<ElementType> {
+    func __initialize__() {
+        this.dict.__initialize__();
+    }
+
+    func Contains(element: ElementType) -> bool {
+        var index = this.dict.Hash_index(element);
+        var node = this.dict.buckets[index];
+
+        while (!node.IsNull()) {
+            if ((*node).key == element) {
+                return true;
+            }
+            node = (*node).next;
+        }
+        return false;
+    }
+
+    func Add(element: ElementType) {
+        if (!this.Contains(element)) {
+            this.dict.Insert_node(element, true);
+        }
+    }
+
+    func Remove(element: ElementType) {
+        this.dict.Remove(element);
+    }
+
+    func IsEmpty() -> bool {
+        return this.dict.IsEmpty();
+    }
+
+    func Count() -> i64 {
+        return this.dict.count;
+    }
+
+    func Union(other: Set<ElementType>) -> Set<ElementType> {
+        var result: Set<ElementType>;
+
+        for i in 0 to this.dict.size {
+            var node = this.dict.buckets[i];
+            while (!node.IsNull()) {
+                result.Add((*node).key);
+                node = (*node).next;
+            }
+        }
+
+        for i in 0 to other.dict.size {
+            var node = other.dict.buckets[i];
+            while (!node.IsNull()) {
+                result.Add((*node).key);
+                node = (*node).next;
+            }
+        }
+
+        return result;
+    }
+
+    func Intersection(other: Set<ElementType>) -> Set<ElementType> {
+        var result: Set<ElementType>;
+
+        for i in 0 to this.dict.size {
+            var node = this.dict.buckets[i];
+            while (!node.IsNull()) {
+                if (other.Contains((*node).key)) {
+                    result.Add((*node).key);
+                }
+                node = (*node).next;
+            }
+        }
+
+        return result;
+    }
+
+    func Difference(other: Set<ElementType>) -> Set<ElementType> {
+        var result: Set<ElementType>;
+
+        for i in 0 to this.dict.size {
+            var node = this.dict.buckets[i];
+            while (!node.IsNull()) {
+                if (!other.Contains((*node).key)) {
+                    result.Add((*node).key);
+                }
+                node = (*node).next;
+            }
+        }
+
+        return result;
+    }
+
+}

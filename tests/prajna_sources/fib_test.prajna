@@ -1,0 +1,9 @@
+func fib(num: i64) -> i64 {
+    if num < 2 { return num; }
+    else { return fib(n-1) + fib (n-2); }
+}
+
+@test
+func TestFib() {
+    test::Assert(fib(8) == 21);
+}

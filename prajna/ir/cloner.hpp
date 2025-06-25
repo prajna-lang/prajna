@@ -55,6 +55,7 @@ class FunctionCloner : public Visitor {
         std::shared_ptr<ir::Function> ir_new(new Function(*ir_function));
         //
         value_dict[ir_function] = ir_new;
+        this->ir_module->AddFunction(ir_new);
         ir_new->parameters.clear();
         std::transform(RANGE(ir_function->parameters), std::back_inserter(ir_new->parameters),
                        [=](auto ir_parameter) {

@@ -160,6 +160,8 @@ class LlvmCodegen : public prajna::ir::Visitor {
     }
 
     void Visit(std::shared_ptr<ir::Module> ir_module) override {
+        PRAJNA_ASSERT(ir::Verify(ir_module));
+
         PRAJNA_ASSERT(!ir_module->llvm_module);
         ir_module->llvm_module = new llvm::Module(ir_module->name, static_llvm_context);
         if (ir_target == prajna::ir::Target::nvptx) {

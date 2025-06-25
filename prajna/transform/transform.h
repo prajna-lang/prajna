@@ -270,7 +270,7 @@ inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
                      return ir_function->annotation_dict.count("kernel");
                  });
 
-    auto function_cloner = ir::FunctionCloner::Create(ir_nvptx_module, true);
+    auto function_cloner = ir::FunctionCloner::Create(ir_nvptx_module, false);
     for (auto ir_kernel_function : ir_kernel_function_list) {
         // 会把生成的函数直接插入到module里
         auto ir_kernel_function_new =
@@ -735,6 +735,8 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     RecursiveTransformModule(ir_module, DeclareExternalFunction);
     TopAlloca(ir_module);
     ConvertLLVMIntrinsicToNVVMLibdevice(ir_module);
+
+    PRAJNA_ASSERT(RecursiveTransformModule(ir_module, ir::Verify));
 
     return ir_module;
 }

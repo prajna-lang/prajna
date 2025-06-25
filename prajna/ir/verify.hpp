@@ -43,6 +43,16 @@ class VerifyVisitor : public ir::Visitor {
         ir_for->LoopBlock()->ApplyVisitor(this->shared_from_this());
     }
 
+    void Visit(std::shared_ptr<ir::ConditionBranch> ir_condition_branch) override {
+        // 在SSA转换后, 条件分支的子块会在后面被访问
+        // ir_condition_branch->TrueBlock()->ApplyVisitor(this->shared_from_this());
+        // ir_condition_branch->FalseBlock()->ApplyVisitor(this->shared_from_this());
+    }
+
+    void Visit(std::shared_ptr<ir::JumpBranch> ir_jump_branch) override {
+        // ir_jump_branch->NextBlock()->ApplyVisitor(this->shared_from_this());
+    }
+
     void Visit(std::shared_ptr<ir::Function> ir_function) override {
         for (auto ir_block : Clone(ir_function->blocks)) {
             PRAJNA_VERIFY(Lock(ir_block->parent) == ir_function);

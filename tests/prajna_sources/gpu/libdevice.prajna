@@ -1,9 +1,5 @@
 use ::gpu;
 
-@target("nvptx")
-@intrinsic("__nv_sinf")
-func NvSin(v: f32)->f32;
-
 @kernel
 @target("nvptx")
 func myKernel(){

@@ -1,0 +1,48 @@
+@test
+func TestMaxHeap() {
+    var sample = Heap<i64, 5>::New();
+
+    test::Assert(sample.Size() == 0);
+
+    sample.Push(10);
+    sample.Push(50);
+    sample.Push(30);
+    sample.Push(70);
+    sample.Push(40);
+
+    test::Assert(sample.Size() == 5);
+    test::Assert(sample.Peek() == 70);
+
+    test::Assert(sample.Pop() == 70);
+    test::Assert(sample.Pop() == 50);
+    test::Assert(sample.Pop() == 40);
+    test::Assert(sample.Pop() == 30);
+    test::Assert(sample.Pop() == 10);
+    test::Assert(sample.Size() == 0);
+
+}
+
+@test
+func TestMinHeap() {
+    var sample = Heap<i64, 5>::New();
+    sample.is_max_heap = false;
+
+    test::Assert(sample.Size() == 0);
+
+    sample.Push(10);
+    sample.Push(50);
+    sample.Push(30);
+    sample.Push(70);
+    sample.Push(40);
+
+    test::Assert(sample.Size() == 5);
+    test::Assert(sample.Peek() == 10);
+
+    test::Assert(sample.Pop() == 10);
+    test::Assert(sample.Pop() == 30);
+    test::Assert(sample.Pop() == 40);
+    test::Assert(sample.Pop() == 50);
+    test::Assert(sample.Pop() == 70);
+    test::Assert(sample.Size() == 0);
+
+}

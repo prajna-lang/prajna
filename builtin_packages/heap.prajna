@@ -1,0 +1,102 @@
+template <Type, MaxSize>
+struct Heap {
+    data: Array<Type, MaxSize>;
+    size: i64;
+    is_max_heap: bool;  // true for max-heap, false for min-heap
+}
+
+template <Type, MaxSize>
+implement Heap<Type, MaxSize> {
+    @static
+    func New() -> Heap<Type, MaxSize> {
+       var self: Heap<Type, MaxSize>;
+       self.size = 0;
+       self.is_max_heap = true;
+       return self;
+    }
+
+    func ParentIndex(idx: i64) -> i64 {
+        return (idx - 1) / 2;
+    }
+
+    func LeftChildIndex(idx: i64) -> i64 {
+        return 2 * idx + 1;
+    }
+
+    func RightChildIndex(idx: i64) -> i64 {
+        return 2 * idx + 2;
+    }
+
+    func Size() -> i64 {
+        return this.size;
+    }
+
+    func IsEmpty() -> bool {
+        return this.size == 0;
+    }
+
+    func IsMaxHeap() -> bool {
+        return this.is_max_heap;
+    }
+
+    func Compare(a: Type, b: Type) -> bool {
+        if this.is_max_heap {
+            return a > b;
+        } else {
+            return a < b;
+        }
+    }
+
+    func Peek() -> Type {
+        return this.data[0];
+    }
+
+    func Push(value: Type) {
+        this.data[this.size] = value;
+
+        var idx = this.size;
+        this.size = this.size + 1;
+
+        while idx > 0 & this.Compare(this.data[idx], this.data[this.ParentIndex(idx)]) {
+            var temp = this.data[idx];
+            this.data[idx] = this.data[this.ParentIndex(idx)];
+            this.data[this.ParentIndex(idx)] = temp;
+
+            idx = this.ParentIndex(idx);
+        }
+    }
+
+    func HeapifyDown(idx: i64) {
+        var extreme = idx;
+        var left = this.LeftChildIndex(idx);
+        var right = this.RightChildIndex(idx);
+
+        if (left < this.size) & this.Compare(this.data[left], this.data[extreme]) {
+            extreme = left;
+        }
+
+        if (right < this.size) & this.Compare(this.data[right], this.data[extreme]) {
+            extreme = right;
+        }
+
+        if extreme != idx {
+            var temp = this.data[idx];
+            this.data[idx] = this.data[extreme];
+            this.data[extreme] = temp;
+
+            this.HeapifyDown(extreme);
+        }
+    }
+
+    func Pop() -> Type {
+        var topItem = this.data[0];
+
+        this.data[0] = this.data[this.size - 1];
+        this.size = this.size - 1;
+
+        this.HeapifyDown(0);
+
+        return topItem;
+    }
+
+}

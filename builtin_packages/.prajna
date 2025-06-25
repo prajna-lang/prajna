@@ -65,6 +65,7 @@ use stack::Stack;
 use optional::Optional;
 
 use queue::Queue;
+use heap::Heap;
 
 use io::Input;
 

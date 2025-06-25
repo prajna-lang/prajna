@@ -1,5 +1,8 @@
 {
     "prajna": {
         "dump_llvm_ir": false
+    },
+    "target": {
+        "triple": "nvptx64-nvidia-cuda"
     }
 }

@@ -46,7 +46,7 @@ pipeline{
                     agent {
                         dockerfile {
                             label 'Sunny'
-                            filename 'ubuntu_dev_jenkins.dockerfile'
+                            filename 'ubuntu_dev_nvgpu_jenkins.dockerfile'
                             dir 'dockerfiles'
                             // 参数由宿主主机的jenkins账号决定
                             additionalBuildArgs '''\
@@ -54,7 +54,7 @@ pipeline{
                             --build-arg UID=124 \
                             --build-arg UNAME=jenkins \
                             '''
-                            // args '--gpus all --network host'
+                            args '--gpus all --network host'
                         }
                     }
                     environment {
@@ -77,13 +77,13 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh './scripts/clone_submodules.sh -f --jobs=4 --depth=50'
-                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERT=OFF'
+                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERT=OFF -DPRAJNA_WITH_CUDA=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                             }
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*gpu*'
+                                sh './scripts/test.sh ${BUILD_TYPE}'
                                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }

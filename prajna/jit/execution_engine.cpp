@@ -9,6 +9,8 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <unordered_map>
 
 #include "boost/dll/shared_library.hpp"
@@ -25,6 +27,7 @@
 #include "prajna/exception.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
+#include "prajna/jit/gpu_compiler.hpp"
 
 #if defined(__linux__) || defined(WIN32)
 extern "C" uint16_t __truncdfhf2(double);
@@ -39,6 +42,15 @@ std::unordered_map<void *, std::atomic<int64_t>> ptr_count_dict;
 }  // namespace prajna
 
 namespace prajna::jit {
+
+inline std::string GetTimeStr() {
+    // 生成时间字符串：20240622_194540
+    auto now = std::chrono::system_clock::now();
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    std::stringstream time_ss;
+    time_ss << std::put_time(std::localtime(&now_time_t), "_%Y%m%d_%H%M%S");
+    return time_ss.str();
+}
 
 jmp_buf buf;
 
@@ -79,6 +91,13 @@ ExecutionEngine::ExecutionEngine() {
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
     // LLVMInitializeNativeAsmParser();
+#ifdef PRAJNA_WITH_CUDA
+    // 初始化NVPTX目标
+    LLVMInitializeNVPTXTarget();
+    LLVMInitializeNVPTXTargetInfo();
+    LLVMInitializeNVPTXTargetMC();
+    LLVMInitializeNVPTXAsmPrinter();
+#endif
 
     auto lljit_builder = llvm::orc::LLJITBuilder();
     auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
@@ -151,21 +170,19 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 
         // 目前仅支持nvptx后端的gpu
         PRAJNA_ASSERT(ir_target == ir::Target::nvptx);
+
+        GpuCompiler gpu_compiler;
+        auto ptx_code = gpu_compiler.CompileToPTX(ir_sub_module->llvm_module);
+
         auto file_base = (std::filesystem::temp_directory_path() /
                           std::filesystem::path(ir_sub_module->name).stem())
                              .string();
+        file_base += GetTimeStr();
         std::error_code err_code;
-        llvm::raw_fd_ostream llvm_fs(file_base + ".ll", err_code);
-        ir_sub_module->llvm_module->print(llvm_fs, nullptr);
-        llvm_fs.close();
-#ifdef _WIN32
-        auto llc_exe = boost::dll::program_location().parent_path() / "llc.exe";
-#else
-        auto llc_exe = boost::dll::program_location().parent_path() / "llc";
-#endif
-        std::string llc_cmd = fmt::format("{}  -mcpu=sm_86 {file_base}.ll -o {file_base}.ptx",
-                                          llc_exe.string(), fmt::arg("file_base", file_base));
-        PRAJNA_VERIFY(std::system(llc_cmd.c_str()) == 0);
+        llvm::raw_fd_ostream ptx_fs(file_base + ".ptx", err_code);
+        PRAJNA_ASSERT(!err_code && "Failed to open file for PTX output");
+        ptx_fs << ptx_code;
+        ptx_fs.close();
 
 #ifdef _WIN32
         boost::dll::shared_library cuda_so("C:\\Windows\\System32\\nvcuda.dll");

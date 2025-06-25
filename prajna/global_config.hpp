@@ -23,7 +23,7 @@ class GlobalConfig {
     nlohmann::json config_;
 };
 
-boost::property_tree::ptree& GlobalConfig::Instance() {
+inline boost::property_tree::ptree& GlobalConfig::Instance() {
     static boost::property_tree::ptree instance;
     if (instance.empty()) {
         try {

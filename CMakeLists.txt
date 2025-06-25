@@ -71,6 +71,7 @@ option(PRAJNA_BUILD_TESTS "Build Prajna tests" ON)
 option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" OFF)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_DISABLE_ASSERT "Disable Prajna ASSERTS" OFF)
+option(PRAJNA_WITH_CUDA "Enable CUDA support" OFF)
 
 add_subdirectory(prajna)
 if (PRAJNA_WITH_JUPYTER)
@@ -95,9 +96,6 @@ add_subdirectory(examples_in_cpp)
 include(CMakePackageConfigHelpers)
 
 install(TARGETS prajna EXPORT ${PROJECT_NAME}-targets)
-install(TARGETS llc EXPORT ${PROJECT_NAME}-targets)
-install(TARGETS llc RUNTIME DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-# install(TARGETS prajna_shared EXPORT ${PROJECT_NAME}-targets)
 # xeus_prajna依赖
 install(TARGETS nlohmann_json EXPORT ${PROJECT_NAME}-targets)
 install(DIRECTORY builtin_packages DESTINATION ${CMAKE_INSTALL_PREFIX})

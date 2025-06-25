@@ -270,7 +270,7 @@ inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
                      return ir_function->annotation_dict.count("kernel");
                  });
 
-    auto function_cloner = ir::FunctionCloner::Create();
+    auto function_cloner = ir::FunctionCloner::Create(ir_nvptx_module, true);
     for (auto ir_kernel_function : ir_kernel_function_list) {
         // 会把生成的函数直接插入到module里
         auto ir_kernel_function_new =
@@ -278,7 +278,6 @@ inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
         // 移除原来的核函数
         ir_nvptx_module->functions.remove(ir_kernel_function);
         PRAJNA_ASSERT(ir::Verify(ir_kernel_function_new));
-        ir_nvptx_module->AddFunction(ir_kernel_function_new);
     }
 }
 

@@ -17,8 +17,11 @@ class FunctionCloner : public Visitor {
     FunctionCloner() = default;
 
    public:
-    static std::shared_ptr<ir::FunctionCloner> Create() {
+    static std::shared_ptr<ir::FunctionCloner> Create(std::shared_ptr<ir::Module> ir_module,
+                                                      bool shallow) {
         std::shared_ptr<ir::FunctionCloner> self(new FunctionCloner);
+        self->ir_module = ir_module;
+        self->shallow = shallow;
         return self;
     }
 
@@ -40,17 +43,15 @@ class FunctionCloner : public Visitor {
             return;
         }
 
-        if (this->shallow && this->has_cloned) {
+        if (this->shallow && this->first_function_has_cloned) {
             value_dict[ir_function] = ir_function;
             return;
         }
 
-        if (this->shallow) {
-            this->has_cloned = true;
+        if (!this->first_function_has_cloned) {
+            this->first_function_has_cloned = true;
         }
 
-        // TODO(zhangzhimin): 这里可能需要重构一下, 容易忘记
-        // 拷贝构造函数才能拷贝所有状态
         std::shared_ptr<ir::Function> ir_new(new Function(*ir_function));
         //
         value_dict[ir_function] = ir_new;
@@ -500,7 +501,8 @@ class FunctionCloner : public Visitor {
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> value_dict;
 
     bool shallow = false;
-    bool has_cloned = false;
+    bool first_function_has_cloned = false;
+    std::shared_ptr<ir::Module> ir_module = nullptr;
 };
 
 }  // namespace prajna::ir

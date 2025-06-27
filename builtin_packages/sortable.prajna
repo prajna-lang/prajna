@@ -1,0 +1,4 @@
+interface Sortable {
+    func Sort();
+    func SortReverse();
+}

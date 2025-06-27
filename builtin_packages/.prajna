@@ -67,6 +67,9 @@ use optional::Optional;
 use queue::Queue;
 use heap::Heap;
 
+use sortable::Sortable;
+use sort;
+
 use io::Input;
 
 use fs;

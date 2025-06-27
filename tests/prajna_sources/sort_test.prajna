@@ -1,0 +1,241 @@
+@test
+func TestSortArray() {
+   var arr: Array<i64, 6> = [64, 13, 666, 25, 92, 88];
+
+   arr.Sort();
+
+   test::Assert(arr[0] == 13);
+   test::Assert(arr[1] == 25);
+   test::Assert(arr[2] == 64);
+   test::Assert(arr[3] == 88);
+   test::Assert(arr[4] == 92);
+   test::Assert(arr[5] == 666);
+
+   arr.SortReverse();
+
+   test::Assert(arr[0] == 666);
+   test::Assert(arr[1] == 92);
+   test::Assert(arr[2] == 88);
+   test::Assert(arr[3] == 64);
+   test::Assert(arr[4] == 25);
+   test::Assert(arr[5] == 13);
+}
+
+@test
+func TestSortDynamicArray() {
+   var darr = DynamicArray<i64>::Create(6);
+   darr[0] = 64;
+   darr[1] = 13;
+   darr[2] = 666;
+   darr[3] = 25;
+   darr[4] = 92;
+   darr[5] = 88;
+
+   darr.Sort();
+
+   test::Assert(darr[0] == 13);
+   test::Assert(darr[1] == 25);
+   test::Assert(darr[2] == 64);
+   test::Assert(darr[3] == 88);
+   test::Assert(darr[4] == 92);
+   test::Assert(darr[5] == 666);
+
+   darr.SortReverse();
+
+   test::Assert(darr[0] == 666);
+   test::Assert(darr[1] == 92);
+   test::Assert(darr[2] == 88);
+   test::Assert(darr[3] == 64);
+   test::Assert(darr[4] == 25);
+   test::Assert(darr[5] == 13);
+}
+
+@test
+func TestSortList() {
+   var lst: List<i64>;
+   lst.PushBack(64);
+   lst.PushBack(13);
+   lst.PushBack(666);
+   lst.PushBack(25);
+   lst.PushBack(92);
+   lst.PushBack(88);
+
+   lst.Sort();
+
+   test::Assert((*lst.Begin()).value == 13);
+   lst.PopFront();
+
+   test::Assert((*lst.Begin()).value == 25);
+   lst.PopFront();
+
+   test::Assert((*lst.Begin()).value == 64);
+   lst.PopFront();
+
+   test::Assert((*lst.Begin()).value == 88);
+   lst.PopFront();
+
+   test::Assert((*lst.Begin()).value == 92);
+   lst.PopFront();
+
+   test::Assert((*lst.Begin()).value == 666);
+
+   var lst2: List<i64>;
+   lst2.PushBack(64);
+   lst2.PushBack(13);
+   lst2.PushBack(666);
+   lst2.PushBack(25);
+   lst2.PushBack(92);
+   lst2.PushBack(88);
+
+   lst2.SortReverse();
+
+   test::Assert((*lst2.Begin()).value == 666);
+   lst2.PopFront();
+
+   test::Assert((*lst2.Begin()).value == 92);
+   lst2.PopFront();
+
+   test::Assert((*lst2.Begin()).value == 88);
+   lst2.PopFront();
+
+   test::Assert((*lst2.Begin()).value == 64);
+   lst2.PopFront();
+
+   test::Assert((*lst2.Begin()).value == 25);
+   lst2.PopFront();
+
+   test::Assert((*lst2.Begin()).value == 13);
+}
+
+@test
+func TestSortQueue() {
+   var queue: Queue<i64>;
+   queue.Enqueue(64);
+   queue.Enqueue(13);
+   queue.Enqueue(666);
+   queue.Enqueue(25);
+   queue.Enqueue(92);
+   queue.Enqueue(88);
+
+   queue.Sort();
+
+   test::Assert(queue.Dequeue() == 13);
+   test::Assert(queue.Dequeue() == 25);
+   test::Assert(queue.Dequeue() == 64);
+   test::Assert(queue.Dequeue() == 88);
+   test::Assert(queue.Dequeue() == 92);
+   test::Assert(queue.Dequeue() == 666);
+
+   var queue2: Queue<i64>;
+   queue2.Enqueue(64);
+   queue2.Enqueue(13);
+   queue2.Enqueue(666);
+   queue2.Enqueue(25);
+   queue2.Enqueue(92);
+   queue2.Enqueue(88);
+
+   queue2.SortReverse();
+
+   test::Assert(queue2.Dequeue() == 666);
+   test::Assert(queue2.Dequeue() == 92);
+   test::Assert(queue2.Dequeue() == 88);
+   test::Assert(queue2.Dequeue() == 64);
+   test::Assert(queue2.Dequeue() == 25);
+   test::Assert(queue2.Dequeue() == 13);
+}
+
+@test
+func TestSortStack() {
+   var stack: Stack<i64>;
+   stack.Push(64);
+   stack.Push(13);
+   stack.Push(666);
+   stack.Push(25);
+   stack.Push(92);
+   stack.Push(88);
+
+   stack.Sort();
+
+   test::Assert(stack.Top() == 666);
+   stack.Pop();
+
+   test::Assert(stack.Top() == 92);
+   stack.Pop();
+
+   test::Assert(stack.Top() == 88);
+   stack.Pop();
+
+   test::Assert(stack.Top() == 64);
+   stack.Pop();
+
+   test::Assert(stack.Top() == 25);
+   stack.Pop();
+
+   test::Assert(stack.Top() == 13);
+   stack.Pop();
+
+    var stack2: Stack<i64>;
+   stack2.Push(64);
+   stack2.Push(13);
+   stack2.Push(666);
+   stack2.Push(25);
+   stack2.Push(92);
+   stack2.Push(88);
+
+   stack2.SortReverse();
+
+   test::Assert(stack2.Top() == 13);
+   stack2.Pop();
+
+   test::Assert(stack2.Top() == 25);
+   stack2.Pop();
+
+   test::Assert(stack2.Top() == 64);
+   stack2.Pop();
+
+   test::Assert(stack2.Top() == 88);
+   stack2.Pop();
+
+   test::Assert(stack2.Top() == 92);
+   stack2.Pop();
+
+   test::Assert(stack2.Top() == 666);
+   stack2.Pop();
+}
+
+@test
+func TestSortString() {
+   var str = String::Create(6);
+   str[0] = 'f';
+   str[1] = 'c';
+   str[2] = 'a';
+   str[3] = 'e';
+   str[4] = 'b';
+   str[5] = 'd';
+
+   str.Sort();
+
+   test::Assert(str[0] == 'a');
+   test::Assert(str[1] == 'b');
+   test::Assert(str[2] == 'c');
+   test::Assert(str[3] == 'd');
+   test::Assert(str[4] == 'e');
+   test::Assert(str[5] == 'f');
+
+   var str2 = String::Create(6);
+   str2[0] = 'f';
+   str2[1] = 'c';
+   str2[2] = 'a';
+   str2[3] = 'e';
+   str2[4] = 'b';
+   str2[5] = 'd';
+
+   str2.SortReverse();
+
+   test::Assert(str2[0] == 'f');
+   test::Assert(str2[1] == 'e');
+   test::Assert(str2[2] == 'd');
+   test::Assert(str2[3] == 'c');
+   test::Assert(str2[4] == 'b');
+   test::Assert(str2[5] == 'a');
+}

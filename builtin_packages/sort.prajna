@@ -1,0 +1,158 @@
+template <Type, Length_>
+implement Sortable for Array<Type, Length_> {
+    func Sort() {
+        for i in 1 to Length_ {
+            var key = this[i];
+            var j = i - 1;
+
+            while j >= 0 & this[j] > key {
+                this[j + 1] = this[j];
+                j = j - 1;
+            }
+
+            this[j + 1] = key;
+        }
+    }
+
+    func SortReverse() {
+        for i in 1 to Length_ {
+            var key = this[i];
+            var j = i - 1;
+
+            while j >= 0 & this[j] < key {
+                this[j + 1] = this[j];
+                j = j - 1;
+            }
+
+            this[j + 1] = key;
+        }
+    }
+}
+
+template <ValueType>
+implement Sortable for DynamicArray<ValueType> {
+    func Sort() {
+        for i in 1 to this.Length() {
+            var key = this[i];
+            var j = i - 1;
+
+            while j >= 0 & this[j] > key {
+                this[j + 1] = this[j];
+                j = j - 1;
+            }
+
+             this[j + 1] = key;
+        }
+    }
+
+    func SortReverse() {
+        for i in 1 to this.Length() {
+            var key = this[i];
+            var j = i - 1;
+
+            while j >= 0 & this[j] < key {
+                this[j + 1] = this[j];
+                j = j - 1;
+            }
+
+            this[j + 1] = key;
+        }
+    }
+}
+
+template <ValueType>
+implement Sortable for List<ValueType> {
+    func Sort() {
+        if (this.Length() <= 1) {
+            return;
+        }
+
+        var current = this.Begin()->next;
+
+        while (current != this.End()) {
+            var key = current->value;
+            var j = current->prev;
+
+            while (j != this._head) & (j->value > key) {
+                j->next->value = j->value;
+                j = j->prev;
+            }
+
+            j->next->value = key;
+            current = current->next;
+        }
+    }
+
+    func SortReverse() {
+        if (this.Length() <= 1) {
+            return;
+        }
+
+        var current = this.Begin()->next;
+
+        while (current != this.End()) {
+            var key = current->value;
+            var j = current->prev;
+
+            while (j != this._head) & (j->value < key) {
+                j->next->value = j->value;
+                j = j->prev;
+            }
+
+            j->next->value = key;
+            current = current->next;
+        }
+    }
+}
+
+template <ValueType>
+implement Sortable for Queue<ValueType> {
+    func Sort() {
+        this._list.Sort();
+    }
+
+    func SortReverse() {
+        this._list.SortReverse();
+    }
+}
+
+template <ValueType>
+implement Sortable for Stack<ValueType> {
+    func Sort() {
+        this._list.Sort();
+    }
+
+    func SortReverse() {
+        this._list.SortReverse();
+    }
+}
+
+implement Sortable for String {
+    func Sort() {
+        for i in 1 to this.Length() {
+            var key = this[i];
+            var j = i - 1;
+
+            while j >= 0 & this[j] > key {
+                this[j + 1] = this[j];
+                j = j - 1;
+            }
+
+             this[j + 1] = key;
+        }
+    }
+
+    func SortReverse() {
+        for i in 1 to this.Length() {
+            var key = this[i];
+            var j = i - 1;
+
+            while j >= 0 & this[j] < key {
+                this[j + 1] = this[j];
+                j = j - 1;
+            }
+
+            this[j + 1] = key;
+        }
+    }
+}

@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "boost/range/combine.hpp"
+#include "prajna/exception.hpp"
 #include "prajna/ir/ir.hpp"
 #include "prajna/lowering/symbol_table.hpp"
 #include "prajna/named.hpp"
@@ -136,12 +137,16 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
             implement_is_processing[template_arguments] = false;
         }
 
-        if (!implement_is_processing[template_arguments] && !inside_struct) {
-            for (auto template_implement : template_implement_type_vec) {
-                implement_is_processing[template_arguments] = true;
-                template_implement->Instantiate(template_arguments, ir_module);
-                implement_is_processing[template_arguments] = false;
+        try {
+            if (!implement_is_processing[template_arguments] && !inside_struct) {
+                for (auto template_implement : template_implement_type_vec) {
+                    implement_is_processing[template_arguments] = true;
+                    template_implement->Instantiate(template_arguments, ir_module);
+                    implement_is_processing[template_arguments] = false;
+                }
             }
+        } catch (CompileError compile_error) {
+            // implement error is not a error
         }
 
         // 当返回nullptr时, 会使用ir_builder->instantiating_type_stack.top()去获取类型

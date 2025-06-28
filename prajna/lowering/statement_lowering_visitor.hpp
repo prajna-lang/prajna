@@ -1,8 +1,9 @@
 #pragma once
 
 #include <algorithm>
-#include <boost/range/combine.hpp>
 
+#include "boost/range/combine.hpp"
+#include "boost/scope/scope_fail.hpp"
 #include "boost/variant.hpp"
 #include "prajna/assert.hpp"
 #include "prajna/ast/ast.hpp"
@@ -410,8 +411,10 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             auto ir_function = ApplyFunctionHeader(ast_function.declaration);
             ir_function->source_location = ast_function.declaration.name;
-            // 进入参数域,
+            boost::scope::scope_fail failure_guard(
+                [this, ir_function]() { this->ir_builder->module->RemoveFunction(ir_function); });
 
+            // 进入参数域,
             // @note 将function的第一个block作为最上层的block
             if (ast_function.body_optional) {
                 ir_builder->PushSymbolTable();
@@ -460,7 +463,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             }
 
             ir_builder->is_static_function = false;
-
             return ir_function;
         } catch (CompileError compile_error) {
             logger->Note(ast_function.declaration);

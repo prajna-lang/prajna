@@ -1508,6 +1508,11 @@ class Module : public Value {
         this->functions.push_back(ir_function);
     }
 
+    void RemoveFunction(std::shared_ptr<Function> ir_function) {
+        ir_function->parent.reset();
+        this->functions.remove(ir_function);
+    }
+
     void AddGlobalVariable(std::shared_ptr<GlobalVariable> ir_global_variable) {
         ir_global_variable->parent = shared_from_this();
         this->global_variables.push_back(ir_global_variable);

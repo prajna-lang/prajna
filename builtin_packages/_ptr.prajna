@@ -227,7 +227,7 @@ implement WeakPtr<Type> {
     }
 
     func Lock()->Ptr<Type> {
-        if ((this._control_block->strong_count == 0) | this.IsNull()) {
+        if ((this._control_block->strong_count == 0) || this.IsNull()) {
             return Ptr<Type>::Null();
         }
 
@@ -240,7 +240,7 @@ implement WeakPtr<Type> {
     }
 
     func IsExpired()->bool {
-        return (this._control_block->strong_count == 0) | this.IsNull();
+        return (this._control_block->strong_count == 0) || this.IsNull();
     }
 
     func ReferenceCount()->i64 {
@@ -285,16 +285,16 @@ implement WeakPtr<Type> {
     }
 
     func __copy__() {
-        if (!this.IsNull() & this._control_block.IsValid()) {
+        if (!this.IsNull() && this._control_block.IsValid()) {
             this._control_block->weak_count = this._control_block->weak_count + 1;
         }
     }
 
     func __finalize__() {
-        if (!this.IsNull() & this._control_block.IsValid()) {
+        if (!this.IsNull() && this._control_block.IsValid()) {
             this._control_block->weak_count = this._control_block->weak_count - 1;
 
-            if ((this._control_block->strong_count == 0) & (this._control_block->weak_count == 0)) {
+            if ((this._control_block->strong_count == 0) && (this._control_block->weak_count == 0)) {
                 this._control_block.Free();
             }
         }

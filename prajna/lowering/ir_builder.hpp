@@ -378,8 +378,8 @@ class IrBuilder {
             {">", "greater"},  {">=", "greater_or_equal"},
             {"+", "add"},      {"-", "sub"},
             {"*", "multiply"}, {"/", "divide"},
-            {"%", "remaind"},  {"&", "and"},
-            {"|", "or"},       {"^", "xor"}};
+            {"%", "remaind"},  {"&&", "and"},
+            {"||", "or"}};
 
         return this->GetMemberFunction(ir_type,
                                        "__" + binary_operator_map[binary_operator_name] + "__");

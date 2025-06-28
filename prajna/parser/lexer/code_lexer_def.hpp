@@ -14,6 +14,12 @@ CodeLexer<Lexer>::CodeLexer() {
     right_arrow2 = "\\|>";
     this->self += left_arrow2 | right_arrow2;
 
+    and_ = "&&";
+    or_ = "\\|\\|";
+    not_ = "!";
+    // xor_ = "\\^";
+    this->self += and_ | or_ | not_;
+
     equal = "==";
     not_equal = "!=";
     less_or_equal = "<=";
@@ -27,11 +33,8 @@ CodeLexer<Lexer>::CodeLexer() {
     period = '.';
     this->self += arrow | scope | period;
 
-    and_ = "&";
-    or_ = "\\|";
-    not_ = "!";
-    xor_ = "\\^";
-    this->self += and_ | or_ | xor_ | not_;
+    address = "&";
+    this->self += address;
 
     plus = '+';
     minus = '-';

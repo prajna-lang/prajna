@@ -57,7 +57,7 @@ implement Heap<Type, MaxSize> {
         var idx = this.size;
         this.size = this.size + 1;
 
-        while idx > 0 & this.Compare(this.data[idx], this.data[this.ParentIndex(idx)]) {
+        while idx > 0 && this.Compare(this.data[idx], this.data[this.ParentIndex(idx)]) {
             var temp = this.data[idx];
             this.data[idx] = this.data[this.ParentIndex(idx)];
             this.data[this.ParentIndex(idx)] = temp;
@@ -71,11 +71,11 @@ implement Heap<Type, MaxSize> {
         var left = this.LeftChildIndex(idx);
         var right = this.RightChildIndex(idx);
 
-        if (left < this.size) & this.Compare(this.data[left], this.data[extreme]) {
+        if (left < this.size) && this.Compare(this.data[left], this.data[extreme]) {
             extreme = left;
         }
 
-        if (right < this.size) & this.Compare(this.data[right], this.data[extreme]) {
+        if (right < this.size) && this.Compare(this.data[right], this.data[extreme]) {
             extreme = right;
         }
 

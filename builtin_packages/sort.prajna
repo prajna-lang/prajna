@@ -5,7 +5,7 @@ implement Sortable for Array<Type, Length_> {
             var key = this[i];
             var j = i - 1;
 
-            while j >= 0 & this[j] > key {
+            while j >= 0 && this[j] > key {
                 this[j + 1] = this[j];
                 j = j - 1;
             }
@@ -19,7 +19,7 @@ implement Sortable for Array<Type, Length_> {
             var key = this[i];
             var j = i - 1;
 
-            while j >= 0 & this[j] < key {
+            while j >= 0 && this[j] < key {
                 this[j + 1] = this[j];
                 j = j - 1;
             }
@@ -36,7 +36,7 @@ implement Sortable for DynamicArray<ValueType> {
             var key = this[i];
             var j = i - 1;
 
-            while j >= 0 & this[j] > key {
+            while j >= 0 && this[j] > key {
                 this[j + 1] = this[j];
                 j = j - 1;
             }
@@ -50,7 +50,7 @@ implement Sortable for DynamicArray<ValueType> {
             var key = this[i];
             var j = i - 1;
 
-            while j >= 0 & this[j] < key {
+            while j >= 0 && this[j] < key {
                 this[j + 1] = this[j];
                 j = j - 1;
             }
@@ -73,7 +73,7 @@ implement Sortable for List<ValueType> {
             var key = current->value;
             var j = current->prev;
 
-            while (j != this._head) & (j->value > key) {
+            while (j != this._head) && (j->value > key) {
                 j->next->value = j->value;
                 j = j->prev;
             }
@@ -94,7 +94,7 @@ implement Sortable for List<ValueType> {
             var key = current->value;
             var j = current->prev;
 
-            while (j != this._head) & (j->value < key) {
+            while (j != this._head) && (j->value < key) {
                 j->next->value = j->value;
                 j = j->prev;
             }
@@ -133,7 +133,7 @@ implement Sortable for String {
             var key = this[i];
             var j = i - 1;
 
-            while j >= 0 & this[j] > key {
+            while j >= 0 && this[j] > key {
                 this[j + 1] = this[j];
                 j = j - 1;
             }
@@ -147,7 +147,7 @@ implement Sortable for String {
             var key = this[i];
             var j = i - 1;
 
-            while j >= 0 & this[j] < key {
+            while j >= 0 && this[j] < key {
                 this[j + 1] = this[j];
                 j = j - 1;
             }

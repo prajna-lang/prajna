@@ -45,7 +45,7 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_error<fail>(equality_expr, error_handler_function);
     on_success(equality_expr, success_handler_function);
 
-    logical_op = tok.and_ | tok.or_ | tok.xor_;
+    logical_op = tok.and_ | tok.or_;
     logical_expr.name("expression");
     logical_expr = relational_expr >> *(logical_op > relational_expr);
     on_error<fail>(logical_expr, error_handler_function);
@@ -69,7 +69,7 @@ ExpressionGrammer<Iterator, Lexer>::ExpressionGrammer(const Lexer& tok,
     on_error<fail>(multiplicative_expr, error_handler_function);
     on_success(multiplicative_expr, success_handler_function);
 
-    unary_op = tok.star | tok.and_ | tok.plus | tok.minus | tok.not_;
+    unary_op = tok.star | tok.plus | tok.minus | tok.not_ | tok.address;
     unary_expr.name("unary expression");
     unary_expr = kernel_function_call | (unary_op > unary_expr);
     on_error<fail>(unary_expr, error_handler_function);

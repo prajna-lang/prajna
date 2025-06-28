@@ -22,7 +22,8 @@ struct CodeLexer : lex::lexer<Lexer> {
     lex::token_def<lex::omit> left_arrow2;   // <|
     lex::token_def<lex::omit> right_arrow2;  // |>
 
-    lex::token_def<ast::Operator> or_, and_, xor_, not_;  // logical
+    lex::token_def<ast::Operator> address;          // &
+    lex::token_def<ast::Operator> or_, and_, not_;  // logical
 
     lex::token_def<ast::Operator> equal, not_equal, less, less_or_equal, greater,
         greater_or_equal;  // compare

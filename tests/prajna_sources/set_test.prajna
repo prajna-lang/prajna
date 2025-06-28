@@ -2,13 +2,13 @@
 func TestSetAddAndRemove() {
     var sample: Set<i64>;
     sample.Add(10);
-    test::Assert(sample.Contains(10) & (sample.Count() == 1));
+    test::Assert(sample.Contains(10) && (sample.Count() == 1));
     sample.Add(20);
-    test::Assert(sample.Contains(20) & (sample.Count() == 2));
+    test::Assert(sample.Contains(20) && (sample.Count() == 2));
     sample.Add(20);
     test::Assert(sample.Count() == 2);
     sample.Remove(10);
-    test::Assert(!sample.Contains(10) & (sample.Count() == 1));
+    test::Assert(!sample.Contains(10) && (sample.Count() == 1));
 }
 
 @test
@@ -25,7 +25,7 @@ func TestSetUnion() {
 
     var set3 = set1.Union(set2);
 
-    test::Assert((set3.Count() == 4) & set3.Contains(1) & set3.Contains(2) & set3.Contains(3) & set3.Contains(4));
+    test::Assert((set3.Count() == 4) && set3.Contains(1) && set3.Contains(2) && set3.Contains(3) && set3.Contains(4));
 }
 
 @test
@@ -42,7 +42,7 @@ func TestSetIntersection() {
 
     var set3 = set1.Intersection(set2);
 
-    test::Assert((set3.Count() == 2) & set3.Contains(2) & set3.Contains(3));
+    test::Assert((set3.Count() == 2) && set3.Contains(2) && set3.Contains(3));
 }
 
 @test
@@ -59,5 +59,5 @@ func TestSetDifference() {
 
     var set3 = set1.Difference(set2);
 
-    test::Assert((set3.Count() == 1) & set3.Contains(1));
+    test::Assert((set3.Count() == 1) && set3.Contains(1));
 }

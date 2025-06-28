@@ -49,10 +49,8 @@ template RealNumberTypeTest <Type> {
 template LogicalTypeTest <Type>{
     @test
     func TestLogical() {
-        test::Assert(1i64.Cast<Type>() & 0i64.Cast<Type>() == 0i64.Cast<Type>());
-        test::Assert(1i64.Cast<Type>() | 2i64.Cast<Type>() == 3i64.Cast<Type>());
-        test::Assert(1i64.Cast<Type>() ^ 0i64.Cast<Type>() == 1i64.Cast<Type>());
-        // not test by Max and Min
+        test::Assert(1i64.Cast<Type>() && 0i64.Cast<Type>() == 0i64.Cast<Type>());
+        test::Assert(1i64.Cast<Type>() || 2i64.Cast<Type>() == 3i64.Cast<Type>());
     }
 }
 

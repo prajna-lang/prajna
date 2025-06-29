@@ -28,7 +28,9 @@ inline boost::property_tree::ptree& GlobalConfig::Instance() {
     if (instance.empty()) {
         try {
             boost::property_tree::read_json(
-                std::filesystem::current_path() / "matazure_config.json", instance);
+                (std::filesystem::current_path() / std::filesystem::path("matazure_config.json"))
+                    .string(),
+                instance);
         } catch (std::exception& e) {
             instance.put("error", "notexits");
             // Do none, get will give default value

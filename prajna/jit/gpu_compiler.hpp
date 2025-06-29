@@ -28,6 +28,7 @@ inline std::tuple<std::string, std::string> GetTargetGPUArchitecture() {
 
     std::array<char, 128> buffer;
     std::string result;
+#ifdef __linux__
     FILE* pipe = popen("nvidia-smi --query-gpu=compute_cap --format=csv,noheader", "r");
     if (pipe) {
         while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
@@ -43,7 +44,7 @@ inline std::tuple<std::string, std::string> GetTargetGPUArchitecture() {
             sm_version = fmt::format("sm_{}", result);
         }
     }
-    
+#endif
     return {triple, sm_version};
 }
 
@@ -68,9 +69,9 @@ std::string GpuCompiler::CompileToPTX(llvm::Module* llvm_module) {
     llvm::SmallString<0> buffer;
     llvm::raw_svector_ostream ostream(buffer);
     llvm::legacy::PassManager pass_manager;
-    PRAJNA_ASSERT(
-        !target_machine->addPassesToEmitFile(pass_manager, ostream, nullptr, llvm::CGFT_AssemblyFile),
-        "Cannot emit PTX");
+    PRAJNA_ASSERT(!target_machine->addPassesToEmitFile(pass_manager, ostream, nullptr,
+                                                       llvm::CGFT_AssemblyFile),
+                  "Cannot emit PTX");
 
     pass_manager.run(*llvm_module);
     return buffer.str().str();

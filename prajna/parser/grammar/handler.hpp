@@ -53,7 +53,8 @@ struct ErrorHandler {
         ss << what;
 
         std::string rule_name = what.tag == "token_def" ? ss.str() : "\"" + what.tag + "\"";
-        logger->Error(fmt::format("expect a {}", rule_name), last_pos1, last_pos2, BLUB);
+        logger->Error(fmt::format("expect a {}", rule_name), last_pos1, last_pos2,
+                      fmt::color::blue);
     }
 
    private:
@@ -130,7 +131,7 @@ struct SuccessHandler {
             auto pos1 = GetFirstIteratorPosition(last_iter);
             auto pos2 = pos1;
             pos2.column = pos1.column + 1;
-            logger->Error("expect a \"statement\"", pos1, pos2, REDB);
+            logger->Error("expect a \"statement\"", pos1, pos2, fmt::color::red);
         }
     }
 

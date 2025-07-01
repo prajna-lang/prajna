@@ -40,4 +40,28 @@ inline std::string MangleNvvmName(std::string name) {
     return str_re;
 }
 
+inline std::string MangleHipName(std::string name) {
+    // 提取函数名（忽略命名空间）
+    size_t last_colon = name.rfind("::");
+    std::string simple_name = (last_colon == std::string::npos) ? name : name.substr(last_colon + 2);
+    
+    // 替换所有非字母数字字符为下划线
+    std::string str_re;
+    str_re.reserve(simple_name.size());
+    for (char c : simple_name) {
+        if (std::isalnum(c) || c == '.') {
+            str_re.push_back(c);
+        } else {
+            str_re.push_back('.');
+        }
+    }
+    
+    // 确保名称非空且有效
+    if (str_re.empty()) {
+        str_re = "kernel";
+    }
+    
+    return str_re;
+}
+
 }  // namespace prajna

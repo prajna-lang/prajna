@@ -97,7 +97,7 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh './scripts/clone_submodules.sh -f --jobs=4 --depth=50'
-                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERT=OFF -DPRAJNA_WITH_CUDA=ON'
+                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERT=OFF -DPRAJNA_WITH_CUDA=ON -DPRAJNA_WITH_ROCM=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                             }
                         }

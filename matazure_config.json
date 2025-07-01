@@ -3,6 +3,9 @@
         "dump_llvm_ir": false
     },
     "target": {
-        "triple": "nvptx64-nvidia-cuda"
+        "triple": {
+            "nvptx":"nvptx64-nvidia-cuda",
+            "amdgpu":"amdgcn-amd-amdhsa"
+        } 
     }
 }

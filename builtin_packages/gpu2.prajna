@@ -1,0 +1,209 @@
+// ============================ Host API ============================
+
+use ::hip;
+
+func Init(){
+    hip::hipInit(0i32);
+}
+
+func SetDevice(id: i64){
+    hip::hipSetDevice(id.Cast<i32>()).ToString();
+}
+
+func MaxThreadPerBlock(device: i64)->i64{
+    var count: i32;
+    hip::hipDeviceGetAttribute(&count, 1i32, device.Cast<i32>());
+    return count.Cast<i64>();
+}
+
+func MultiProcessorsCount(device: i64)->i64{
+    var count: i32;
+    hip::hipDeviceGetAttribute(&count, 16i32, device.Cast<i32>());
+    return count.Cast<i64>();
+}
+
+func Synchronize() {
+    hip::hipStreamSynchronize(0);
+}
+
+// ============================ Launch ============================
+
+func LaunchKernel(kernel_function_pointer: ptr<i8>, GridShape: Array<i64, 3>, BlockShape: Array<i64, 3>, kernel_params: ptr<ptr<i8>>)->i64{
+    var re = hip::hipModuleLaunchKernel(kernel_function_pointer,GridShape[2].Cast<u32>(), GridShape[1].Cast<u32>(),GridShape[0].Cast<u32>(), BlockShape[2].Cast<u32>(), BlockShape[1].Cast<u32>(), BlockShape[0].Cast<u32>(),
+             0u32, cast<i64, ptr<i8>>(0), kernel_params, cast<i64, ptr<ptr<i8>>>(0));
+    return re.Cast<i64>();
+}
+
+func LaunchKernelForDim1(kernel_function_pointer: ptr<i8>, paramters: ptr<ptr<i8>>){
+
+}
+
+// ============================ Tensor ============================
+
+template <Type, Dim>
+struct Tensor {
+    data : ptr<Type>;
+    layout: Layout<Dim>;
+}
+
+
+template <Type, Dim>
+implement Tensor<Type, Dim>{
+    @inline
+    func __get__At(idx: Array<i64, Dim>)->Type{
+        var offset = this.layout.ArrayIndexToLinearIndex(idx);
+        return this.data[offset];
+    }
+
+    @inline
+    func __set__At(idx: Array<i64, Dim>, value: Type){
+        var offset = this.layout.ArrayIndexToLinearIndex(idx);
+        this.data[offset] = value;
+    }
+}
+
+template <Type, Dim>
+implement Tensor<Type, Dim> {
+    @inline
+    func __get_array_index__(index: Array<i64, Dim>)->Type{
+        return this.At(index);
+    }
+
+    @inline
+    func __set_array_index__(index: Array<i64, Dim>, value: Type){
+        this.At(index) = value;
+    }
+}
+
+template <Type, Dim>
+implement Tensor<Type, Dim> {
+    @static
+    func Create(shape :Array<i64, Dim>)->Tensor<Type, Dim>{
+        var self: Tensor<Type, Dim>;
+        self.layout = Layout<Dim>::Create(shape);
+
+        // TODO : 内存管理需要修复
+        var bytes = self.layout.Length() * sizeof<Type>();
+        hip::hipMalloc(bit_cast<ptr<ptr<Type>>, ptr<ptr<i8>>>(&self.data), bytes);
+        return self;
+    }
+
+    @inline
+    func Shape()->Array<i64, Dim> {
+        return this.layout.shape;
+    }
+
+
+    func ToHost()->::Tensor<Type, Dim>{
+        var host_tensor = ::Tensor<Type, Dim>::Create(this.layout.shape);
+        var size = 1;
+        for i in 0 to Dim {
+            size = size * this.layout.shape[i];
+        }
+        hip::hipMemcpy(bit_cast<ptr<Type>, ptr<i8>>(host_tensor.data.raw_ptr), bit_cast<ptr<Type>, ptr<i8>>(this.data), size * sizeof<Type>(), 2i32);
+        return host_tensor;
+    }
+}
+
+template <Type, Dim>
+implement ::Tensor<Type, Dim> {
+    func ToGpu()->Tensor<Type, Dim>{
+        var gpu_tensor = Tensor<Type, Dim>::Create(this.layout.shape);
+        var size = 1;
+        for i in 0 to Dim {
+            size = size * this.layout.shape[i];
+        }
+        hip::hipMemcpy(bit_cast<ptr<Type>, ptr<i8>>(gpu_tensor.data), bit_cast<ptr<Type>, ptr<i8>>(this.data.raw_ptr), size * sizeof<Type>(), 1i32);
+        return gpu_tensor;
+    }
+}
+
+
+
+
+// ======================== AMDGPU Intrinsics ========================
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workitem.id.x")
+func __thread_idx_x()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workitem.id.y")
+func __thread_idx_y()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workitem.id.z")
+func __thread_idx_z()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workgroup.size.x")
+func __block_shape_x()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workgroup.size.y")
+func __block_shape_y()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workgroup.size.z")
+func __block_shape_z()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workgroup.id.x")
+func __block_idx_x()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workgroup.id.y")
+func __block_idx_y()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.workgroup.id.z")
+func __block_idx_z()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.num.workgroups.x")
+func __grid_shape_x()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.num.workgroups.y")
+func __grid_shape_y()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.num.workgroups.z")
+func __grid_shape_z()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.wavefrontsize")
+func __warp_size()->u32;
+
+@target("amdgpu")
+@intrinsic("llvm.amdgcn.s.barrier")
+func BlockSynchronize();
+
+
+// ====================== 统一抽象接口 ======================
+
+
+@inline
+@target("amdgpu")
+func ThreadIndex()->Array<i64, 3> {
+    return [__thread_idx_z().Cast<i64>(), __thread_idx_y().Cast<i64>(), __thread_idx_x().Cast<i64>()];
+}
+
+@inline
+@target("amdgpu")
+func BlockShape()->Array<i64, 3> {
+    return [__block_shape_z().Cast<i64>(), __block_shape_y().Cast<i64>(), __block_shape_x().Cast<i64>()];
+}
+
+@inline
+@target("amdgpu")
+func BlockIndex()->Array<i64, 3> {
+    return [__block_idx_z().Cast<i64>(), __block_idx_y().Cast<i64>(), __block_idx_x().Cast<i64>()];
+}
+
+@inline
+@target("amdgpu")
+func GridShape()->Array<i64, 3> {
+    return [__grid_shape_z().Cast<i64>(), __grid_shape_y().Cast<i64>(), __grid_shape_x().Cast<i64>()];
+}
+

@@ -56,4 +56,12 @@ if (PRAJNA_WITH_CUDA)
     target_compile_definitions(prajna_jit PRIVATE PRAJNA_WITH_CUDA)
 endif()
 
-# target_include_directories(prajna_jit PRIVATE /usr/local/cuda/include)
+if (PRAJNA_WITH_ROCM)
+    target_link_libraries(prajna_jit 
+        PRIVATE LLVMAMDGPUCodeGen  # 添加 HSACO 后端支持
+        PRIVATE LLVMAMDGPUDesc     # HSACO 目标描述
+        PRIVATE LLVMAMDGPUInfo     # HSACO 目标信息
+        PRIVATE LLVMAsmPrinter    # 支持 HSACO 汇编输出
+    )
+    target_compile_definitions(prajna_jit PRIVATE PRAJNA_WITH_ROCM)
+endif()

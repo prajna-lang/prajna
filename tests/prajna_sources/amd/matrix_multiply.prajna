@@ -1,0 +1,69 @@
+// use gpu2 // gpu指向的是存在examples::gpu的module
+use ::gpu2::*;
+use ::gpu2::Tensor<f32, 2> as GpuMatrixf32;
+
+@kernel
+@target("amdgpu")
+func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
+    var thread_x = ::gpu2::ThreadIndex()[1];
+    var thread_y = ::gpu2::ThreadIndex()[2];
+    var block_x = ::gpu2::BlockIndex()[1];
+    var block_y = ::gpu2::BlockIndex()[2];
+    var block_size = 32;
+    var global_x = block_x * block_size + thread_x;
+    var global_y = block_y * block_size + thread_y;
+
+    var sum = 0.0f32;
+    var step = A.Shape()[1] / block_size;
+    for i in 0 to step {
+        @shared
+        var local_a: Array<f32, 1024>;
+        @shared
+        var local_b: Array<f32, 1024>;
+        local_a[thread_x* 32 + thread_y] = A[global_x, thread_y + i * block_size];
+        local_b[thread_x* 32 + thread_y] = B[thread_x + i * block_size , global_y];
+        ::gpu2::BlockSynchronize();
+
+        for j in 0 to 32 {
+          sum = sum + local_a[thread_x * 32 + j] * local_b[j * 32 + thread_y];
+        }
+        ::gpu2::BlockSynchronize();
+    }
+
+    C[global_x, global_y] = sum;
+}
+
+@test
+func TestMatrixMultiply() {
+    var block_size = 32;
+    var block_shape = [1, block_size, block_size];
+    var a_shape = [10 * 32, 10 * 32];
+    var b_shape = [10 * 32, 20 * 32];
+    var grid_shape = [1, a_shape[0] / block_size, b_shape[1] / block_size];
+
+
+    var A = GpuMatrixf32::Create(a_shape);
+    var B = GpuMatrixf32::Create(b_shape);
+    var C = GpuMatrixf32::Create([a_shape[0], b_shape[1]]);
+
+    MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
+
+
+    var epoch = 300;
+    var t0 = chrono::Clock();
+
+    for i in 0 to epoch {
+      MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
+    }
+    gpu2::Synchronize();
+
+    var t1 = chrono::Clock();
+    t0.PrintLine();
+    t1.PrintLine();
+
+    var flops = 2 * a_shape[0] * a_shape[1] * b_shape[1];
+    var giga_flops = (flops.Cast<f32>() * 1.0e-9 * epoch.Cast<f32>()) / (t1 - t0);
+    giga_flops.Print();
+    "GFlop/s".PrintLine();
+
+}

@@ -1,0 +1,92 @@
+#link("libamdhip64.so", "linux", "absolute");
+#link("libhiprtc.so", "linux", "absolute");
+#link("amdhip64.dll", "win", "absolute");  // Windows 下 HIP 动态库，注意版本号和文件名可能根据 ROCm/HIP 版本调整
+
+// ===========================
+// HIP/ROCm Runtime API
+// ===========================
+
+@extern
+func hipInit(flag: i32) -> i32;
+
+@extern
+func hipGetDeviceCount(count: ptr<i32>) -> i32;
+
+@extern
+func hipGetDevice(device: ptr<i32>, ordinal: i32) -> i32;
+
+@extern
+func hipDeviceGetAttribute(pi: ptr<i32>, attrib: i32, device: i32) -> i32;
+
+
+@extern
+func hipSetDevice(id: i32) -> i32;
+
+@extern
+func hipMalloc(dev_pointer: ptr<ptr<i8>>, size: i64) -> i32;
+
+@extern
+func hipFree(dev_pointer: ptr<i8>) -> i32;
+
+@extern
+func hipMemcpy(dst: ptr<i8>, src: ptr<i8>, memory_bytes: i64, kind: i32) -> i32;
+
+// hipMemcpyKind
+// hipMemcpyHostToHost   = 0
+// hipMemcpyHostToDevice = 1
+// hipMemcpyDeviceToHost = 2
+// hipMemcpyDeviceToDevice = 3
+// hipMemcpyDefault = 4
+
+@extern
+func hipDeviceSynchronize() -> i32;
+
+@extern
+func hipStreamSynchronize(stream: i64) -> i32;
+
+@extern
+func hipMemset(dst: ptr<i8>, value: i32, size: i64) -> i32;
+
+// ===========================
+// HIP Module (Driver) API
+// ===========================
+
+// @extern
+// func hipModuleLoad(module: ptr<ptr<i8>>, fname: ptr<i8>) -> i32;
+
+// @extern
+// func hipModuleGetFunction(function: ptr<i64>, module: i64, kname: ptr<i8>) -> i32;
+
+// 核函数启动
+@extern
+func hipModuleLaunchKernel(
+    f: ptr<i8>,                   // kernel 函数指针
+    gridDimX: u32,
+    gridDimY: u32,
+    gridDimZ: u32,
+    blockDimX: u32,
+    blockDimY: u32,
+    blockDimZ: u32,
+    sharedMemBytes: u32,
+    stream: ptr<i8>,
+    kernelParams: ptr<ptr<i8>>,
+    extra: ptr<ptr<i8>>
+) -> i32;
+
+
+
+
+
+
+
+// ===========================
+// 错误码和辅助函数
+// ===========================
+
+@extern
+func hipGetErrorName(error: i32) -> ptr<i8>;
+
+@extern
+func hipGetErrorString(error: i32) -> ptr<i8>;
+
+

@@ -40,7 +40,7 @@ int prajna_exe_main(int argc, char* argv[]) {
         return 0;
     }
 
-    fmt::print(options.help({""}));
+    fmt::print("{}", options.help({""}));
     return 0;
 
     return 0;
@@ -91,7 +91,7 @@ int prajna_jupyter_main(int argc, char* argv[]) {
         return 0;
     }
 
-    fmt::print(options.help({""}));
+    fmt::print("{}", options.help({""}));
     return 0;
 }
 
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (result.count("help") || result.arguments().empty()) {
-        fmt::print(options.help({""}));
+        fmt::print("{}", options.help({""}));
         fmt::print("Avaliabled sub commands: exe, repl, jupyter\n");
         fmt::print("Sub command usage:\n prajna exe --help\n");
         return 0;

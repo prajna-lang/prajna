@@ -154,7 +154,7 @@ void Compiler::ExecuteProgram(std::filesystem::path program_path) {
 void Compiler::ExecutateMainFunction() {
     std::set<std::shared_ptr<ir::Function>> main_functions;
 
-    this->_symbol_table->Each([=, &main_functions](lowering::Symbol symbol) {
+    this->_symbol_table->Each([this, &main_functions](lowering::Symbol symbol) {
         if (auto ir_value = lowering::SymbolGet<ir::Value>(symbol)) {
             if (auto ir_function = Cast<ir::Function>(ir_value)) {
                 if (ir_function->name == "Main") {
@@ -191,7 +191,7 @@ void Compiler::AddPackageDirectoryPath(std::string package_directory) {
     if (!std::filesystem::is_directory(std::filesystem::path(package_directory))) {
         auto error_message = fmt::format("{} is not a valid package directory",
                                          fmt::styled(package_directory, fmt::fg(fmt::color::red)));
-        fmt::print(error_message);
+        fmt::print("{}", error_message);
         throw std::runtime_error(error_message);
     }
     package_directories.push_back(std::filesystem::path(package_directory));

@@ -100,7 +100,7 @@ class ExpressionLoweringVisitor {
         auto symbol = ir_builder->symbol_table->Get(ast_identifier);
         if (!SymbolIs<ir::Value>(symbol)) {
             PRAJNA_UNREACHABLE;
-            logger->Error(fmt::format("{} is not a valid value"), ast_identifier);
+            logger->Error(fmt::format("{} is not a valid value", ast_identifier));
         }
 
         return SymbolGet<ir::Value>(symbol);
@@ -602,8 +602,7 @@ class ExpressionLoweringVisitor {
                     return ir_builder->GetInt64Constant(ir_constant_int->value);
                 },
                 [=](auto x) {
-                    logger->Error(fmt::format("use invalid symbol as a value"),
-                                  ast_identifier_path);
+                    logger->Error("use invalid symbol as a value", ast_identifier_path);
                     return nullptr;
                 }},
             symbol);

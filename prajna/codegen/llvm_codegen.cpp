@@ -106,7 +106,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
             std::vector<llvm::Type *> llvm_argument_types(ir_function_type->parameter_types.size());
             std::transform(ir_function_type->parameter_types.begin(),
                            ir_function_type->parameter_types.end(), llvm_argument_types.begin(),
-                           [=](std::shared_ptr<ir::Type> ir_type) {
+                           [this](std::shared_ptr<ir::Type> ir_type) {
                                this->EmitType(ir_type);
                                PRAJNA_ASSERT(ir_type->llvm_type);
                                return ir_type->llvm_type;
@@ -141,7 +141,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
             ir_struct_type->llvm_type = llvm_struct_type;
             std::vector<llvm::Type *> llvm_types(ir_struct_type->fields.size());
             std::transform(ir_struct_type->fields.begin(), ir_struct_type->fields.end(),
-                           llvm_types.begin(), [=](std::shared_ptr<ir::Field> field) {
+                           llvm_types.begin(), [this](std::shared_ptr<ir::Field> field) {
                                this->EmitType(field->type);
                                return field->type->llvm_type;
                            });

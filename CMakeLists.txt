@@ -4,9 +4,8 @@ project(prajna CXX C)
 
 set(CMAKE_WARN_DEPRECATED OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # 用于智能提示
-set(CMAKE_CXX_STANDARD 17) # c++20目前系统库还不支持, 没有必要
+set(CMAKE_CXX_STANDARD 20) # c++20目前系统库还不支持, 没有必要
 set(CXX_STANDARD_REQUIRED ON)  # 若不支持c++17选项则报错，而不是使用c++14
-set(CMAKE_CXX_EXTENSIONS OFF)  # 使用 -std=c++17而不是 -std=gnu++17
 
 # 在mac平台下， 因为llvm设置为hidden，所以避免编译warning这里全局设置为hidden
 # 之所以不用target_link_options设置，是因为其不能设置第三方项目
@@ -35,6 +34,13 @@ if (UNIX AND NOT APPLE)
 else()
     # do none
 endif()
+
+if (MSVC)
+    add_compile_options(/wd4996)
+else()
+    add_compile_options(-Wno-deprecated-this-capture)
+endif()
+
 
 message("prajna build target triple: ${CMAKE_C_COMPILER_TARGET}")
 add_subdirectory(third_party/llvm-project/llvm EXCLUDE_FROM_ALL)

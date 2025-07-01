@@ -62,7 +62,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                         PRAJNA_UNREACHABLE;
                         return nullptr;
                     },
-                    [=, &is_first_module](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
+                    [this, &is_first_module, identifier,
+                     iter_ast_identifier](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
                         auto symbol = symbol_table->Get(identifier);
                         if (symbol.which() != 0) {
                             return symbol;

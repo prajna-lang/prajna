@@ -1,0 +1,76 @@
+// Linear layer (fully connected layer)
+struct LinearLayer {
+    weights: Tensor<f32, 2>;
+    biases: Tensor<f32, 2>;
+    input_size: i64;
+    output_size: i64;
+}
+
+implement LinearLayer {
+    @static
+    func Create(input_size: i64, output_size: i64)->LinearLayer {
+        var layer: LinearLayer;
+        layer.input_size = input_size;
+        layer.output_size = output_size;
+        
+        // Initialize weights and biases
+        layer.weights = Tensor<f32, 2>::Create([input_size, output_size]);
+        layer.biases = Tensor<f32, 2>::Create([1, output_size]);
+        
+        // Xavier initialization for weights
+        var scale = 1.0 / input_size.Cast<f32>();
+        for i in 0 to input_size {
+            for j in 0 to output_size {
+                // Simple random initialization
+                layer.weights[i, j] = (i * j % 100).Cast<f32>() * 0.01 * scale - 0.5 * scale;
+            }
+        }
+        
+        // Initialize biases to zero
+        for j in 0 to output_size {
+            layer.biases[0, j] = 0.0;
+        }
+        
+        return layer;
+    }
+    
+    func Forward(input: Tensor<f32, 2>)->Tensor<f32, 2> {
+        var input_shape = input.Shape();
+        var batch_size = input_shape[0];
+        var output = Tensor<f32, 2>::Create([batch_size, this.output_size]);
+        
+        // Matrix multiplication: output = input * weights + bias
+        for b in 0 to batch_size {
+            for j in 0 to this.output_size {
+                var sum = 0.0;
+                for i in 0 to this.input_size {
+                    sum = sum + input[b, i] * this.weights[i, j];
+                }
+                output[b, j] = sum + this.biases[0, j];
+            }
+        }
+        
+        return output;
+    }
+}
+
+@test
+func TestLinearLayer() {
+    "Testing Linear Layer...".PrintLine();
+    
+    var layer = LinearLayer::Create(3, 2);
+    var input = Tensor<f32, 2>::Create([2, 3]);
+    
+    // Set input values
+    input[0, 0] = 1.0; input[0, 1] = 2.0; input[0, 2] = 3.0;
+    input[1, 0] = 4.0; input[1, 1] = 5.0; input[1, 2] = 6.0;
+    
+    var output = layer.Forward(input);
+    "Input:".PrintLine();
+    input.PrintLine();
+    "Output:".PrintLine();
+    output.PrintLine();
+    
+    test::Assert(output.Shape()[0] == 2);
+    test::Assert(output.Shape()[1] == 2);
+}

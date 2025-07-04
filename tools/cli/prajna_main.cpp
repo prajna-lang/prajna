@@ -3,9 +3,9 @@
 #include <memory>
 
 #include "boost/asio/io_service.hpp"
-#include "boost/process/io.hpp"
-#include "boost/process/search_path.hpp"
-#include "boost/process/system.hpp"
+#include "boost/process/v1/io.hpp"
+#include "boost/process/v1/search_path.hpp"
+#include "boost/process/v1/system.hpp"
 #include "cxxopts.hpp"
 #include "fmt/color.h"
 #include "fmt/format.h"

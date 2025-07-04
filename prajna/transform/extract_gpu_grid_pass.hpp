@@ -26,15 +26,15 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
     // 加入first和last
     ir_argument_types.push_back(ir_gpu_for->First()->type);
     ir_argument_types.push_back(ir_gpu_for->Last()->type);
-    std::transform(RANGE(ir_captured_variables_list), std::back_inserter(ir_argument_types),
-                   [=](std::shared_ptr<ir::Value> ir_value) {
-                       if (utility::IsHostTensorType(ir_value->type, ir_module)) {
-                           return utility::GetGpuTensorTypeOfHostTensorType(ir_value->type,
-                                                                            ir_module);
-                       } else {
-                           return ir_value->type;
-                       }
-                   });
+    std::ranges::transform(ir_captured_variables_list, std::back_inserter(ir_argument_types),
+                           [=](std::shared_ptr<ir::Value> ir_value) {
+                               if (utility::IsHostTensorType(ir_value->type, ir_module)) {
+                                   return utility::GetGpuTensorTypeOfHostTensorType(ir_value->type,
+                                                                                    ir_module);
+                               } else {
+                                   return ir_value->type;
+                               }
+                           });
 
     auto ir_kernel_function_type =
         ir::FunctionType::Create(ir_argument_types, ir::VoidType::Create());
@@ -164,7 +164,7 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
             ConvertGpuForToKernelCall(ir_gpu_for, idx);
 
         auto ir_gpu_parent_block = ir_gpu_for->GetParentBlock();
-        auto iter_gpu_for = std::find(RANGE((*ir_gpu_parent_block)), ir_gpu_for);
+        auto iter_gpu_for = std::ranges::find(*ir_gpu_parent_block, ir_gpu_for);
         auto ir_builder = lowering::IrBuilder::Create();
         auto scope = ir_builder->PushBlockRAII(ir_gpu_parent_block);
         ir_builder->inserter_iterator = iter_gpu_for;
@@ -202,8 +202,8 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
         ir_arguments.push_back(ir_gpu_for->Last());
         std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Variable>>
             gpu_host_tensor_dict;
-        std::transform(
-            RANGE(ir_captured_variables_list), std::back_inserter(ir_arguments),
+        std::ranges::transform(
+            ir_captured_variables_list, std::back_inserter(ir_arguments),
             [=, &gpu_host_tensor_dict](
                 std::shared_ptr<ir::Variable> ir_captured_variable) -> std::shared_ptr<ir::Value> {
                 if (utility::IsHostTensorType(ir_captured_variable->type, ir_module)) {

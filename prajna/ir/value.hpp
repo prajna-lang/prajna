@@ -13,7 +13,6 @@
 #include "boost/range/combine.hpp"
 #include "prajna/ast/ast.hpp"
 #include "prajna/helper.hpp"
-// #include "prajna/ir/cloner.hpp"
 #include "prajna/ir/global_context.h"
 #include "prajna/ir/target.hpp"
 #include "prajna/ir/type.hpp"
@@ -352,7 +351,7 @@ class Block : public Value, public std::list<std::shared_ptr<ir::Value>> {
 
     iterator Find(std::shared_ptr<ir::Value> ir_value) {
         PRAJNA_ASSERT(ir_value->GetParentBlock().get() == this);
-        return std::find(RANGE((*this)), ir_value);
+        return std::ranges::find(*this, ir_value);
     }
 
     iterator Erase(iterator iter) {
@@ -363,7 +362,7 @@ class Block : public Value, public std::list<std::shared_ptr<ir::Value>> {
 
     void Remove(std::shared_ptr<ir::Value> ir_value) {
         ir_value->parent.reset();
-        this->Erase(std::find(RANGE((*this)), ir_value));
+        this->Erase(std::ranges::find(*this, ir_value));
     }
 
     void PushFront(std::shared_ptr<ir::Value> ir_value) {
@@ -404,12 +403,13 @@ class Function : public Value {
         // @warning 事实上llvm::Function是一个指针类型
         this->parameters.resize(function_type->parameter_types.size());
         this->type = PointerType::Create(function_type);
-        std::transform(RANGE(function_type->parameter_types), this->parameters.begin(),
-                       [=](std::shared_ptr<Type> ir_argument_type) {
-                           auto ir_parameter = Parameter::Create(ir_argument_type);
-                           ir_parameter->parent = Cast<ir::Function>(this->shared_from_this());
-                           return ir_parameter;
-                       });
+        std::ranges::transform(function_type->parameter_types, this->parameters.begin(),
+                               [=](std::shared_ptr<Type> ir_argument_type) {
+                                   auto ir_parameter = Parameter::Create(ir_argument_type);
+                                   ir_parameter->parent =
+                                       Cast<ir::Function>(this->shared_from_this());
+                                   return ir_parameter;
+                               });
     }
 
     void Detach() override {
@@ -1678,7 +1678,7 @@ inline std::shared_ptr<Block> Value::GetRootBlock() {
 
 inline std::list<std::shared_ptr<ir::Value>>::iterator Value::GetBlockIterator() {
     auto ir_parent_block = Cast<ir::Block>(this->GetParentBlock());
-    auto iter = std::find(RANGE((*ir_parent_block)), this->shared_from_this());
+    auto iter = std::ranges::find(*ir_parent_block, this->shared_from_this());
     PRAJNA_ASSERT(iter != ir_parent_block->end());
     return iter;
 }
@@ -1714,8 +1714,8 @@ inline std::shared_ptr<Function> Type::GetMemberFunction(std::string member_func
 
 inline std::shared_ptr<ir::Function> GetFunctionByName(
     std::list<std::shared_ptr<ir::Function>> function_list, std::string name) {
-    auto iter_function = std::find_if(RANGE(function_list),
-                                      [=](auto ir_function) { return ir_function->name == name; });
+    auto iter_function = std::ranges::find_if(
+        function_list, [=](auto ir_function) { return ir_function->name == name; });
     PRAJNA_ASSERT(iter_function != function_list.end(), name);
     return *iter_function;
 }

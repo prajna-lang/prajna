@@ -26,7 +26,7 @@ inline void RemoveFromParent(std::shared_ptr<ir::Value> ir_value) {
 
 inline void ReplaceInBlock(std::shared_ptr<ir::Value> ir_org, std::shared_ptr<ir::Value> ir_new) {
     auto ir_block = ir_org->GetParentBlock();
-    auto iter = std::find(ir_block->begin(), ir_block->end(), ir_org);
+    auto iter = std::ranges::find(*ir_block, ir_org);
     PRAJNA_ASSERT(iter != ir_block->end());
     ir_block->Insert(iter, ir_new);
     ir_block->Erase(iter);
@@ -129,8 +129,9 @@ inline std::list<ir::Target> GetTargets(std::shared_ptr<ir::Function> ir_functio
                                               target_string_vector.end());
 
     std::list<ir::Target> ir_target_list;
-    std::transform(RANGE(target_string_list), std::inserter(ir_target_list, ir_target_list.begin()),
-                   [](auto x) { return ir::StringToTarget(x); });
+    std::ranges::transform(target_string_list,
+                           std::inserter(ir_target_list, ir_target_list.begin()),
+                           [](auto x) { return ir::StringToTarget(x); });
     return ir_target_list;
 }
 

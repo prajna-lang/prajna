@@ -247,7 +247,7 @@ class FunctionType : public Type {
             if (auto ir_fun_type = Cast<FunctionType>(ir_type)) {
                 if (ir_fun_type->return_type == return_type &&
                     ir_fun_type->parameter_types.size() == ir_parameter_types.size() &&
-                    std::equal(RANGE(ir_parameter_types), ir_fun_type->parameter_types.begin())) {
+                    std::ranges::equal(ir_parameter_types, ir_fun_type->parameter_types)) {
                     return ir_fun_type;
                 }
             }

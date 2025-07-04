@@ -104,13 +104,12 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
         if (auto ir_function_type = Cast<ir::FunctionType>(ir_type)) {
             std::vector<llvm::Type *> llvm_argument_types(ir_function_type->parameter_types.size());
-            std::transform(ir_function_type->parameter_types.begin(),
-                           ir_function_type->parameter_types.end(), llvm_argument_types.begin(),
-                           [this](std::shared_ptr<ir::Type> ir_type) {
-                               this->EmitType(ir_type);
-                               PRAJNA_ASSERT(ir_type->llvm_type);
-                               return ir_type->llvm_type;
-                           });
+            std::ranges::transform(ir_function_type->parameter_types, llvm_argument_types.begin(),
+                                   [this](std::shared_ptr<ir::Type> ir_type) {
+                                       this->EmitType(ir_type);
+                                       PRAJNA_ASSERT(ir_type->llvm_type);
+                                       return ir_type->llvm_type;
+                                   });
             this->EmitType(ir_function_type->return_type);
             ir_function_type->llvm_type = llvm::FunctionType::get(
                 ir_function_type->return_type->llvm_type, llvm_argument_types, false);
@@ -140,11 +139,11 @@ class LlvmCodegen : public prajna::ir::Visitor {
                 llvm::StructType::create(static_llvm_context, ir_struct_type->fullname);
             ir_struct_type->llvm_type = llvm_struct_type;
             std::vector<llvm::Type *> llvm_types(ir_struct_type->fields.size());
-            std::transform(ir_struct_type->fields.begin(), ir_struct_type->fields.end(),
-                           llvm_types.begin(), [this](std::shared_ptr<ir::Field> field) {
-                               this->EmitType(field->type);
-                               return field->type->llvm_type;
-                           });
+            std::ranges::transform(ir_struct_type->fields, llvm_types.begin(),
+                                   [this](std::shared_ptr<ir::Field> field) {
+                                       this->EmitType(field->type);
+                                       return field->type->llvm_type;
+                                   });
             llvm_struct_type->setBody(llvm_types, true);
             return;
         }
@@ -341,12 +340,12 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
     void Visit(std::shared_ptr<ir::ConstantArray> ir_constant_array) override {
         std::vector<llvm::Constant *> llvm_contants(ir_constant_array->initialize_constants.size());
-        std::transform(RANGE(ir_constant_array->initialize_constants), llvm_contants.begin(),
-                       [=](auto ir_init) {
-                           auto llvm_constant = static_cast<llvm::Constant *>(ir_init->llvm_value);
-                           PRAJNA_ASSERT(llvm_constant);
-                           return llvm_constant;
-                       });
+        std::ranges::transform(
+            ir_constant_array->initialize_constants, llvm_contants.begin(), [=](auto ir_init) {
+                auto llvm_constant = static_cast<llvm::Constant *>(ir_init->llvm_value);
+                PRAJNA_ASSERT(llvm_constant);
+                return llvm_constant;
+            });
         PRAJNA_ASSERT(ir_constant_array->type->llvm_type);
         ir_constant_array->llvm_value = llvm::ConstantArray::get(
             static_cast<llvm::ArrayType *>(ir_constant_array->type->llvm_type), llvm_contants);
@@ -355,12 +354,12 @@ class LlvmCodegen : public prajna::ir::Visitor {
     void Visit(std::shared_ptr<ir::ConstantVector> ir_constant_vector) override {
         std::vector<llvm::Constant *> llvm_contants(
             ir_constant_vector->initialize_constants.size());
-        std::transform(RANGE(ir_constant_vector->initialize_constants), llvm_contants.begin(),
-                       [=](auto ir_init) {
-                           auto llvm_constant = static_cast<llvm::Constant *>(ir_init->llvm_value);
-                           PRAJNA_ASSERT(llvm_constant);
-                           return llvm_constant;
-                       });
+        std::ranges::transform(
+            ir_constant_vector->initialize_constants, llvm_contants.begin(), [=](auto ir_init) {
+                auto llvm_constant = static_cast<llvm::Constant *>(ir_init->llvm_value);
+                PRAJNA_ASSERT(llvm_constant);
+                return llvm_constant;
+            });
         PRAJNA_ASSERT(ir_constant_vector->type->llvm_type);
         ir_constant_vector->llvm_value = llvm::ConstantVector::get(llvm_contants);
     }
@@ -719,10 +718,10 @@ std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module,
         if (ir_sub_module == nullptr) continue;
 
         // 如果没有核函数, 则不生成. 因为不会被使用, gpu会把所用的的ir都拷贝过去
-        if (std::none_of(RANGE(ir_sub_module->functions),
-                         [](std::shared_ptr<ir::Function> ir_function) {
-                             return ir_function->annotation_dict.count("kernel");
-                         })) {
+        if (std::ranges::none_of(ir_sub_module->functions,
+                                 [](std::shared_ptr<ir::Function> ir_function) {
+                                     return ir_function->annotation_dict.count("kernel");
+                                 })) {
             continue;
         }
 

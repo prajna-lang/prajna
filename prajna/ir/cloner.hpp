@@ -57,12 +57,12 @@ class FunctionCloner : public Visitor {
         value_dict[ir_function] = ir_new;
         this->ir_module->AddFunction(ir_new);
         ir_new->parameters.clear();
-        std::transform(RANGE(ir_function->parameters), std::back_inserter(ir_new->parameters),
-                       [=](auto ir_parameter) {
-                           ir_parameter->ApplyVisitor(this->shared_from_this());
-                           value_dict[ir_parameter]->parent = ir_new;
-                           return Cast<Parameter>(value_dict[ir_parameter]);
-                       });
+        std::ranges::transform(ir_function->parameters, std::back_inserter(ir_new->parameters),
+                               [=](auto ir_parameter) {
+                                   ir_parameter->ApplyVisitor(this->shared_from_this());
+                                   value_dict[ir_parameter]->parent = ir_new;
+                                   return Cast<Parameter>(value_dict[ir_parameter]);
+                               });
 
         ir_new->blocks.clear();
         for (auto ir_block : ir_function->blocks) {
@@ -129,8 +129,8 @@ class FunctionCloner : public Visitor {
 
         std::list<std::shared_ptr<Constant>> new_initialize_constants(
             ir_constant_array->initialize_constants.size());
-        std::transform(
-            RANGE(ir_constant_array->initialize_constants), new_initialize_constants.begin(),
+        std::ranges::transform(
+            ir_constant_array->initialize_constants, new_initialize_constants.begin(),
             [=](auto ir_constant) {
                 PRAJNA_ASSERT(this->value_dict[ir_constant]);  // constant应该在前面就处理过;
                 return Cast<Constant>(this->value_dict[ir_constant]);
@@ -148,8 +148,8 @@ class FunctionCloner : public Visitor {
 
         std::list<std::shared_ptr<Constant>> new_initialize_constants(
             ir_constant_vector->initialize_constants.size());
-        std::transform(
-            RANGE(ir_constant_vector->initialize_constants), new_initialize_constants.begin(),
+        std::ranges::transform(
+            ir_constant_vector->initialize_constants, new_initialize_constants.begin(),
             [=](auto ir_constant) {
                 PRAJNA_ASSERT(this->value_dict[ir_constant]);  // constant应该在前面就处理过;
                 return Cast<Constant>(this->value_dict[ir_constant]);

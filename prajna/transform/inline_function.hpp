@@ -26,7 +26,7 @@ inline bool InlineFunction(std::shared_ptr<ir::Module> ir_module) {
             if (!InlineCheck(ir_callee)) continue;
 
             re = true;
-            auto iter = std::find(RANGE((*ir_call->GetParentBlock())), ir_call);
+            auto iter = std::ranges::find(*ir_call->GetParentBlock(), ir_call);
             PRAJNA_ASSERT(ir::Verify(ir_call));
             auto ir_clone_visitor = ir::FunctionCloner::Create(ir_module, true);
             auto ir_new_callee = Cast<ir::Function>(ir_clone_visitor->Clone(ir_callee));

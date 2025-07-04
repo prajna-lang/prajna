@@ -50,7 +50,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
         auto ir_block = ir_access_property->GetParentBlock();
         auto ir_builder = lowering::IrBuilder::Create();
         auto scope = ir_builder->PushBlockRAII(ir_block);
-        ir_builder->inserter_iterator = std::find(RANGE((*ir_block)), ir_access_property);
+        ir_builder->inserter_iterator = std::ranges::find(*ir_block, ir_access_property);
 
         for (auto instruction_with_index : Clone(ir_access_property->instruction_with_index_list)) {
             auto ir_inst = Lock(instruction_with_index.instruction);
@@ -69,7 +69,7 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
                 {
                     auto scope = ir_tmp_builder->PushBlockRAII(ir_block);
                     ir_tmp_builder->inserter_iterator =
-                        std::find(RANGE((*ir_block)), ir_write_property);
+                        std::ranges::find(*ir_block, ir_write_property);
                     auto ir_setter_call = ir_tmp_builder->Create<ir::Call>(
                         ir_access_property->property->set_function, ir_arguments);
                     utility::RemoveFromParent(ir_write_property);
@@ -113,7 +113,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             auto ir_builder =
                 lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
             auto scope = ir_builder->PushBlockRAII(ir_block);
-            ir_builder->inserter_iterator = std::find(RANGE((*ir_block)), ir_kernel_function_call);
+            ir_builder->inserter_iterator = std::ranges::find(*ir_block, ir_kernel_function_call);
 
             // 构建::cuda::launchKernel的逻辑
             auto ir_kernel_arguments_address_array_i8ptr = ir_builder->Create<ir::LocalVariable>(
@@ -178,10 +178,10 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
 
                         std::shared_ptr<ir::GlobalVariable> ir_global_variable = nullptr;
                         auto iter_global_variable =
-                            std::find_if(RANGE(ir_module->global_variables),
-                                         [=](std::shared_ptr<ir::GlobalVariable> x) {
-                                             return x->fullname == global_variable_fullname;
-                                         });
+                            std::ranges::find_if(ir_module->global_variables,
+                                                 [=](std::shared_ptr<ir::GlobalVariable> x) {
+                                                     return x->fullname == global_variable_fullname;
+                                                 });
                         if (iter_global_variable != ir_module->global_variables.end()) {
                             ir_global_variable = *iter_global_variable;
                         } else {
@@ -222,8 +222,8 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
                 // @note 全局变量目前遵循如果使用其他module的则自身为external的原则
                 if (auto ir_global_variable =
                         Cast<ir::GlobalVariable>(ir_instruction->GetOperand(i))) {
-                    auto iter_global_alloca = std::find_if(
-                        RANGE(ir_module->global_allocas), [=](std::shared_ptr<ir::GlobalAlloca> x) {
+                    auto iter_global_alloca = std::ranges::find_if(
+                        ir_module->global_allocas, [=](std::shared_ptr<ir::GlobalAlloca> x) {
                             return x->fullname == ir_global_variable->fullname;
                         });
                     std::shared_ptr<ir::GlobalAlloca> ir_global_alloca = nullptr;
@@ -239,7 +239,7 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
 
                     auto ir_deference_pointer = ir::DeferencePointer::Create(ir_global_alloca);
                     auto ir_block = ir_instruction->GetParentBlock();
-                    auto iter = std::find(ir_block->begin(), ir_block->end(), ir_instruction);
+                    auto iter = std::ranges::find(*ir_block, ir_instruction);
                     ir_block->Insert(iter, ir_deference_pointer);
                     ir_instruction->SetOperand(i, ir_deference_pointer);
                 }
@@ -265,10 +265,10 @@ inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
     });
 
     std::list<std::shared_ptr<ir::Function>> ir_kernel_function_list;
-    std::copy_if(RANGE(ir_nvptx_module->functions), std::back_inserter(ir_kernel_function_list),
-                 [](std::shared_ptr<ir::Function> ir_function) {
-                     return ir_function->annotation_dict.count("kernel");
-                 });
+    std::ranges::copy_if(ir_nvptx_module->functions, std::back_inserter(ir_kernel_function_list),
+                         [](std::shared_ptr<ir::Function> ir_function) {
+                             return ir_function->annotation_dict.count("kernel");
+                         });
 
     auto function_cloner = ir::FunctionCloner::Create(ir_nvptx_module, false);
     for (auto ir_kernel_function : ir_kernel_function_list) {
@@ -289,8 +289,8 @@ inline void DefineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_nvptx_module->functions) {
         if (ir_function->annotation_dict.count("kernel")) {
             auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
-            auto iter_global_variable = std::find_if(
-                RANGE(ir_module->global_variables), [=](std::shared_ptr<ir::GlobalVariable> x) {
+            auto iter_global_variable = std::ranges::find_if(
+                ir_module->global_variables, [=](std::shared_ptr<ir::GlobalVariable> x) {
                     return x->fullname == global_variable_fullname;
                 });
             if (iter_global_variable == ir_module->global_variables.end()) {
@@ -307,7 +307,7 @@ inline void DefineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module) {
 inline void RemoveValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         for (auto ir_block : ir_function->blocks) {
-            auto iter_return = std::find_if(RANGE((*ir_block)), [](auto x) {
+            auto iter_return = std::ranges::find_if(*ir_block, [](auto x) {
                 return Is<ir::Return>(x) || Is<ir::JumpBranch>(x) || Is<ir::ConditionBranch>(x);
             });
             if (iter_return != ir_block->end()) {
@@ -325,7 +325,7 @@ inline bool DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
             if (auto ir_function = Cast<ir::Function>(ir_operand)) {
                 if (ir_function->GetParentModule() != ir_module) {
                     std::shared_ptr<ir::Function> ir_decl_function = nullptr;
-                    auto iter_fun = std::find_if(RANGE(ir_module->functions), [=](auto ir_x) {
+                    auto iter_fun = std::ranges::find_if(ir_module->functions, [=](auto ir_x) {
                         return ir_x->fullname == ir_function->fullname;
                     });
                     // 声明过了, 就不在声明了
@@ -573,8 +573,9 @@ inline void TopologicalSortFunction(std::shared_ptr<ir::Module> ir_module) {
     }
 
     ir_module->functions.remove_if(
-        [=](auto ir_function) { return std::count(RANGE(ir_function_list), ir_function); });
-    ir_module->functions.insert(ir_module->functions.end(), RANGE(ir_function_list));
+        [=](auto ir_function) { return std::ranges::count(ir_function_list, ir_function); });
+    ir_module->functions.insert(ir_module->functions.end(), ir_function_list.begin(),
+                                ir_function_list.end());
 }
 
 inline void TopAlloca(std::shared_ptr<ir::Module> ir_module) {

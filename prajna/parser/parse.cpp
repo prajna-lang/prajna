@@ -14,7 +14,7 @@ bool parse(std::string code, prajna::ast::Statements& ast, std::string file_name
     grammar::ErrorHandler<iterator_type> error_handler(logger);
     grammar::SuccessHandler<iterator_type> success_handler(logger);
     CodeLexerType tokens;
-    base_iterator_type first(RANGE(code), file_name);
+    base_iterator_type first(code.begin(), code.end(), file_name);
     base_iterator_type last;
     iterator_type iter = tokens.begin(first, last);
     iterator_type end = tokens.end();

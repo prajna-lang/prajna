@@ -269,10 +269,10 @@ class IrBuilder {
         auto char_string_size = str.size() + 1;
         auto ir_char_string_type = ir::ArrayType::Create(ir::CharType::Create(), char_string_size);
         std::list<std::shared_ptr<ir::Constant>> ir_inits(ir_char_string_type->size);
-        std::transform(RANGE(str), ir_inits.begin(),
-                       [=](char value) -> std::shared_ptr<ir::Constant> {
-                           return this->Create<ir::ConstantChar>(value);
-                       });
+        std::ranges::transform(str, ir_inits.begin(),
+                               [=](char value) -> std::shared_ptr<ir::Constant> {
+                                   return this->Create<ir::ConstantChar>(value);
+                               });
         // 末尾补零
         ir_inits.back() = this->Create<ir::ConstantChar>('\0');
         auto ir_c_string_constant = this->Create<ir::ConstantArray>(ir_char_string_type, ir_inits);
@@ -301,8 +301,8 @@ class IrBuilder {
     std::shared_ptr<ir::AccessField> AccessField(std::shared_ptr<ir::Value> ir_object,
                                                  std::string field_name) {
         auto ir_variable_liked = this->VariableLikedNormalize(ir_object);
-        auto iter_field = std::find_if(RANGE(ir_object->type->fields),
-                                       [=](auto ir_field) { return ir_field->name == field_name; });
+        auto iter_field = std::ranges::find_if(
+            ir_object->type->fields, [=](auto ir_field) { return ir_field->name == field_name; });
         PRAJNA_ASSERT(iter_field != ir_object->type->fields.end());
         return this->Create<ir::AccessField>(ir_variable_liked, *iter_field);
     }
@@ -322,8 +322,8 @@ class IrBuilder {
             auto ir_this_pointer = this->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
             return ir::MemberFunctionWithThisPointer::Create(ir_this_pointer, member_function);
         }
-        auto iter_field = std::find_if(
-            RANGE(ir_type->fields),
+        auto iter_field = std::ranges::find_if(
+            ir_type->fields,
             [=](std::shared_ptr<ir::Field> ir_field) { return ir_field->name == member_name; });
         if (iter_field != ir_type->fields.end()) {
             auto ir_field_access = this->Create<ir::AccessField>(ir_variable_liked, *iter_field);

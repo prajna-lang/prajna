@@ -72,7 +72,7 @@ inline bool ConvertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_mod
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_alloca);
                 auto ir_block = ir_inst->GetParentBlock();
-                auto iter = std::find(ir_block->begin(), ir_block->end(), ir_inst);
+                auto iter = std::ranges::find(*ir_block, ir_inst);
                 ir_block->Insert(iter, ir_deference_pointer);
                 ir_inst->SetOperand(op_idx, ir_deference_pointer);
             }
@@ -105,7 +105,7 @@ inline bool ConvertAccessFieldToGetStructElementPointer(std::shared_ptr<ir::Modu
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_struct_get_element_ptr);
                 auto parent = ir_inst->GetParentBlock();
-                auto iter_inst = std::find(RANGE((*parent)), ir_inst);
+                auto iter_inst = std::ranges::find(*parent, ir_inst);
                 parent->Insert(iter_inst, ir_deference_pointer);
                 ir_inst->SetOperand(op_idx, ir_deference_pointer);
             }
@@ -141,7 +141,7 @@ inline bool ConvertIndexArrayToGetArrayElementPointer(std::shared_ptr<ir::Module
 
                 auto ir_deference_pointer = ir::DeferencePointer::Create(ir_array_get_element_ptr);
                 auto parent = ir_inst->GetParentBlock();
-                auto iter_inst = std::find(RANGE((*parent)), ir_inst);
+                auto iter_inst = std::ranges::find(*parent, ir_inst);
                 parent->Insert(iter_inst, ir_deference_pointer);
                 ir_inst->SetOperand(op_idx, ir_deference_pointer);
             }
@@ -178,7 +178,7 @@ inline bool ConvertIndexPointerToGetPointerElementPointer(std::shared_ptr<ir::Mo
                 auto ir_deference_pointer =
                     ir::DeferencePointer::Create(ir_pointer_get_element_ptr);
                 auto parent = ir_inst->GetParentBlock();
-                auto iter_inst = std::find(RANGE((*parent)), ir_inst);
+                auto iter_inst = std::ranges::find(*parent, ir_inst);
                 parent->Insert(iter_inst, ir_deference_pointer);
                 ir_inst->SetOperand(op_idx, ir_deference_pointer);
             }

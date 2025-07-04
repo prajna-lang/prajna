@@ -161,10 +161,10 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (not ir_sub_module) continue;
 
-        if (std::none_of(RANGE(ir_sub_module->functions),
-                         [](std::shared_ptr<ir::Function> ir_function) {
-                             return ir_function->annotation_dict.count("kernel");
-                         })) {
+        if (std::ranges::none_of(ir_sub_module->functions,
+                                 [](std::shared_ptr<ir::Function> ir_function) {
+                                     return ir_function->annotation_dict.count("kernel");
+                                 })) {
             continue;
         }
 

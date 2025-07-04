@@ -73,7 +73,8 @@ int prajna_repl_main(int argc, char* argv[]) {
         if (code_line == "quit") break;
 
         // 移除换行符号 '\\'
-        std::list<char> code_line_list(RANGE(code_line));
+
+        std::list<char> code_line_list(code_line.begin(), code_line.end());
         for (auto iter = code_line_list.begin(); iter != std::prev(code_line_list.end());) {
             if (*iter == '\\') {
                 if ((*std::next(iter)) == '\n' || (*std::next(iter)) == '\r') {
@@ -84,7 +85,7 @@ int prajna_repl_main(int argc, char* argv[]) {
 
             ++iter;
         }
-        code_line = std::string(RANGE(code_line_list));
+        code_line = std::string(code_line_list.begin(), code_line_list.end());
         // ;可以重复, 不会导致错误. 插入到\n前面, 这样错误信息才正确
         auto last_char = *std::prev(code_line.end(), 2);
         if (code_line.size() >= 2 && !(last_char == ';' || last_char == '}')) {

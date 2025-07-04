@@ -10,6 +10,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 
+#include <ranges>
 #include <string>
 
 #include "prajna/assert.hpp"
@@ -36,11 +37,11 @@ inline std::tuple<std::string, std::string> GetTargetGPUArchitecture() {
         }
         pclose(pipe);
         // 移除换行符和多余空格
-        result.erase(std::remove_if(result.begin(), result.end(),
-                                    [](char c) { return c == '\n' || c == ' '; }),
-                     result.end());
+        auto new_end = std::ranges::remove_if(result, [](char c) { return c == '\n' || c == ' '; });
+        result.erase(new_end.begin(), result.end());
         if (!result.empty()) {
-            result.erase(std::remove(result.begin(), result.end(), '.'), result.end());
+            auto new_end2 = std::ranges::remove(result, '.');
+            result.erase(new_end2.begin(), result.end());
             sm_version = fmt::format("sm_{}", result);
         }
     }

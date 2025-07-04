@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <ranges>
 
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
@@ -13,8 +14,8 @@ class ExtractAffineLoopPass : public FunctionPass {
         for (auto block : ir_function->blocks) {
             auto for_block = Cast<ir::For>(block);
             if (!for_block) continue;
-            if (std::find(for_block->annotation_dict.begin(), for_block->annotation_dict.end(),
-                          "affine") != for_block->annotation_dict.end()) {
+            if (std::ranges::find(for_block->annotation_dict, "affine") !=
+                for_block->annotation_dict.end()) {
                 continue;
             }
 

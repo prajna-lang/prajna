@@ -318,7 +318,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
     std::list<std::shared_ptr<ir::Type>> ApplyParameters(std::list<ast::Parameter> ast_parameters) {
         std::list<std::shared_ptr<ir::Type>> types(ast_parameters.size());
-        std::transform(RANGE(ast_parameters), types.begin(), [=](ast::Parameter ast_parameter) {
+        std::ranges::transform(ast_parameters, types.begin(), [=](ast::Parameter ast_parameter) {
             return this->ApplyType(ast_parameter.type);
         });
 
@@ -330,8 +330,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         std::unordered_map<std::string, std::list<std::string>> annotation_dict;
         for (auto ast_annotation : ast_annotations) {
             std::list<std::string> values;
-            std::transform(RANGE(ast_annotation.values), std::back_inserter(values),
-                           [](ast::StringLiteral string_literal) { return string_literal.value; });
+            std::ranges::transform(
+                ast_annotation.values, std::back_inserter(values),
+                [](ast::StringLiteral string_literal) { return string_literal.value; });
             annotation_dict.insert({ast_annotation.name, values});
         }
         return annotation_dict;
@@ -406,8 +407,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
     Symbol operator()(ast::Function ast_function) {
         try {
             ir_builder->is_static_function =
-                std::any_of(RANGE(ast_function.declaration.annotation_dict),
-                            [](auto x) { return x.name == "static"; });
+                std::ranges::any_of(ast_function.declaration.annotation_dict,
+                                    [](auto x) { return x.name == "static"; });
 
             auto ir_function = ApplyFunctionHeader(ast_function.declaration);
             ir_function->source_location = ast_function.declaration.name;
@@ -567,8 +568,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         for (auto ast_annotation : ast_for.annotation_dict) {
             std::list<std::string> values;
-            std::transform(RANGE(ast_annotation.values), std::back_inserter(values),
-                           [](ast::StringLiteral string_literal) { return string_literal.value; });
+            std::ranges::transform(
+                ast_annotation.values, std::back_inserter(values),
+                [](ast::StringLiteral string_literal) { return string_literal.value; });
             ir_for->annotation_dict.insert({ast_annotation.name, values});
         }
 
@@ -602,8 +604,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         ir_builder->SetSymbolWithTemplateArgumentsPostify(ir_struct_type, ast_struct.name);
 
         std::list<std::shared_ptr<ir::Field>> ir_fields;
-        std::transform(
-            RANGE(ast_struct.fields), std::back_inserter(ir_fields), [=](ast::Field ast_field) {
+        std::ranges::transform(
+            ast_struct.fields, std::back_inserter(ir_fields), [=](ast::Field ast_field) {
                 return ir::Field::Create(ast_field.name, this->ApplyType(ast_field.type));
             });
         ir_struct_type->fields = ir_fields;
@@ -723,8 +725,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             for (auto ast_function : ast_implement.functions) {
                 auto symbol_function = (*this)(ast_function);
                 auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
-                auto iter = std::find_if(
-                    RANGE(ir_function_prototype_list),
+                auto iter = std::ranges::find_if(
+                    ir_function_prototype_list,
                     [=](std::shared_ptr<ir::Function> ir_function_prototype) {
                         if (ir_function->name == ir_function_prototype->name) {
                             if (is_matched_with_prototype(ir_function->function_type,
@@ -755,8 +757,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             // 包装一个undef this pointer的函数
             for (auto ir_function : ir_interface->functions) {
-                if (std::none_of(RANGE(ir_interface_prototype->functions),
-                                 [=](auto x) { return x->name == ir_function->name; })) {
+                if (std::ranges::none_of(ir_interface_prototype->functions,
+                                         [=](auto x) { return x->name == ir_function->name; })) {
                     continue;
                 }
 
@@ -780,9 +782,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     ir_undef_this_pointer_function->parameters.front(),
                     ir_function->parameters.front()->type);
                 std::list<std::shared_ptr<ir::Value>> ir_arguments;
-                std::transform(RANGE(ir_undef_this_pointer_function->parameters),
-                               std::back_inserter(ir_arguments),
-                               [](auto x) -> std::shared_ptr<ir::Value> { return x; });
+                std::ranges::transform(ir_undef_this_pointer_function->parameters,
+                                       std::back_inserter(ir_arguments),
+                                       [](auto x) -> std::shared_ptr<ir::Value> { return x; });
                 ir_arguments.front() = ir_this_pointer;
                 auto ir_call = ir_builder->Call(ir_function, ir_arguments);
                 if (Is<ir::VoidType>(ir_call->type)) {
@@ -803,13 +805,13 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     ir_interface->dynamic_type_creator->parameters.front(), "ToUndef", {}),
                 ir_builder->AccessField(ir_self, "object_pointer"));
             for (auto ir_function : ir_interface->functions) {
-                if (std::none_of(RANGE(ir_interface_prototype->functions),
-                                 [=](auto x) { return x->name == ir_function->name; })) {
+                if (std::ranges::none_of(ir_interface_prototype->functions,
+                                         [=](auto x) { return x->name == ir_function->name; })) {
                     continue;
                 }
 
-                auto iter_field = std::find_if(
-                    RANGE(ir_interface->prototype->dynamic_type->fields),
+                auto iter_field = std::ranges::find_if(
+                    ir_interface->prototype->dynamic_type->fields,
                     [=](auto ir_field) { return ir_field->name == ir_function->name + "/fp"; });
                 PRAJNA_ASSERT(iter_field != ir_interface->prototype->dynamic_type->fields.end());
                 auto ir_function_pointer =
@@ -1261,14 +1263,14 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             }
 
             std::list<std::shared_ptr<ir::Type>> ir_type_list;
-            std::transform(RANGE(symbol_template_arguments), std::back_inserter(ir_type_list),
-                           [=](auto symbol_template_argument) {
-                               auto ir_type = SymbolGet<ir::Type>(symbol_template_argument);
-                               if (!ir_type) {
-                                   logger->Error("should be types");
-                               }
-                               return ir_type;
-                           });
+            std::ranges::transform(symbol_template_arguments, std::back_inserter(ir_type_list),
+                                   [=](auto symbol_template_argument) {
+                                       auto ir_type = SymbolGet<ir::Type>(symbol_template_argument);
+                                       if (!ir_type) {
+                                           logger->Error("should be types");
+                                       }
+                                       return ir_type;
+                                   });
 
             auto ir_parameter_list = ir_type_list;
             ir_parameter_list.pop_back();
@@ -1336,7 +1338,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 logger->Error("the second template argument should be a interface prototype");
             }
 
-            auto iter_interface = std::find_if(RANGE(ir_value_type->interface_dict), [=](auto x) {
+            auto iter_interface = std::ranges::find_if(ir_value_type->interface_dict, [=](auto x) {
                 if (!x.second) return false;
                 return x.second->prototype == ir_interface_prototype;
             });
@@ -1383,8 +1385,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 logger->Error("the second template argument should be type");
             }
 
-            auto iter_interface_implement = std::find_if(
-                RANGE(ir_target_value_type->interface_dict),
+            auto iter_interface_implement = std::ranges::find_if(
+                ir_target_value_type->interface_dict,
                 [=](auto x) { return x.second && x.second->prototype == ir_interface_prototype; });
             if (iter_interface_implement == ir_target_value_type->interface_dict.end()) {
                 logger->Error("invalid dynamic Cast, operand is not a interface dynamic type");
@@ -1473,8 +1475,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 logger->Error("the second template argument should be type");
             }
 
-            auto iter_interface_implement = std::find_if(
-                RANGE(ir_target_value_type->interface_dict),
+            auto iter_interface_implement = std::ranges::find_if(
+                ir_target_value_type->interface_dict,
                 [=](auto x) { return x.second && x.second->prototype == ir_interface_prototype; });
             if (iter_interface_implement == ir_target_value_type->interface_dict.end()) {
                 logger->Error("invalid dynamic Cast, operand is not a interface dynamic type");
@@ -2139,8 +2141,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 ir_builder->Create<ir::DeferencePointer>(ir_this_pointer), field_function_pointer);
             // 直接将外层函数的参数转发进去, 除了第一个参数需要调整一下
             std::list<std::shared_ptr<ir::Value>> ir_arguments;
-            std::transform(RANGE(ir_member_function->parameters), std::back_inserter(ir_arguments),
-                           [](auto x) -> std::shared_ptr<ir::Value> { return x; });
+            std::ranges::transform(ir_member_function->parameters, std::back_inserter(ir_arguments),
+                                   [](auto x) -> std::shared_ptr<ir::Value> { return x; });
             ir_arguments.front() = ir_builder->AccessField(
                 ir_builder->Create<ir::AccessField>(
                     ir_builder->Create<ir::DeferencePointer>(ir_this_pointer),

@@ -1,15 +1,15 @@
 #pragma once
 
+#include <algorithm>
 #include <filesystem>
 #include <functional>
 #include <iostream>
 #include <list>
 #include <memory>
+#include <ranges>
 
 #include "boost/dll/runtime_symbol_info.hpp"
 #include "prajna/assert.hpp"
-
-#define RANGE(container) container.begin(), container.end()
 
 #define POSITIONS(token) token.first_position, token.last_position
 
@@ -47,8 +47,8 @@ template <typename DstType_, typename SrcType_>
 auto ListCast(std::list<std::shared_ptr<SrcType_>> src_list)
     -> std::list<std::shared_ptr<DstType_>> {
     std::list<std::shared_ptr<DstType_>> dst_list;
-    std::transform(RANGE(src_list), std::back_inserter(dst_list),
-                   [](std::shared_ptr<DstType_> x) { return Cast<DstType_>(x); });
+    std::ranges::transform(src_list, std::back_inserter(dst_list),
+                           [](std::shared_ptr<SrcType_> x) { return Cast<DstType_>(x); });
     return dst_list;
 }
 

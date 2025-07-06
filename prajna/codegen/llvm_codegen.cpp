@@ -392,11 +392,10 @@ class LlvmCodegen : public prajna::ir::Visitor {
     void Visit(std::shared_ptr<ir::Call> ir_call) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_call);
         auto ir_function_type = ir_call->Function()->GetFunctionType();
-        std::vector<llvm::Value *> llvm_arguments(ir_call->ArgumentSize());
-        for (int64_t i = 0; i < llvm_arguments.size(); ++i) {
-            llvm_arguments[i] = ir_call->Argument(i)->llvm_value;
-            PRAJNA_ASSERT(llvm_arguments[i]);
-        }
+        auto llvm_arguments = To<std::vector<llvm::Value *>>(
+            (ir_call->Arguments() | std::ranges::views::transform([this](auto ir_argument) {
+                 return ir_argument->llvm_value;
+             })));
         PRAJNA_ASSERT(ir_call->Function()->GetFunctionType()->llvm_type);
         PRAJNA_ASSERT(ir_call->Function()->llvm_value);
         ir_call->llvm_value = llvm::CallInst::Create(

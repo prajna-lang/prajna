@@ -1079,6 +1079,10 @@ class Call : public Instruction {
 
     int64_t ArgumentSize() { return this->OperandSize() - 1; }
 
+    auto Arguments() {
+        return std::ranges::subrange(this->operands.begin() + 1, this->operands.end());
+    }
+
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<Call>(this->shared_from_this()));
     }

@@ -44,12 +44,8 @@ auto Cast(std::shared_ptr<SrcType_> ir_src) -> std::shared_ptr<DstType_> {
 }
 
 template <typename DstType_, typename SrcType_>
-auto ListCast(std::list<std::shared_ptr<SrcType_>> src_list)
-    -> std::list<std::shared_ptr<DstType_>> {
-    std::list<std::shared_ptr<DstType_>> dst_list;
-    std::ranges::transform(src_list, std::back_inserter(dst_list),
-                           [](std::shared_ptr<SrcType_> x) { return Cast<DstType_>(x); });
-    return dst_list;
+DstType_ To(SrcType_ src) {
+    return DstType_(src.begin(), src.end());
 }
 
 template <typename DstType_, typename SrcType_>

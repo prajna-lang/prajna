@@ -1196,7 +1196,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
 
             ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Call(
-                ir_intrinsic_function, ListCast<ir::Value>(ir_function->parameters)));
+                ir_intrinsic_function,
+                To<std::list<std::shared_ptr<ir::Value>>>(ir_function->parameters)));
             return ir_function;
         };
 
@@ -1358,7 +1359,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
             ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->Call(
-                ir_interface->dynamic_type_creator, ListCast<ir::Value>(ir_function->parameters)));
+                ir_interface->dynamic_type_creator,
+                To<std::list<std::shared_ptr<ir::Value>>>(ir_function->parameters)));
             return ir_function;
         };
 

@@ -1,0 +1,98 @@
+@test
+func TestVariant2() {
+    var variant = Variant2<i8, i16>::CreateFirst(111i8);
+    test::Assert(variant.GetFirst() == 111i8);
+
+    variant.EmplaceSecond(222i16);
+    test::Assert(variant.GetSecond() == 222i16);
+}
+
+@test
+func TestVariant3() {
+    var variant = Variant3<i8, i16, i32>::CreateFirst(111i8);
+    test::Assert(variant.GetFirst() == 111i8);
+
+    variant.EmplaceSecond(222i16);
+    test::Assert(variant.GetSecond() == 222i16);
+
+    variant.EmplaceThird(333i32);
+    test::Assert(variant.GetThird() == 333i32);
+}
+
+@test
+func TestVariant4() {
+    var variant = Variant4<i8, i16, i32, i64>::CreateFirst(111i8);
+    test::Assert(variant.GetFirst() == 111i8);
+
+    variant.EmplaceSecond(222i16);
+    test::Assert(variant.GetSecond() == 222i16);
+
+    variant.EmplaceThird(333i32);
+    test::Assert(variant.GetThird() == 333i32);
+
+    variant.EmplaceFourth(444i64);
+    test::Assert(variant.GetFourth() == 444i64);
+}
+
+@test
+func TestVariant5() {
+    var variant = Variant5<i8, i16, i32, i64, i128>::CreateFirst(111i8);
+    test::Assert(variant.GetFirst() == 111i8);
+
+    variant.EmplaceSecond(222i16);
+    test::Assert(variant.GetSecond() == 222i16);
+
+    variant.EmplaceThird(333i32);
+    test::Assert(variant.GetThird() == 333i32);
+
+    variant.EmplaceFourth(444i64);
+    test::Assert(variant.GetFourth() == 444i64);
+
+    variant.EmplaceFifth(555i128);
+    test::Assert(variant.GetFifth() == 555i128);
+}
+
+@test
+func TestVariant6() {
+    var variant = Variant6<i8, i16, i32, i64, i128, f16>::CreateFirst(111i8);
+    test::Assert(variant.GetFirst() == 111i8);
+
+    variant.EmplaceSecond(222i16);
+    test::Assert(variant.GetSecond() == 222i16);
+
+    variant.EmplaceThird(333i32);
+    test::Assert(variant.GetThird() == 333i32);
+
+    variant.EmplaceFourth(444i64);
+    test::Assert(variant.GetFourth() == 444i64);
+
+    variant.EmplaceFifth(555i128);
+    test::Assert(variant.GetFifth() == 555i128);
+
+    variant.EmplaceSixth(6.66f16);
+    test::Assert(variant.GetSixth() == 6.66f16);
+}
+
+@test
+func TestVariant7() {
+    var variant = Variant7<i8, i16, i32, i64, i128, f16, f32>::CreateFirst(111i8);
+    test::Assert(variant.GetFirst() == 111i8);
+
+    variant.EmplaceSecond(222i16);
+    test::Assert(variant.GetSecond() == 222i16);
+
+    variant.EmplaceThird(333i32);
+    test::Assert(variant.GetThird() == 333i32);
+
+    variant.EmplaceFourth(444i64);
+    test::Assert(variant.GetFourth() == 444i64);
+
+    variant.EmplaceFifth(555i128);
+    test::Assert(variant.GetFifth() == 555i128);
+
+    variant.EmplaceSixth(6.66f16);
+    test::Assert(variant.GetSixth() == 6.66f16);
+
+    variant.EmplaceSeventh(7.77f32);
+    test::Assert(variant.GetSeventh() == 7.77f32);
+}

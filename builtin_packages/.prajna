@@ -76,8 +76,12 @@ use fs;
 
 use chrono;
 
-
-
+use variant::Variant2;
+use variant::Variant3;
+use variant::Variant4;
+use variant::Variant5;
+use variant::Variant6;
+use variant::Variant7;
 
 func __load_dynamic_library(lib_name: ptr<char>)->i64;
 func __get_symbol(lib: i64, symbol_name: ptr<char>)->i64;

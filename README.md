@@ -51,7 +51,7 @@ func Main(){
 
 ## Documentation
 
-You can refer to the [Prajna Programming Language Guide](docs/Prajna Programming Language Guide.md) to learn more.
+You can refer to the [Prajna Programming Language Guide](./docs/Prajna%20Programming%20Language%20Guide.md) to learn more.
 
 ## Usage
 

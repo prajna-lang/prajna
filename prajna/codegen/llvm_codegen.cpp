@@ -36,6 +36,11 @@
 #include "third_party/llvm-project/llvm/include/llvm/Analysis/AliasAnalysis.h"
 #include "third_party/llvm-project/llvm/include/llvm/IR/AutoUpgrade.h"
 
+namespace llvm {
+class Module;
+class LLVMContext;
+}  // namespace llvm
+
 namespace prajna::codegen {
 
 /// llvm的全局context, 若放在局部不是特别容易管理, 故直接搞成全局变量
@@ -221,9 +226,9 @@ class LlvmCodegen : public prajna::ir::Visitor {
             if (ir_parameter->no_alias) {
                 llvm_arg->addAttr(llvm::Attribute::NoAlias);
             }
-            if (ir_parameter->no_capture) {
-                llvm_arg->addAttr(llvm::Attribute::NoCapture);
-            }
+            // if (ir_parameter->no_capture) {
+            //     llvm_arg->addAttr(llvm::Attribute::NoCapture);
+            // }
             if (ir_parameter->no_undef) {
                 llvm_arg->addAttr(llvm::Attribute::NoUndef);
             }
@@ -739,7 +744,7 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     JTMB->setCPU("");
     JTMB->setRelocationModel(std::nullopt);
     JTMB->setCodeModel(std::nullopt);
-    JTMB->setCodeGenOptLevel(llvm::CodeGenOpt::None);
+    // JTMB->setCodeGenOptLevel(llvm::CodeGenOpt::);
     JTMB->addFeatures(std::vector<std::string>());
     auto TM = JTMB->createTargetMachine();
     PRAJNA_VERIFY(TM && TM.get());
@@ -756,8 +761,7 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     PB.registerLoopAnalyses(LAM);
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-    llvm::ModulePassManager MPM =
-        PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O2, true);
+    llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O2);
 
     MPM.run(*ir_module->llvm_module, MAM);
 

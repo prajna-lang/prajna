@@ -71,7 +71,7 @@ std::string GpuCompiler::CompileToPTX(llvm::Module* llvm_module) {
     llvm::raw_svector_ostream ostream(buffer);
     llvm::legacy::PassManager pass_manager;
     PRAJNA_ASSERT(!target_machine->addPassesToEmitFile(pass_manager, ostream, nullptr,
-                                                       llvm::CGFT_AssemblyFile),
+                                                       llvm::CodeGenFileType::AssemblyFile),
                   "Cannot emit PTX");
 
     pass_manager.run(*llvm_module);

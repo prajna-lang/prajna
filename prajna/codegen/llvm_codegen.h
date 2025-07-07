@@ -5,11 +5,6 @@
 #include "llvm/IR/Module.h"
 #include "prajna/ir/ir.hpp"
 
-namespace llvm {
-class Module;
-class LLVMContext;
-}  // namespace llvm
-
 namespace prajna::ir {
 class Module;
 }

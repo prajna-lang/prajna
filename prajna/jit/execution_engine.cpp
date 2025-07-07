@@ -20,6 +20,7 @@
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/Orc/ObjectTransformLayer.h"
+#include "llvm/ExecutionEngine/Orc/Shared/ExecutorSymbolDef.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "prajna/assert.hpp"
@@ -116,7 +117,7 @@ ExecutionEngine::ExecutionEngine() {
 #endif
     // TODO(zhangzhimin): 下面的代码会导致程序崩溃， 但可以正确的打印出汇编代码
     //    lljit_builder.setObjectLinkingLayerCreator(
-    //         [=](llvm::orc::ExecutionSession &ES, const llvm::Triple &TT) {
+    //         [=](llvm::orc::ExecutionSession &ES,  const llvm::Triple &TT) {
     //             auto ObjLinkingLayer = std::make_unique<llvm::orc::ObjectLinkingLayer>(ES);
     //             auto ObjTransformLayer =
     //               std::make_unique<llvm::orc::ObjectTransformLayer>(ES, *ObjLinkingLayer);
@@ -220,10 +221,10 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 }
 
 void ExecutionEngine::BindCFunction(void *fun_ptr, std::string mangle_name) {
-    auto jit_evaluated_symbol = llvm::JITEvaluatedSymbol::fromPointer(
-        fun_ptr, llvm::JITSymbolFlags::Exported | llvm::JITSymbolFlags::Absolute);
     llvm::orc::SymbolMap fun_symbol;
-    fun_symbol.insert({_up_lljit->mangleAndIntern(mangle_name), jit_evaluated_symbol});
+    auto fun_addr = llvm::orc::ExecutorAddr::fromPtr(fun_ptr);
+    fun_symbol[_up_lljit->mangleAndIntern(mangle_name)] = llvm::orc::ExecutorSymbolDef(
+        fun_addr, llvm::JITSymbolFlags::Exported | llvm::JITSymbolFlags::Absolute);
     exit_on_error(_up_lljit->getMainJITDylib().define(llvm::orc::absoluteSymbols(fun_symbol)));
 }
 

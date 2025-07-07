@@ -1,0 +1,23 @@
+template <T1, T2>
+struct DummyStruct {
+    dummy_field1: T1;
+    dummy_field2: T2;
+}
+
+template <T1, T2>
+implement DummyStruct<T1, T2> {
+    func DoSomeForDummyStruct() -> i64 {
+        return this.dummy_field1() + this.dummy_field2();
+    }
+}
+
+func return2() -> i64 { return 2; }
+func return3() -> i64 { return 3; }
+
+@test
+func TestImplementTemplateStruct() {
+    var dummyStruct: DummyStruct<function<i64>, function<i64>>;
+    dummyStruct.dummy_field1 = return2;
+    dummyStruct.dummy_field2 = return3;
+    test::Assert(dummyStruct.DoSomeForDummyStruct() == 5);
+}

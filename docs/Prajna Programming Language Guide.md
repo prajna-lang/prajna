@@ -759,6 +759,33 @@ func Main() {
 
 Although Prajna supports various templates, the template mechanism is not complex.
 
+### Implementing Functions for Template Structures
+
+When working with template structures, you can implement a variety of methods to enhance their functionality. Template implementations allow you to write code that works with different types while maintaining type safety.
+
+```
+template <T>
+struct Container {
+    value: T;
+}
+
+template <T>
+implement Container<T> {
+    // Instance method
+    func GetValue() -> T {
+        return this.value;
+    }
+
+    // Static method
+    @static
+    func Create(value: T) -> Container<T> {
+        var result: Container<T>;
+        result.value = value;
+        return result;
+    }
+}
+```
+
 ## Built-in Data Structures
 
 ## Dictionary (Dict)

@@ -46,9 +46,10 @@ implement ptr<Type> {
         return !(this == operand);
     }
 
-    func __initialize__() {
-        this = ptr<Type>::Null();
-    }
+    // 这里可能导致Ptr里的歧义, 需要确认和下面没冲突
+    // func __initialize__() {
+    //     this = ptr<Type>::Null();
+    // }
 }
 
 struct ControlBlock{
@@ -74,10 +75,6 @@ implement Ptr<Type>{
         for i in 0 to size {
             initialize<Type>(&self.raw_ptr[i]);
         }
-
-        self._control_block = ptr<ControlBlock>::New();
-        self._control_block->strong_count = 1;
-        self._control_block->weak_count = 0;
 
         return self;
     }
@@ -173,23 +170,26 @@ implement Ptr<Type>{
     }
 
     func __finalize__() {
-        this._control_block->strong_count = this._control_block->strong_count - 1;
-        if (this._control_block->strong_count == 0){
-            if (this.IsNull()) {
-                for i in 0 to this.size {
-                    finalize<Type>(&this.raw_ptr[i]);
+        // String依赖于Ptr, 所以这里无法打印来判读, 可以使用__assert来做调试
+        if (this._control_block.IsValid()) { // 按理说无需该判断
+            this._control_block->strong_count = this._control_block->strong_count - 1;
+            if (this._control_block->strong_count == 0){ // 若 <= 0, 会多次出发, 说明计数可能存在问题
+                if (this.IsValid()) { // 当多次触发时, 该代码并不能保证只释放一次
+                    this.raw_ptr.Free();
+                    for i in 0 to this.size {
+                        finalize<Type>(&this.raw_ptr[i]);
+                    }
                 }
 
-                this.raw_ptr.Free();
-
-                if (this._control_block->weak_count == 0) {
-                    if (this._control_block.IsValid()) { // 这里有bug, 释放的顺序有问题, 存在二次释放的问题, 回头修复
+                if (this._control_block->weak_count <= 0) {
+                    if (this._control_block.IsValid()) {
                         this._control_block.Free();
                     }
                 }
             }
-        }
+         }
     }
+
 }
 
 template <Type>

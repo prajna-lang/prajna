@@ -1911,6 +1911,32 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         return template_destroy;
     }
 
+    std::shared_ptr<Template> CreateTupleTemplate() {
+        auto template_tuple = Template::Create();
+        template_tuple->generator = [symbol_table = this->ir_builder->symbol_table,
+                                     logger = this->logger,
+                                     this](std::list<Symbol> symbol_template_arguments,
+                                           std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            int i = 0;
+            auto ir_fields = symbol_template_arguments | std::views::transform([&i](Symbol symbol) {
+                                 auto ir_field = ir::Field::Create("field" + std::to_string(i),
+                                                                   SymbolGet<ir::Type>(symbol));
+                                 ++i;
+                                 return ir_field;
+                             }) |
+                             std::ranges::to<std::list<std::shared_ptr<ir::Field>>>();
+
+            auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
+            auto ir_struct_type = ir::StructType::Create(ir_fields);
+            ir_struct_type->name = "Tuple";
+            ir_struct_type->fullname = "Tuple";
+            ir_struct_type->Update();
+            return ir_struct_type;
+        };
+
+        return template_tuple;
+    }
+
     void Stage0() {
         auto bool_type = ir::BoolType::Create();
         auto char_type = ir::CharType::Create();
@@ -2058,6 +2084,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateDestroyTemplate(), "finalize");
+
+        ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
+            this->CreateTupleTemplate(), "Tuple");
     }
 
     Symbol operator()(ast::Pragma ast_pragma);

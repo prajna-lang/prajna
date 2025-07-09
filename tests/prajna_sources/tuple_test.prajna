@@ -1,0 +1,10 @@
+@test
+func TestTuple() {
+    var tmp: Tuple<i64, f32, bool>;
+    tmp.field0 = 1;
+    tmp.field1 = 2.0;
+    tmp.field2 = true;
+    test::Assert(tmp.field0 == 1);
+    test::Assert(tmp.field1 == 2.0);
+    test::Assert(tmp.field2);
+}

@@ -101,17 +101,6 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
 }
 
 inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
-    // 根据目标选择 runtime_namespace
-    std::string runtime_namespace;
-    auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
-    if (ir_nvptx_module) {
-        runtime_namespace = "gpu";
-    }
-
-    auto ir_amdgpu_module = ir_module->modules[ir::Target::amdgpu];
-    if (ir_amdgpu_module) {
-        runtime_namespace = "gpu2";
-    }
     PRAJNA_ASSERT(!runtime_namespace.empty());
     for (auto ir_function : ir_module->functions) {
         auto ir_kernel_function_calls = utility::GetAll<ir::KernelFunctionCall>(ir_function);
@@ -141,6 +130,14 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                     ir_kernel_arguments_address_array_i8ptr, ir_builder->GetInt64Constant(i));
                 auto ir_array_index_write = ir_builder->Create<ir::WriteVariableLiked>(
                     ir_kernel_argument_address_i8ptr, ir_array_index);
+            }
+
+            if (ir_kernel_function->annotation_dict["target"].front() == "nvptx") {
+                runtime_namespace = "gpu";
+            } else if (ir_kernel_function->annotation_dict["target"].front() == "amdgpu") {
+                runtime_namespace = "gpu2";
+            } else {
+               PRAJNA_UNIMPLEMENT;
             }
 
             auto ir_launch_function = lowering::SymbolGet<ir::Value>(
@@ -200,6 +197,7 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
                             ir_global_variable = ir::GlobalVariable::Create(ir_function->type);
                             ir_global_variable->name = global_variable_fullname;
                             ir_global_variable->fullname = ir_global_variable->name;
+                            ir_global_variable->annotation_dict = ir_function->annotation_dict;
                             // 如果不是同一个module的, 则为external, 目前所有的nvptx
                             // IR都会迁移的使用的Module里去
                             // ir_global_variable->is_external =

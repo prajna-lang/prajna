@@ -266,7 +266,7 @@ inline void CloneExternalDeviceValue(std::shared_ptr<ir::Module> ir_module, ir::
     }
 
     auto ir_target_module = ir_module->modules[target];
-    if(!ir_target_module) return;
+    if (!ir_target_module) return;
 
     ir_module->global_allocas.remove_if([=](auto ir_global_alloca) -> bool {
         if (ir_global_alloca->address_space == 3) {
@@ -300,7 +300,7 @@ inline void DefineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module, i
     }
 
     auto ir_target_module = ir_module->modules[target];
-    if(!ir_target_module) return;
+    if (!ir_target_module) return;
     for (auto ir_function : ir_target_module->functions) {
         if (ir_function->annotation_dict.count("kernel")) {
             auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
@@ -625,12 +625,27 @@ inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_m
     };
 }
 
+// 将 LLVM 内建数学函数名替换为 AMDGPU 后端 libdevice（OCML）库函数名，
+// 以便在 .ll 转换为 .hsaco 时链接 libdevice（如 ocml.bc）成功。
+//
+// 参考 ROCm 提供的 HIP 数学头文件源码（包含 __ocml_* 的映射关系）：
+// https://rocm.docs.amd.com/projects/HIP/en/develop/doxygen/html/____clang__hip__math_8h_source.html
+//
+// Example:
+//   llvm.sin.f32  ->  __ocml_sinf_f32
+//   llvm.asin.f32 ->  __ocml_asin_f32
+
 inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir_module) {
     auto ir_amdgpu_module = ir_module->modules[ir::Target::amdgpu];
     if (!ir_amdgpu_module) return;
 
     std::list<ir::Function> ir_llvm_intrinsics;
-    std::map<std::string, std::string> name_map = {{"llvm.sin.f32", "__ocml_sinf_f32"}};
+    // 替换 LLVM intrinsics 为 OCML 函数
+    std::map<std::string, std::string> name_map = {
+        {"llvm.sin.f32", "__ocml_sinf_f32"},  {"llvm.cos.f32", "__ocml_cosf_f32"},
+        {"llvm.asin.f32", "__ocml_asin_f32"}, {"llvm.acos.f32", "__ocml_acosf_f32"},
+        {"llvm.exp.f32", "__ocml_expf_f32"},  {"llvm.log.f32", "__ocml_logf_f32"},
+    };
     for (auto ir_function : ir_amdgpu_module->functions) {
         if (name_map.count(ir_function->fullname)) {
             ir_function->fullname = name_map[ir_function->fullname];
@@ -646,14 +661,14 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 
     for (auto ir_shared_variable : ir_shared_variable_list) {
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_shared_variable->type);
-        ir_global_alloca->address_space = 3;  // nvptx shared memory
+        ir_global_alloca->address_space = 3;  // nvptx/amd shared memory
         ir_global_alloca->name = ir_shared_variable->name;
-        if(ir_module->modules[ir::Target::nvptx]){
+        if (ir_module->modules[ir::Target::nvptx]) {
             ir_global_alloca->fullname = MangleNvvmName(ir_shared_variable->fullname);
-        } else if (ir_module->modules[ir::Target::amdgpu]){
+        } else if (ir_module->modules[ir::Target::amdgpu]) {
             ir_global_alloca->fullname = MangleHipName(ir_shared_variable->fullname);
         }
-        
+
         ir_global_alloca->is_external = false;
         ir_module->AddGlobalAlloca(ir_global_alloca);
 

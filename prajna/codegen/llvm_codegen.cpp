@@ -205,7 +205,9 @@ class LlvmCodegen : public prajna::ir::Visitor {
     void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function,
                                  prajna::ir::Target ir_target) {
         std::string function_fullname;
-        if (ir_target == prajna::ir::Target::nvptx) {
+        if (ir_function->fullname.starts_with("__ocml_")) {//临时调试添加
+            function_fullname = ir_function->fullname;
+        } else if (ir_target == prajna::ir::Target::nvptx) {
             function_fullname = MangleNvvmName(ir_function->fullname);
         } else if (ir_target == prajna::ir::Target::amdgpu) {
             function_fullname = MangleHipName(ir_function->fullname);
@@ -748,6 +750,30 @@ std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module,
     return ir_module;
 }
 
+inline void LinkLibdeviceBitcodeFiles(llvm::Module &llvm_module, llvm::LLVMContext &context,
+                                      const std::string &isa_version = "906") {
+    llvm::SMDiagnostic err;
+    llvm::Linker linker(llvm_module);
+
+    auto link_bc = [&](const std::string &path) {
+        auto bc = llvm::parseIRFile(path, err, context);
+        PRAJNA_ASSERT(bc,
+                      "Failed to parse bitcode: " + path + ", error: " + err.getMessage().str());
+        bool failed = linker.linkInModule(std::move(bc));
+        PRAJNA_ASSERT(!failed, "Failed to link bitcode: " + path);
+    };
+
+    // 基础 math 函数库
+    link_bc("/opt/rocm/amdgcn/bitcode/ocml.bc");
+
+    // 编译选项配置符号
+    link_bc("/opt/rocm/amdgcn/bitcode/oclc_finite_only_off.bc");
+    link_bc("/opt/rocm/amdgcn/bitcode/oclc_daz_opt_off.bc");
+
+    // ISA 版本控制（根据目标 GPU）
+    link_bc("/opt/rocm/amdgcn/bitcode/oclc_isa_version_" + isa_version + ".bc");
+}
+
 std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
@@ -819,17 +845,13 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
 
     auto ir_amdgpu_module = ir_module->modules[prajna::ir::Target::amdgpu];
     if (ir_amdgpu_module && ir_amdgpu_module->llvm_module) {
-        llvm::Linker linker(*ir_amdgpu_module->llvm_module);
-        llvm::SMDiagnostic err;
 #ifdef _WIN32
         // ToDo
 #else
-        auto ocml_path = "/opt/rocm/amdgcn/bitcode/ocml.bc";
-        auto uq_llvm_ocml_module = llvm::parseIRFile(ocml_path, err, static_llvm_context);
-        PRAJNA_ASSERT(uq_llvm_ocml_module, err.getMessage().str());
+
+        LinkLibdeviceBitcodeFiles(*ir_amdgpu_module->llvm_module, static_llvm_context);
 
 #endif
-        linker.linkInModule(std::move(uq_llvm_ocml_module));
 
         prajna::codegen::LlvmPass(ir_amdgpu_module);
     }

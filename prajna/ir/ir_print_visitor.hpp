@@ -214,6 +214,13 @@ class IRPrinter : public Visitor {
         output << ");\n";
     }
 
+    void Visit(std::shared_ptr<Select> ir_select) override {
+        output << GetVariableName(ir_select) << " = Select "
+               << GetVariableName(ir_select->Condition()) << " ? "
+               << GetVariableName(ir_select->TrueValue()) << " : "
+               << GetVariableName(ir_select->FalseValue()) << ";\n";
+    }
+
     void Visit(std::shared_ptr<ConditionBranch> ir_cond_branch) override {
         output << "ConditionBranch " << GetVariableName(ir_cond_branch->Condition()) << ", "
                << GetVariableName(ir_cond_branch->TrueBlock()) << ", "

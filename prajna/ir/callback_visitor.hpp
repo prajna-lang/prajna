@@ -96,6 +96,7 @@ class CallbackVisitor : public Visitor {
     virtual void Visit(std::shared_ptr<Return> ir_return) { this->callback(ir_return); }
     virtual void Visit(std::shared_ptr<BitCast> ir_bit_cast) { this->callback(ir_bit_cast); }
     virtual void Visit(std::shared_ptr<Call> ir_call) { this->callback(ir_call); }
+    virtual void Visit(std::shared_ptr<Select> ir_select) { this->callback(ir_select); }
     virtual void Visit(std::shared_ptr<ConditionBranch> ir_condition_branch) {
         this->callback(ir_condition_branch);
     }

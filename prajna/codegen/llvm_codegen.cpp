@@ -344,6 +344,13 @@ class LlvmCodegen : public prajna::ir::Visitor {
     }
 
     void Visit(std::shared_ptr<ir::ConstantArray> ir_constant_array) override {
+        // Ensure all constituent elements have their llvm_value set
+        for (auto ir_init : ir_constant_array->initialize_constants) {
+            if (!ir_init->llvm_value) {
+                ir_init->ApplyVisitor(this->shared_from_this());
+            }
+        }
+        
         std::vector<llvm::Constant *> llvm_contants(ir_constant_array->initialize_constants.size());
         std::ranges::transform(
             ir_constant_array->initialize_constants, llvm_contants.begin(), [=](auto ir_init) {
@@ -357,6 +364,13 @@ class LlvmCodegen : public prajna::ir::Visitor {
     }
 
     void Visit(std::shared_ptr<ir::ConstantVector> ir_constant_vector) override {
+        // Ensure all constituent elements have their llvm_value set
+        for (auto ir_init : ir_constant_vector->initialize_constants) {
+            if (!ir_init->llvm_value) {
+                ir_init->ApplyVisitor(this->shared_from_this());
+            }
+        }
+        
         std::vector<llvm::Constant *> llvm_contants(
             ir_constant_vector->initialize_constants.size());
         std::ranges::transform(
@@ -406,6 +420,21 @@ class LlvmCodegen : public prajna::ir::Visitor {
         ir_call->llvm_value = llvm::CallInst::Create(
             static_cast<llvm::FunctionType *>(ir_call->Function()->GetFunctionType()->llvm_type),
             ir_call->Function()->llvm_value, llvm_arguments, "", llvm_basic_block);
+    }
+
+    void Visit(std::shared_ptr<ir::Select> ir_select) override {
+        auto llvm_basic_block = GetLlvmBasicBlock(ir_select);
+        PRAJNA_ASSERT(ir_select->Condition()->llvm_value);
+        PRAJNA_ASSERT(ir_select->TrueValue()->llvm_value);
+        PRAJNA_ASSERT(ir_select->FalseValue()->llvm_value);
+        PRAJNA_ASSERT(ir_select->type->llvm_type);
+        
+        ir_select->llvm_value = llvm::SelectInst::Create(
+            ir_select->Condition()->llvm_value,
+            ir_select->TrueValue()->llvm_value,
+            ir_select->FalseValue()->llvm_value,
+            "",
+            llvm_basic_block);
     }
 
     void Visit(std::shared_ptr<ir::Return> ir_return) override {

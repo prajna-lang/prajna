@@ -1088,6 +1088,49 @@ class Call : public Instruction {
     }
 };
 
+class Select : public Instruction {
+   protected:
+    Select() = default;
+
+   public:
+    static std::shared_ptr<Select> Create(std::shared_ptr<ir::Value> ir_condition,
+                                          std::shared_ptr<ir::Value> ir_true_value,
+                                          std::shared_ptr<ir::Value> ir_false_value) {
+        PRAJNA_ASSERT(ir_condition);
+        PRAJNA_ASSERT(ir_true_value);
+        PRAJNA_ASSERT(ir_false_value);
+        PRAJNA_ASSERT(ir_true_value->type == ir_false_value->type);
+        auto condition_type = ir_condition->type;
+        PRAJNA_VERIFY(Is<BoolType>(condition_type) ||
+                      (Is<VectorType>(condition_type) &&
+                       Is<BoolType>(Cast<VectorType>(condition_type)->value_type)));
+
+        std::shared_ptr<Select> self(new Select);
+        self->OperandResize(3);
+        self->Condition(ir_condition);
+        self->TrueValue(ir_true_value);
+        self->FalseValue(ir_false_value);
+        self->type = ir_true_value->type;
+        self->tag = "Select";
+        return self;
+    }
+
+    std::shared_ptr<ir::Value> Condition() { return this->GetOperand(0); }
+    void Condition(std::shared_ptr<ir::Value> ir_condition) { this->SetOperand(0, ir_condition); }
+
+    std::shared_ptr<ir::Value> TrueValue() { return this->GetOperand(1); }
+    void TrueValue(std::shared_ptr<ir::Value> ir_true_value) { this->SetOperand(1, ir_true_value); }
+
+    std::shared_ptr<ir::Value> FalseValue() { return this->GetOperand(2); }
+    void FalseValue(std::shared_ptr<ir::Value> ir_false_value) {
+        this->SetOperand(2, ir_false_value);
+    }
+
+    void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
+        interpreter->Visit(Cast<Select>(this->shared_from_this()));
+    }
+};
+
 class ConditionBranch : public Instruction {
    protected:
     ConditionBranch() = default;

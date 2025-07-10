@@ -331,6 +331,18 @@ class FunctionCloner : public Visitor {
         this->value_dict[ir_call] = ir_new;
     }
 
+    void Visit(std::shared_ptr<Select> ir_select) override {
+        if (value_dict[ir_select]) {
+            return;
+        }
+
+        this->VisitOperands(ir_select);
+        auto ir_new = Select::Create(value_dict[ir_select->Condition()],
+                                     value_dict[ir_select->TrueValue()],
+                                     value_dict[ir_select->FalseValue()]);
+        this->value_dict[ir_select] = ir_new;
+    }
+
     void Visit(std::shared_ptr<ConditionBranch> ir_condition_branch) override {
         if (value_dict[ir_condition_branch]) {
             return;

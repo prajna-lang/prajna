@@ -40,6 +40,7 @@ class StorePointer;
 class Return;
 class BitCast;
 class Call;
+class Select;
 class ConditionBranch;
 class JumpBranch;
 class Label;
@@ -101,6 +102,7 @@ class Visitor : public std::enable_shared_from_this<Visitor> {
     virtual void Visit(std::shared_ptr<Return> ir_return) {}
     virtual void Visit(std::shared_ptr<BitCast> ir_bit_cast) {}
     virtual void Visit(std::shared_ptr<Call> ir_call) {}
+    virtual void Visit(std::shared_ptr<Select> ir_select) {}
     virtual void Visit(std::shared_ptr<ConditionBranch> ir_condition_branch) {}
     virtual void Visit(std::shared_ptr<JumpBranch> ir_jump_branch) {}
     virtual void Visit(std::shared_ptr<Label> ir_label) {}

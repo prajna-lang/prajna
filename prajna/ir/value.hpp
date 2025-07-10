@@ -1100,7 +1100,11 @@ class Select : public Instruction {
         PRAJNA_ASSERT(ir_true_value);
         PRAJNA_ASSERT(ir_false_value);
         PRAJNA_ASSERT(ir_true_value->type == ir_false_value->type);
-        
+        auto condition_type = ir_condition->type;
+        PRAJNA_VERIFY(Is<BoolType>(condition_type) ||
+                      (Is<VectorType>(condition_type) &&
+                       Is<BoolType>(Cast<VectorType>(condition_type)->value_type)));
+
         std::shared_ptr<Select> self(new Select);
         self->OperandResize(3);
         self->Condition(ir_condition);
@@ -1118,7 +1122,9 @@ class Select : public Instruction {
     void TrueValue(std::shared_ptr<ir::Value> ir_true_value) { this->SetOperand(1, ir_true_value); }
 
     std::shared_ptr<ir::Value> FalseValue() { return this->GetOperand(2); }
-    void FalseValue(std::shared_ptr<ir::Value> ir_false_value) { this->SetOperand(2, ir_false_value); }
+    void FalseValue(std::shared_ptr<ir::Value> ir_false_value) {
+        this->SetOperand(2, ir_false_value);
+    }
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<Select>(this->shared_from_this()));

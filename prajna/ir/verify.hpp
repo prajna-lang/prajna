@@ -29,19 +29,6 @@ class VerifyVisitor : public ir::Visitor {
         // PRAJNA_VERIFY(Lock(ir_call->Function()->parent));
     }
 
-    void Visit(std::shared_ptr<ir::Select> ir_select) override {
-        PRAJNA_VERIFY(ir_select->OperandSize() == 3);
-        
-        auto condition_type = ir_select->Condition()->type;
-        PRAJNA_VERIFY(Is<BoolType>(condition_type) || 
-                     (Is<VectorType>(condition_type) && 
-                      Is<BoolType>(Cast<VectorType>(condition_type)->value_type)));
-                      
-        PRAJNA_VERIFY(ir_select->TrueValue()->type == ir_select->FalseValue()->type);
-        
-        PRAJNA_VERIFY(ir_select->type == ir_select->TrueValue()->type);
-    }
-
     void Visit(std::shared_ptr<ir::If> ir_if) override {
         ir_if->TrueBlock()->ApplyVisitor(this->shared_from_this());
         ir_if->FalseBlock()->ApplyVisitor(this->shared_from_this());

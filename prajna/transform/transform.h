@@ -630,7 +630,7 @@ inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_m
 // https://rocm.docs.amd.com/projects/HIP/en/develop/doxygen/html/____clang__hip__math_8h_source.html
 //
 // Example:
-//   llvm.sin.f32  ->  __ocml_sinf_f32
+//   llvm.sin.f32  ->  __ocml_sin_f32
 //   llvm.asin.f32 ->  __ocml_asin_f32
 
 inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir_module) {
@@ -639,10 +639,11 @@ inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir
 
     std::list<ir::Function> ir_llvm_intrinsics;
     // 替换 LLVM intrinsics 为 OCML 函数
-    std::map<std::string, std::string> name_map = {
-        {"llvm.sin.f32", "__ocml_sinf_f32"},  {"llvm.cos.f32", "__ocml_cosf_f32"},
-        {"llvm.asin.f32", "__ocml_asin_f32"}, {"llvm.acos.f32", "__ocml_acosf_f32"},
-        {"llvm.exp.f32", "__ocml_expf_f32"},  {"llvm.log.f32", "__ocml_logf_f32"},
+    std::map<std::string, std::string> name_map = {{"llvm.sin.f32", "__ocml_sin_f32"},
+                                                   {"llvm.cos.f32", "__ocml_cos_f32"},
+                                                   {"llvm.asin.f32", "__ocml_asin_f32"},
+                                                   {"llvm.acos.f32", "__ocml_acos_f32"}
+
     };
     for (auto ir_function : ir_amdgpu_module->functions) {
         if (name_map.count(ir_function->fullname)) {

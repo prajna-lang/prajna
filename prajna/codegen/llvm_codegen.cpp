@@ -205,7 +205,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
     void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function,
                                  prajna::ir::Target ir_target) {
         std::string function_fullname;
-        if (ir_function->fullname.starts_with("__ocml_")) {//临时调试添加
+        if (ir_function->fullname.starts_with("__ocml_")) {  // 临时调试添加
             function_fullname = ir_function->fullname;
         } else if (ir_target == prajna::ir::Target::nvptx) {
             function_fullname = MangleNvvmName(ir_function->fullname);
@@ -573,6 +573,10 @@ class LlvmCodegen : public prajna::ir::Visitor {
             };
         PRAJNA_ASSERT(cast_operator_dict.count(ir_cast_instruction->operation));
         auto cast_op = cast_operator_dict[ir_cast_instruction->operation];
+        auto operand_llvm_value = ir_cast_instruction->GetOperand(0)->llvm_value;
+        if (!operand_llvm_value) {
+            ir_cast_instruction->GetOperand(0)->ApplyVisitor(this->shared_from_this());
+        }
         ir_cast_instruction->llvm_value =
             llvm::CastInst::Create(cast_op, ir_cast_instruction->GetOperand(0)->llvm_value,
                                    ir_cast_instruction->type->llvm_type, "", llvm_basic_block);

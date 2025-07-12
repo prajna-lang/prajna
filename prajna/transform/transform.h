@@ -101,7 +101,8 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
 }
 
 inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
-    PRAJNA_ASSERT(!runtime_namespace.empty());
+    std::string runtime_namespace;
+    // PRAJNA_ASSERT(!runtime_namespace.empty());
     for (auto ir_function : ir_module->functions) {
         auto ir_kernel_function_calls = utility::GetAll<ir::KernelFunctionCall>(ir_function);
         for (auto ir_kernel_function_call : ir_kernel_function_calls) {
@@ -137,7 +138,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             } else if (ir_kernel_function->annotation_dict["target"].front() == "amdgpu") {
                 runtime_namespace = "gpu2";
             } else {
-               PRAJNA_UNIMPLEMENT;
+                PRAJNA_UNIMPLEMENT;
             }
 
             auto ir_launch_function = lowering::SymbolGet<ir::Value>(

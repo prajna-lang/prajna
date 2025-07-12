@@ -36,6 +36,15 @@ else ()
     )
 endif ()
 
+# if (NOT PRAJNA_WITH_JUPYTER AND NOT MSVC)
+#     target_compile_options(prajna_config_target
+#         INTERFACE -Werror
+#     )
+# endif()
+
+
+
+
 if (PRAJNA_DISABLE_ASSERT)
     target_compile_definitions(prajna_config_target INTERFACE PRAJNA_DISABLE_ASSERT=1)
 endif()

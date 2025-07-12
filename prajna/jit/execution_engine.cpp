@@ -29,6 +29,7 @@
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
 #include "prajna/jit/gpu_compiler.hpp"
+#include "prajna/jit/hip_runtime_loader.cpp"
 
 #if defined(__linux__) || defined(WIN32)
 extern "C" uint16_t __truncdfhf2(double);
@@ -44,14 +45,6 @@ std::unordered_map<void *, std::atomic<int64_t>> ptr_count_dict;
 
 namespace prajna::jit {
 
-inline std::string GetTimeStr() {
-    // 生成时间字符串：20240622_194540
-    auto now = std::chrono::system_clock::now();
-    auto now_time_t = std::chrono::system_clock::to_time_t(now);
-    std::stringstream time_ss;
-    time_ss << std::put_time(std::localtime(&now_time_t), "_%Y%m%d_%H%M%S");
-    return time_ss.str();
-}
 
 jmp_buf buf;
 
@@ -98,6 +91,12 @@ ExecutionEngine::ExecutionEngine() {
     LLVMInitializeNVPTXTargetInfo();
     LLVMInitializeNVPTXTargetMC();
     LLVMInitializeNVPTXAsmPrinter();
+#endif
+#ifdef PRAJNA_WITH_ROCM
+    LLVMInitializeAMDGPUTarget();
+    LLVMInitializeAMDGPUTargetInfo();
+    LLVMInitializeAMDGPUTargetMC();
+    LLVMInitializeAMDGPUAsmPrinter();
 #endif
 
     auto lljit_builder = llvm::orc::LLJITBuilder();
@@ -150,6 +149,8 @@ int64_t ExecutionEngine::GetValue(std::string name) {
     return expect_symbol->getValue();
 }
 
+static HipRuntimeLoader hip_loader;
+
 void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
     // host
     auto up_llvm_module = std::unique_ptr<llvm::Module>(ir_module->llvm_module);
@@ -169,52 +170,66 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
             continue;
         }
 
-        // 目前仅支持nvptx后端的gpu
-        PRAJNA_ASSERT(ir_target == ir::Target::nvptx);
+        GpuCompiler gpu_compiler(ir_target);
+        std::string hsaco_data;
+        std::string file_base ;
+        if (ir_target == ir::Target::nvptx) {
+            file_base = gpu_compiler.CompileToPTXCode(ir_sub_module->llvm_module, ir_sub_module->name);
+        } else if (ir_target == ir::Target::amdgpu) {
+            hsaco_data = gpu_compiler.CompileToHSACO(ir_sub_module->llvm_module, ir_sub_module->name);
+        } else {
+            PRAJNA_UNREACHABLE;
+        }
 
-        GpuCompiler gpu_compiler;
-        auto ptx_code = gpu_compiler.CompileToPTX(ir_sub_module->llvm_module);
-
-        auto file_base = (std::filesystem::temp_directory_path() /
-                          std::filesystem::path(ir_sub_module->name).stem())
-                             .string();
-        file_base += GetTimeStr();
-        std::error_code err_code;
-        llvm::raw_fd_ostream ptx_fs(file_base + ".ptx", err_code);
-        PRAJNA_ASSERT(!err_code && "Failed to open file for PTX output");
-        ptx_fs << ptx_code;
-        ptx_fs.close();
-
+        if (ir_target == ir::Target::nvptx) {
 #ifdef _WIN32
-        boost::dll::shared_library cuda_so("C:\\Windows\\System32\\nvcuda.dll");
+            boost::dll::shared_library cuda_so("C:\\Windows\\System32\\nvcuda.dll");
 #else
-        boost::dll::shared_library cuda_so("/usr/lib/x86_64-linux-gnu/libcuda.so");
+            boost::dll::shared_library cuda_so("/usr/lib/x86_64-linux-gnu/libcuda.so");
 #endif
 
-        auto cu_init = cuda_so.get<int(int)>("cuInit");
-        cu_init(0);
+            auto cu_init = cuda_so.get<int(int)>("cuInit");
+            cu_init(0);
 
-        auto cu_library_load_from_file =
-            cuda_so.get<int(int64_t *, const char *, int *, int *, int, int *, int *, int)>(
-                "cuLibraryLoadFromFile");
-        auto cu_library_get_kernel =
-            cuda_so.get<int(int64_t *, int64_t, const char *)>("cuLibraryGetKernel");
+            auto cu_library_load_from_file =
+                cuda_so.get<int(int64_t *, const char *, int *, int *, int, int *, int *, int)>(
+                    "cuLibraryLoadFromFile");
+            auto cu_library_get_kernel =
+                cuda_so.get<int(int64_t *, int64_t, const char *)>("cuLibraryGetKernel");
 
-        int64_t cu_library = 0;
-        auto cu_re2 =
-            cu_library_load_from_file(&cu_library, fmt::format("{}.ptx", file_base).c_str(),
-                                      nullptr, nullptr, 0, nullptr, nullptr, 0);
-        PRAJNA_ASSERT(cu_re2 == 0, std::to_string(cu_re2));
+            int64_t cu_library = 0;
+            auto cu_re2 =
+                cu_library_load_from_file(&cu_library, fmt::format("{}.ptx", file_base).c_str(),
+                                          nullptr, nullptr, 0, nullptr, nullptr, 0);
+            PRAJNA_ASSERT(cu_re2 == 0, std::to_string(cu_re2));
 
-        for (auto ir_function : ir_sub_module->functions) {
-            if (ir_function->annotation_dict.count("kernel")) {
-                auto kernel_fun_address_name = GetKernelFunctionAddressName(ir_function);
-                auto test_kernel_fun =
-                    reinterpret_cast<int64_t *>(this->GetValue(kernel_fun_address_name));
-                std::string function_name = MangleNvvmName(ir_function->fullname);
-                auto cu_re =
-                    cu_library_get_kernel(test_kernel_fun, cu_library, function_name.c_str());
-                PRAJNA_ASSERT(cu_re == 0, std::to_string(cu_re));
+            for (auto ir_function : ir_sub_module->functions) {
+                if (ir_function->annotation_dict.count("kernel")) {
+                    auto kernel_fun_address_name = GetKernelFunctionAddressName(ir_function);
+                    auto test_kernel_fun =
+                        reinterpret_cast<int64_t *>(this->GetValue(kernel_fun_address_name));
+                    std::string function_name = MangleNvvmName(ir_function->fullname);
+                    auto cu_re =
+                        cu_library_get_kernel(test_kernel_fun, cu_library, function_name.c_str());
+                    PRAJNA_ASSERT(cu_re == 0, std::to_string(cu_re));
+                }
+            }
+        } else if (ir_target == ir::Target::amdgpu) {
+            // 内核函数的地址存储到 JIT 环境中
+            for (auto ir_function : ir_sub_module->functions) {
+                if (ir_function->annotation_dict.count("kernel")) {
+                    std::string function_name = MangleHipName(ir_function->fullname);
+                    hipFunction_t kernel_func =
+                        hip_loader.LoadKernelFunction(hsaco_data, function_name);
+                    auto kernel_name_address_name = GetKernelFunctionAddressName(ir_function);
+                    // 获取 JIT 环境中存储内核函数地址的指针。
+                    int64_t *address =
+                        reinterpret_cast<int64_t *>(this->GetValue(kernel_name_address_name));
+                    PRAJNA_ASSERT(address,
+                                  "Symbol not found in JIT env: " + kernel_name_address_name);
+
+                    *address = static_cast<int64_t>(reinterpret_cast<uintptr_t>(kernel_func));
+                }
             }
         }
     }

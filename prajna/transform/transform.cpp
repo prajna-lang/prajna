@@ -13,6 +13,10 @@ std::shared_ptr<ir::Module> SperateModule(std::shared_ptr<ir::Module> ir_module)
             auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
             ir_nvptx_module->AddFunction(ir_function);
             iter_function = ir_module->functions.erase(iter_function);
+        } else if (std::ranges::count(ir_function->annotation_dict["target"], "amdgpu")) {
+            auto ir_amdgpu_module = ir_module->modules[ir::Target::amdgpu];
+            ir_amdgpu_module->AddFunction(ir_function);
+            iter_function = ir_module->functions.erase(iter_function);
         } else {
             ++iter_function;
         }

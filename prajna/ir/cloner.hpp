@@ -276,7 +276,25 @@ class FunctionCloner : public Visitor {
     }
 
     void Visit(std::shared_ptr<GlobalAlloca> ir_global_alloca) override {
-        this->value_dict[ir_global_alloca] = ir_global_alloca;
+        // 如果已经处理过，直接返回
+        if (value_dict.count(ir_global_alloca)) return;
+
+        // 如果是浅拷贝（shallow clone），不新建，只建立引用
+        if (this->shallow) {
+            value_dict[ir_global_alloca] = ir_global_alloca;
+            return;
+        }
+
+        // 深拷贝（deep clone）：复制一份新的 GlobalAlloca
+        auto ir_new = GlobalAlloca::Create(ir_global_alloca->type);
+        ir_new->name = ir_global_alloca->name;
+        ir_new->fullname = ir_global_alloca->fullname;
+        ir_new->is_external = ir_global_alloca->is_external;
+        ir_new->address_space = ir_global_alloca->address_space;
+
+        // 加入当前 target module
+        this->ir_module->AddGlobalAlloca(ir_new);
+        this->value_dict[ir_global_alloca] = ir_new;
     }
 
     void Visit(std::shared_ptr<LoadPointer> ir_load_pointer) override {

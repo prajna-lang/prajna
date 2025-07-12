@@ -1,0 +1,9 @@
+use ::gpu2;
+
+@kernel
+@target("amdgpu")
+func myKernel(){
+    var tmp = 3.1415;
+    tmp.Sin();
+}
+

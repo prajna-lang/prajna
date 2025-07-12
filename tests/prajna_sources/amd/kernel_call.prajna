@@ -1,0 +1,26 @@
+use ::gpu2;
+
+@kernel
+@target("amdgpu")
+func myKernel(tensor: gpu2::Tensor<i64, 1>){
+    var thread_idx = gpu2::ThreadIndex();
+    var thread_idx_x = thread_idx[0];
+    tensor.data[thread_idx_x] = thread_idx_x;
+}
+
+@test
+func TestKernel(){
+    var size = 13;
+    var GridShape = [1,1,1];
+    var BlockShape = [size, 1, 1];
+
+    var shape = [size];
+    var gpu_tensor = gpu2::Tensor<i64, 1>::Create(shape);
+
+    myKernel<|GridShape, BlockShape|>(gpu_tensor);
+
+    var host_tensor = gpu_tensor.ToHost();
+    for i in 0 to size{
+        test::Assert(host_tensor[i] == i);
+    }
+}

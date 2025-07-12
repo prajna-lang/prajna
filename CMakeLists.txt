@@ -78,6 +78,7 @@ option(PRAJNA_WITH_JUPYTER "Build Jupyter Xeus Prajna" OFF)
 option(PRAJNA_ENABLE_SANITIZE "Enable Prajna address sanitize" OFF)
 option(PRAJNA_DISABLE_ASSERT "Disable Prajna ASSERTS" OFF)
 option(PRAJNA_WITH_CUDA "Enable CUDA support" OFF)
+option(PRAJNA_WITH_ROCM "Enable ROCM support" OFF)
 
 add_subdirectory(prajna)
 if (PRAJNA_WITH_JUPYTER)

@@ -168,9 +168,6 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
         PRAJNA_ASSERT(!ir_module->llvm_module);
         ir_module->llvm_module = new llvm::Module(ir_module->name, static_llvm_context);
-        if (ir_target == prajna::ir::Target::nvptx) {
-            ir_module->llvm_module->setTargetTriple("nvptx64-nvidia-cuda");
-        }
 
         for (auto ir_global_alloca : ir_module->global_allocas) {
             // this->EmitGlobalAlloca(ir_global_alloca);
@@ -180,13 +177,19 @@ class LlvmCodegen : public prajna::ir::Visitor {
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
             this->EmitFunctionDeclaration(ir_function, this->ir_target);
             if (ir_function->annotation_dict.count("kernel")) {
+                std::string metadata;
+                if (ir_target == prajna::ir::Target::nvptx) {
+                    metadata = "nvvm.annotations";
+                } else if (ir_target == prajna::ir::Target::amdgpu) {
+                    metadata = "amdhsa.kernels";
+                }
                 auto md_node = llvm::MDNode::get(
                     static_llvm_context, {llvm::ValueAsMetadata::get(ir_function->llvm_value),
                                           llvm::MDString::get(static_llvm_context, "kernel"),
                                           llvm::ValueAsMetadata::get(llvm::ConstantInt::get(
                                               llvm::Type::getInt32Ty(static_llvm_context), 1))});
                 auto nvvm_annotations_md =
-                    ir_module->llvm_module->getOrInsertNamedMetadata("nvvm.annotations");
+                    ir_module->llvm_module->getOrInsertNamedMetadata(metadata);
                 nvvm_annotations_md->addOperand(md_node);
             }
         }
@@ -201,9 +204,16 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
     void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function,
                                  prajna::ir::Target ir_target) {
-        auto function_fullname = ir_target == prajna::ir::Target::nvptx
-                                     ? MangleNvvmName(ir_function->fullname)
-                                     : ir_function->fullname;
+        std::string function_fullname;
+        if (ir_function->fullname.starts_with("__ocml_")) {  // 临时调试添加
+            function_fullname = ir_function->fullname;
+        } else if (ir_target == prajna::ir::Target::nvptx) {
+            function_fullname = MangleNvvmName(ir_function->fullname);
+        } else if (ir_target == prajna::ir::Target::amdgpu) {
+            function_fullname = MangleHipName(ir_function->fullname);
+        } else {
+            function_fullname = ir_function->fullname;
+        }
 
         PRAJNA_ASSERT(ir_function->function_type->llvm_type);
         llvm::FunctionType *llvm_fun_type =
@@ -211,6 +221,11 @@ class LlvmCodegen : public prajna::ir::Visitor {
         llvm::Function *llvm_fun =
             llvm::Function::Create(llvm_fun_type, llvm::Function::ExternalLinkage,
                                    function_fullname, ir_function->GetParentModule()->llvm_module);
+        // 设置为 AMDGPU kernel calling convention
+        if (ir_target == prajna::ir::Target::amdgpu &&
+            ir_function->annotation_dict.count("kernel")) {
+            llvm_fun->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+        }
         ir_function->llvm_value = llvm_fun;
     }
 
@@ -587,6 +602,10 @@ class LlvmCodegen : public prajna::ir::Visitor {
             };
         PRAJNA_ASSERT(cast_operator_dict.count(ir_cast_instruction->operation));
         auto cast_op = cast_operator_dict[ir_cast_instruction->operation];
+        auto operand_llvm_value = ir_cast_instruction->GetOperand(0)->llvm_value;
+        if (!operand_llvm_value) {
+            ir_cast_instruction->GetOperand(0)->ApplyVisitor(this->shared_from_this());
+        }
         ir_cast_instruction->llvm_value =
             llvm::CastInst::Create(cast_op, ir_cast_instruction->GetOperand(0)->llvm_value,
                                    ir_cast_instruction->type->llvm_type, "", llvm_basic_block);
@@ -764,6 +783,30 @@ std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module,
     return ir_module;
 }
 
+inline void LinkLibdeviceBitcodeFiles(llvm::Module &llvm_module, llvm::LLVMContext &context,
+                                      const std::string &isa_version = "906") {
+    llvm::SMDiagnostic err;
+    llvm::Linker linker(llvm_module);
+
+    auto link_bc = [&](const std::string &path) {
+        auto bc = llvm::parseIRFile(path, err, context);
+        PRAJNA_ASSERT(bc,
+                      "Failed to parse bitcode: " + path + ", error: " + err.getMessage().str());
+        bool failed = linker.linkInModule(std::move(bc));
+        PRAJNA_ASSERT(!failed, "Failed to link bitcode: " + path);
+    };
+
+    // 基础 math 函数库
+    link_bc("/opt/rocm/amdgcn/bitcode/ocml.bc");
+
+    // 编译选项配置符号
+    link_bc("/opt/rocm/amdgcn/bitcode/oclc_finite_only_off.bc");
+    link_bc("/opt/rocm/amdgcn/bitcode/oclc_daz_opt_off.bc");
+
+    // ISA 版本控制（根据目标 GPU）
+    link_bc("/opt/rocm/amdgcn/bitcode/oclc_isa_version_" + isa_version + ".bc");
+}
+
 std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
@@ -831,6 +874,19 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
         linker.linkInModule(std::move(uq_llvm_libdevice_module));
 
         prajna::codegen::LlvmPass(ir_nvptx_module);
+    }
+
+    auto ir_amdgpu_module = ir_module->modules[prajna::ir::Target::amdgpu];
+    if (ir_amdgpu_module && ir_amdgpu_module->llvm_module) {
+#ifdef _WIN32
+        // ToDo
+#else
+
+        LinkLibdeviceBitcodeFiles(*ir_amdgpu_module->llvm_module, static_llvm_context);
+
+#endif
+
+        prajna::codegen::LlvmPass(ir_amdgpu_module);
     }
 
     return ir_module;

@@ -1544,6 +1544,7 @@ class Module : public Value {
     static std::shared_ptr<Module> Create() {
         auto self = std::shared_ptr<Module>(new Module);
         self->modules[Target::nvptx] = std::shared_ptr<Module>(new Module);
+        self->modules[Target::amdgpu] = std::shared_ptr<Module>(new Module);
         return self;
     }
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) {
@@ -1569,6 +1570,7 @@ class Module : public Value {
         ir_global_alloca->parent = shared_from_this();
         this->global_allocas.push_back(ir_global_alloca);
     }
+
 
     std::list<std::shared_ptr<Function>> functions;
     std::list<std::shared_ptr<GlobalVariable>> global_variables;

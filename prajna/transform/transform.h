@@ -101,6 +101,8 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
 }
 
 inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
+    std::string runtime_namespace;
+    // PRAJNA_ASSERT(!runtime_namespace.empty());
     for (auto ir_function : ir_module->functions) {
         auto ir_kernel_function_calls = utility::GetAll<ir::KernelFunctionCall>(ir_function);
         for (auto ir_kernel_function_call : ir_kernel_function_calls) {
@@ -131,9 +133,17 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                     ir_kernel_argument_address_i8ptr, ir_array_index);
             }
 
+            if (ir_kernel_function->annotation_dict["target"].front() == "nvptx") {
+                runtime_namespace = "gpu";
+            } else if (ir_kernel_function->annotation_dict["target"].front() == "amdgpu") {
+                runtime_namespace = "gpu2";
+            } else {
+                PRAJNA_UNIMPLEMENT;
+            }
+
             auto ir_launch_function = lowering::SymbolGet<ir::Value>(
                 lowering::SymbolGet<lowering::SymbolTable>(
-                    ir_module->symbol_table->RootSymbolTable()->Get("gpu"))
+                    ir_module->symbol_table->RootSymbolTable()->Get(runtime_namespace))
                     ->Get("LaunchKernel"));
             PRAJNA_ASSERT(ir_launch_function);
             std::list<std::shared_ptr<ir::Value>> ir_arguments;
@@ -188,6 +198,7 @@ inline void ConvertKernelFunctionOperandToAddress(std::shared_ptr<ir::Module> ir
                             ir_global_variable = ir::GlobalVariable::Create(ir_function->type);
                             ir_global_variable->name = global_variable_fullname;
                             ir_global_variable->fullname = ir_global_variable->name;
+                            ir_global_variable->annotation_dict = ir_function->annotation_dict;
                             // 如果不是同一个module的, 则为external, 目前所有的nvptx
                             // IR都会迁移的使用的Module里去
                             // ir_global_variable->is_external =
@@ -248,16 +259,17 @@ inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module
     }
 }
 
-inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
-    if (ir_module->modules.count(ir::Target::nvptx) == 0) {
+inline void CloneExternalDeviceValue(std::shared_ptr<ir::Module> ir_module, ir::Target target) {
+    if (ir_module->modules.count(target) == 0) {
         return;
     }
 
-    auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
+    auto ir_target_module = ir_module->modules[target];
+    if (!ir_target_module) return;
 
     ir_module->global_allocas.remove_if([=](auto ir_global_alloca) -> bool {
         if (ir_global_alloca->address_space == 3) {
-            ir_nvptx_module->AddGlobalAlloca(ir_global_alloca);
+            ir_target_module->AddGlobalAlloca(ir_global_alloca);
             return true;
         } else {
             return false;
@@ -265,28 +277,30 @@ inline void CloneExternalNvptxValue(std::shared_ptr<ir::Module> ir_module) {
     });
 
     std::list<std::shared_ptr<ir::Function>> ir_kernel_function_list;
-    std::ranges::copy_if(ir_nvptx_module->functions, std::back_inserter(ir_kernel_function_list),
+    std::ranges::copy_if(ir_target_module->functions, std::back_inserter(ir_kernel_function_list),
                          [](std::shared_ptr<ir::Function> ir_function) {
                              return ir_function->annotation_dict.count("kernel");
                          });
 
-    auto function_cloner = ir::FunctionCloner::Create(ir_nvptx_module, false);
+    auto function_cloner = ir::FunctionCloner::Create(ir_target_module, false);
     for (auto ir_kernel_function : ir_kernel_function_list) {
         // 会把生成的函数直接插入到module里
         auto ir_kernel_function_new =
             Cast<ir::Function>(function_cloner->Clone(ir_kernel_function));
         // 移除原来的核函数
-        ir_nvptx_module->functions.remove(ir_kernel_function);
+        ir_target_module->functions.remove(ir_kernel_function);
         PRAJNA_ASSERT(ir::Verify(ir_kernel_function_new));
     }
 }
 
-inline void DefineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module) {
-    if (ir_module->modules.count(ir::Target::nvptx) == 0) {
+inline void DefineKernelFunctionAddress(std::shared_ptr<ir::Module> ir_module, ir::Target target) {
+    if (ir_module->modules.count(target) == 0) {
+        return;
     }
 
-    auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
-    for (auto ir_function : ir_nvptx_module->functions) {
+    auto ir_target_module = ir_module->modules[target];
+    if (!ir_target_module) return;
+    for (auto ir_function : ir_target_module->functions) {
         if (ir_function->annotation_dict.count("kernel")) {
             auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
             auto iter_global_variable = std::ranges::find_if(
@@ -610,6 +624,35 @@ inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_m
     };
 }
 
+// 将 LLVM 内建数学函数名替换为 AMDGPU 后端 libdevice（OCML）库函数名，
+// 以便在 .ll 转换为 .hsaco 时链接 libdevice（如 ocml.bc）成功。
+//
+// 参考 ROCm 提供的 HIP 数学头文件源码（包含 __ocml_* 的映射关系）：
+// https://rocm.docs.amd.com/projects/HIP/en/develop/doxygen/html/____clang__hip__math_8h_source.html
+//
+// Example:
+//   llvm.sin.f32  ->  __ocml_sin_f32
+//   llvm.asin.f32 ->  __ocml_asin_f32
+
+inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir_module) {
+    auto ir_amdgpu_module = ir_module->modules[ir::Target::amdgpu];
+    if (!ir_amdgpu_module) return;
+
+    std::list<ir::Function> ir_llvm_intrinsics;
+    // 替换 LLVM intrinsics 为 OCML 函数
+    std::map<std::string, std::string> name_map = {{"llvm.sin.f32", "__ocml_sin_f32"},
+                                                   {"llvm.cos.f32", "__ocml_cos_f32"},
+                                                   {"llvm.asin.f32", "__ocml_asin_f32"},
+                                                   {"llvm.acos.f32", "__ocml_acos_f32"}
+
+    };
+    for (auto ir_function : ir_amdgpu_module->functions) {
+        if (name_map.count(ir_function->fullname)) {
+            ir_function->fullname = name_map[ir_function->fullname];
+        }
+    };
+}
+
 inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::Module> ir_module) {
     auto ir_shared_variable_list = utility::GetAll<ir::LocalVariable>(ir_module);
     ir_shared_variable_list.remove_if([](auto ir_local_variable) {
@@ -618,9 +661,14 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::M
 
     for (auto ir_shared_variable : ir_shared_variable_list) {
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_shared_variable->type);
-        ir_global_alloca->address_space = 3;  // nvptx shared memory
+        ir_global_alloca->address_space = 3;  // nvptx/amd shared memory
         ir_global_alloca->name = ir_shared_variable->name;
-        ir_global_alloca->fullname = MangleNvvmName(ir_shared_variable->fullname);
+        if (ir_module->modules[ir::Target::nvptx]) {
+            ir_global_alloca->fullname = MangleNvvmName(ir_shared_variable->fullname);
+        } else if (ir_module->modules[ir::Target::amdgpu]) {
+            ir_global_alloca->fullname = MangleHipName(ir_shared_variable->fullname);
+        }
+
         ir_global_alloca->is_external = false;
         ir_module->AddGlobalAlloca(ir_global_alloca);
 
@@ -731,12 +779,18 @@ inline std::shared_ptr<ir::Module> transform(std::shared_ptr<ir::Module> ir_modu
     RecursiveTransformModule(ir_module, ConvertDeferencePointerToStoreAndLoadPointer);
     //
     SperateModule(ir_module);
-    CloneExternalNvptxValue(ir_module);
-    DefineKernelFunctionAddress(ir_module);
+    CloneExternalDeviceValue(ir_module, ir::Target::nvptx);
+    CloneExternalDeviceValue(ir_module, ir::Target::amdgpu);
+
+    DefineKernelFunctionAddress(ir_module, ir::Target::nvptx);
+    DefineKernelFunctionAddress(ir_module, ir::Target::amdgpu);
+
     ConvertGlobalVariableToPointer(ir_module);
     RecursiveTransformModule(ir_module, DeclareExternalFunction);
     TopAlloca(ir_module);
+
     ConvertLLVMIntrinsicToNVVMLibdevice(ir_module);
+    ConvertLLVMIntrinsicToAmdGPULibdevice(ir_module);
 
     PRAJNA_ASSERT(RecursiveTransformModule(ir_module, ir::Verify));
 

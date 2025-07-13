@@ -16,16 +16,13 @@ target_link_libraries(prajna_jit
     PRIVATE LLVMCodeGen
     PRIVATE LLVMAnalysis
     PRIVATE LLVMTarget
-    PRIVATE LLVMSupport
-    PRIVATE LLVMX86Desc
-    PRIVATE LLVMX86Info
-    PRIVATE LLVMAArch64Info
-    PRIVATE LLVMAArch64CodeGen
-    PRIVATE LLVMAArch64AsmParser
-    PRIVATE LLVMAArch64Desc
+    PRIVATE ${LLVMNativeCodeGen}
+    PRIVATE ${LLVMNativeAsmParser}
+    PRIVATE ${LLVMNativeDesc}
+    PRIVATE ${LLVMNativeInfo}
     PRIVATE LLVMCore
     PUBLIC LLVMLinker
-    
+
 )
 
 if (UNIX AND NOT APPLE)
@@ -47,7 +44,7 @@ endif()
 
 
 if (PRAJNA_WITH_CUDA)
-    target_link_libraries(prajna_jit 
+    target_link_libraries(prajna_jit
         PRIVATE LLVMNVPTXCodeGen  # 添加 NVPTX 后端支持
         PRIVATE LLVMNVPTXDesc     # NVPTX 目标描述
         PRIVATE LLVMNVPTXInfo     # NVPTX 目标信息
@@ -57,7 +54,7 @@ if (PRAJNA_WITH_CUDA)
 endif()
 
 if (PRAJNA_WITH_ROCM)
-    target_link_libraries(prajna_jit 
+    target_link_libraries(prajna_jit
         PRIVATE LLVMAMDGPUCodeGen  # 添加 HSACO 后端支持
         PRIVATE LLVMAMDGPUDesc     # HSACO 目标描述
         PRIVATE LLVMAMDGPUInfo     # HSACO 目标信息

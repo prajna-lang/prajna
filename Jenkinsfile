@@ -28,10 +28,12 @@ pipeline{
                             }
                         }
                         stage('clean') {
-                            when { allOf {
-                                anyOf { branch 'main'; branch 'dev' }
-                                triggeredBy "TimerTrigger"
-                            } }
+                            when {
+                                    anyOf {
+                                        branch 'main'
+                                        branch 'dev'
+                                    }
+                                 }
                             steps {
                                 bat 'git submodule deinit  --force --all'
                                 bat 'git clean -xdf .'
@@ -45,7 +47,7 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                bat 'bash ./scripts/test.sh %BUILD_TYPE% --gtest_filter=-*gpu*'
+                                bat 'bash ./scripts/test.sh %BUILD_TYPE% --gtest_filter=-*amd*:*gpu*'
                                 bat 'bash ./scripts/test_examples.sh %BUILD_TYPE%'
                             }
                         }
@@ -85,10 +87,12 @@ pipeline{
                             }
                         }
                         stage('clean') {
-                                when { allOf {
-                                    anyOf { branch 'main'; branch 'dev' }
-                                    triggeredBy "TimerTrigger"
-                                } }
+                                when {
+                                    anyOf {
+                                        branch 'main'
+                                        branch 'dev'
+                                    }
+                                 }
                             steps {
                                 sh 'git submodule deinit  --force --all'
                                 sh 'git clean -xdf .'
@@ -97,13 +101,13 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh './scripts/clone_submodules.sh -f --jobs=4 --depth=50'
-                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERT=OFF -DPRAJNA_WITH_CUDA=ON -DPRAJNA_WITH_ROCM=ON'
+                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERT=OFF -DPRAJNA_WITH_CUDA=ON -DPRAJNA_WITH_ROCM=OFF'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                             }
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE}'
+                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*amd*'
                                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }
@@ -137,10 +141,12 @@ pipeline{
                             }
                         }
                         stage('clean') {
-                            when { allOf {
-                                anyOf { branch 'main'; branch 'dev' }
-                                triggeredBy "TimerTrigger"
-                            } }
+                                when {
+                                    anyOf {
+                                        branch 'main'
+                                        branch 'dev'
+                                    }
+                                }
                             steps {
                                 sh 'git submodule deinit  --force --all'
                                 sh 'git clean -xdf .'
@@ -155,15 +161,10 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*gpu*'
+                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*amd*:*gpu*'
                                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }
-                        // stage("leak-check") {
-                        //     steps {
-                        //         sh 'valgrind --leak-check=full  --num-callers=10 --trace-children=yes ./scripts/test.sh ${BUILD_TYPE} --gtest_filter=*tensor_test'
-                        //     }
-                        // }
                     }
                 }
             }

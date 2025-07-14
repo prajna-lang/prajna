@@ -1,3 +1,5 @@
+set -e
+
 cd dockerfiles
 docker build . -f ubuntu_dev.dockerfile --tag ubuntu_dev
 cd -

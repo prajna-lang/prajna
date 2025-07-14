@@ -1,3 +1,5 @@
+set -e
+
 cd dockerfiles
 docker build . -f ubuntu_dev_nvgpu.dockerfile --tag nvidia_ubuntu_dev
 cd -

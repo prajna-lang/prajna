@@ -45,7 +45,6 @@ std::unordered_map<void *, std::atomic<int64_t>> ptr_count_dict;
 
 namespace prajna::jit {
 
-
 jmp_buf buf;
 
 void print_c(const char *c_str) { print_callback(std::string(c_str)); }
@@ -149,8 +148,6 @@ int64_t ExecutionEngine::GetValue(std::string name) {
     return expect_symbol->getValue();
 }
 
-static HipRuntimeLoader hip_loader;
-
 void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
     // host
     auto up_llvm_module = std::unique_ptr<llvm::Module>(ir_module->llvm_module);
@@ -172,11 +169,13 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 
         GpuCompiler gpu_compiler(ir_target);
         std::string hsaco_data;
-        std::string file_base ;
+        std::string file_base;
         if (ir_target == ir::Target::nvptx) {
-            file_base = gpu_compiler.CompileToPTXCode(ir_sub_module->llvm_module, ir_sub_module->name);
+            file_base =
+                gpu_compiler.CompileToPTXCode(ir_sub_module->llvm_module, ir_sub_module->name);
         } else if (ir_target == ir::Target::amdgpu) {
-            hsaco_data = gpu_compiler.CompileToHSACO(ir_sub_module->llvm_module, ir_sub_module->name);
+            hsaco_data =
+                gpu_compiler.CompileToHSACO(ir_sub_module->llvm_module, ir_sub_module->name);
         } else {
             PRAJNA_UNREACHABLE;
         }
@@ -216,6 +215,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
             }
         } else if (ir_target == ir::Target::amdgpu) {
             // 内核函数的地址存储到 JIT 环境中
+            HipRuntimeLoader hip_loader;  // TODO(zhangzhimin): 这里需要优化， 因为会多次加载
             for (auto ir_function : ir_sub_module->functions) {
                 if (ir_function->annotation_dict.count("kernel")) {
                     std::string function_name = MangleHipName(ir_function->fullname);

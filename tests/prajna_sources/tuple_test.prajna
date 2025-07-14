@@ -1,10 +1,27 @@
 @test
-func TestTuple() {
-    var tmp: Tuple<i64, f32, bool>;
-    tmp.field0 = 1;
-    tmp.field1 = 2.0;
-    tmp.field2 = true;
-    test::Assert(tmp.field0 == 1);
-    test::Assert(tmp.field1 == 2.0);
-    test::Assert(tmp.field2);
+func TestSingleton() {
+    var singleton: Tuple<i64>;
+    singleton.field0 = 1;
+    test::Assert(singleton.field0 == singleton.Get<0>());
+}
+
+@test
+func TestPair() {
+    var pair: Tuple<i64, f64>;
+    pair.field0 = 1;
+    pair.field1 = 1.1111f64;
+    test::Assert(pair.field0 == pair.Get<0>());
+    test::Assert(pair.field1 == pair.Get<1>());
+}
+
+@test
+func TestTriple() {
+    var triple: Tuple<i64, f64, bool>;
+    triple.field0 = 1;
+    triple.field1 = 1.1111f64;
+    triple.field2 = false;
+    test::Assert(triple.field0 == triple.Get<0>());
+    test::Assert(triple.field1 == triple.Get<1>());
+    test::Assert(!triple.field2);
+    test::Assert(!triple.Get<2>());
 }

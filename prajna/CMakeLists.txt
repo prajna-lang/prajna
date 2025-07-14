@@ -19,6 +19,8 @@ target_link_libraries(prajna_config_target
     INTERFACE nlohmann_json
 )
 
+target_compile_options(prajna_config_target INTERFACE -std=c++23)
+
 target_compile_definitions(prajna_config_target
     # 参阅third_party/boost/libs/mpl/include/boost/mpl/list/list50.hpp
     # 并非任意数字都行, 需要是10,20,30,40,50

@@ -1911,6 +1911,89 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         return template_destroy;
     }
 
+    std::shared_ptr<Template> CreateTupleTemplate() {
+        auto template_tuple = Template::Create();
+        template_tuple->generator = [symbol_table = this->ir_builder->symbol_table,
+                                     logger = this->logger,
+                                     this](std::list<Symbol> symbol_template_arguments,
+                                           std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            int field_index = 0;
+            auto ir_fields =
+                symbol_template_arguments | std::views::transform([&field_index](Symbol symbol) {
+                    auto ir_field = ir::Field::Create("field" + std::to_string(field_index),
+                                                      SymbolGet<ir::Type>(symbol));
+                    ++field_index;
+                    return ir_field;
+                }) |
+                std::ranges::to<std::list<std::shared_ptr<ir::Field>>>();
+
+            auto ir_builder = IrBuilder::Create(symbol_table, ir_module, logger);
+            auto ir_struct_type = ir::StructType::Create(ir_fields);
+            ir_struct_type->name = "Tuple";
+            ir_struct_type->fullname = "Tuple";
+            ir_struct_type->Update();
+
+            int tuple_size = ir_fields.size();
+            auto type_id = GetTemplateArgumentsPostify(symbol_template_arguments);
+
+            auto template_get = Template::Create();
+            template_get->name = "Get";
+            template_get->generator = [ir_fields, ir_struct_type, symbol_table, logger, tuple_size,
+                                       type_id](std::list<Symbol> get_args,
+                                                std::shared_ptr<ir::Module> module) -> Symbol {
+                if (get_args.size() != 1) {
+                    logger->Error("Get<N> requires exactly one template argument (the index)");
+                    return nullptr;
+                }
+                auto index_const = SymbolGet<ir::ConstantInt>(get_args.front());
+                if (!index_const) {
+                    logger->Error("Get<N> template parameter must be a constant integer");
+                    return nullptr;
+                }
+                int index = index_const->value;
+                if (index < 0 || index >= ir_fields.size()) {
+                    std::string valid_fields;
+                    for (int i = 0; i < tuple_size; ++i) {
+                        valid_fields += "field" + std::to_string(i);
+                        if (i != tuple_size - 1) valid_fields += ", ";
+                    }
+                    std::string error_msg = fmt::format(
+                        "Tuple index out of range: {}. This Tuple<> has {} elements (valid "
+                        "indices: 0 to {}).\n"
+                        "Valid members are: {}.",
+                        index, tuple_size, tuple_size - 1, valid_fields);
+                    logger->Error(error_msg);
+                    return nullptr;
+                }
+
+                auto field_iter = ir_fields.begin();
+                std::advance(field_iter, index);
+                auto ir_field = *field_iter;
+
+                auto ir_builder = IrBuilder::Create(symbol_table, module, logger);
+                std::string func_name_str = "Get" + std::to_string(index) + type_id;
+                ast::Identifier func_name(func_name_str);
+
+                auto ptr_struct_type = ir::PointerType::Create(ir_struct_type);
+                auto ir_func_type = ir::FunctionType::Create({ptr_struct_type}, ir_field->type);
+                auto ir_func = ir_builder->CreateFunction(func_name, ir_func_type);
+                ir_func->annotation_dict["inline"];
+
+                ir_builder->CreateTopBlockForFunction(ir_func);
+                auto this_ptr = ir_func->parameters.front();
+                auto this_obj = ir_builder->Create<ir::DeferencePointer>(this_ptr);
+                auto field_access = ir_builder->Create<ir::AccessField>(this_obj, ir_field);
+                ir_builder->Create<ir::Return>(field_access);
+
+                return ir_func;
+            };
+
+            ir_struct_type->template_any_dict["Get"] = template_get;
+            return ir_struct_type;
+        };
+        return template_tuple;
+    }
+
     void Stage0() {
         auto bool_type = ir::BoolType::Create();
         auto char_type = ir::CharType::Create();
@@ -2058,6 +2141,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateDestroyTemplate(), "finalize");
+
+        ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
+            this->CreateTupleTemplate(), "Tuple");
     }
 
     Symbol operator()(ast::Pragma ast_pragma);

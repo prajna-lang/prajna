@@ -98,6 +98,13 @@ pipeline{
                                 sh 'git clean -xdf .'
                             }
                         }
+                        stage('large-files-check') {
+                            steps {
+                                sh 'echo "Checking for large files..."'
+                                sh 'chmod +x ./scripts/check_large_files.sh'
+                                sh './scripts/check_large_files.sh'
+                            }
+                        }
                         stage('format') {
                             steps {
                                 sh 'clang-format --version'

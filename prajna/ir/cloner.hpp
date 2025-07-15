@@ -21,7 +21,7 @@ class FunctionCloner : public Visitor {
                                                       bool shallow) {
         std::shared_ptr<ir::FunctionCloner> self(new FunctionCloner);
         self->ir_module = ir_module;
-        self->shallow = shallow;
+        self->shallow_function_copy = shallow;
         return self;
     }
 
@@ -43,7 +43,7 @@ class FunctionCloner : public Visitor {
             return;
         }
 
-        if (this->shallow && this->first_function_has_cloned) {
+        if (this->shallow_function_copy && this->first_function_has_cloned) {
             value_dict[ir_function] = ir_function;
             return;
         }
@@ -279,22 +279,19 @@ class FunctionCloner : public Visitor {
         // 如果已经处理过，直接返回
         if (value_dict.count(ir_global_alloca)) return;
 
-        // 如果是浅拷贝（shallow clone），不新建，只建立引用
-        if (this->shallow) {
+        // 当shared memory会提前拷贝到module里
+        if (std::ranges::count(this->ir_module->global_allocas, ir_global_alloca)) {
             value_dict[ir_global_alloca] = ir_global_alloca;
             return;
+        } else{
+            auto ir_new = GlobalAlloca::Create(ir_global_alloca->type);
+            ir_new->name = ir_global_alloca->name;
+            ir_new->fullname = ir_global_alloca->fullname;
+            ir_new->is_external = true;
+            ir_new->address_space = ir_global_alloca->address_space;
+            this->ir_module->AddGlobalAlloca(ir_new);
+            this->value_dict[ir_global_alloca] = ir_new;
         }
-
-        // 深拷贝（deep clone）：复制一份新的 GlobalAlloca
-        auto ir_new = GlobalAlloca::Create(ir_global_alloca->type);
-        ir_new->name = ir_global_alloca->name;
-        ir_new->fullname = ir_global_alloca->fullname;
-        ir_new->is_external = ir_global_alloca->is_external;
-        ir_new->address_space = ir_global_alloca->address_space;
-
-        // 加入当前 target module
-        this->ir_module->AddGlobalAlloca(ir_new);
-        this->value_dict[ir_global_alloca] = ir_new;
     }
 
     void Visit(std::shared_ptr<LoadPointer> ir_load_pointer) override {
@@ -531,7 +528,7 @@ class FunctionCloner : public Visitor {
 
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> value_dict;
 
-    bool shallow = false;
+    bool shallow_function_copy = false;
     bool first_function_has_cloned = false;
     std::shared_ptr<ir::Module> ir_module = nullptr;
 };

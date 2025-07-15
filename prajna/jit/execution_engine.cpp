@@ -214,8 +214,8 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                 }
             }
         } else if (ir_target == ir::Target::amdgpu) {
+            auto& hip_loader = HipRuntimeLoader::Instance();
             // 内核函数的地址存储到 JIT 环境中
-            HipRuntimeLoader hip_loader;  // TODO(zhangzhimin): 这里需要优化， 因为会多次加载
             for (auto ir_function : ir_sub_module->functions) {
                 if (ir_function->annotation_dict.count("kernel")) {
                     std::string function_name = MangleHipName(ir_function->fullname);

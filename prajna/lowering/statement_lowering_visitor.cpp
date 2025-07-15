@@ -5,7 +5,6 @@
 #include <future>
 #include <optional>
 
-#include "boost/asio/io_service.hpp"
 #include "boost/process/v1/io.hpp"
 #include "boost/process/v1/search_path.hpp"
 #include "boost/process/v1/system.hpp"
@@ -211,9 +210,8 @@ Symbol StatementLoweringVisitor::operator()(ast::Pragma ast_pragma) {
     if (ast_pragma.name == "system") {
         std::string command = ast_pragma.values.size() ? ast_pragma.values.front().value : "";
 
-        boost::asio::io_service ios;
         std::future<std::string> future_stdout;
-        boost::process::system(command, boost::process::std_out > future_stdout);
+        boost::process::v1::system(command, boost::process::v1::std_out > future_stdout);
         print_callback(future_stdout.get().c_str());
         return nullptr;
     }

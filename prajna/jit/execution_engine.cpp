@@ -214,7 +214,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                 }
             }
         } else if (ir_target == ir::Target::amdgpu) {
-            auto& hip_loader = HipRuntimeLoader::Instance();
+            auto &hip_loader = HipRuntimeLoader::Instance();
             // 内核函数的地址存储到 JIT 环境中
             for (auto ir_function : ir_sub_module->functions) {
                 if (ir_function->annotation_dict.count("kernel")) {
@@ -228,7 +228,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                     PRAJNA_ASSERT(address,
                                   "Symbol not found in JIT env: " + kernel_name_address_name);
 
-                    *address = static_cast<int64_t>(reinterpret_cast<uintptr_t>(kernel_func));
+                    *address = static_cast<int64_t>(kernel_func);
                 }
             }
         }

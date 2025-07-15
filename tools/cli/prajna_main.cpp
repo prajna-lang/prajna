@@ -2,7 +2,6 @@
 #include <iostream>
 #include <memory>
 
-#include "boost/asio/io_service.hpp"
 #include "boost/process/v1/io.hpp"
 #include "boost/process/v1/search_path.hpp"
 #include "boost/process/v1/system.hpp"
@@ -66,14 +65,13 @@ int prajna_jupyter_main(int argc, char* argv[]) {
             {"argv", {xeus_path.lexically_normal().string(), "-f", "{connection_file}"}},
             {"language", "prajna"}};
 
-        boost::asio::io_service ios;
         std::future<std::string> future_jupyter_data_dir;
-        auto jupyter_path = boost::process::search_path("jupyter");
+        auto jupyter_path = boost::process::v1::search_path("jupyter");
         if (jupyter_path.empty()) {
             fmt::print("please install jupyter first");
         }
-        boost::process::system(fmt::format("{} --data-dir", jupyter_path.string()),
-                               boost::process::std_out > future_jupyter_data_dir);
+        boost::process::v1::system(fmt::format("{} --data-dir", jupyter_path.string()),
+                                   boost::process::v1::std_out > future_jupyter_data_dir);
         auto jupyter_data_dir = future_jupyter_data_dir.get();
         // 末尾存在换行符, 将其删除
         jupyter_data_dir.pop_back();

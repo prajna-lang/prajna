@@ -1571,7 +1571,6 @@ class Module : public Value {
         this->global_allocas.push_back(ir_global_alloca);
     }
 
-
     std::list<std::shared_ptr<Function>> functions;
     std::list<std::shared_ptr<GlobalVariable>> global_variables;
     std::list<std::shared_ptr<GlobalAlloca>> global_allocas;

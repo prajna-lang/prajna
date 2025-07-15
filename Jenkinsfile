@@ -98,6 +98,13 @@ pipeline{
                                 sh 'git clean -xdf .'
                             }
                         }
+                        stage('format') {
+                            steps {
+                                sh 'clang-format --version'
+                                sh 'echo "Running clang-format check..."'
+                                sh './scripts/check_clang_format.sh'
+                            }
+                        }
                         stage('build') {
                             steps {
                                 sh './scripts/clone_submodules.sh -f --jobs=4 --depth=50'
@@ -150,6 +157,13 @@ pipeline{
                             steps {
                                 sh 'git submodule deinit  --force --all'
                                 sh 'git clean -xdf .'
+                            }
+                        }
+                        stage('format') {
+                            steps {
+                                sh 'clang-format --version'
+                                sh 'echo "Running clang-format check..."'
+                                sh './scripts/check_clang_format.sh'
                             }
                         }
                         stage('build') {

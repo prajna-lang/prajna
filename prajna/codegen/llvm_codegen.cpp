@@ -365,7 +365,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
                 ir_init->ApplyVisitor(this->shared_from_this());
             }
         }
-        
+
         std::vector<llvm::Constant *> llvm_contants(ir_constant_array->initialize_constants.size());
         std::ranges::transform(
             ir_constant_array->initialize_constants, llvm_contants.begin(), [=](auto ir_init) {
@@ -385,7 +385,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
                 ir_init->ApplyVisitor(this->shared_from_this());
             }
         }
-        
+
         std::vector<llvm::Constant *> llvm_contants(
             ir_constant_vector->initialize_constants.size());
         std::ranges::transform(
@@ -443,13 +443,10 @@ class LlvmCodegen : public prajna::ir::Visitor {
         PRAJNA_ASSERT(ir_select->TrueValue()->llvm_value);
         PRAJNA_ASSERT(ir_select->FalseValue()->llvm_value);
         PRAJNA_ASSERT(ir_select->type->llvm_type);
-        
+
         ir_select->llvm_value = llvm::SelectInst::Create(
-            ir_select->Condition()->llvm_value,
-            ir_select->TrueValue()->llvm_value,
-            ir_select->FalseValue()->llvm_value,
-            "",
-            llvm_basic_block);
+            ir_select->Condition()->llvm_value, ir_select->TrueValue()->llvm_value,
+            ir_select->FalseValue()->llvm_value, "", llvm_basic_block);
     }
 
     void Visit(std::shared_ptr<ir::Return> ir_return) override {

@@ -53,7 +53,6 @@ class CompareInstruction : public Instruction {
         return self;
     }
 
-
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<CompareInstruction>(this->shared_from_this()));
     }
@@ -103,7 +102,6 @@ class BinaryOperator : public Instruction {
         self->tag = "BinaryOperator";
         return self;
     }
-
 
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<BinaryOperator>(this->shared_from_this()));

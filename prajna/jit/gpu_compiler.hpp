@@ -99,7 +99,7 @@ inline std::tuple<std::string, std::string> GetTargetGPUArchitecture(ir::Target 
     return {triple, sm_version};
 }
 
-std::string GpuCompiler::CompileToPTXCode(llvm::Module* llvm_module,std::string name) {
+std::string GpuCompiler::CompileToPTXCode(llvm::Module* llvm_module, std::string name) {
     llvm::LLVMContext& llvm_context = llvm_module->getContext();
 
     // 设置目标 triple 和数据布局
@@ -137,8 +137,7 @@ std::string GpuCompiler::CompileToPTXCode(llvm::Module* llvm_module,std::string 
     std::string ptx = buffer.str().str();
     std::string file_ext = ".ptx";
     std::string file_base =
-        (std::filesystem::temp_directory_path() / std::filesystem::path(name).stem())
-            .string();
+        (std::filesystem::temp_directory_path() / std::filesystem::path(name).stem()).string();
     file_base += GetTimeStr();
     std::error_code err_code;
     llvm::raw_fd_ostream ptx_fs(file_base + file_ext, err_code);

@@ -15,6 +15,27 @@ using hipFunction_t = uintptr_t;  // 表示 GPU 内核函数指针
 
 class HipRuntimeLoader {
    public:
+    static HipRuntimeLoader& Instance() {
+        static HipRuntimeLoader instance;
+        return instance;
+    }
+    // 加载 HSACO 文件中的内核函数并返回其句柄
+    hipFunction_t LoadKernelFunction(const std::string& hsaco_path,
+                                     const std::string& kernel_name) {
+        hipModule_t module;
+        // 加载 HSACO 文件到模块
+        auto module_load_result = hipModuleLoad(&module, hsaco_path.c_str());
+        PRAJNA_ASSERT(module_load_result == 0);
+
+        hipFunction_t kernel_func;
+        // 从模块中获取指定内核函数
+        auto get_function_result = hipModuleGetFunction(&kernel_func, module, kernel_name.c_str());
+        PRAJNA_ASSERT(get_function_result == 0);
+
+        return kernel_func;
+    }
+
+   private:
     HipRuntimeLoader() {
 // 根据平台加载 ROCm runtime
 #ifdef _WIN32
@@ -40,24 +61,6 @@ class HipRuntimeLoader {
         PRAJNA_ASSERT(device_get_result == 0, "hipDeviceGet");
         PRAJNA_ASSERT(hipCtxCreate(&context, 0, device) == 0, "hipCtxCreate");
     }
-
-    // 加载 HSACO 文件中的内核函数并返回其句柄
-    hipFunction_t LoadKernelFunction(const std::string& hsaco_path,
-                                     const std::string& kernel_name) {
-        hipModule_t module;
-        // 加载 HSACO 文件到模块
-        auto module_load_result = hipModuleLoad(&module, hsaco_path.c_str());
-        PRAJNA_ASSERT(module_load_result == 0);
-
-        hipFunction_t kernel_func;
-        // 从模块中获取指定内核函数
-        auto get_function_result = hipModuleGetFunction(&kernel_func, module, kernel_name.c_str());
-        PRAJNA_ASSERT(get_function_result == 0);
-
-        return kernel_func;
-    }
-
-   private:
     // HIP 运行时库的智能指针，管理动态加载的 libamdhip64.so 或 amdhip64.dll
     std::unique_ptr<boost::dll::shared_library> rocm_so;
 

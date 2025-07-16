@@ -28,6 +28,7 @@
 #include "prajna/exception.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
+#include "prajna/jit/cuda_runtime_loader.cpp"
 #include "prajna/jit/gpu_compiler.hpp"
 #include "prajna/jit/hip_runtime_loader.cpp"
 
@@ -168,39 +169,17 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
         }
 
         GpuCompiler gpu_compiler(ir_target);
-        std::string hsaco_data;
-        std::string file_base;
+
         if (ir_target == ir::Target::nvptx) {
-            file_base =
+            std::string ptx_code =
                 gpu_compiler.CompileToPTXCode(ir_sub_module->llvm_module, ir_sub_module->name);
-        } else if (ir_target == ir::Target::amdgpu) {
-            hsaco_data =
-                gpu_compiler.CompileToHSACO(ir_sub_module->llvm_module, ir_sub_module->name);
-        } else {
-            PRAJNA_UNREACHABLE;
-        }
 
-        if (ir_target == ir::Target::nvptx) {
-#ifdef _WIN32
-            boost::dll::shared_library cuda_so("C:\\Windows\\System32\\nvcuda.dll");
-#else
-            boost::dll::shared_library cuda_so("/usr/lib/x86_64-linux-gnu/libcuda.so");
-#endif
+            auto &cuda_loader = CudaRuntimeLoader::GetInstance();
 
-            auto cu_init = cuda_so.get<int(int)>("cuInit");
-            cu_init(0);
+            int64_t cu_library =
+                cuda_loader.LoadCudaLibraryFromFile(fmt::format("{}.ptx", ptx_code));
 
-            auto cu_library_load_from_file =
-                cuda_so.get<int(int64_t *, const char *, int *, int *, int, int *, int *, int)>(
-                    "cuLibraryLoadFromFile");
-            auto cu_library_get_kernel =
-                cuda_so.get<int(int64_t *, int64_t, const char *)>("cuLibraryGetKernel");
-
-            int64_t cu_library = 0;
-            auto cu_re2 =
-                cu_library_load_from_file(&cu_library, fmt::format("{}.ptx", file_base).c_str(),
-                                          nullptr, nullptr, 0, nullptr, nullptr, 0);
-            PRAJNA_ASSERT(cu_re2 == 0, std::to_string(cu_re2));
+            auto cu_library_get_kernel = cuda_loader.GetCuLibraryGetKernel();
 
             for (auto ir_function : ir_sub_module->functions) {
                 if (ir_function->annotation_dict.count("kernel")) {
@@ -214,6 +193,8 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                 }
             }
         } else if (ir_target == ir::Target::amdgpu) {
+            std::string hsaco_data =
+                gpu_compiler.CompileToHSACO(ir_sub_module->llvm_module, ir_sub_module->name);
             auto &hip_loader = HipRuntimeLoader::Instance();
             // 内核函数的地址存储到 JIT 环境中
             for (auto ir_function : ir_sub_module->functions) {
@@ -231,6 +212,8 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                     *address = static_cast<int64_t>(kernel_func);
                 }
             }
+        } else {
+            PRAJNA_UNREACHABLE;
         }
     }
 }

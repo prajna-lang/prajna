@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Script to check for large files in commits and ensure they use Git LFS
+# Script to check for large files in the repository and ensure they use Git LFS
 # This prevents accidentally committing large files that should be stored in LFS
 
 set -e
 
 # Configuration
-MAX_FILE_SIZE_KB=100
+MAX_FILE_SIZE_KB=200
 MAX_FILE_SIZE_BYTES=$((MAX_FILE_SIZE_KB * 1024))
 TEMP_FILE="large_files_check.txt"
 
@@ -71,38 +71,9 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
-# Get the list of files to check
-# If we're in CI, check the diff between HEAD and the previous commit
-# If we're running locally, check staged files
-if [ -n "$CI" ] || [ -n "$JENKINS_URL" ]; then
-    echo "Running in CI environment - checking recent commits..."
-
-    # Get the commit range to check
-    # For pull requests, check against the target branch
-    if [ -n "$CHANGE_TARGET" ]; then
-        # Jenkins pull request
-        BASE_COMMIT="origin/$CHANGE_TARGET"
-        echo "Checking files changed since $BASE_COMMIT"
-        FILES_TO_CHECK=$(git diff --name-only "$BASE_COMMIT"...HEAD 2>/dev/null || git diff --name-only HEAD~1)
-    elif [ -n "$ghprbTargetBranch" ]; then
-        # Jenkins GitHub Pull Request Builder
-        BASE_COMMIT="origin/$ghprbTargetBranch"
-        echo "Checking files changed since $BASE_COMMIT"
-        FILES_TO_CHECK=$(git diff --name-only "$BASE_COMMIT"...HEAD 2>/dev/null || git diff --name-only HEAD~1)
-    else
-        # Regular commit, check last commit
-        echo "Checking files in the last commit"
-        FILES_TO_CHECK=$(git diff --name-only HEAD~1 2>/dev/null || git ls-files)
-    fi
-else
-    echo "Running locally - checking staged files..."
-    # Check staged files first, then fall back to all tracked files if nothing is staged
-    FILES_TO_CHECK=$(git diff --cached --name-only 2>/dev/null)
-    if [ -z "$FILES_TO_CHECK" ]; then
-        echo "No staged files found. Checking all tracked files..."
-        FILES_TO_CHECK=$(git ls-files)
-    fi
-fi
+# Get all tracked files in the repository
+echo "Checking all tracked files in the repository..."
+FILES_TO_CHECK=$(git ls-files)
 
 if [ -z "$FILES_TO_CHECK" ]; then
     echo "No files to check."

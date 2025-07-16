@@ -12,5 +12,6 @@ RUN apt-get install -y ninja-build
 RUN apt-get install -y libbsd-dev
 RUN apt-get install -y clang-format
 RUN apt-get install -y libstdc++-14-dev
+RUN apt-get install -y git-lfs
 RUN touch //.gitconfig && chmod 777 //.gitconfig
 

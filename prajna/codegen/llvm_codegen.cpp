@@ -205,9 +205,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
     void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function,
                                  prajna::ir::Target ir_target) {
         std::string function_fullname;
-        if (ir_function->fullname.starts_with("__ocml_")) {  // 临时调试添加
-            function_fullname = ir_function->fullname;
-        } else if (ir_target == prajna::ir::Target::nvptx) {
+        if (ir_target == prajna::ir::Target::nvptx) {
             function_fullname = MangleNvvmName(ir_function->fullname);
         } else if (ir_target == prajna::ir::Target::amdgpu) {
             function_fullname = MangleHipName(ir_function->fullname);

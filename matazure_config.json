@@ -1,11 +1,12 @@
 {
     "prajna": {
-        "dump_llvm_ir": false
+        "dump_llvm_ir": false,
+        "optimization_level": 2
     },
     "target": {
         "triple": {
             "nvptx":"nvptx64-nvidia-cuda",
             "amdgpu":"amdgcn-amd-amdhsa"
-        } 
+        }
     }
 }

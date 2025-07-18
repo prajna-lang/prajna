@@ -828,7 +828,24 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     PB.registerLoopAnalyses(LAM);
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-    llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O2);
+    auto optimization_level_int =
+        GlobalConfig::Instance().get<int64_t>("prajna.optimization_level", 2);
+    llvm::OptimizationLevel optimization_level;
+    switch (optimization_level_int) {
+        case 0:
+            optimization_level = llvm::OptimizationLevel::O0;
+            break;
+        case 1:
+            optimization_level = llvm::OptimizationLevel::O1;
+            break;
+        case 2:
+            optimization_level = llvm::OptimizationLevel::O2;
+            break;
+        case 3:
+            optimization_level = llvm::OptimizationLevel::O3;
+            break;
+    }
+    llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(optimization_level);
 
     MPM.run(*ir_module->llvm_module, MAM);
 

@@ -120,14 +120,7 @@ std::string GpuCompiler::CompileToPTXCode(llvm::Module* llvm_module, std::string
     llvm::SmallString<0> buffer;
     llvm::raw_svector_ostream ostream(buffer);
     llvm::legacy::PassManager pass_manager;
-    llvm::CodeGenFileType file_type;
-    if (target_type == ir::Target::nvptx) {
-        file_type = llvm::CodeGenFileType::AssemblyFile;
-    } else if (target_type == ir::Target::amdgpu) {
-        file_type = llvm::CodeGenFileType::ObjectFile;
-    } else {
-        PRAJNA_UNREACHABLE;
-    }
+    llvm::CodeGenFileType file_type = llvm::CodeGenFileType::AssemblyFile;
 
     PRAJNA_ASSERT(!target_machine->addPassesToEmitFile(pass_manager, ostream, nullptr, file_type),
                   "Cannot emit ");

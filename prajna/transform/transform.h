@@ -118,15 +118,15 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             ir_builder->inserter_iterator = std::ranges::find(*ir_block, ir_kernel_function_call);
 
             // 构建::cuda::launchKernel的逻辑
-            auto ir_kernel_arguments_address_array_i8ptr = ir_builder->Create<ir::LocalVariable>(
-                ir::ArrayType::Create(ir::PointerType::Create(ir::IntType::Create(8, true)),
-                                      ir_kernel_function_call->ArgumentSize()));
+            auto ir_kernel_arguments_address_array_i8ptr =
+                ir_builder->Create<ir::LocalVariable>(ir::ArrayType::Create(
+                    ir::PointerType::Create(ir::i8), ir_kernel_function_call->ArgumentSize()));
             for (int64_t i = 0; i < ir_kernel_function_call->ArgumentSize(); ++i) {
                 auto ir_argument = ir_kernel_function_call->Argument(i);
                 auto ir_kernel_argument_address_i8ptr = ir_builder->Create<ir::BitCast>(
                     ir_builder->Create<ir::GetAddressOfVariableLiked>(
                         ir_builder->VariableLikedNormalize(ir_argument)),
-                    ir::PointerType::Create(ir::IntType::Create(8, true)));
+                    ir::PointerType::Create(ir::i8));
                 auto ir_array_index = ir_builder->Create<ir::IndexArray>(
                     ir_kernel_arguments_address_array_i8ptr, ir_builder->GetConstant<int64_t>(i));
                 auto ir_array_index_write = ir_builder->Create<ir::WriteVariableLiked>(
@@ -148,14 +148,14 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             PRAJNA_ASSERT(ir_launch_function);
             std::list<std::shared_ptr<ir::Value>> ir_arguments;
             ir_arguments.push_back(ir_builder->Create<ir::BitCast>(
-                ir_kernel_function, ir::PointerType::Create(ir::IntType::Create(8, true))));
+                ir_kernel_function, ir::PointerType::Create(ir::i8)));
             ir_arguments.push_back(ir_grid_shape);
             ir_arguments.push_back(ir_block_shape);
             auto ir_array_index0 = ir_builder->Create<ir::IndexArray>(
                 ir_kernel_arguments_address_array_i8ptr, ir_builder->GetConstant<int64_t>(0));
             auto ir_array_address = ir_builder->Create<ir::BitCast>(
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_index0),
-                ir::PointerType::Create(ir::PointerType::Create(ir::IntType::Create(8, true))));
+                ir::PointerType::Create(ir::PointerType::Create(ir::i8)));
             ir_arguments.push_back(ir_array_address);
             auto ir_kernel_call = ir_builder->Call(ir_launch_function, ir_arguments);
             auto ir_zero = ir_builder->GetConstant<int64_t>(0);

@@ -53,7 +53,7 @@ inline bool ConvertVariableToDeferencePointer(std::shared_ptr<ir::Module> ir_mod
         for (auto ir_variable : ir_variables) {
             // 改变它自己
             changed = true;
-            auto ir_constant_1 = ir::ConstantInt::Create(ir::IntType::Create(64, false), 1);
+            auto ir_constant_1 = ir::ConstantInt::Create(ir::u64, 1);
             std::shared_ptr<ir::Value> ir_alloca =
                 ir::Alloca::Create(ir_variable->type, ir_constant_1);
             ir_alloca->name = ir_variable->name;

@@ -1549,7 +1549,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_function->annotation_dict["inline"];
 
             ir_tmp_builder->CreateTopBlockForFunction(ir_function);
-            ir_tmp_builder->Create<ir::Return>(ir_tmp_builder->GetInt64Constant(ir_type->bytes));
+            ir_tmp_builder->Create<ir::Return>(
+                ir_tmp_builder->GetConstant<int64_t>(ir_type->bytes));
             return ir_function;
         };
 

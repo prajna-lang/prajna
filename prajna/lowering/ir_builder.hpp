@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stack>
+#include <type_traits>
 #include <unordered_map>
 
 #include "prajna/ir/global_context.h"
@@ -31,19 +32,30 @@ class IrBuilder {
 
     static std::shared_ptr<IrBuilder> Create() { return Create(nullptr, nullptr, nullptr); }
 
-    std::shared_ptr<ir::ConstantInt> GetInt64Constant(int64_t value) {
-        auto ir_value = this->Create<ir::ConstantInt>(ir::i64, value);
-        return ir_value;
-    }
-
-    std::shared_ptr<ir::ConstantInt> GetInt32Constant(int32_t value) {
-        auto ir_value = this->Create<ir::ConstantInt>(ir::i32, value);
-        return ir_value;
-    }
-
-    std::shared_ptr<ir::ConstantInt> GetInt64Constant2(int64_t value) {
-        auto ir_value = ir::ConstantInt::Create(ir::i64, value);
-        return ir_value;
+    template <typename T>
+    std::shared_ptr<ir::ConstantInt> GetConstant(T value) {
+        if constexpr (std::is_same_v<T, int64_t>) {
+            auto ir_value = this->Create<ir::ConstantInt>(ir::i64, value);
+            return ir_value;
+        } else if constexpr (std::is_same_v<T, int32_t>) {
+            auto ir_value = this->Create<ir::ConstantInt>(ir::i32, value);
+            return ir_value;
+        } else if constexpr (std::is_same_v<T, float>) {
+            auto ir_value = this->Create<ir::ConstantFloat>(ir::f32, value);
+            return ir_value;
+        } else if constexpr (std::is_same_v<T, double>) {
+            auto ir_value = this->Create<ir::ConstantFloat>(ir::f64, value);
+            return ir_value;
+        } else if constexpr (std::is_same_v<T, char>) {
+            auto ir_value = this->Create<ir::ConstantChar>(ir::char_, value);
+            return ir_value;
+        } else if constexpr (std::is_same_v<T, bool>) {
+            auto ir_value = this->Create<ir::ConstantBool>(ir::bool_, value);
+            return ir_value;
+        } else {
+            static_assert(std::is_same_v<T, int64_t> || std::is_same_v<T, int32_t>,
+                          "Unsupported type for GetConstant");
+        }
     }
 
     std::shared_ptr<ir::LocalVariable> CloneValue(std::shared_ptr<ir::Value> ir_value) {
@@ -92,7 +104,7 @@ class IrBuilder {
 
         std::list<Symbol> symbol_template_arguments;
         symbol_template_arguments.push_back(ir_type);
-        symbol_template_arguments.push_back(this->GetInt64Constant(length));
+        symbol_template_arguments.push_back(this->GetConstant<int64_t>(length));
 
         auto symbol_array = this->GetSymbolByPath(false, {"Array"});
         auto array_template = SymbolGet<TemplateStruct>(symbol_array);
@@ -195,7 +207,7 @@ class IrBuilder {
         auto ir_shape3_variable_liked = this->VariableLikedNormalize(ir_shape3);
         auto ir_array_tmp_this_pointer =
             this->Create<ir::GetAddressOfVariableLiked>(ir_shape3_variable_liked);
-        auto ir_index = this->GetInt64Constant(index);
+        auto ir_index = this->GetConstant<int64_t>(index);
         auto ir_access_property =
             this->Create<ir::AccessProperty>(ir_array_tmp_this_pointer, ir_index_property);
         ir_access_property->Arguments({ir_index});
@@ -273,7 +285,7 @@ class IrBuilder {
         ir_inits.back() = this->Create<ir::ConstantChar>('\0');
         auto ir_c_string_constant = this->Create<ir::ConstantArray>(ir_char_string_type, ir_inits);
         auto ir_c_string_variable = this->VariableLikedNormalize(ir_c_string_constant);
-        auto ir_constant_zero = this->GetInt64Constant(0);
+        auto ir_constant_zero = this->GetConstant<int64_t>(0);
         auto ir_c_string_index0 =
             this->Create<ir::IndexArray>(ir_c_string_variable, ir_constant_zero);
         auto ir_c_string_address = this->Create<ir::GetAddressOfVariableLiked>(ir_c_string_index0);

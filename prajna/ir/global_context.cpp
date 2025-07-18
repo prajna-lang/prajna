@@ -20,6 +20,7 @@ void GlobalContext::Reset() {
     u32 = IntType::Create(32, false);
     u64 = IntType::Create(64, false);
     bool_ = BoolType::Create();
+    char_ = CharType::Create();
     void_ = VoidType::Create();
 }
 
@@ -37,6 +38,7 @@ std::shared_ptr<Type> u16(IntType::Create(16, false));
 std::shared_ptr<Type> u32(IntType::Create(32, false));
 std::shared_ptr<Type> u64(IntType::Create(64, false));
 std::shared_ptr<Type> bool_(BoolType::Create());
+std::shared_ptr<Type> char_(CharType::Create());
 std::shared_ptr<Type> void_(VoidType::Create());
 
 }  // namespace prajna::ir

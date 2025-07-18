@@ -51,7 +51,7 @@ class ExpressionLoweringVisitor {
     }
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteral ast_int_literal) {
-        return ir_builder->GetInt64Constant(ast_int_literal.value);
+        return ir_builder->GetConstant<int64_t>(ast_int_literal.value);
     };
 
     std::shared_ptr<ir::Value> operator()(ast::IntLiteralPostfix ast_int_literal_postfix) {
@@ -600,7 +600,7 @@ class ExpressionLoweringVisitor {
                 [ir_builder = this->ir_builder](std::shared_ptr<ir::ConstantInt> ir_constant_int)
                     -> std::shared_ptr<ir::Value> {
                     PRAJNA_ASSERT(ir_constant_int->type == ir::i64);
-                    return ir_builder->GetInt64Constant(ir_constant_int->value);
+                    return ir_builder->GetConstant<int64_t>(ir_constant_int->value);
                 },
                 [=](auto x) {
                     logger->Error("use invalid symbol as a value", ast_identifier_path);
@@ -616,7 +616,8 @@ class ExpressionLoweringVisitor {
         auto ir_value_type = ir_first_value->type;
         std::list<Symbol> symbol_template_arguments;
         symbol_template_arguments.push_back(ir_value_type);
-        symbol_template_arguments.push_back(ir_builder->GetInt64Constant(ast_array_values.size()));
+        symbol_template_arguments.push_back(
+            ir_builder->GetConstant<int64_t>(ast_array_values.size()));
 
         auto symbol_array = ir_builder->symbol_table->Get("Array");
         PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
@@ -634,7 +635,7 @@ class ExpressionLoweringVisitor {
             if (ir_value->type != ir_value_type) {
                 logger->Error("the array element type are not the same", ast_array_value);
             }
-            auto ir_index = ir_builder->GetInt64Constant(i);
+            auto ir_index = ir_builder->GetConstant<int64_t>(i);
             auto ir_array_tmp_this_pointer =
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_tmp);
             auto ir_access_property = ir_builder->Create<ir::AccessProperty>(

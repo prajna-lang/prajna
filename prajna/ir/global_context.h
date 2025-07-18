@@ -33,6 +33,7 @@ extern std::shared_ptr<Type> u16;
 extern std::shared_ptr<Type> u32;
 extern std::shared_ptr<Type> u64;
 extern std::shared_ptr<Type> bool_;
+extern std::shared_ptr<Type> char_;
 extern std::shared_ptr<Type> void_;
 
 }  // namespace prajna::ir

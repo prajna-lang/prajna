@@ -128,7 +128,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                         ir_builder->VariableLikedNormalize(ir_argument)),
                     ir::PointerType::Create(ir::IntType::Create(8, true)));
                 auto ir_array_index = ir_builder->Create<ir::IndexArray>(
-                    ir_kernel_arguments_address_array_i8ptr, ir_builder->GetInt64Constant(i));
+                    ir_kernel_arguments_address_array_i8ptr, ir_builder->GetConstant<int64_t>(i));
                 auto ir_array_index_write = ir_builder->Create<ir::WriteVariableLiked>(
                     ir_kernel_argument_address_i8ptr, ir_array_index);
             }
@@ -152,13 +152,13 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             ir_arguments.push_back(ir_grid_shape);
             ir_arguments.push_back(ir_block_shape);
             auto ir_array_index0 = ir_builder->Create<ir::IndexArray>(
-                ir_kernel_arguments_address_array_i8ptr, ir_builder->GetInt64Constant(0));
+                ir_kernel_arguments_address_array_i8ptr, ir_builder->GetConstant<int64_t>(0));
             auto ir_array_address = ir_builder->Create<ir::BitCast>(
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_index0),
                 ir::PointerType::Create(ir::PointerType::Create(ir::IntType::Create(8, true))));
             ir_arguments.push_back(ir_array_address);
             auto ir_kernel_call = ir_builder->Call(ir_launch_function, ir_arguments);
-            auto ir_zero = ir_builder->GetInt64Constant(0);
+            auto ir_zero = ir_builder->GetConstant<int64_t>(0);
             auto ir_condition = ir_builder->CallBinaryOperator(ir_kernel_call, "!=", ir_zero);
             auto ir_if =
                 ir_builder->Create<ir::If>(ir_condition, ir::Block::Create(), ir::Block::Create());
@@ -387,7 +387,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         auto ir_layout =
             ir_builder->Create<ir::Call>(ir_builder->GetStaticFunction(ir_layout_type, "Create"),
                                          std::list<std::shared_ptr<ir::Value>>{ir_for->Last()});
-        auto ir_linear_first = ir_builder->GetInt64Constant(0);
+        auto ir_linear_first = ir_builder->GetConstant<int64_t>(0);
 
         // auto ir_array_one = lowering::SymbolGet<lowering::Template
         // ir_builder->GetSymbolByPath(true, {"_array", "Array"}); auto ir_arra
@@ -404,7 +404,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
             ir_builder->CallBinaryOperator(ir_array_last, "-", ir_array_first), "-", ir_array_one);
         auto ir_linear_last = ir_builder->CallBinaryOperator(
             ir_builder->CallMemberFunction(ir_layout, "ArrayIndexToLinearIndex", {ir_array_range}),
-            "+", ir_builder->GetInt64Constant(1));
+            "+", ir_builder->GetConstant<int64_t>(1));
 
         ir_for->First(ir_linear_first);
         ir_for->Last(ir_linear_last);

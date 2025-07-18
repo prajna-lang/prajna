@@ -409,7 +409,7 @@ inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
         ir_for->First(ir_linear_first);
         ir_for->Last(ir_linear_last);
         auto ir_array_index = ir_for->IndexVariable();
-        auto ir_linear_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetInt64Type());
+        auto ir_linear_index = ir_builder->Create<ir::LocalVariable>(ir::i64);
         ir_for->IndexVariable(ir_linear_index);
 
         auto ir_array_first_variable = ir_builder->VariableLikedNormalize(ir_array_first);

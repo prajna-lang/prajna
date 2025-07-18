@@ -3,6 +3,7 @@
 #include <stack>
 #include <unordered_map>
 
+#include "prajna/ir/global_context.h"
 #include "prajna/ir/ir.hpp"
 #include "prajna/logger.hpp"
 #include "prajna/lowering/builtin.hpp"
@@ -30,21 +31,18 @@ class IrBuilder {
 
     static std::shared_ptr<IrBuilder> Create() { return Create(nullptr, nullptr, nullptr); }
 
-    std::shared_ptr<ir::Type> GetInt64Type() { return ir::IntType::Create(64, true); }
-    std::shared_ptr<ir::Type> GetInt32Type() { return ir::IntType::Create(32, true); }
-
     std::shared_ptr<ir::ConstantInt> GetInt64Constant(int64_t value) {
-        auto ir_value = this->Create<ir::ConstantInt>(GetInt64Type(), value);
+        auto ir_value = this->Create<ir::ConstantInt>(ir::i64, value);
         return ir_value;
     }
 
     std::shared_ptr<ir::ConstantInt> GetInt32Constant(int32_t value) {
-        auto ir_value = this->Create<ir::ConstantInt>(this->GetInt32Type(), value);
+        auto ir_value = this->Create<ir::ConstantInt>(ir::i32, value);
         return ir_value;
     }
 
     std::shared_ptr<ir::ConstantInt> GetInt64Constant2(int64_t value) {
-        auto ir_value = ir::ConstantInt::Create(GetInt64Type(), value);
+        auto ir_value = ir::ConstantInt::Create(ir::i64, value);
         return ir_value;
     }
 
@@ -64,7 +62,7 @@ class IrBuilder {
         auto symbol_list =
             std::any_cast<std::list<lowering::Symbol>>(ir_type->template_arguments_any);
         if (ir_type->template_struct == array_template_struct) {
-            return SymbolGet<ir::Type>(symbol_list.front()) == this->GetInt64Type();
+            return SymbolGet<ir::Type>(symbol_list.front()) == ir::i64;
         }
 
         return false;
@@ -103,9 +101,7 @@ class IrBuilder {
         return ir_shape3_type;
     }
 
-    std::shared_ptr<ir::Type> GetShape3Type() {
-        return this->GetArrayType(this->GetInt64Type(), 3);
-    }
+    std::shared_ptr<ir::Type> GetShape3Type() { return this->GetArrayType(ir::i64, 3); }
 
     std::shared_ptr<ir::Type> GetManagedPtrType(std::shared_ptr<ir::Type> ir_value_type) {
         auto symbol_ptr = this->GetSymbolByPath(false, {"Ptr"});

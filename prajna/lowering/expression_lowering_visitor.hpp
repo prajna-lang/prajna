@@ -190,7 +190,7 @@ class ExpressionLoweringVisitor {
             logger->Error("index should have one argument at least", ast_binary_operation.operand);
         }
         auto ir_index = ir_arguments.front();
-        if (ir_index->type != ir_builder->GetInt64Type()) {
+        if (ir_index->type != ir::i64) {
             logger->Error(
                 fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
                 ast_binary_operation.operand);
@@ -410,10 +410,12 @@ class ExpressionLoweringVisitor {
 
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_operand);
         auto unary_operator_name = ast_unary.operator_.string_token;
+        auto tmp_i64 = ir::IntType::Create(64, true);
         auto ir_function =
             ir_builder->GetUnaryOperator(ir_variable_liked->type, unary_operator_name);
         if (!ir_function) {
-            logger->Error("unary operator not found", ast_unary.operator_);
+            logger->Error(fmt::format("unary operator {} not found", unary_operator_name),
+                          ast_unary.operator_);
         }
 
         auto ir_this_pointer = ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_variable_liked);
@@ -467,8 +469,7 @@ class ExpressionLoweringVisitor {
                                return this->ApplyIdentifierPath(ast_identifier_path);
                            },
                            [=](ast::IntLiteral ast_int_literal) -> Symbol {
-                               return ir::ConstantInt::Create(ir_builder->GetInt64Type(),
-                                                              ast_int_literal.value);
+                               return ir::ConstantInt::Create(ir::i64, ast_int_literal.value);
                            }},
                 ast_template_argument);
             symbol_template_arguments.push_back(symbol_template_argument);
@@ -598,7 +599,7 @@ class ExpressionLoweringVisitor {
                 // template parameter could be a ConstantInt.
                 [ir_builder = this->ir_builder](std::shared_ptr<ir::ConstantInt> ir_constant_int)
                     -> std::shared_ptr<ir::Value> {
-                    PRAJNA_ASSERT(ir_constant_int->type == ir_builder->GetInt64Type());
+                    PRAJNA_ASSERT(ir_constant_int->type == ir::i64);
                     return ir_builder->GetInt64Constant(ir_constant_int->value);
                 },
                 [=](auto x) {

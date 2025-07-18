@@ -87,7 +87,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
         }
     }
 
-    auto ir_index = ir_builder->Create<ir::LocalVariable>(ir_builder->GetInt64Type());
+    auto ir_index = ir_builder->Create<ir::LocalVariable>(ir::i64);
     ir_index->name = "i";
     for (auto inst_with_idx : Clone(ir_gpu_for->IndexVariable()->instruction_with_index_list)) {
         auto ir_instruction = Lock(inst_with_idx.instruction);

@@ -30,13 +30,12 @@ class CudaRuntimeLoader {
         return GetCudaLibrary().get<CuLibraryGetKernelFunc>("cuLibraryGetKernel");
     }
 
-
-    //cu_library_load_from_file 调用
+    // cu_library_load_from_file 调用
     int64_t LoadCudaLibraryFromFile(const std::string& ptx_file) {
         int64_t cu_library = 0;
         auto cu_library_load_from_file = GetCuLibraryLoadFromFile();
-        auto cu_re2 = cu_library_load_from_file(&cu_library, ptx_file.c_str(),
-                                               nullptr, nullptr, 0, nullptr, nullptr, 0);
+        auto cu_re2 = cu_library_load_from_file(&cu_library, ptx_file.c_str(), nullptr, nullptr, 0,
+                                                nullptr, nullptr, 0);
         PRAJNA_ASSERT(cu_re2 == 0, "cuLibraryLoadFromFile failed: " + std::to_string(cu_re2));
         return cu_library;
     }

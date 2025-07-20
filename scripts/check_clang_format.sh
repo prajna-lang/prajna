@@ -50,6 +50,7 @@ if [ -n "$NON_COMPLIANT_FILES" ]; then
         echo "- $file"
     done
     rm -f "$TEMP_FILE"
+    exit -1
 else
     echo "所有文件均符合clang-format规范。"
 fi

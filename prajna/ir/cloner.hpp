@@ -283,7 +283,7 @@ class FunctionCloner : public Visitor {
         if (std::ranges::count(this->ir_module->global_allocas, ir_global_alloca)) {
             value_dict[ir_global_alloca] = ir_global_alloca;
             return;
-        } else{
+        } else {
             auto ir_new = GlobalAlloca::Create(ir_global_alloca->type);
             ir_new->name = ir_global_alloca->name;
             ir_new->fullname = ir_global_alloca->fullname;

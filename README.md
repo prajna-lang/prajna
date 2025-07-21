@@ -5,49 +5,31 @@
 
 > [中文](README_ZH.md) | English
 
-Prajna is a high-level programming language developed for general-purpose scenarios, with a focus on computational foundation domains.
+## What is Prajna?
 
-## Why Prajna
+Prajna is a statically-typed, general-purpose programming language developed by Matazure. It features a concise syntax and high runtime performance, aiming to combine the flexibility of Python with the efficiency of C++.
 
-A general-purpose programming language should be "simple and efficient," which is the core philosophy of Prajna.
+Prajna supports Just-In-Time (JIT) compilation, allowing cross-platform execution without building standalone binaries. It is compatible with X86, ARM, RISC-V, and other architectures, and has built-in support for GPU parallel computing.
 
-### Prajna VS C++
+The language offers an interactive development experience through REPL and Jupyter integration, and uses LLVM as its backend, achieving performance comparable to C++.
 
-* Prajna doesn't have C++'s slow compilation issues. Our module references directly use compiled functions without recompiling from scratch
-* Prajna places greater emphasis on memory safety
-* Prajna has more streamlined programming features
-* Prajna templates are purely templates, not template metaprogramming like in C++
+Prajna features a strong static type system, modules and interface mechanisms, automatic resource management (smart pointers and weak references), as well as function pointers and a template system, making it suitable for building a wide range of applications from high-performance computing to system tools.
 
-### Prajna VS Python
+## Key Features
 
-* Prajna also provides an Interpreter Terminal window
-* Prajna will support Jupyter visualization systems
-* Prajna uses JIT mode, compiling to native code for execution, offering absolute performance advantages
-* Prajna is explicitly a statically, strongly typed programming language, unlike Python's ambiguity
+- Concise and efficient syntax design: Prajna draws inspiration from modern programming languages, eliminating redundant syntax while maintaining clear semantics, making it easy to learn and write. It also supports advanced features such as function pointers and template metaprogramming, making it suitable for writing system-level or high-performance code.
 
-### Prajna VS Rust
+  --------------------------------------------------------------------------------
 
-* Prajna borrows Rust's traits as an isolated interface implementation
-* Prajna adds C#'s property functionality and removes the "reference" feature which is problematic
-* Prajna directly uses "value copying" + "reference counting" as the default memory safety mechanism, rather than the Ownership mechanism
+- LLVM backend support: Prajna uses LLVM as its compilation backend to generate efficient native code. It supports multiple architectures (x86, ARM, RISC-V, etc.) and integrates low-level capabilities such as SIMD and inline assembly, meeting the demands of performance-critical applications.
 
-### Prajna VS Cuda C++
+- Just-In-Time (JIT) compilation: Prajna offers runtime JIT capabilities, allowing source code to be executed without building standalone binaries. This is well-suited for interactive development, scripting, and dynamic loading scenarios.
 
-* Prajna's compilation speed is much faster than CUDA
-* It has a more precise error reporting mechanism
-* It doesn't excessively extend syntax
-* It shares most code with the host
-* Supports Nvidia GPUs, will support AMD GPUs, and can be easily extended to support various GPUs
+- REPL and debugging support: The language provides an interactive REPL environment for rapid testing and debugging. It also includes debugging assertions and error stack traces to improve development efficiency.
 
-Prajna achieves these goals not by adding features, but by subtraction.
+- Modular and interface system: Prajna features native `module` and `interface` constructs for flexible code organization, encapsulation, and reuse. Interfaces support static polymorphism, enabling the construction of type-safe generic libraries.
 
-## Simple Example
-
-```prajna
-func Main(){
-    "Hello World\n".PrintLine();
-}
-```
+- Built-in smart pointer system: The language includes `Ptr<T>` smart pointers and `WeakPtr<T>` weak references to automatically manage resource lifecycles, avoiding memory errors from manual deallocation. It also supports explicit release mechanisms for resource-sensitive scenarios.
 
 ## Documentation
 

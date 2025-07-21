@@ -40,10 +40,30 @@ Prajna features a strong static type system, modules and interface mechanisms, a
 
 Prajna uses LLVM as its compilation backend to generate efficient native code. It supports multiple architectures (x86, ARM, RISC-V, etc.), meeting the demands of performance-critical applications.
 
+#### Benchmark Comparison
+
+<div>
+    <img src="./assets/perf.png" align="left" width="50%">
+</div>
+
+This program measures the GB/s throughput of adding two large 1D integer arrays by timing the element-wise addition of 1e9 i32 values using Prajna's tensor and clock utilities. [Here](./assets/code/) are the benchmark code for the corresponding language.
+
+
+| Language | Throughput (GB/s) |
+| -------- | ----------------- |
+| Prajna   | 0.8205            |
+| Python   | 0.5100            |
+| C++      | 0.6016            |
+| Rust     | 0.3300            |
+
+<div>
+  <img src="./assets/bumper.png", width="100%" alt="Bumper">
+</div>
+
 ### Just-In-Time (JIT) compilation
 
 <div>
-    <img src="./assets/jit.gif" align="left" width="50%">
+    <img src="./assets/jit.gif" align="right" width="50%">
 </div>
 
 Prajna offers runtime JIT capabilities, allowing source code to be executed without building standalone binaries. This is well-suited for interactive development, scripting, and dynamic loading scenarios.
@@ -57,7 +77,7 @@ Prajna offers runtime JIT capabilities, allowing source code to be executed with
 ### Just-In-Time (JIT) compilation
 
 <div>
-    <img src="./assets/repl.gif" align="right" width="50%">
+    <img src="./assets/repl.gif" align="left" width="50%">
 </div>
 
 
@@ -90,6 +110,15 @@ The language includes `Ptr<T>` smart pointers and `WeakPtr<T>` weak references t
   <img src="./assets/bumper.png", width="100%" alt="Bumper">
 </div>
 
+### GPU Programming Abstraction
+
+Prajna supports high-level syntax for declaring GPU kernels using `@kernel` and `@target` annotations, and manages multidimensional arrays on the GPU via a unified `Tensor` type. Thread and block indices are accessed through `::gpu::ThreadIndex()` and `::gpu::BlockIndex()`, offering a CUDA-like parallel structure. Kernel launches use the concise `<|grid, block|>` syntax, which is more streamlined than CUDA's. Prajna enables shared memory via `@shared` variables and provides `BlockSynchronize()` for thread coordination.
+
+<div>
+  <img src="./assets/gpu1.png" width="44%" style="float:left; margin-left: 3%; vertical-align: top;">
+  <img src="./assets/gpu2.png" width="50%" style="float:right; margin-right: 3%; vertical-align: top;">
+  <img src="./assets/bumper.png" width="100%" alt="Bumper">
+</div>
 
 ## Documentation
 

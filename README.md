@@ -46,7 +46,7 @@ Prajna uses LLVM as its compilation backend to generate efficient native code. I
     <img src="./assets/perf.png" align="left" width="50%">
 </div>
 
-This program measures the GB/s throughput of adding two large 1D integer arrays by timing the element-wise addition of 1e9 i32 values using Prajna's tensor and clock utilities. [Here](./assets/code/) are the benchmark code for the corresponding language.
+This program measures the GB/s throughput of adding two large 1D integer arrays by timing the element-wise addition of 1e9 `i32` values using Prajna's tensor and clock utilities. [Here](./assets/code/) are the benchmark code for the corresponding language.
 
 
 | Language | Throughput (GB/s) |

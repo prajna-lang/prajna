@@ -322,7 +322,8 @@ inline void RemoveValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         for (auto ir_block : ir_function->blocks) {
             auto iter_return = std::ranges::find_if(*ir_block, [](auto x) {
-                return Is<ir::Return>(x) || Is<ir::JumpBranch>(x) || Is<ir::ConditionBranch>(x);
+                return Is<ir::Return>(x) || Is<ir::internal::JumpBranch>(x) ||
+                       Is<ir::internal::ConditionBranch>(x);
             });
             if (iter_return != ir_block->end()) {
                 ir_block->erase(std::next(iter_return), ir_block->end());

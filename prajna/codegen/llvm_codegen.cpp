@@ -490,7 +490,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         ir_store_pointer->llvm_value = llvm_store_ptr;
     }
 
-    void Visit(std::shared_ptr<ir::ConditionBranch> ir_condition_branch) override {
+    void Visit(std::shared_ptr<ir::internal::ConditionBranch> ir_condition_branch) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_condition_branch);
         // 需要处理, 因为true/falseBlock在ir_condition_branch的后面
         ir_condition_branch->TrueBlock()->ApplyVisitor(this->shared_from_this());
@@ -506,7 +506,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
             ir_condition_branch->Condition()->llvm_value, llvm_basic_block);
     }
 
-    void Visit(std::shared_ptr<ir::JumpBranch> ir_jump_branch) override {
+    void Visit(std::shared_ptr<ir::internal::JumpBranch> ir_jump_branch) override {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_jump_branch);
         PRAJNA_ASSERT(Lock(ir_jump_branch->GetParentBlock()->parent) ==
                       Lock(ir_jump_branch->NextBlock()->parent));

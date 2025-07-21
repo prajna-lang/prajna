@@ -1131,6 +1131,8 @@ class Select : public Instruction {
     }
 };
 
+namespace internal {
+
 class ConditionBranch : public Instruction {
    protected:
     ConditionBranch() = default;
@@ -1210,6 +1212,8 @@ class Label : public Block {
         interpreter->Visit(Cast<Label>(this->shared_from_this()));
     }
 };
+
+}  // namespace internal
 
 /// @brief 用于返回函数参数, 由多个Value构成的
 class ValueCollection : public Value, public std::list<std::shared_ptr<ir::Value>> {};
@@ -1770,7 +1774,7 @@ inline std::shared_ptr<ir::Function> GetFunctionByName(
 
 inline bool IsTerminated(std::shared_ptr<ir::Value> ir_value) {
     return Is<Return>(ir_value) || Is<Break>(ir_value) || Is<Continue>(ir_value) ||
-           Is<JumpBranch>(ir_value) || Is<ConditionBranch>(ir_value);
+           Is<internal::JumpBranch>(ir_value) || Is<internal::ConditionBranch>(ir_value);
 }
 
 inline bool IsGlobal(std::shared_ptr<ir::Value> ir_value) {

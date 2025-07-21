@@ -358,33 +358,33 @@ class FunctionCloner : public Visitor {
         this->value_dict[ir_select] = ir_new;
     }
 
-    void Visit(std::shared_ptr<ConditionBranch> ir_condition_branch) override {
+    void Visit(std::shared_ptr<internal::ConditionBranch> ir_condition_branch) override {
         if (value_dict[ir_condition_branch]) {
             return;
         }
         this->VisitOperands(ir_condition_branch);
-        auto ir_new =
-            ConditionBranch::Create(value_dict[ir_condition_branch->Condition()],
-                                    Cast<Block>(value_dict[ir_condition_branch->TrueBlock()]),
-                                    Cast<Block>(value_dict[ir_condition_branch->FalseBlock()]));
+        auto ir_new = internal::ConditionBranch::Create(
+            value_dict[ir_condition_branch->Condition()],
+            Cast<Block>(value_dict[ir_condition_branch->TrueBlock()]),
+            Cast<Block>(value_dict[ir_condition_branch->FalseBlock()]));
         this->value_dict[ir_condition_branch] = ir_new;
     }
 
-    void Visit(std::shared_ptr<JumpBranch> ir_jump_branch) override {
+    void Visit(std::shared_ptr<internal::JumpBranch> ir_jump_branch) override {
         if (value_dict[ir_jump_branch]) {
             return;
         }
-        auto ir_new = JumpBranch::Create();
+        auto ir_new = internal::JumpBranch::Create();
         this->value_dict[ir_jump_branch] = ir_new;  // 必须前置dict, 否则会产生死递归
         this->VisitOperands(ir_jump_branch);
         ir_new->NextBlock(Cast<Block>(value_dict[ir_jump_branch->NextBlock()]));
     }
 
-    void Visit(std::shared_ptr<Label> ir_label) override {
+    void Visit(std::shared_ptr<internal::Label> ir_label) override {
         if (value_dict[ir_label]) {
             return;
         }
-        std::shared_ptr<Label> ir_new = Label::Create();
+        std::shared_ptr<internal::Label> ir_new = internal::Label::Create();
         this->value_dict[ir_label] = ir_new;
     }
 

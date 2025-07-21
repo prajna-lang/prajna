@@ -221,13 +221,13 @@ class IRPrinter : public Visitor {
                << GetVariableName(ir_select->FalseValue()) << ";\n";
     }
 
-    void Visit(std::shared_ptr<ConditionBranch> ir_cond_branch) override {
+    void Visit(std::shared_ptr<internal::ConditionBranch> ir_cond_branch) override {
         output << "ConditionBranch " << GetVariableName(ir_cond_branch->Condition()) << ", "
                << GetVariableName(ir_cond_branch->TrueBlock()) << ", "
                << GetVariableName(ir_cond_branch->FalseBlock()) << ";\n";
     }
 
-    void Visit(std::shared_ptr<JumpBranch> ir_jump) override {
+    void Visit(std::shared_ptr<internal::JumpBranch> ir_jump) override {
         output << "JumpBranch " << GetVariableName(ir_jump->NextBlock()) << ";\n";
     }
 

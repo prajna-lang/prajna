@@ -155,7 +155,7 @@ inline auto ConvertGpuForToKernelCall(std::shared_ptr<ir::For> ir_gpu_for, int64
 inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
     auto ir_gpu_fors = utility::GetAll<ir::For>(ir_module);
     ir_gpu_fors.remove_if([](std::shared_ptr<ir::For> ir_gpu_for) {
-        return !ir_gpu_for->annotation_dict.count("gpu");
+        return !ir_gpu_for->annotation_dict.count("nvgpu");
     });
 
     int64_t idx = 0;
@@ -172,7 +172,7 @@ inline void ExtractGpuFor(std::shared_ptr<ir::Module> ir_module) {
 
         //
         auto symbol_table_gpu =
-            lowering::SymbolGet<lowering::SymbolTable>(ir_module->symbol_table->Get("gpu"));
+            lowering::SymbolGet<lowering::SymbolTable>(ir_module->symbol_table->Get("nvgpu"));
         PRAJNA_ASSERT(symbol_table_gpu);
         auto ir_max_thread_per_block_function =
             lowering::SymbolGet<ir::Value>(symbol_table_gpu->Get("MaxThreadPerBlock"));

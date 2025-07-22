@@ -1,14 +1,14 @@
 // use gpu // gpu指向的是存在examples::gpu的module
-use ::gpu::*;
-use ::gpu::Tensor<f32, 2> as GpuMatrixf32;
+use ::nvgpu as gpu;
+use gpu::Tensor<f32, 2> as GpuMatrixf32;
 
 @kernel
 @target("nvptx")
 func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
-    var thread_x = ::gpu::ThreadIndex()[1];
-    var thread_y = ::gpu::ThreadIndex()[2];
-    var block_x = ::gpu::BlockIndex()[1];
-    var block_y = ::gpu::BlockIndex()[2];
+    var thread_x = gpu::ThreadIndex()[1];
+    var thread_y = gpu::ThreadIndex()[2];
+    var block_x = gpu::BlockIndex()[1];
+    var block_y = gpu::BlockIndex()[2];
     var block_size = 32;
     var global_x = block_x * block_size + thread_x;
     var global_y = block_y * block_size + thread_y;
@@ -22,12 +22,12 @@ func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
         var local_b: Array<f32, 1024>;
         local_a[thread_x* 32 + thread_y] = A[global_x, thread_y + i * block_size];
         local_b[thread_x* 32 + thread_y] = B[thread_x + i * block_size , global_y];
-        ::gpu::BlockSynchronize();
+        gpu::BlockSynchronize();
 
         for j in 0 to 32 {
           sum = sum + local_a[thread_x * 32 + j] * local_b[j * 32 + thread_y];
         }
-        ::gpu::BlockSynchronize();
+        gpu::BlockSynchronize();
     }
 
     C[global_x, global_y] = sum;

@@ -50,10 +50,8 @@ class CudaRuntimeLoader {
     static boost::dll::shared_library& GetCudaLibrary() {
         static boost::dll::shared_library cuda_so = []() {
 #ifdef _WIN32
-            std::cout << "Loading nvcuda.dll" << std::endl;
             return boost::dll::shared_library("C:\\Windows\\System32\\nvcuda.dll");
 #else
-            std::cout << "Loading libcuda.so" << std::endl;
             return boost::dll::shared_library("/usr/lib/x86_64-linux-gnu/libcuda.so");
 #endif
         }();

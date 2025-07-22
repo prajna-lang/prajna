@@ -128,7 +128,7 @@ inline bool FlatternBlockImpl(std::shared_ptr<ir::Block> ir_block) {
             FlatternBlockImpl(ir_for->LoopBlock());
 
             // 标注gpu的则在后面抽离,
-            if (ir_for->annotation_dict.count("gpu")) {
+            if (ir_for->annotation_dict.count("nvgpu")) {
                 ++iter;
                 continue;
             }

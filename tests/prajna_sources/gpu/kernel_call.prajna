@@ -1,8 +1,17 @@
-use ::gpu;
+use ::nvgpu as gpu;
 
 @kernel
 @target("nvptx")
 func myKernel(tensor: gpu::Tensor<i64, 1>){
+    var thread_idx = gpu::ThreadIndex();
+    var thread_idx_x = thread_idx[0];
+    tensor.data[thread_idx_x] = thread_idx_x;
+}
+
+
+@kernel
+@target("nvptx")
+func myKernel2(tensor: gpu::Tensor<i64, 1>){
     var thread_idx = gpu::ThreadIndex();
     var thread_idx_x = thread_idx[0];
     tensor.data[thread_idx_x] = thread_idx_x;
@@ -18,6 +27,7 @@ func TestKernel(){
     var gpu_tensor = gpu::Tensor<i64, 1>::Create(shape);
 
     myKernel<|GridShape, BlockShape|>(gpu_tensor);
+    myKernel2<|GridShape, BlockShape|>(gpu_tensor);
 
     var host_tensor = gpu_tensor.ToHost();
     for i in 0 to size{

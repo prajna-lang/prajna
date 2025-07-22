@@ -96,7 +96,7 @@ inline bool IsTensorType(std::shared_ptr<ir::Type> ir_type) {
     PRAJNA_TODO;
     return false;
     // auto gpu_tensor_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
-    //     ir_builder->GetSymbolByPath(true, {"gpu", "Tensor"}));
+    //     ir_builder->GetSymbolByPath(true, {"nvgpu", "Tensor"}));
     // auto host_tensor_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
     //     ir_builder->GetSymbolByPath(true, {"Tensor"}));
 
@@ -151,7 +151,7 @@ inline bool IsGpuTensorType(std::shared_ptr<ir::Type> ir_type,
     auto ir_builder = lowering::IrBuilder::Create(ir_module->symbol_table, nullptr, nullptr);
     // 需要更新为固定路径
     auto gpu_tensor_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
-        ir_builder->GetSymbolByPath(true, {"gpu", "Tensor"}));
+        ir_builder->GetSymbolByPath(true, {"nvgpu", "Tensor"}));
     PRAJNA_ASSERT(gpu_tensor_template_struct);
     PRAJNA_ASSERT(ir_type->template_struct);
     return ir_type->template_struct == gpu_tensor_template_struct;
@@ -162,7 +162,7 @@ inline std::shared_ptr<ir::Type> GetGpuTensorTypeOfHostTensorType(
     auto ir_builder = lowering::IrBuilder::Create(ir_module->symbol_table, nullptr, nullptr);
     // 需要更新为固定路径
     auto gpu_tensor_template_struct = lowering::SymbolGet<lowering::TemplateStruct>(
-        ir_builder->GetSymbolByPath(true, {"gpu", "Tensor"}));
+        ir_builder->GetSymbolByPath(true, {"nvgpu", "Tensor"}));
     PRAJNA_ASSERT(gpu_tensor_template_struct);
     PRAJNA_ASSERT(ir_type->template_struct);
     return gpu_tensor_template_struct->Instantiate(

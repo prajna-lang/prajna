@@ -1,14 +1,13 @@
-// use gpu2 // gpu指向的是存在examples::gpu的module
-use ::gpu2::*;
-use ::gpu2::Tensor<f32, 2> as GpuMatrixf32;
+use ::amdgpu as gpu;
+use gpu::Tensor<f32, 2> as GpuMatrixf32;
 
 @kernel
 @target("amdgpu")
 func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
-    var thread_x = ::gpu2::ThreadIndex()[1];
-    var thread_y = ::gpu2::ThreadIndex()[2];
-    var block_x = ::gpu2::BlockIndex()[1];
-    var block_y = ::gpu2::BlockIndex()[2];
+    var thread_x = gpu::ThreadIndex()[1];
+    var thread_y = gpu::ThreadIndex()[2];
+    var block_x = gpu::BlockIndex()[1];
+    var block_y = gpu::BlockIndex()[2];
     var block_size = 32;
     var global_x = block_x * block_size + thread_x;
     var global_y = block_y * block_size + thread_y;
@@ -22,12 +21,12 @@ func MatrixMultiply(A: GpuMatrixf32, B: GpuMatrixf32, C: GpuMatrixf32) {
         var local_b: Array<f32, 1024>;
         local_a[thread_x* 32 + thread_y] = A[global_x, thread_y + i * block_size];
         local_b[thread_x* 32 + thread_y] = B[thread_x + i * block_size , global_y];
-        ::gpu2::BlockSynchronize();
+        gpu::BlockSynchronize();
 
         for j in 0 to 32 {
           sum = sum + local_a[thread_x * 32 + j] * local_b[j * 32 + thread_y];
         }
-        ::gpu2::BlockSynchronize();
+        gpu::BlockSynchronize();
     }
 
     C[global_x, global_y] = sum;
@@ -55,7 +54,7 @@ func TestMatrixMultiply() {
     for i in 0 to epoch {
       MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
     }
-    gpu2::Synchronize();
+    gpu::Synchronize();
 
     var t1 = chrono::Clock();
     t0.PrintLine();

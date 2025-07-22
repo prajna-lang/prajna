@@ -1,4 +1,3 @@
-// use gpu // gpu指向的是存在examples::gpu的module
 use ::nvgpu as gpu;
 use gpu::Tensor<f32, 2> as GpuMatrixf32;
 

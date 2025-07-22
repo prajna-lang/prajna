@@ -16,6 +16,10 @@ inline std::string ConcatFullname(std::string base_name, std::string name) {
 }
 
 inline std::string MangleNvvmName(std::string name) {
+    if (name.find("__nv_") != std::string::npos) {
+        return name;
+    }
+
     std::string str_re;
     for (auto iter = name.begin(); iter != name.end(); ++iter) {
         switch (*iter) {
@@ -41,6 +45,10 @@ inline std::string MangleNvvmName(std::string name) {
 }
 
 inline std::string MangleHipName(std::string name) {
+    if (name.find("__ocml_") != std::string::npos) {
+        return name;
+    }
+
     // 提取函数名（忽略命名空间）
     size_t last_colon = name.rfind("::");
     std::string simple_name =

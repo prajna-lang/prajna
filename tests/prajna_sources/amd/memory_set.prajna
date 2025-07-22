@@ -1,10 +1,10 @@
-use ::gpu2;
+use ::amdgpu as gpu;
 
 @kernel
 @target("amdgpu")
-func myKernel(tensor: gpu2::Tensor<i64, 2>){
-    var thread_idx = gpu2::ThreadIndex();
-    var block_idx = gpu2::BlockIndex();
+func myKernel(tensor: gpu::Tensor<i64, 2>){
+    var thread_idx = gpu::ThreadIndex();
+    var block_idx = gpu::BlockIndex();
     tensor[block_idx[0] + block_idx[1] * 1024, thread_idx[0]] = 113;
 }
 
@@ -14,7 +14,7 @@ func TestKernel(){
     var grid_shape = [1024, 1024 * 8, 1];
 
     var shape = [grid_shape[0] * grid_shape[1], block_shape[0]];
-    var gpu_tensor = gpu2::Tensor<i64, 2>::Create(shape);
+    var gpu_tensor = gpu::Tensor<i64, 2>::Create(shape);
 
     var t0 = chrono::Clock();
     t0.PrintLine();
@@ -23,7 +23,7 @@ func TestKernel(){
     for i in 0 to epoch {
         myKernel<|grid_shape, block_shape|>(gpu_tensor);
     }
-    gpu2::Synchronize();
+    gpu::Synchronize();
     var t1 = chrono::Clock();
 
     t1.PrintLine();

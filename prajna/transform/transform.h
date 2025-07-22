@@ -136,7 +136,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             if (ir_kernel_function->annotation_dict["target"].front() == "nvptx") {
                 runtime_namespace = "nvgpu";
             } else if (ir_kernel_function->annotation_dict["target"].front() == "amdgpu") {
-                runtime_namespace = "gpu2";
+                runtime_namespace = "amdgpu";
             } else {
                 PRAJNA_UNIMPLEMENT;
             }

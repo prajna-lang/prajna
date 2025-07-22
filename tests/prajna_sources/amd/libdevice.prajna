@@ -1,4 +1,4 @@
-use ::gpu2;
+use ::amdgpu as gpu;
 
 @kernel
 @target("amdgpu")

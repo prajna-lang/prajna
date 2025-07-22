@@ -1,9 +1,9 @@
-use ::gpu2;
+use ::amdgpu as gpu;
 
 @kernel
 @target("amdgpu")
-func myKernel(tensor: gpu2::Tensor<i64, 1>){
-    var thread_idx = gpu2::ThreadIndex();
+func myKernel(tensor: gpu::Tensor<i64, 1>){
+    var thread_idx = gpu::ThreadIndex();
     var thread_idx_x = thread_idx[0];
     tensor.data[thread_idx_x] = thread_idx_x;
 }
@@ -15,7 +15,7 @@ func TestKernel(){
     var BlockShape = [size, 1, 1];
 
     var shape = [size];
-    var gpu_tensor = gpu2::Tensor<i64, 1>::Create(shape);
+    var gpu_tensor = gpu::Tensor<i64, 1>::Create(shape);
 
     myKernel<|GridShape, BlockShape|>(gpu_tensor);
 

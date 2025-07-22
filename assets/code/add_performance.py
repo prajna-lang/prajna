@@ -1,16 +1,16 @@
-import numpy as np
 import time
 
 def perf(array0, array1, array2):
-    array2[:] = array0 + array1
+    for i in range(len(array0)):
+        array2[i] = array0[i] + array1[i]
 
 def main():
     print("enter main")
 
-    size = 1_000_000_000
-    array0 = np.zeros(size, dtype=np.int32)
-    array1 = np.zeros(size, dtype=np.int32)
-    array2 = np.empty(size, dtype=np.int32)
+    size = 10_000_000
+    array0 = [0] * size
+    array1 = [0] * size
+    array2 = [0] * size
 
     print("start")
     t0 = time.time()

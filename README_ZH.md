@@ -49,10 +49,11 @@
 
 | 语言   | 吞吐率 (GB/s) |
 |--------|---------------|
-| 般若   | 0.8205        |
-| Python | 0.5100        |
-| C++    | 0.6016        |
-| Rust   | 0.3300        |
+| 般若   | 0.82        |
+| Python | 0.05        |
+| C++    | 0.60        |
+| Rust (opt-level=0)  | 0.33        |
+| Rust (opt-level=1)  | 0.85        |
 
 <div>
     <img src="./assets/bumper.png" width="100%" alt="Bumper">

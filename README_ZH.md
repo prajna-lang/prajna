@@ -100,7 +100,7 @@
     <img src="./assets/circular_reference.png" align="left" width="35%">
 </div>
 
-语言内置 `Ptr<T>` 智能指针和 `WeakPtr<T>` 弱引用，实现自动资源生命周期管理，避免手动释放导致的内存错误，同时支持显式释放机制，适合资源敏感场景。
+语言内置 `Ptr<T>` 智能指针，实现自动资源生命周期管理，避免手动释放导致的内存错误，同时支持显式释放机制，适合资源敏感场景。
 
 <div>
     <img src="./assets/bumper.png" width="100%" alt="Bumper">

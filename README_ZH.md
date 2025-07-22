@@ -78,7 +78,7 @@
     <img src="./assets/repl.gif" align="left" width="50%">
 </div>
 
-语言提供交互式 REPL 环境，方便快速测试与调试。包含断言和错误堆栈信息，提高开发效率。
+语言提供交互式 REPL 环境，方便快速的使用，提供更便捷的交互。
 
 <div>
     <img src="./assets/bumper.png" width="100%" alt="Bumper">

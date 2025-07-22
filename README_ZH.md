@@ -64,7 +64,7 @@
     <img src="./assets/jit.gif" align="right" width="50%">
 </div>
 
-般若支持运行时即时编译，允许源代码无需构建二进制即可执行，适用于交互开发、脚本执行和动态加载。
+般若支持运行时即时编译，允许源代码无需构建二进制即可执行，适用于交互开发、脚本执行和动态加载，同时提供比虚拟机更佳的性能。
 
 <div>
     <img src="./assets/bumper.png" width="100%" alt="Bumper">

@@ -108,7 +108,7 @@
 
 ### GPU 编程抽象
 
-般若支持使用 `@kernel` 和 `@target` 注解直接声明 GPU 核函数，统一用 `Tensor` 类型管理 GPU 上多维数组。通过 `::gpu::ThreadIndex()` 和 `::gpu::BlockIndex()` 访问线程与块索引，提供类似 CUDA 的并行结构。内核调度采用简洁的 `<|grid, block|>` 语法，比 CUDA 更易用。支持 `@shared` 共享内存变量和 `BlockSynchronize()` 线程同步。
+般若支持使用 `@kernel` 和 `@target` 注解直接声明 GPU 核函数，统一用 `Tensor` 类型管理 GPU 上多维数组。通过 `::gpu::ThreadIndex()` 和 `::gpu::BlockIndex()` 访问线程与块索引，提供类似 CUDA 的并行结构。支持 `@shared` 共享内存变量和 `BlockSynchronize()` 线程同步。
 
 <div>
     <img src="./assets/gpu1.png" width="44%" style="float:left; margin-left: 3%; vertical-align: top;">

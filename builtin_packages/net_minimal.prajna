@@ -1,0 +1,6 @@
+// Ultra minimal TCP networking support - for debugging
+
+// Simple test function
+func SimpleTest() -> u32 {
+    return 42u32;
+}

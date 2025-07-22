@@ -1,0 +1,9 @@
+// Ultra minimal test to debug compiler issues
+use net_minimal;
+
+@test
+func TestBasicStructure() {
+    // Test simple function call
+    var result = SimpleTest();
+    test::Assert(result == 42u32);
+}

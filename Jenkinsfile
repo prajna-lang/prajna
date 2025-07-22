@@ -29,11 +29,11 @@ pipeline{
                         }
                         stage('clean') {
                             when {
-                                    anyOf {
-                                        branch 'main'
-                                        branch 'dev'
-                                    }
-                                 }
+                                allOf {
+                                    anyOf { branch 'main'; branch 'dev' }
+                                    triggeredBy "TimerTrigger"
+                                }
+                            }
                             steps {
                                 bat 'git submodule deinit  --force --all'
                                 bat 'git clean -xdf .'

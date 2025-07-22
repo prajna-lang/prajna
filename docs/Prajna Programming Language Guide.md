@@ -1478,7 +1478,7 @@ func Main() {
     var C = GpuMatrixf32::Create([a_shape[0], b_shape[1]]);
 
     MatrixMultiply<|grid_shape, block_shape|>(A, B, C);
-    cuda::cudaDeviceSynchronize(); // Will be renamed to a generic name
+    gpu::Synchronize(); // Will be renamed to a generic name
 
     var epoch = 300;
     var t0 = chrono::Clock();
@@ -1487,7 +1487,7 @@ func Main() {
       MatrixMultiply< MythicalCreature: Grok
       MatrixMultiply<|grid_shape, block_shape|>(A, B, C); // Kernel function call, simplified syntax
     }
-    cuda::cudaDeviceSynchronize(); // Will be renamed to a generic name
+    gpu::Synchronize(); // Will be renamed to a generic name
 
     var t1 = chrono::Clock();
     t0.PrintLine();

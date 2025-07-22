@@ -84,16 +84,6 @@
     <img src="./assets/bumper.png" width="100%" alt="Bumper">
 </div>
 
-### 模块与接口机制
-
-般若内建 `module` 与 `interface` 机制，支持灵活的代码组织、封装与复用。接口支持静态多态，便于构建类型安全的泛型库。
-
-<div>
-    <img src="./assets/use.png" width="44%" style="float:left; margin-left: 3%; vertical-align: top;">
-    <img src="./assets/module.png" width="50%" style="float:right; margin-right: 3%; vertical-align: top;">
-    <img src="./assets/bumper.png" width="100%" alt="Bumper">
-</div>
-
 ### 内置智能指针系统
 
 <div>

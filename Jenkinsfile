@@ -58,7 +58,7 @@ pipeline{
                     agent {
                         dockerfile {
                             label 'Sunny'
-                            filename 'ubuntu_dev_nvgpu_jenkins.dockerfile'
+                            filename 'ubuntu_dev_gpu_jenkins.dockerfile'
                             dir 'dockerfiles'
                             // 参数由宿主主机的jenkins账号决定
                             additionalBuildArgs '''\
@@ -66,7 +66,7 @@ pipeline{
                             --build-arg UID=124 \
                             --build-arg UNAME=jenkins \
                             '''
-                            args '--gpus all --network host'
+                            args '--device /dev/kfd --device /dev/dri --security-opt seccomp=unconfined --gpus all --network host'
                         }
                     }
                     environment {
@@ -107,7 +107,7 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*amdgpu*'
+                                sh './scripts/test.sh ${BUILD_TYPE}'
                                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }

@@ -1992,6 +1992,200 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         return template_tuple;
     }
 
+    std::shared_ptr<Template> CreateVariantTemplate() {
+        auto template_variant = Template::Create();
+        template_variant->generator = [symbol_table = this->ir_builder->symbol_table,
+                                       logger = this->logger,
+                                       this](std::list<Symbol> symbol_template_arguments,
+                                             std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.empty()) {
+                logger->Error("Variant requires at least one type argument");
+                return nullptr;
+            }
+
+            std::vector<std::shared_ptr<ir::Type>> variant_types;
+            for (auto& symbol : symbol_template_arguments) {
+                auto ir_type = SymbolGet<ir::Type>(symbol);
+                if (!ir_type) {
+                    logger->Error("Variant template arguments must be types");
+                    return nullptr;
+                }
+                variant_types.push_back(ir_type);
+            }
+
+            auto ir_builder = IrBuilder::Create(symbol_table, ir_module, logger);
+
+            std::list<std::shared_ptr<ir::Field>> ir_fields;
+            auto tag_field = ir::Field::Create("tag", ir::i64);
+            ir_fields.push_back(tag_field);
+
+            for (int i = 0; i < variant_types.size(); ++i) {
+                auto field_name = "data" + std::to_string(i);
+                auto data_field = ir::Field::Create(field_name, variant_types[i]);
+                ir_fields.push_back(data_field);
+            }
+
+            auto ir_struct_type = ir::StructType::Create(ir_fields);
+            ir_struct_type->name = "Variant";
+            ir_struct_type->fullname = "Variant";
+            ir_struct_type->Update();
+
+            auto type_id = GetTemplateArgumentsPostify(symbol_template_arguments);
+            int variant_size = variant_types.size();
+
+            auto set_template = Template::Create();
+            set_template->name = "Set";
+            set_template->generator = [variant_types, ir_struct_type, symbol_table, logger, type_id,
+                                       variant_size](std::list<Symbol> set_args,
+                                                     std::shared_ptr<ir::Module> module) -> Symbol {
+                if (set_args.size() != 1) {
+                    logger->Error("Set requires exactly one template argument");
+                    return nullptr;
+                }
+
+                auto index_const = SymbolGet<ir::ConstantInt>(set_args.front());
+                if (!index_const) {
+                    logger->Error("Set template parameter must be a constant integer");
+                    return nullptr;
+                }
+
+                int i = index_const->value;
+                if (i < 0 || i >= variant_size) {
+                    logger->Error(fmt::format("Variant type index out of range: {}", i));
+                    return nullptr;
+                }
+
+                auto target_type = variant_types[i];
+                auto ir_builder = IrBuilder::Create(symbol_table, module, logger);
+
+                auto ptr_struct_type = ir::PointerType::Create(ir_struct_type);
+                auto ir_func_type = ir::FunctionType::Create({ptr_struct_type, target_type},
+                                                             ir::VoidType::Create());
+                auto ir_func =
+                    ir_builder->CreateFunction("Set" + std::to_string(i) + type_id, ir_func_type);
+                ir_func->annotation_dict["inline"];
+
+                ir_builder->CreateTopBlockForFunction(ir_func);
+                auto this_ptr = ir_func->parameters.front();
+                auto value = ir_func->parameters.back();
+                auto this_obj = ir_builder->Create<ir::DeferencePointer>(this_ptr);
+
+                auto field_it = ir_struct_type->fields.begin();
+                auto tag_field = *field_it;
+                std::advance(field_it, i + 1);
+                auto data_field = *field_it;
+
+                auto tag_access = ir_builder->Create<ir::AccessField>(this_obj, tag_field);
+                auto tag_value = ir_builder->GetConstant<int64_t>(i);
+                ir_builder->Create<ir::WriteVariableLiked>(tag_value, tag_access);
+
+                auto data_access = ir_builder->Create<ir::AccessField>(this_obj, data_field);
+                ir_builder->Create<ir::WriteVariableLiked>(value, data_access);
+
+                ir_builder->Create<ir::Return>(ir_builder->Create<ir::VoidValue>());
+                return ir_func;
+            };
+
+            ir_struct_type->template_any_dict["Set"] = set_template;
+
+            auto get_template = Template::Create();
+            get_template->name = "Get";
+            get_template->generator = [variant_types, ir_struct_type, symbol_table, logger, type_id,
+                                       variant_size](std::list<Symbol> get_args,
+                                                     std::shared_ptr<ir::Module> module) -> Symbol {
+                if (get_args.size() != 1) {
+                    logger->Error("Get requires exactly one template argument");
+                    return nullptr;
+                }
+
+                auto index_const = SymbolGet<ir::ConstantInt>(get_args.front());
+                if (!index_const) {
+                    logger->Error("Get template parameter must be a constant integer");
+                    return nullptr;
+                }
+
+                int i = index_const->value;
+                if (i < 0 || i >= variant_size) {
+                    logger->Error(fmt::format("Variant type index out of range: {}", i));
+                    return nullptr;
+                }
+
+                auto target_type = variant_types[i];
+                auto ir_builder = IrBuilder::Create(symbol_table, module, logger);
+
+                auto ptr_struct_type = ir::PointerType::Create(ir_struct_type);
+                auto ir_func_type = ir::FunctionType::Create({ptr_struct_type}, target_type);
+                auto ir_func =
+                    ir_builder->CreateFunction("Get" + std::to_string(i) + type_id, ir_func_type);
+                ir_func->annotation_dict["inline"];
+
+                ir_builder->CreateTopBlockForFunction(ir_func);
+                auto this_ptr = ir_func->parameters.front();
+                auto this_obj = ir_builder->Create<ir::DeferencePointer>(this_ptr);
+
+                auto field_it = ir_struct_type->fields.begin();
+                std::advance(field_it, i + 1);
+                auto data_field = *field_it;
+
+                auto data_access = ir_builder->Create<ir::AccessField>(this_obj, data_field);
+                ir_builder->Create<ir::Return>(data_access);
+
+                return ir_func;
+            };
+
+            ir_struct_type->template_any_dict["Get"] = get_template;
+
+            auto is_template = Template::Create();
+            is_template->name = "Is";
+            is_template->generator = [variant_types, ir_struct_type, symbol_table, logger, type_id,
+                                      variant_size](std::list<Symbol> is_args,
+                                                    std::shared_ptr<ir::Module> module) -> Symbol {
+                if (is_args.size() != 1) {
+                    logger->Error("Is requires exactly one template argument");
+                    return nullptr;
+                }
+
+                auto index_const = SymbolGet<ir::ConstantInt>(is_args.front());
+                if (!index_const) {
+                    logger->Error("Is template parameter must be a constant integer");
+                    return nullptr;
+                }
+
+                int i = index_const->value;
+                if (i < 0 || i >= variant_size) {
+                    logger->Error(fmt::format("Is type index out of range: {}", i));
+                    return nullptr;
+                }
+
+                auto ir_builder = IrBuilder::Create(symbol_table, module, logger);
+                auto ptr_struct_type = ir::PointerType::Create(ir_struct_type);
+                auto ir_func_type =
+                    ir::FunctionType::Create({ptr_struct_type}, ir::BoolType::Create());
+                auto ir_func =
+                    ir_builder->CreateFunction("Is" + std::to_string(i) + type_id, ir_func_type);
+                ir_func->annotation_dict["inline"];
+
+                ir_builder->CreateTopBlockForFunction(ir_func);
+                auto this_ptr = ir_func->parameters.front();
+                auto this_obj = ir_builder->Create<ir::DeferencePointer>(this_ptr);
+
+                auto tag_field = ir_struct_type->fields.front();
+                auto tag_access = ir_builder->Create<ir::AccessField>(this_obj, tag_field);
+                auto expected_tag = ir_builder->GetConstant<int64_t>(i);
+                auto result = ir_builder->CallBinaryOperator(tag_access, "==", expected_tag);
+                ir_builder->Create<ir::Return>(result);
+
+                return ir_func;
+            };
+
+            ir_struct_type->template_any_dict["Is"] = is_template;
+
+            return ir_struct_type;
+        };
+
+        return template_variant;
+    }
+
     void Stage0() {
         auto bool_type = ir::BoolType::Create();
         auto char_type = ir::CharType::Create();
@@ -2142,6 +2336,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateTupleTemplate(), "Tuple");
+        ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
+            this->CreateVariantTemplate(), "Variant");
     }
 
     Symbol operator()(ast::Pragma ast_pragma);

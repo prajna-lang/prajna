@@ -1,3 +1,5 @@
 examples/zmq/libs/linux/libzmq.so filter=lfs diff=lfs merge=lfs -text
 examples/zmq/libs/osx/libzmq.dylib filter=lfs diff=lfs merge=lfs -text
 examples/zmq/libs/win/libzmq.dll filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text

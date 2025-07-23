@@ -13,7 +13,7 @@ RUN apt-get install -y libbsd-dev
 RUN apt-get install -y clang-format
 RUN apt-get install -y libstdc++-14-dev
 RUN apt-get install -y git-lfs
-RUN apt-get update && apt-get install -y curl 
+RUN apt-get update && apt-get install -y curl
 RUN apt-get update && apt-get install -y gnupg2
 RUN touch //.gitconfig && chmod 777 //.gitconfig
 
@@ -29,6 +29,6 @@ RUN curl -sL https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor > /usr/sh
 RUN printf "Package: *\nPin: origin repo.radeon.com\nPin-Priority: 1001\n" > /etc/apt/preferences.d/rocm
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends rocm-dev rocm-libs hipblas rocblas
+    apt-get install -y --no-install-recommends rocm-dev rocm-libs hipblas rocblas lld
 
-RUN groupadd -g 109 render 
+RUN groupadd -g 109 render

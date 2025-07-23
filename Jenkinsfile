@@ -47,7 +47,7 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                bat 'bash ./scripts/test.sh %BUILD_TYPE% --gtest_filter=-*amd*:*gpu*'
+                                bat 'bash ./scripts/test.sh %BUILD_TYPE% --gtest_filter=-*gpu*'
                                 bat 'bash ./scripts/test_examples.sh %BUILD_TYPE%'
                             }
                         }
@@ -107,7 +107,7 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*amd*'
+                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*amdgpu*'
                                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }
@@ -175,7 +175,7 @@ pipeline{
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*amd*:*gpu*'
+                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*gpu*'
                                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }

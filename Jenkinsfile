@@ -22,6 +22,8 @@ pipeline{
                     stages {
                         stage('env') {
                             steps {
+                                bat 'echo %PATH%'
+                                bat 'cd'
                                 bat 'git --version'
                                 bat 'cmake --version'
                                 bat 'git config --global --list'
@@ -58,15 +60,9 @@ pipeline{
                     agent {
                         dockerfile {
                             label 'Sunny'
-                            filename 'ubuntu_dev_nvgpu_jenkins.dockerfile'
+                            filename 'ubuntu_dev_gpu.dockerfile'
                             dir 'dockerfiles'
-                            // 参数由宿主主机的jenkins账号决定
-                            additionalBuildArgs '''\
-                            --build-arg GID=125 \
-                            --build-arg UID=124 \
-                            --build-arg UNAME=jenkins \
-                            '''
-                            args '--gpus all --network host'
+                            args '-u root:root --device /dev/kfd --device /dev/dri --security-opt seccomp=unconfined --gpus all --network host'
                         }
                     }
                     environment {
@@ -78,12 +74,16 @@ pipeline{
                         stage('env') {
                             steps {
                                 sh 'uname -a'
-                                sh 'echo $USER'
+                                sh 'whoami'
+                                sh 'echo $PATH'
                                 sh 'cmake --version'
                                 sh 'clang++ --version'
-                                // sh 'nvidia-smi'
+                                sh 'nvidia-smi'
+                                sh 'rocm-smi'
                                 sh 'pwd'
                                 sh 'git --version'
+                                // we use -u root:root in docker container, but the repo is owned by jenkins user, so we need to add the repo to the safe.directory
+                                sh 'git config --global --add safe.directory "*"'
                             }
                         }
                         stage('clean') {
@@ -101,13 +101,13 @@ pipeline{
                         stage('build') {
                             steps {
                                 sh './scripts/clone_submodules.sh -f --jobs=4 --depth=50'
-                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERT=OFF -DPRAJNA_WITH_CUDA=ON -DPRAJNA_WITH_ROCM=OFF'
+                                sh './scripts/configure.sh ${BUILD_TYPE} -DPRAJNA_WITH_JUPYTER=ON -DPRAJNA_DISABLE_ASSERT=OFF -DPRAJNA_WITH_CUDA=ON -DPRAJNA_WITH_ROCM=ON'
                                 sh './scripts/build.sh ${BUILD_TYPE} install'
                             }
                         }
                         stage('test') {
                             steps {
-                                sh './scripts/test.sh ${BUILD_TYPE} --gtest_filter=-*amdgpu*'
+                                sh './scripts/test.sh ${BUILD_TYPE}'
                                 sh './scripts/test_examples.sh ${BUILD_TYPE}'
                             }
                         }
@@ -131,7 +131,8 @@ pipeline{
                     stages {
                         stage('env') {
                             steps {
-                                sh 'echo $USER'
+                                sh 'whoami'
+                                sh 'echo $PATH'
                                 sh 'uname -a'
                                 sh 'cmake --version'
                                 sh 'clang++ --version'

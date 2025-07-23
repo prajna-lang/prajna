@@ -11,125 +11,112 @@
     <img src="./assets/zmq_server.png" align="left" width="45%">
 </div>
 
-Prajna is a statically-typed, general-purpose programming language developed by Matazure. It features a concise syntax and high runtime performance, aiming to combine the flexibility of Python with the efficiency of C++.
+Prajna is a statically typed general-purpose programming language developed by Xuanqing Matrix. It features concise syntax and efficient execution, aiming to combine Python’s flexibility with C++’s performance advantages.
 
-Prajna supports Just-In-Time (JIT) compilation, allowing cross-platform execution without building standalone binaries. It is compatible with X86, ARM, RISC-V, and other architectures, and has built-in support for GPU parallel computing.
+Prajna supports Just-In-Time compilation (JIT), allowing cross-platform execution without building standalone binaries. It is currently compatible with LLVM ecosystem backends like NVVM and AMD GPU, and has built-in support for GPU parallel computing.
 
-Prajna features a strong static type system, modules and interface mechanisms, automatic resource management (smart pointers and weak references), as well as function pointers and a template system, making it suitable for building a wide range of applications from high-performance computing to system tools.
+Prajna offers a strong static type system, modules and interface mechanisms, and automatic resource management (smart pointers), making it suitable for a wide range of applications from high-performance computing to system tools.
 
 <div>
-    <img src="./assets/bumper.png", width="100%" alt="Bumper">
+    <img src="./assets/bumper.png" width="100%" alt="Bumper">
 </div>
 
-## Key Features
+## Main Features
 
-### Concise and efficient syntax design
+### Concise and Efficient Syntax Design
 
 <div>
     <img src="./assets/stack.png" align="right" width="50%">
 </div>
 
-
-  Prajna draws inspiration from modern programming languages, eliminating redundant syntax while maintaining clear semantics, making it easy to learn and write. It also supports advanced features such as function pointers and template metaprogramming, making it suitable for writing system-level or high-performance code.
+Prajna draws inspiration from modern programming languages, removing redundant syntax while maintaining clear semantics. It is easy to learn and write, suitable for system-level or high-performance code development.
 
 <div>
-  <img src="./assets/bumper.png", width="100%" alt="Bumper">
+    <img src="./assets/bumper.png" width="100%" alt="Bumper">
 </div>
 
-### LLVM backend support
+### LLVM-based Backend
 
-Prajna uses LLVM as its compilation backend to generate efficient native code. It supports multiple architectures (x86, ARM, RISC-V, etc.), meeting the demands of performance-critical applications.
+Prajna uses LLVM as its compilation backend, generating efficient native code. It currently supports LLVM ecosystem backends including NVVM and AMDGPU, fulfilling the needs of performance-critical applications.
 
-#### Benchmark Comparison
+#### Performance Benchmark Comparison
 
 <div>
     <img src="./assets/perf.png" align="left" width="50%">
 </div>
 
-This program measures the GB/s throughput of adding two large 1D integer arrays by timing the element-wise addition of 1e9 `i32` values using Prajna's tensor and clock utilities. [Here](./assets/code/) are the benchmark code for the corresponding language.
-
+This program measures GB/s throughput by timing element-wise addition of two large 1D arrays each containing 1 billion `i32` elements. Benchmark code for each language is available [here](./assets/code/).
 
 | Language | Throughput (GB/s) |
-| -------- | ----------------- |
-| Prajna   | 0.8205            |
-| Python   | 0.5100            |
-| C++      | 0.6016            |
-| Rust     | 0.3300            |
+|----------|-------------------|
+| Prajna   | 0.82              |
+| Python   | 0.05              |
+| C++      | 0.60              |
+| Rust (opt-level=0) | 0.33       |
+| Rust (opt-level=1) | 0.85       |
 
 <div>
-  <img src="./assets/bumper.png", width="100%" alt="Bumper">
+    <img src="./assets/bumper.png" width="100%" alt="Bumper">
 </div>
 
-### Just-In-Time (JIT) compilation
+### Just-In-Time Compilation (JIT)
 
 <div>
     <img src="./assets/jit.gif" align="right" width="50%">
 </div>
 
-Prajna offers runtime JIT capabilities, allowing source code to be executed without building standalone binaries. This is well-suited for interactive development, scripting, and dynamic loading scenarios.
+Prajna supports runtime JIT compilation, enabling execution of source code without building binaries. This is ideal for interactive development, scripting, and dynamic loading, while offering better performance than virtual machines.
 
 <div>
-  <img src="./assets/bumper.png", width="100%" alt="Bumper">
+    <img src="./assets/bumper.png" width="100%" alt="Bumper">
 </div>
 
-### REPL and debugging support
+### REPL and Debugging Support
 
-### Just-In-Time (JIT) compilation
+### Just-In-Time Compilation (JIT)
 
 <div>
     <img src="./assets/repl.gif" align="left" width="50%">
 </div>
 
-
- The language provides an interactive REPL environment for rapid testing and debugging. It also includes debugging assertions and error stack traces to improve development efficiency.
-
-<div>
-  <img src="./assets/bumper.png", width="100%" alt="Bumper">
-</div>
-
-### Modular and interface system
-
-Prajna features native `module` and `interface` constructs for flexible code organization, encapsulation, and reuse. Interfaces support static polymorphism, enabling the construction of type-safe generic libraries.
+The language provides an interactive REPL environment for quick and convenient usage, enhancing interactivity.
 
 <div>
-  <img src="./assets/use.png" width="44%" style="float:left; margin-left: 3%; vertical-align: top;">
-  <img src="./assets/module.png" width="50%" style="float:right; margin-right: 3%; vertical-align: top;">
-  <img src="./assets/bumper.png" width="100%" alt="Bumper">
+    <img src="./assets/bumper.png" width="100%" alt="Bumper">
 </div>
 
-
-### Built-in smart pointer system
+### Built-in Smart Pointer System
 
 <div>
     <img src="./assets/circular_reference.png" align="left" width="35%">
 </div>
 
-The language includes `Ptr<T>` smart pointers and `WeakPtr<T>` weak references to automatically manage resource lifecycles, avoiding memory errors from manual deallocation. It also supports explicit release mechanisms for resource-sensitive scenarios.
+Prajna includes a built-in smart pointer `Ptr<T>`, which manages resource lifetimes automatically, preventing manual release errors. It also supports explicit release mechanisms, suitable for resource-sensitive scenarios.
 
 <div>
-  <img src="./assets/bumper.png", width="100%" alt="Bumper">
+    <img src="./assets/bumper.png" width="100%" alt="Bumper">
 </div>
 
-### GPU Programming Abstraction
+### GPU Programming Abstractions
 
-Prajna supports high-level syntax for declaring GPU kernels using `@kernel` and `@target` annotations, and manages multidimensional arrays on the GPU via a unified `Tensor` type. Thread and block indices are accessed through `::gpu::ThreadIndex()` and `::gpu::BlockIndex()`, offering a CUDA-like parallel structure. Kernel launches use the concise `<|grid, block|>` syntax, which is more streamlined than CUDA's. Prajna enables shared memory via `@shared` variables and provides `BlockSynchronize()` for thread coordination.
+Prajna supports declaring GPU kernel functions directly using `@kernel` and `@target` annotations, managing GPU multi-dimensional arrays uniformly via the `Tensor` type. Thread and block indices can be accessed via `::gpu::ThreadIndex()` and `::gpu::BlockIndex()`, providing a CUDA-like parallel structure. It supports `@shared` variables for shared memory and `BlockSynchronize()` for thread synchronization.
 
 <div>
-  <img src="./assets/gpu1.png" width="44%" style="float:left; margin-left: 3%; vertical-align: top;">
-  <img src="./assets/gpu2.png" width="50%" style="float:right; margin-right: 3%; vertical-align: top;">
-  <img src="./assets/bumper.png" width="100%" alt="Bumper">
+    <img src="./assets/gpu1.png" width="44%" style="float:left; margin-left: 3%; vertical-align: top;">
+    <img src="./assets/gpu2.png" width="50%" style="float:right; margin-right: 3%; vertical-align: top;">
+    <img src="./assets/bumper.png" width="100%" alt="Bumper">
 </div>
 
 ## Documentation
 
-You can refer to the [Prajna Programming Language Guide](./docs/Prajna%20Programming%20Language%20Guide.md) to learn more.
+For more details, please refer to the [Prajna Programming Language Guide](./docs/Prajna%20Programming%20Language%20Guide.md).
 
 ## Usage
 
-Compiled binary programs are available on the release page.
+Precompiled binaries are available for download on the releases page.
 
-You can also directly download a Docker image with Prajna pre-installed to experience it:
+You can also pull a Docker image with Prajna preinstalled to try it out:
+
 ```bash
 docker pull matazure/prajna:0.1.0-cpu-ubuntu20.04
 docker run -ti matazure/prajna:0.1.0-cpu-ubuntu20.04 prajna repl
-```

@@ -23,6 +23,7 @@ func TestKernel(){
 
     var re = gpu::LaunchKernel(bit_cast<function<gpu::Tensor<i64, 1>, i64, void> ,ptr<i8>>(myKernel), GridShape, BlockShape, parameters_ptr);
     test::AssertWithMessage(re == 0, re.ToString());
+    gpu::Synchronize();
 
     host_tensor = gpu_tensor.ToHost();
     test::Assert(host_tensor[0] == 1023);

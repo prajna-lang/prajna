@@ -8,10 +8,6 @@ func GetSockStream() -> i32 {
     return 1i32; // SOCK_STREAM
 }
 
-func GetSockDgram() -> i32 {
-    return 2i32; // SOCK_DGRAM
-}
-
 func CreateSocket(domain: i32, socket_type: i32, protocol: i32) -> i32 {
     return _c::socket(domain, socket_type, protocol);
 }

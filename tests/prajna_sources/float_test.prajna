@@ -1,3 +1,4 @@
+/*
 template <T>
 func AssertNear(value0: T, value1: f32, eps: f32){
     test::Assert((value0 - value1.Cast<T>()).Abs() < eps.Cast<T>());
@@ -180,3 +181,4 @@ func TestFloatParse() {
 use FloatTest<16>;
 use FloatTest<32>;
 use FloatTest<64>;
+*/

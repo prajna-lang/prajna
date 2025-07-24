@@ -1,8 +1,12 @@
-
 #include "prajna/jit/execution_engine.h"
 
 #include <setjmp.h>
 #include <stdio.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <atomic>
@@ -77,6 +81,24 @@ void *__get_symbol(llvm::sys::DynamicLibrary dl, char *symbol_name) {
 
 void __close_dynamic_library(llvm::sys::DynamicLibrary dl) {
     llvm::sys::DynamicLibrary::closeLibrary(dl);
+}
+
+// Socket wrapper functions that accept ptr<u8>
+extern "C" {
+    int connect_u8(int sockfd, const uint8_t* addr, uint32_t addrlen) {
+        return connect(sockfd, (const struct sockaddr*)addr, (socklen_t)addrlen);
+    }
+    
+    int bind_u8(int sockfd, const uint8_t* addr, uint32_t addrlen) {
+        return bind(sockfd, (const struct sockaddr*)addr, (socklen_t)addrlen);
+    }
+    
+    int accept_u8(int sockfd, uint8_t* addr, uint32_t* addrlen) {
+        socklen_t len = *addrlen;
+        int result = accept(sockfd, (struct sockaddr*)addr, &len);
+        *addrlen = (uint32_t)len;
+        return result;
+    }
 }
 
 llvm::ExitOnError exit_on_error;
@@ -259,6 +281,30 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(fflush), "::fs::_c::fflush");
     this->BindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
     this->BindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
+
+    // Network socket functions
+    this->BindCFunction(reinterpret_cast<void *>(socket), "::net::_c::socket");
+    this->BindCFunction(reinterpret_cast<void *>(bind), "::net::_c::bind");
+    this->BindCFunction(reinterpret_cast<void *>(listen), "::net::_c::listen");
+    this->BindCFunction(reinterpret_cast<void *>(accept), "::net::_c::accept");
+    this->BindCFunction(reinterpret_cast<void *>(connect), "::net::_c::connect");
+    this->BindCFunction(reinterpret_cast<void *>(recv), "::net::_c::recv");
+    this->BindCFunction(reinterpret_cast<void *>(send), "::net::_c::send");
+    this->BindCFunction(reinterpret_cast<void *>(close), "::net::_c::close");
+    this->BindCFunction(reinterpret_cast<void *>(setsockopt), "::net::_c::setsockopt");
+    this->BindCFunction(reinterpret_cast<void *>(getsockopt), "::net::_c::getsockopt");
+    this->BindCFunction(reinterpret_cast<void *>(shutdown), "::net::_c::shutdown");
+    
+    // Network byte order functions
+    this->BindCFunction(reinterpret_cast<void *>(htons), "::net::_c::htons");
+    this->BindCFunction(reinterpret_cast<void *>(htonl), "::net::_c::htonl");
+    this->BindCFunction(reinterpret_cast<void *>(ntohl), "::net::_c::ntohl");
+    this->BindCFunction(reinterpret_cast<void *>(ntohs), "::net::_c::ntohs");
+    
+    // Socket wrapper functions that accept ptr<u8>
+    this->BindCFunction(reinterpret_cast<void *>(connect_u8), "::net::_c::connect_u8");
+    this->BindCFunction(reinterpret_cast<void *>(bind_u8), "::net::_c::bind_u8");
+    this->BindCFunction(reinterpret_cast<void *>(accept_u8), "::net::_c::accept_u8");
 
     this->BindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
     this->BindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");

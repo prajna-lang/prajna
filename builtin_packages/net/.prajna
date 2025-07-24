@@ -1,5 +1,5 @@
-#link("libc");
-// Socket address structures (matching C layout)
+use _c;
+
 struct sockaddr_in {
     sin_family: u16;
     sin_port: u16;
@@ -25,25 +25,6 @@ struct timeval {
     tv_sec: i64;
     tv_usec: i64;
 }
-
-// External C socket functions
-@extern func socket(domain: i32, type: i32, protocol: i32) -> i32;
-@extern func bind(sockfd: i32, addr: ptr<sockaddr>, addrlen: u32) -> i32;
-@extern func listen(sockfd: i32, backlog: i32) -> i32;
-@extern func accept(sockfd: i32, addr: ptr<sockaddr>, addrlen: ptr<u32>) -> i32;
-@extern func connect(sockfd: i32, addr: ptr<sockaddr>, addrlen: u32) -> i32;
-@extern func recv(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
-@extern func send(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
-@extern func close(fd: i32) -> i32;
-@extern func setsockopt(sockfd: i32, level: i32, optname: i32, optval: ptr<undef>, optlen: u32) -> i32;
-@extern func getsockopt(sockfd: i32, level: i32, optname: i32, optval: ptr<undef>, optlen: ptr<u32>) -> i32;
-@extern func shutdown(sockfd: i32, how: i32) -> i32;
-
-// Network byte order conversion functions
-@extern func htons(hostshort: u16) -> u16;
-@extern func htonl(hostlong: u32) -> u32;
-@extern func ntohl(netlong: u32) -> u32;
-@extern func ntohs(netshort: u16) -> u16;
 
 // Result type for network operations
 template <T>
@@ -145,10 +126,8 @@ implement Ipv4Addr {
     }
     
     func ToNetworkU32() -> u32 {
-        // Simplified byte order conversion using division instead of bit shifting
         var host_order = this.ToU32();
         
-        // Extract bytes using division and modulo operations
         var byte0 = host_order % 256u32;
         var byte1 = (host_order / 256u32) % 256u32;
         var byte2 = (host_order / 65536u32) % 256u32;
@@ -210,70 +189,6 @@ implement Ipv4Addr {
     }
 }
 
-// IPv6 address representation
-struct Ipv6Addr {
-    segments: array<u16, 8>;
-}
-
-implement Ipv6Addr {
-    @static
-    func Localhost() -> Ipv6Addr {
-        var addr: Ipv6Addr;
-        // ::1
-        addr.segments[0] = 0u16;
-        addr.segments[1] = 0u16;
-        addr.segments[2] = 0u16;
-        addr.segments[3] = 0u16;
-        addr.segments[4] = 0u16;
-        addr.segments[5] = 0u16;
-        addr.segments[6] = 0u16;
-        addr.segments[7] = 1u16;
-        return addr;
-    }
-    
-    @static
-    func Unspecified() -> Ipv6Addr {
-        var addr: Ipv6Addr;
-        // ::
-        var i = 0i64;
-        while (i < 8i64) {
-            addr.segments[i] = 0u16;
-            i = i + 1i64;
-        }
-        return addr;
-    }
-    
-    func ToString() -> String {
-        var result = "";
-        var i = 0i64;
-        while (i < 8i64) {
-            if (i > 0i64) {
-                result = result + ":";
-            }
-            // Convert u16 to hex string (simplified)
-            var segment = this.segments[i];
-            if (segment == 0u16) {
-                result = result + "0";
-            } else {
-                result = result + segment.ToString();
-            }
-            i = i + 1i64;
-        }
-        return result;
-    }
-    
-    func IsLoopback() -> bool {
-        var i = 0i64;
-        while (i < 7i64) {
-            if (this.segments[i] != 0u16) {
-                return false;
-            }
-            i = i + 1i64;
-        }
-        return this.segments[7] == 1u16;
-    }
-}
-
 // Socket address types
 struct SocketAddrV4 {
     ip: Ipv4Addr;
@@ -291,7 +206,6 @@ implement SocketAddrV4 {
     
     @static
     func FromString(addr_str: String) -> NetResult<SocketAddrV4> {
-        // Simplified implementation - just return a default address
         var ip = Ipv4Addr::Create(192u8, 168u8, 1u8, 100u8);
         var port = 8080u16;
         var addr = SocketAddrV4::Create(ip, port);
@@ -308,47 +222,6 @@ implement SocketAddrV4 {
     
     func ToString() -> String {
         return this.ip.ToString() + ":" + this.port.ToString();
-    }
-    
-    func ToSockaddrIn() -> String {
-        // Simplified version returns string representation
-        return this.ToString();
-    }
-    
-    @static
-    func FromSockaddrIn(addr: String) -> SocketAddrV4 {
-        // Simplified implementation
-        var ip = Ipv4Addr::Create(192u8, 168u8, 1u8, 1u8);
-        var port = 80u16;
-        return SocketAddrV4::Create(ip, port);
-    }
-}
-
-struct SocketAddrV6 {
-    ip: Ipv6Addr;
-    port: u16;
-    flowinfo: u32;
-    scope_id: u32;
-}
-
-implement SocketAddrV6 {
-    @static
-    func Create(ip: Ipv6Addr, port: u16) -> SocketAddrV6 {
-        var addr: SocketAddrV6;
-        addr.ip = ip;
-        addr.port = port;
-        addr.flowinfo = 0u32;
-        addr.scope_id = 0u32;
-        return addr;
-    }
-    
-    func ToSockaddrIn6() -> String {
-        // Simplified version returns string representation
-        return "[" + this.ip.ToString() + "]:" + this.port.ToString();
-    }
-    
-    func ToString() -> String {
-        return "[" + this.ip.ToString() + "]:" + this.port.ToString();
     }
 }
 
@@ -485,17 +358,10 @@ implement Duration {
     }
 }
 
-// Error handling utilities
-func GetLastError() -> i32 {
-    // This would typically use errno, but we'll use a placeholder
-    return -1i32;
-}
-
 func ErrorToString(error_code: i32) -> String {
     return "Unknown error: " + error_code.ToString();
 }
 
-// Top-level networking functions for easy access
 func CreateIpv4Addr(a: u8, b: u8, c: u8, d: u8) -> Ipv4Addr {
     return Ipv4Addr::Create(a, b, c, d);
 }
@@ -503,10 +369,6 @@ func CreateIpv4Addr(a: u8, b: u8, c: u8, d: u8) -> Ipv4Addr {
 // C library constant access functions
 func GetAfInet() -> i32 {
     return 2i32; // AF_INET
-}
-
-func GetAfInet6() -> i32 {
-    return 10i32; // AF_INET6
 }
 
 func GetSockStream() -> i32 {
@@ -519,64 +381,64 @@ func GetSockDgram() -> i32 {
 
 // C library socket functions
 func CreateSocket(domain: i32, socket_type: i32, protocol: i32) -> i32 {
-    return socket(domain, socket_type, protocol);
+    return _c::socket(domain, socket_type, protocol);
 }
 
 func CloseSocket(sockfd: i32) -> i32 {
-    return close(sockfd);
+    return _c::close(sockfd);
 }
 
-func BindSocket(sockfd: i32, addr: ptr<sockaddr>, addrlen: u32) -> i32 {
-    return bind(sockfd, addr, addrlen);
-}
+// func BindSocket(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32 {
+//     return _c::bind(sockfd, addr, addrlen);
+// }
 
 func ListenSocket(sockfd: i32, backlog: i32) -> i32 {
-    return listen(sockfd, backlog);
+    return _c::listen(sockfd, backlog);
 }
 
-func AcceptSocket(sockfd: i32, addr: ptr<sockaddr>, addrlen: ptr<u32>) -> i32 {
-    return accept(sockfd, addr, addrlen);
-}
+// func AcceptSocket(sockfd: i32, addr: ptr<undef>, addrlen: ptr<u32>) -> i32 {
+//     return _c::accept(sockfd, addr, addrlen);
+// }
 
-func ConnectSocket(sockfd: i32, addr: ptr<sockaddr>, addrlen: u32) -> i32 {
-    return connect(sockfd, addr, addrlen);
-}
+// func ConnectSocket(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32 {
+//     return _c::connect(sockfd, addr, addrlen);
+// }
 
 func ReceiveData(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64 {
-    return recv(sockfd, buf, len, flags);
+    return _c::recv(sockfd, buf, len, flags);
 }
 
 func SendData(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64 {
-    return send(sockfd, buf, len, flags);
+    return _c::send(sockfd, buf, len, flags);
 }
 
 func SetSocketOption(sockfd: i32, level: i32, optname: i32, optval: ptr<undef>, optlen: u32) -> i32 {
-    return setsockopt(sockfd, level, optname, optval, optlen);
+    return _c::setsockopt(sockfd, level, optname, optval, optlen);
 }
 
 func GetSocketOption(sockfd: i32, level: i32, optname: i32, optval: ptr<undef>, optlen: ptr<u32>) -> i32 {
-    return getsockopt(sockfd, level, optname, optval, optlen);
+    return _c::getsockopt(sockfd, level, optname, optval, optlen);
 }
 
 func ShutdownSocket(sockfd: i32, how: i32) -> i32 {
-    return shutdown(sockfd, how);
+    return _c::shutdown(sockfd, how);
 }
 
 // Network byte order conversion functions
 func HostToNetworkShort(hostshort: u16) -> u16 {
-    return htons(hostshort);
+    return _c::htons(hostshort);
 }
 
 func HostToNetworkLong(hostlong: u32) -> u32 {
-    return htonl(hostlong);
+    return _c::htonl(hostlong);
 }
 
 func NetworkToHostLong(netlong: u32) -> u32 {
-    return ntohl(netlong);
+    return _c::ntohl(netlong);
 }
 
 func NetworkToHostShort(netshort: u16) -> u16 {
-    return ntohs(netshort);
+    return _c::ntohs(netshort);
 }
 
 func CreateLocalhost() -> Ipv4Addr {
@@ -615,20 +477,8 @@ func ConvertIpToU32(addr: Ipv4Addr) -> u32 {
     return addr.ToU32();
 }
 
-func IsValidIpv4Octet(value: u8) -> bool {
-    return true; // u8 values are always valid for IPv4 octets
-}
-
 func CreateSocketAddrV4(ip: Ipv4Addr, port: u16) -> SocketAddrV4 {
     return SocketAddrV4::Create(ip, port);
-}
-
-func CreateIpv6Localhost() -> Ipv6Addr {
-    return Ipv6Addr::Localhost();
-}
-
-func CreateIpv6Unspecified() -> Ipv6Addr {
-    return Ipv6Addr::Unspecified();
 }
 
 func CreateDurationFromSeconds(secs: i64) -> Duration {
@@ -639,7 +489,7 @@ func CreateDurationFromMilliseconds(millis: i64) -> Duration {
     return Duration::FromMilliseconds(millis);
 }
 
-// Additional protocol and networking utility functions
+
 func GetTcpProtocol() -> ProtocolType {
     return ProtocolType::Tcp();
 }
@@ -664,27 +514,6 @@ func FormatSocketAddrV4(addr: SocketAddrV4) -> String {
     return addr.ToString();
 }
 
-func CreateSocketAddrV6(ip: Ipv6Addr, port: u16) -> SocketAddrV6 {
-    return SocketAddrV6::Create(ip, port);
-}
-
-func FormatIpv6Address(addr: Ipv6Addr) -> String {
-    return addr.ToString();
-}
-
-func IsLoopbackIpv6(addr: Ipv6Addr) -> bool {
-    // Check if it's ::1
-    var is_localhost = true;
-    var i = 0i64;
-    while (i < 7i64) {
-        if (addr.segments[i] != 0u16) {
-            is_localhost = false;
-        }
-        i = i + 1i64;
-    }
-    return is_localhost && (addr.segments[7] == 1u16);
-}
-
 // Network validation functions
 func IsValidPort(port: u16) -> bool {
     return port > 0u16;
@@ -698,32 +527,6 @@ func IsWellKnownPort(port: u16) -> bool {
     return port > 0u16 && port < 1024u16;
 }
 
-// Network utility functions for common operations
-func CreateHttpAddress(ip: Ipv4Addr) -> SocketAddrV4 {
-    return SocketAddrV4::Create(ip, 80u16);
-}
-
-func CreateHttpsAddress(ip: Ipv4Addr) -> SocketAddrV4 {
-    return SocketAddrV4::Create(ip, 443u16);
-}
-
-func CreateSshAddress(ip: Ipv4Addr) -> SocketAddrV4 {
-    return SocketAddrV4::Create(ip, 22u16);
-}
-
-func CreateFtpAddress(ip: Ipv4Addr) -> SocketAddrV4 {
-    return SocketAddrV4::Create(ip, 21u16);
-}
-
-func CreateSmtpAddress(ip: Ipv4Addr) -> SocketAddrV4 {
-    return SocketAddrV4::Create(ip, 25u16);
-}
-
-func CreateDnsAddress(ip: Ipv4Addr) -> SocketAddrV4 {
-    return SocketAddrV4::Create(ip, 53u16);
-}
-
-// Error handling helpers
 func IsNetworkError(error_code: i32) -> bool {
     return error_code < 0i32;
 }
@@ -738,31 +541,56 @@ func CreateNetworkError(error_code: i32) -> NetResult<T> {
     return NetResult<T>::Error(error_code);
 }
 
-func GetDefaultGateway() -> Ipv4Addr {
-    return Ipv4Addr::Create(192u8, 168u8, 1u8, 1u8); // Common default gateway
+// Helper functions for socket address handling
+func CreateSocketAddrIn(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> array<u8, 16> {
+    var addr_buffer: array<u8, 16>;
+    
+    // Set AF_INET (2 in little endian)
+    addr_buffer[0] = 2u8;
+    addr_buffer[1] = 0u8;
+    
+    // Set port in network byte order
+    var port_network = HostToNetworkShort(port);
+    var port_low = cast<u16, u8>(port_network % 256u16);
+    var port_high = cast<u16, u8>(port_network / 256u16);
+    addr_buffer[2] = port_low;
+    addr_buffer[3] = port_high;
+    
+    // Set IP address (already in correct byte order for IPv4)
+    addr_buffer[4] = ip_a;
+    addr_buffer[5] = ip_b;
+    addr_buffer[6] = ip_c;
+    addr_buffer[7] = ip_d;
+    
+    // Set sin_zero to all zeros
+    addr_buffer[8] = 0u8;
+    addr_buffer[9] = 0u8;
+    addr_buffer[10] = 0u8;
+    addr_buffer[11] = 0u8;
+    addr_buffer[12] = 0u8;
+    addr_buffer[13] = 0u8;
+    addr_buffer[14] = 0u8;
+    addr_buffer[15] = 0u8;
+    
+    return addr_buffer;
 }
 
-func GetDnsServers() -> array<Ipv4Addr, 2> {
-    var servers: array<Ipv4Addr, 2>;
-    servers[0] = Ipv4Addr::Create(8u8, 8u8, 8u8, 8u8);      // Google DNS
-    servers[1] = Ipv4Addr::Create(1u8, 1u8, 1u8, 1u8);      // Cloudflare DNS
-    return servers;
+func ConnectToAddress(sockfd: i32, ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> i32 {
+    var addr_buffer = CreateSocketAddrIn(ip_a, ip_b, ip_c, ip_d, port);
+    var addr_ptr = &addr_buffer[0];
+    
+    // Use the wrapper function that accepts ptr<u8>
+    return _c::connect_u8(sockfd, addr_ptr, 16u32);
 }
 
-func IsValidIpv4String(ip_str: String) -> bool {
-    // Simple validation - count dots
-    var dot_count = 0i32;
-    var i = 0i64;
-    while (i < ip_str.Length()) {
-        if (ip_str[i] == '.') {
-            dot_count = dot_count + 1i32;
-        }
-        i = i + 1i64;
-    }
-    return dot_count == 3i32;
+func BindToAddress(sockfd: i32, ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> i32 {
+    var addr_buffer = CreateSocketAddrIn(ip_a, ip_b, ip_c, ip_d, port);
+    var addr_ptr = &addr_buffer[0];
+    
+    // Use the wrapper function that accepts ptr<u8>
+    return _c::bind_u8(sockfd, addr_ptr, 16u32);
 }
 
-func IsValidPortString(port_str: String) -> bool {
-    // Simplified validation - assume all strings are valid ports
-    return port_str.Length() > 0i64;
+func AcceptConnection(sockfd: i32, addr_buffer: ptr<u8>, addrlen: ptr<u32>) -> i32 {
+    return _c::accept_u8(sockfd, addr_buffer, addrlen);
 }

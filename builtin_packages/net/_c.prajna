@@ -2,21 +2,16 @@
 
 // Socket functions
 func socket(domain: i32, type: i32, protocol: i32) -> i32;
-// func bind(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32;
+func bind(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32;
 func listen(sockfd: i32, backlog: i32) -> i32;
-// func accept(sockfd: i32, addr: ptr<undef>, addrlen: ptr<u32>) -> i32;
-// func connect(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32;
+func accept(sockfd: i32, addr: ptr<undef>, addrlen: ptr<u32>) -> i32;
+func connect(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32;
 func recv(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
 func send(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
 func close(fd: i32) -> i32;
 func setsockopt(sockfd: i32, level: i32, optname: i32, optval: ptr<undef>, optlen: u32) -> i32;
 func getsockopt(sockfd: i32, level: i32, optname: i32, optval: ptr<undef>, optlen: ptr<u32>) -> i32;
 func shutdown(sockfd: i32, how: i32) -> i32;
-
-// Socket functions that accept ptr<u8> 
-func connect_u8(sockfd: i32, addr: ptr<u8>, addrlen: u32) -> i32;
-func bind_u8(sockfd: i32, addr: ptr<u8>, addrlen: u32) -> i32;
-func accept_u8(sockfd: i32, addr: ptr<u8>, addrlen: ptr<u32>) -> i32;
 
 // Network byte order conversion functions
 func htons(hostshort: u16) -> u16;

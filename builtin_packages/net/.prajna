@@ -72,17 +72,19 @@ func CreateSocketAddrIn(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> ar
 func ConnectToAddress(sockfd: i32, ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> i32 {
     var addr_buffer = CreateSocketAddrIn(ip_a, ip_b, ip_c, ip_d, port);
     var addr_ptr = &addr_buffer[0];
-    
-    return _c::connect_u8(sockfd, addr_ptr, 16u32);
+    var addr_ptr_undef: ptr<undef> = bit_cast<ptr<u8>, ptr<undef>>(addr_ptr);
+    return _c::connect(sockfd, addr_ptr_undef, 16u32);
 }
 
 func BindToAddress(sockfd: i32, ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> i32 {
     var addr_buffer = CreateSocketAddrIn(ip_a, ip_b, ip_c, ip_d, port);
     var addr_ptr = &addr_buffer[0];
+    var addr_ptr_undef: ptr<undef> = bit_cast<ptr<u8>, ptr<undef>>(addr_ptr);
 
-    return _c::bind_u8(sockfd, addr_ptr, 16u32);
+    return _c::bind(sockfd, addr_ptr_undef, 16u32);
 }
 
 func AcceptConnection(sockfd: i32, addr_buffer: ptr<u8>, addrlen: ptr<u32>) -> i32 {
-    return _c::accept_u8(sockfd, addr_buffer, addrlen);
+    var addr_ptr_undef: ptr<undef> = bit_cast<ptr<u8>, ptr<undef>>(addr_buffer);
+    return _c::accept(sockfd, addr_ptr_undef, addrlen);
 }

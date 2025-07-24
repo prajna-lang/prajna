@@ -83,24 +83,6 @@ void __close_dynamic_library(llvm::sys::DynamicLibrary dl) {
     llvm::sys::DynamicLibrary::closeLibrary(dl);
 }
 
-// Socket wrapper functions that accept ptr<u8>
-extern "C" {
-    int connect_u8(int sockfd, const uint8_t* addr, uint32_t addrlen) {
-        return connect(sockfd, (const struct sockaddr*)addr, (socklen_t)addrlen);
-    }
-    
-    int bind_u8(int sockfd, const uint8_t* addr, uint32_t addrlen) {
-        return bind(sockfd, (const struct sockaddr*)addr, (socklen_t)addrlen);
-    }
-    
-    int accept_u8(int sockfd, uint8_t* addr, uint32_t* addrlen) {
-        socklen_t len = *addrlen;
-        int result = accept(sockfd, (struct sockaddr*)addr, &len);
-        *addrlen = (uint32_t)len;
-        return result;
-    }
-}
-
 llvm::ExitOnError exit_on_error;
 
 ExecutionEngine::ExecutionEngine() {
@@ -300,11 +282,6 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(htonl), "::net::_c::htonl");
     this->BindCFunction(reinterpret_cast<void *>(ntohl), "::net::_c::ntohl");
     this->BindCFunction(reinterpret_cast<void *>(ntohs), "::net::_c::ntohs");
-    
-    // Socket wrapper functions that accept ptr<u8>
-    this->BindCFunction(reinterpret_cast<void *>(connect_u8), "::net::_c::connect_u8");
-    this->BindCFunction(reinterpret_cast<void *>(bind_u8), "::net::_c::bind_u8");
-    this->BindCFunction(reinterpret_cast<void *>(accept_u8), "::net::_c::accept_u8");
 
     this->BindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
     this->BindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");

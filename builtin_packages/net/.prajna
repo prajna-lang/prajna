@@ -1,40 +1,5 @@
 use _c;
 
-// Basic IPv4 address structure
-struct Ipv4Addr {
-    octets: array<u8, 4>;
-}
-
-implement Ipv4Addr {
-    @static
-    func Create(a: u8, b: u8, c: u8, d: u8) -> Ipv4Addr {
-        var addr: Ipv4Addr;
-        addr.octets[0] = a;
-        addr.octets[1] = b;
-        addr.octets[2] = c;
-        addr.octets[3] = d;
-        return addr;
-    }
-    
-    @static
-    func Localhost() -> Ipv4Addr {
-        return Ipv4Addr::Create(127u8, 0u8, 0u8, 1u8);
-    }
-    
-    func ToString() -> String {
-        var result = "";
-        result = result + this.octets[0].ToString();
-        result = result + ".";
-        result = result + this.octets[1].ToString();
-        result = result + ".";
-        result = result + this.octets[2].ToString();
-        result = result + ".";
-        result = result + this.octets[3].ToString();
-        return result;
-    }
-}
-
-// Network constants
 func GetAfInet() -> i32 {
     return 2i32; // AF_INET
 }
@@ -47,7 +12,6 @@ func GetSockDgram() -> i32 {
     return 2i32; // SOCK_DGRAM
 }
 
-// Basic socket functions
 func CreateSocket(domain: i32, socket_type: i32, protocol: i32) -> i32 {
     return _c::socket(domain, socket_type, protocol);
 }
@@ -68,7 +32,6 @@ func SendData(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64 {
     return _c::send(sockfd, buf, len, flags);
 }
 
-// Network byte order conversion
 func HostToNetworkShort(hostshort: u16) -> u16 {
     return _c::htons(hostshort);
 }
@@ -77,7 +40,6 @@ func NetworkToHostShort(netshort: u16) -> u16 {
     return _c::ntohs(netshort);
 }
 
-// Helper functions for socket address handling
 func CreateSocketAddrIn(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> array<u8, 16> {
     var addr_buffer: array<u8, 16>;
     

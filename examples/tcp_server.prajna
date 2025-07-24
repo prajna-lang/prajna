@@ -1,5 +1,3 @@
-// TCP Server Example - Listens for connections and echoes messages
-// Usage: Run this server first, then run tcp_client.prajna
 use net;
 
 func Main() {
@@ -14,9 +12,9 @@ func Main() {
     
     ("Server socket created: " + server_fd.ToString()).PrintLine();
     
-    // Bind server to localhost:8888
-    "Binding server to 0.0.0.0:8888...".PrintLine();
-    var bind_result = net::BindToAddress(server_fd, 0u8, 0u8, 0u8, 0u8, 8888u16);
+    // Bind server to localhost:8889
+    "Binding server to 0.0.0.0:8889...".PrintLine();
+    var bind_result = net::BindToAddress(server_fd, 0u8, 0u8, 0u8, 0u8, 8889u16);
     
     if (bind_result != 0i32) {
         "Failed to bind server socket".PrintLine();
@@ -26,7 +24,6 @@ func Main() {
     
     "Server bound successfully".PrintLine();
     
-    // Listen for connections
     var listen_result = net::ListenSocket(server_fd, 5i32); // backlog = 5
     if (listen_result != 0i32) {
         "Failed to listen on server socket".PrintLine();
@@ -34,11 +31,10 @@ func Main() {
         return;
     }
     
-    "Server listening on 0.0.0.0:8888".PrintLine();
+    "Server listening on 0.0.0.0:8889".PrintLine();
     "Waiting for client connections...".PrintLine();
-    "You can now run: tcp_client".PrintLine();
     
-    // Accept client connections (simplified - accept one client)
+    // Accept client connections (accept one client)
     var client_addr: array<u8, 16>;
     var client_addr_ptr = &client_addr[0];
     var addr_len = 16u32;
@@ -59,11 +55,15 @@ func Main() {
         if (bytes_received > 0i64) {
             "Client message (raw bytes):".PrintLine();
             var i = 0i64;
+            var line = "";
             while (i < bytes_received && i < 30i64) {
-                var byte_val = receive_buffer[i];
-                ("  Byte[" + i.ToString() + "] = " + byte_val.ToString()).PrintLine();
+                line = line + ("receive_buffer[i].ToString() + " ");
                 i = i + 1i64;
+                if (i < bytes_received && i < 30i64) {
+                    line = line + ", ";
+                }
             }
+            line.PrintLine();
             
             // Send echo response
             var response_buffer: array<u8, 64>;

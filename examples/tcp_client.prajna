@@ -1,5 +1,3 @@
-// TCP Client Example - Connects to a server and sends messages
-// Usage: Run tcp_server.prajna first, then run this client
 use net;
 
 func Main() {
@@ -73,13 +71,16 @@ func Main() {
         ("Received " + bytes_received.ToString() + " bytes from server").PrintLine();
         
         if (bytes_received > 0i64) {
-            "Server response (raw bytes):".PrintLine();
+            var resp_line = "";
             var i = 0i64;
-            while (i < bytes_received && i < 20i64) {
-                var byte_val = response_buffer[i];
-                ("  Byte[" + i.ToString() + "] = " + byte_val.ToString()).PrintLine();
+            while (i < bytes_received) {
+                resp_line = resp_line + response_buffer[i].ToString();
+                if (i + 1i64 < bytes_received) {
+                    resp_line = resp_line + " ";
+                }
                 i = i + 1i64;
             }
+            ("Server response bytes: " + resp_line).PrintLine();
         }
     }
     

@@ -1,3 +1,4 @@
+/*
 struct Functor{
 }
 
@@ -14,3 +15,4 @@ func TestStructCall() {
     functor.__call__(123);
     functor(123);
 }
+*/

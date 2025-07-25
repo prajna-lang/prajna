@@ -1,16 +1,15 @@
 use net::_c;
-use test;
 
 func Main() {
     var client_fd = net::_c::socket(2i32, 1i32, 6i32);
-    test::Assert(client_fd >= 0i32);
+    debug::Assert(client_fd >= 0i32);
 
     var server_addr: array<u8, 16> = net::_c::CreateSocketAddrIn(127u8, 0u8, 0u8, 1u8, 8887u16);
     var server_addr_ptr = &server_addr[0];
     var server_addr_ptr_undef = bit_cast<ptr<u8>, ptr<undef>>(server_addr_ptr);
     
     var connect_result = net::_c::connect(client_fd, server_addr_ptr_undef, 16u32);
-    test::Assert(connect_result == 0i32);
+    debug::Assert(connect_result == 0i32);
     
     "Connected to server successfully!".PrintLine();
     
@@ -25,14 +24,14 @@ func Main() {
 
     "Sending message: 72 101 to server...".PrintLine();
     var bytes_sent = net::_c::send(client_fd, message_ptr, message_len, 0i32);
-    test::Assert(bytes_sent > 0i64);
+    debug::Assert(bytes_sent > 0i64);
     
     // Receive echo response from server
     var response_buffer: array<u8, 1024>;
     var response_ptr = &response_buffer[0];
     var bytes_received = net::_c::recv(client_fd, response_ptr, 1024i64, 0i32);
     
-    test::Assert(bytes_received > 0i64);
+    debug::Assert(bytes_received > 0i64);
     ("Received " + bytes_received.ToString() + " bytes from server").PrintLine();
     "Server response (raw bytes):".PrintLine();
     
@@ -48,6 +47,6 @@ func Main() {
     line.PrintLine();
     
     var close_result = net::_c::close(client_fd);
-    test::Assert(close_result == 0i32);
+    debug::Assert(close_result == 0i32);
 }
 

@@ -1,10 +1,9 @@
 use net::_c;
-use test;
 
 func Main() {
     
     var server_fd = net::_c::socket(2i32, 1i32, 6i32);
-    test::Assert(server_fd >= 0i32);
+    debug::Assert(server_fd >= 0i32);
     
     var addr_buffer: array<u8, 16> = net::_c::CreateSocketAddrIn(0u8, 0u8, 0u8, 0u8, 8887u16);
     var addr_ptr = &addr_buffer[0];
@@ -12,10 +11,10 @@ func Main() {
     
     ("Server socket created: " + server_fd.ToString()).PrintLine();
     var bind_result = net::_c::bind(server_fd, addr_ptr_undef, 16u32);
-    test::Assert(bind_result == 0i32);
+    debug::Assert(bind_result == 0i32);
     
     var listen_result = net::_c::listen(server_fd, 5i32); // backlog = 5
-    test::Assert(listen_result == 0i32);
+    debug::Assert(listen_result == 0i32);
     
     "Server listening on 0.0.0.0:8887".PrintLine();
     
@@ -26,7 +25,7 @@ func Main() {
     var addr_len_ptr = &addr_len;
     
     var client_fd = net::_c::accept(server_fd, client_addr_ptr_undef, addr_len_ptr);
-    test::Assert(client_fd >= 0i32);
+    debug::Assert(client_fd >= 0i32);
     
     ("Client connected! Client FD: " + client_fd.ToString()).PrintLine();
     
@@ -35,7 +34,7 @@ func Main() {
     var receive_ptr = &receive_buffer[0];
     var bytes_received = net::_c::recv(client_fd, receive_ptr, 1024i64, 0i32);
     
-    test::Assert(bytes_received > 0i64);
+    debug::Assert(bytes_received > 0i64);
     "Client message (received raw bytes):".PrintLine();
     var i = 0i64;
     var line = "";
@@ -57,13 +56,13 @@ func Main() {
     var response_len = bytes_received; // Echo back the same length
     
     var bytes_sent = net::_c::send(client_fd, response_ptr, response_len, 0i32);
-    test::Assert(bytes_sent > 0i64);
+    debug::Assert(bytes_sent > 0i64);
     
     // Close client connection
     var close_client_result = net::_c::close(client_fd);
-    test::Assert(close_client_result == 0i32);
+    debug::Assert(close_client_result == 0i32);
     
     // Close server socket
     var close_server_result = net::_c::close(server_fd);
-    test::Assert(close_server_result == 0i32);
+    debug::Assert(close_server_result == 0i32);
 }

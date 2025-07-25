@@ -5,12 +5,11 @@ func Main() {
     var server_fd = net::_c::socket(2i32, 1i32, 6i32);
     debug::Assert(server_fd >= 0i32);
     
-    var addr_buffer: array<u8, 16> = net::_c::CreateSocketAddrIn(0u8, 0u8, 0u8, 0u8, 8887u16);
-    var addr_ptr = &addr_buffer[0];
-    var addr_ptr_undef = bit_cast<ptr<u8>, ptr<undef>>(addr_ptr);
+    var server_addr = net::_c::CreateSocketAddrIn(0u8, 0u8, 0u8, 0u8, 8887u16);
+    var server_addr_ptr = &server_addr;
     
     ("Server socket created: " + server_fd.ToString()).PrintLine();
-    var bind_result = net::_c::bind(server_fd, addr_ptr_undef, 16u32);
+    var bind_result = net::_c::bind(server_fd, server_addr_ptr, 16u32);
     debug::Assert(bind_result == 0i32);
     
     var listen_result = net::_c::listen(server_fd, 5i32); // backlog = 5
@@ -18,13 +17,12 @@ func Main() {
     
     "Server listening on 0.0.0.0:8887".PrintLine();
     
-    var client_addr: array<u8, 16>;
-    var client_addr_ptr = &client_addr[0];
-    var client_addr_ptr_undef = bit_cast<ptr<u8>, ptr<undef>>(client_addr_ptr);
+    var client_addr: net::_c::SocketAddrIn;
+    var client_addr_ptr = &client_addr;
     var addr_len = 16u32;
     var addr_len_ptr = &addr_len;
     
-    var client_fd = net::_c::accept(server_fd, client_addr_ptr_undef, addr_len_ptr);
+    var client_fd = net::_c::accept(server_fd, client_addr_ptr, addr_len_ptr);
     debug::Assert(client_fd >= 0i32);
     
     ("Client connected! Client FD: " + client_fd.ToString()).PrintLine();
@@ -39,7 +37,7 @@ func Main() {
     var i = 0i64;
     var line = "";
     while (i < bytes_received && i < 30i64) {
-        line = line + receive_buffer[i].ToString() + " ";
+        line = line + receive_buffer[i].ToString();
         i = i + 1i64;
         if (i < bytes_received && i < 30i64) {
             line = line + ", ";

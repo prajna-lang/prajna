@@ -4,11 +4,10 @@ func Main() {
     var client_fd = net::_c::socket(2i32, 1i32, 6i32);
     debug::Assert(client_fd >= 0i32);
 
-    var server_addr: array<u8, 16> = net::_c::CreateSocketAddrIn(127u8, 0u8, 0u8, 1u8, 8887u16);
-    var server_addr_ptr = &server_addr[0];
-    var server_addr_ptr_undef = bit_cast<ptr<u8>, ptr<undef>>(server_addr_ptr);
+    var server_addr = net::_c::CreateSocketAddrIn(127u8, 0u8, 0u8, 1u8, 8887u16);
+    var server_addr_ptr = &server_addr;
     
-    var connect_result = net::_c::connect(client_fd, server_addr_ptr_undef, 16u32);
+    var connect_result = net::_c::connect(client_fd, server_addr_ptr, 16u32);
     debug::Assert(connect_result == 0i32);
     
     "Connected to server successfully!".PrintLine();

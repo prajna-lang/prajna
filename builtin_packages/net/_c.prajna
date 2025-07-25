@@ -1,11 +1,18 @@
 // Network C library bindings
 
+struct SocketAddrIn {
+    sin_family: u16;    
+    sin_port: u16;        
+    sin_addr: u32;        
+    sin_zero: array<u8, 8>;
+}
+
 // Socket functions
 func socket(domain: i32, type: i32, protocol: i32) -> i32;
-func bind(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32;
+func bind(sockfd: i32, addr: ptr<SocketAddrIn>, addrlen: u32) -> i32;
 func listen(sockfd: i32, backlog: i32) -> i32;
-func accept(sockfd: i32, addr: ptr<undef>, addrlen: ptr<u32>) -> i32;
-func connect(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32;
+func accept(sockfd: i32, addr: ptr<SocketAddrIn>, addrlen: ptr<u32>) -> i32;
+func connect(sockfd: i32, addr: ptr<SocketAddrIn>, addrlen: u32) -> i32;
 func recv(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
 func send(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
 func close(fd: i32) -> i32;
@@ -13,34 +20,23 @@ func close(fd: i32) -> i32;
 // Network byte order conversion functions
 func htons(hostshort: u16) -> u16;
 
-func CreateSocketAddrIn(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> array<u8, 16> {
-    var addr_buffer: array<u8, 16>;
+func CreateSocketAddrIn(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> SocketAddrIn {
+    var addr: SocketAddrIn;
     
-    addr_buffer[0] = 2u8;
-    addr_buffer[1] = 0u8;
+    addr.sin_family = 2u16;  // AF_INET
+    addr.sin_port = htons(port);
     
-    // Set port in network byte order
-    var port_network = htons(port);
-    var port_low = cast<u16, u8>(port_network % 256u16);
-    var port_high = cast<u16, u8>(port_network / 256u16);
-    addr_buffer[2] = port_low;
-    addr_buffer[3] = port_high;
+    var ip_addr = cast<u8, u32>(ip_a) + 
+                  cast<u8, u32>(ip_b) * 256u32 + 
+                  cast<u8, u32>(ip_c) * 256u32 * 256u32 + 
+                  cast<u8, u32>(ip_d) * 256u32 * 256u32 * 256u32;
+    addr.sin_addr = ip_addr;
     
-    // Set IP address
-    addr_buffer[4] = ip_a;
-    addr_buffer[5] = ip_b;
-    addr_buffer[6] = ip_c;
-    addr_buffer[7] = ip_d;
+    var i = 0i64;
+    while (i < 8i64) {
+        addr.sin_zero[i] = 0u8;
+        i = i + 1i64;
+    }
     
-    // Set sin_zero to all zeros
-    addr_buffer[8] = 0u8;
-    addr_buffer[9] = 0u8;
-    addr_buffer[10] = 0u8;
-    addr_buffer[11] = 0u8;
-    addr_buffer[12] = 0u8;
-    addr_buffer[13] = 0u8;
-    addr_buffer[14] = 0u8;
-    addr_buffer[15] = 0u8;
-    
-    return addr_buffer;
+    return addr;
 }

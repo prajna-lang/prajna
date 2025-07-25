@@ -8,7 +8,7 @@ func Main() {
         return;
     }
     
-    var addr_buffer: array<u8, 16> = net::_c::CreateSocketAddrIn(0u8, 0u8, 0u8, 0u8, 8889u16);
+    var addr_buffer: array<u8, 16> = net::_c::CreateSocketAddrIn(0u8, 0u8, 0u8, 0u8, 8887u16);
     var addr_ptr = &addr_buffer[0];
     var addr_ptr_undef = bit_cast<ptr<u8>, ptr<undef>>(addr_ptr);
     
@@ -28,7 +28,7 @@ func Main() {
         return;
     }
     
-    "Server listening on 0.0.0.0:8889".PrintLine();
+    "Server listening on 0.0.0.0:8887".PrintLine();
     
     var client_addr: array<u8, 16>;
     var client_addr_ptr = &client_addr[0];

@@ -46,9 +46,10 @@ implement ptr<Type> {
         return !(this == operand);
     }
 
-    func __initialize__() {
-        this = ptr<Type>::Null();
-    }
+    // 这里可能导致Ptr里的歧义, 需要确认和下面没冲突
+    // func __initialize__() {
+    //     this = ptr<Type>::Null();
+    // }
 }
 
 struct ControlBlock{
@@ -70,14 +71,13 @@ implement Ptr<Type>{
         var self: Ptr<Type>;
         self.raw_ptr =  ptr<Type>::Allocate(size);
         self.size = size;
+        self._control_block = ptr<ControlBlock>::New();
+        self._control_block->strong_count = 1;
+        self._control_block->weak_count = 0;
 
         for i in 0 to size {
             initialize<Type>(&self.raw_ptr[i]);
         }
-
-        self._control_block = ptr<ControlBlock>::New();
-        self._control_block->strong_count = 1;
-        self._control_block->weak_count = 0;
 
         return self;
     }
@@ -91,6 +91,8 @@ implement Ptr<Type>{
     func Null()->Ptr<Type>{
         var self: Ptr<Type>;
         self.raw_ptr = ptr<Type>::Null();
+        self.size = 0;
+        self._control_block = ptr<ControlBlock>::Null();
         return self;
     }
 
@@ -103,7 +105,9 @@ implement Ptr<Type>{
         var undef_ptr: Ptr<undef>;
         undef_ptr.raw_ptr = bit_cast<ptr<Type> ,ptr<undef>>(this.raw_ptr);
         undef_ptr._control_block = this._control_block;
-        undef_ptr._control_block->strong_count = undef_ptr._control_block->strong_count + 1;
+        if (undef_ptr._control_block.IsValid()) {
+            undef_ptr._control_block->strong_count = undef_ptr._control_block->strong_count + 1;
+        }
         return undef_ptr;
     }
 
@@ -112,7 +116,9 @@ implement Ptr<Type>{
         var self: Ptr<Type>;
         self.raw_ptr = bit_cast<ptr<undef> ,ptr<Type>>(undef_ptr.raw_ptr);
         self._control_block = undef_ptr._control_block;
-        self._control_block->strong_count = self._control_block->strong_count + 1;
+        if (self._control_block.IsValid()) {
+            self._control_block->strong_count = self._control_block->strong_count + 1;
+        }
         return self;
     }
 
@@ -125,10 +131,16 @@ implement Ptr<Type>{
     }
 
     func ReferenceCount()->i64 {
+        if (this._control_block.IsNull()) {
+            return 0;
+        }
         return this._control_block->strong_count;
     }
 
     func WeakReferenceCount()->i64 {
+        if (this._control_block.IsNull()) {
+            return 0;
+        }
         return this._control_block->weak_count;
     }
 
@@ -161,35 +173,38 @@ implement Ptr<Type>{
 
     func __initialize__() {
         this.raw_ptr = ptr<Type>::Null();
-        // 需要申请, 判断的时候需要用到
         this._control_block = ptr<ControlBlock>::New();
-        this.size = 0;
         this._control_block->strong_count = 1;
         this._control_block->weak_count = 0;
+        this.size = 0;
     }
 
     func __copy__() {
-        this._control_block->strong_count = this._control_block->strong_count + 1;
+        if (this._control_block.IsValid()) {
+            this._control_block->strong_count = this._control_block->strong_count + 1;
+        }
     }
 
     func __finalize__() {
-        this._control_block->strong_count = this._control_block->strong_count - 1;
-        if (this._control_block->strong_count == 0){
-            if (this.IsNull()) {
-                for i in 0 to this.size {
-                    finalize<Type>(&this.raw_ptr[i]);
+        if (this._control_block.IsValid()) {
+            this._control_block->strong_count = this._control_block->strong_count - 1;
+            if (this._control_block->strong_count == 0) {
+                // 先折构，再释放内存
+                if (this.IsValid()) {
+                    for i in 0 to this.size {
+                        finalize<Type>(&this.raw_ptr[i]);
+                    }
+                    this.raw_ptr.Free();
                 }
 
-                this.raw_ptr.Free();
-
-                if (this._control_block->weak_count == 0) {
-                    if (this._control_block.IsValid()) { // 这里有bug, 释放的顺序有问题, 存在二次释放的问题, 回头修复
-                        this._control_block.Free();
-                    }
+                // 如果没有弱引用，也释放控制块
+                if (this._control_block->weak_count <= 0) {
+                    this._control_block.Free();
                 }
             }
-        }
+         }
     }
+
 }
 
 template <Type>
@@ -207,7 +222,9 @@ implement WeakPtr<Type> {
         self.raw_ptr = shared.raw_ptr;
         self.size = shared.size;
         self._control_block = shared._control_block;
-        self._control_block->weak_count = self._control_block->weak_count + 1;
+        if (self._control_block.IsValid()) {
+            self._control_block->weak_count = self._control_block->weak_count + 1;
+        }
         return self;
     }
 
@@ -215,6 +232,8 @@ implement WeakPtr<Type> {
     func Null()->WeakPtr<Type> {
         var self: WeakPtr<Type>;
         self.raw_ptr = ptr<Type>::Null();
+        self.size = 0;
+        self._control_block = ptr<ControlBlock>::Null();
         return self;
     }
 
@@ -227,7 +246,7 @@ implement WeakPtr<Type> {
     }
 
     func Lock()->Ptr<Type> {
-        if ((this._control_block->strong_count == 0) || this.IsNull()) {
+        if (this._control_block.IsNull() || (this._control_block->strong_count == 0) || this.IsNull()) {
             return Ptr<Type>::Null();
         }
 
@@ -240,14 +259,20 @@ implement WeakPtr<Type> {
     }
 
     func IsExpired()->bool {
-        return (this._control_block->strong_count == 0) || this.IsNull();
+        return this._control_block.IsNull() || (this._control_block->strong_count == 0) || this.IsNull();
     }
 
     func ReferenceCount()->i64 {
+        if (this._control_block.IsNull()) {
+            return 0;
+        }
         return this._control_block->strong_count;
     }
 
     func WeakReferenceCount()->i64 {
+        if (this._control_block.IsNull()) {
+            return 0;
+        }
         return this._control_block->weak_count;
     }
 
@@ -280,7 +305,7 @@ implement WeakPtr<Type> {
 
     func __initialize__() {
         this.raw_ptr = ptr<Type>::Null();
-        this._control_block = ptr<ControlBlock>::New();
+        this._control_block = ptr<ControlBlock>::Null();
         this.size = 0;
     }
 

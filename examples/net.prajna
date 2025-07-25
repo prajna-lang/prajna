@@ -1,0 +1,84 @@
+use net::_c;
+
+func Main() {
+    
+    var server_fd = net::_c::socket(2i32, 1i32, 6i32);
+    if (server_fd < 0i32) {
+        "Failed to create server socket".PrintLine();
+        return;
+    }
+    
+    var addr_buffer: array<u8, 16> = net::_c::CreateSocketAddrIn(0u8, 0u8, 0u8, 0u8, 8889u16);
+    var addr_ptr = &addr_buffer[0];
+    var addr_ptr_undef = bit_cast<ptr<u8>, ptr<undef>>(addr_ptr);
+    
+    ("Server socket created: " + server_fd.ToString()).PrintLine();
+    var bind_result = net::_c::bind(server_fd, addr_ptr_undef, 16u32);
+    
+    if (bind_result != 0i32) {
+        "Failed to bind server socket".PrintLine();
+        net::_c::close(server_fd);
+        return;
+    }
+    
+    var listen_result = net::_c::listen(server_fd, 5i32); // backlog = 5
+    if (listen_result != 0i32) {
+        "Failed to listen on server socket".PrintLine();
+        net::_c::close(server_fd);
+        return;
+    }
+    
+    "Server listening on 0.0.0.0:8889".PrintLine();
+    
+    var client_addr: array<u8, 16>;
+    var client_addr_ptr = &client_addr[0];
+    var client_addr_ptr_undef = bit_cast<ptr<u8>, ptr<undef>>(client_addr_ptr);
+    var addr_len = 16u32;
+    var addr_len_ptr = &addr_len;
+    
+    var client_fd = net::_c::accept(server_fd, client_addr_ptr_undef, addr_len_ptr);
+    
+    if (client_fd >= 0i32) {
+        ("Client connected! Client FD: " + client_fd.ToString()).PrintLine();
+        
+        // Receive data from client
+        var receive_buffer: array<u8, 1024>;
+        var receive_ptr = &receive_buffer[0];
+        var bytes_received = net::_c::recv(client_fd, receive_ptr, 1024i64, 0i32);
+        
+        ("Received " + bytes_received.ToString() + " bytes from client").PrintLine();
+        
+        if (bytes_received > 0i64) {
+            "Client message (received raw bytes):".PrintLine();
+            var i = 0i64;
+            var line = "";
+            while (i < bytes_received && i < 30i64) {
+                line = line + receive_buffer[i].ToString() + " ";
+                i = i + 1i64;
+                if (i < bytes_received && i < 30i64) {
+                    line = line + ", ";
+                }
+            }
+            line.PrintLine();
+            
+            // Send echo response
+            var response_buffer: array<u8, 1024>;
+            
+            response_buffer = receive_buffer;
+
+            var response_ptr = &response_buffer[0];
+
+            var response_len = bytes_received; // Echo back the same length
+            
+            var bytes_sent = net::_c::send(client_fd, response_ptr, response_len, 0i32);
+        }
+        
+        // Close client connection
+        var close_client_result = net::_c::close(client_fd);
+    } else {
+        "Failed to accept client connection".PrintLine();
+    }
+    
+    // Close server socket
+    var close_server_result = net::_c::close(server_fd);
+}

@@ -9,12 +9,38 @@ func connect(sockfd: i32, addr: ptr<undef>, addrlen: u32) -> i32;
 func recv(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
 func send(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
 func close(fd: i32) -> i32;
-func setsockopt(sockfd: i32, level: i32, optname: i32, optval: ptr<undef>, optlen: u32) -> i32;
-func getsockopt(sockfd: i32, level: i32, optname: i32, optval: ptr<undef>, optlen: ptr<u32>) -> i32;
-func shutdown(sockfd: i32, how: i32) -> i32;
 
 // Network byte order conversion functions
 func htons(hostshort: u16) -> u16;
-func htonl(hostlong: u32) -> u32;
-func ntohl(netlong: u32) -> u32;
-func ntohs(netshort: u16) -> u16;
+
+func CreateSocketAddrIn(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> array<u8, 16> {
+    var addr_buffer: array<u8, 16>;
+    
+    addr_buffer[0] = 2u8;
+    addr_buffer[1] = 0u8;
+    
+    // Set port in network byte order
+    var port_network = htons(port);
+    var port_low = cast<u16, u8>(port_network % 256u16);
+    var port_high = cast<u16, u8>(port_network / 256u16);
+    addr_buffer[2] = port_low;
+    addr_buffer[3] = port_high;
+    
+    // Set IP address
+    addr_buffer[4] = ip_a;
+    addr_buffer[5] = ip_b;
+    addr_buffer[6] = ip_c;
+    addr_buffer[7] = ip_d;
+    
+    // Set sin_zero to all zeros
+    addr_buffer[8] = 0u8;
+    addr_buffer[9] = 0u8;
+    addr_buffer[10] = 0u8;
+    addr_buffer[11] = 0u8;
+    addr_buffer[12] = 0u8;
+    addr_buffer[13] = 0u8;
+    addr_buffer[14] = 0u8;
+    addr_buffer[15] = 0u8;
+    
+    return addr_buffer;
+}

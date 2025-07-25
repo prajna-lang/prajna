@@ -273,15 +273,9 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(recv), "::net::_c::recv");
     this->BindCFunction(reinterpret_cast<void *>(send), "::net::_c::send");
     this->BindCFunction(reinterpret_cast<void *>(close), "::net::_c::close");
-    this->BindCFunction(reinterpret_cast<void *>(setsockopt), "::net::_c::setsockopt");
-    this->BindCFunction(reinterpret_cast<void *>(getsockopt), "::net::_c::getsockopt");
-    this->BindCFunction(reinterpret_cast<void *>(shutdown), "::net::_c::shutdown");
     
     // Network byte order functions
     this->BindCFunction(reinterpret_cast<void *>(htons), "::net::_c::htons");
-    this->BindCFunction(reinterpret_cast<void *>(htonl), "::net::_c::htonl");
-    this->BindCFunction(reinterpret_cast<void *>(ntohl), "::net::_c::ntohl");
-    this->BindCFunction(reinterpret_cast<void *>(ntohs), "::net::_c::ntohs");
 
     this->BindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
     this->BindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");

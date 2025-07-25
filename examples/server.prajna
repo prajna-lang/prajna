@@ -45,14 +45,9 @@ func Main() {
     }
     line.PrintLine();
     
-    var response_buffer: array<u8, 1024>;
-    
-    response_buffer = receive_buffer;
-
+    var response_buffer: array<u8, 1024> = receive_buffer;
     var response_ptr = &response_buffer[0];
-
     var response_len = bytes_received; // Echo back the same length
-    
     var bytes_sent = net::_c::send(client_fd, response_ptr, response_len, 0i32);
     debug::Assert(bytes_sent > 0i64);
     

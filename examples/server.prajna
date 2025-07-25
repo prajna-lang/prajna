@@ -5,7 +5,7 @@ func Main() {
     var server_fd = net::_c::socket(2i32, 1i32, 6i32);
     debug::Assert(server_fd >= 0i32);
     
-    var server_addr = net::_c::CreateSocketAddrIn(0u8, 0u8, 0u8, 0u8, 8887u16);
+    var server_addr = net::_c::create_socket_addr_in(0u8, 0u8, 0u8, 0u8, 8887u16);
     var server_addr_ptr = &server_addr;
     
     ("Server socket created: " + server_fd.ToString()).PrintLine();
@@ -17,7 +17,7 @@ func Main() {
     
     "Server listening on 0.0.0.0:8887".PrintLine();
     
-    var client_addr: net::_c::SocketAddrIn;
+    var client_addr: net::_c::socket_addr_in;
     var client_addr_ptr = &client_addr;
     var addr_len = 16u32;
     var addr_len_ptr = &addr_len;

@@ -4,7 +4,7 @@ func Main() {
     var client_fd = net::_c::socket(2i32, 1i32, 6i32);
     debug::Assert(client_fd >= 0i32);
 
-    var server_addr = net::_c::CreateSocketAddrIn(127u8, 0u8, 0u8, 1u8, 8887u16);
+    var server_addr = net::_c::create_socket_addr_in(127u8, 0u8, 0u8, 1u8, 8887u16);
     var server_addr_ptr = &server_addr;
     
     var connect_result = net::_c::connect(client_fd, server_addr_ptr, 16u32);

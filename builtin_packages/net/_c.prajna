@@ -1,6 +1,6 @@
 // Network C library bindings
 
-struct SocketAddrIn {
+struct socket_addr_in {
     sin_family: u16;    
     sin_port: u16;        
     sin_addr: u32;        
@@ -9,10 +9,10 @@ struct SocketAddrIn {
 
 // Socket functions
 func socket(domain: i32, type: i32, protocol: i32) -> i32;
-func bind(sockfd: i32, addr: ptr<SocketAddrIn>, addrlen: u32) -> i32;
+func bind(sockfd: i32, addr: ptr<socket_addr_in>, addrlen: u32) -> i32;
 func listen(sockfd: i32, backlog: i32) -> i32;
-func accept(sockfd: i32, addr: ptr<SocketAddrIn>, addrlen: ptr<u32>) -> i32;
-func connect(sockfd: i32, addr: ptr<SocketAddrIn>, addrlen: u32) -> i32;
+func accept(sockfd: i32, addr: ptr<socket_addr_in>, addrlen: ptr<u32>) -> i32;
+func connect(sockfd: i32, addr: ptr<socket_addr_in>, addrlen: u32) -> i32;
 func recv(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
 func send(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
 func close(fd: i32) -> i32;
@@ -20,8 +20,8 @@ func close(fd: i32) -> i32;
 // Network byte order conversion functions
 func htons(hostshort: u16) -> u16;
 
-func CreateSocketAddrIn(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> SocketAddrIn {
-    var addr: SocketAddrIn;
+func create_socket_addr_in(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> socket_addr_in {
+    var addr: socket_addr_in;
     
     addr.sin_family = 2u16;  // AF_INET
     addr.sin_port = htons(port);

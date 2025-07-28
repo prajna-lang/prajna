@@ -1,18 +1,14 @@
-/*
-struct Functor{
-}
+struct Functor {}
 
 implement Functor {
-    func __call__(flag: i64) {
-        "functor call ".Print();
-        flag.PrintLine();
+    func __call__(flag: i64) -> i64 {
+        return flag;
     }
 }
 
 @test
 func TestStructCall() {
     var functor: Functor;
-    functor.__call__(123);
-    functor(123);
+    test::Assert(functor.__call__(123) == 123);
+    test::Assert(functor(123) == 123);
 }
-*/

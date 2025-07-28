@@ -31,7 +31,6 @@ use float::FloatScientificPrinter;
 use int;
 
 use _ptr::Ptr;
-use _ptr::WeakPtr;
 use dynamic;
 
 use atomic;

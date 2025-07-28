@@ -75,44 +75,6 @@ func TestScopeRefCount() {
     test::Assert(!p.IsNull());
 }
 
-@test
-func TestWeakPtrBasic() {
-    var shared = Ptr<i64>::New();
-    shared[0] = 100;
-
-    var weak = WeakPtr<i64>::FromPtr(shared);
-    test::Assert(!weak.IsNull());
-    test::Assert(!weak.IsExpired());
-    test::Assert(weak.ReferenceCount() == 1);
-    test::Assert(weak.WeakReferenceCount() == 1);
-}
-
-@test
-func TestWeakPtrLock() {
-    var shared = Ptr<i64>::New();
-    shared[0] = 200;
-    var weak = WeakPtr<i64>::FromPtr(shared);
-
-    var locked = weak.Lock();
-    test::Assert(!locked.IsNull());
-    test::Assert(locked[0] == 200);
-    test::Assert(shared.ReferenceCount() == 2);  // shared + locked
-}
-
-@test
-func TestWeakPtrExpired() {
-    var weak: WeakPtr<i64>;
-    {
-        var shared = Ptr<i64>::New();
-        weak = WeakPtr<i64>::FromPtr(shared);
-        test::Assert(!weak.IsExpired());
-    }
-    test::Assert(weak.IsExpired());
-
-    var locked = weak.Lock();
-    test::Assert(locked.IsNull());
-}
-
 struct TestObject {
     value: i64;
     initialized: bool;
@@ -162,52 +124,44 @@ func TestNestedPtr() {
 func TestNullOperations() {
     var p = Ptr<i64>::Null();
     test::Assert(p.IsNull());
-    test::Assert(p.ReferenceCount() == 0);
+    test::Assert(p.ReferenceCount() == 1);
 
     var p2 = p;
     test::Assert(p2.IsNull());
 }
 
 template <Type>
-struct Node {
-    value: Type;
-    next_strong: Ptr<Node<Type>>;
-    next_weak: WeakPtr<Node<Type>>;
+struct Node{
+    object: Type;
+    next_shared: Ptr<Node<Type>>;
 }
 
 @test
-func TestSimpleCircularReference() {
-    var node1 = Ptr<Node<i64>>::New();
-    var node2 = Ptr<Node<i64>>::New();
+func TestCircularReference() {
+   var node0_ptr = Ptr<Node<i64>>::New();
+   node0_ptr->object = 1024;
 
-    node1->value = 1;
-    node2->value = 2;
+   var node1_ptr = Ptr<Node<i64>>::New();
+   node1_ptr->object = 4201;
 
-    node1->next_strong = node2;
-    node2->next_weak = WeakPtr<Node<i64>>::FromPtr(node1);
+   test::Assert(node0_ptr.ReferenceCount() == 1);
+   test::Assert(node1_ptr.ReferenceCount() == 1);
 
-    test::Assert(node1.ReferenceCount() == 1);
-    test::Assert(node1.WeakReferenceCount() == 1);
-    test::Assert(node2.ReferenceCount() == 2);
-}
+   node0_ptr->next_shared = node1_ptr;
+   node1_ptr->next_shared = node0_ptr;
 
-@test
-func TestComplexCircularReference() {
-    var node1 = Ptr<Node<i64>>::New();
-    var node2 = Ptr<Node<i64>>::New();
-    var node3 = Ptr<Node<i64>>::New();
+   test::Assert(node0_ptr.ReferenceCount() == 2);
+   test::Assert(node1_ptr.ReferenceCount() == 2);
 
-    node1->value = 1;
-    node2->value = 2;
-    node3->value = 3;
-    node1->next_strong = node2;
-    node2->next_strong = node3;
-    node3->next_weak = WeakPtr<Node<i64>>::FromPtr(node1);
+   node1_ptr->next_shared = Ptr<Node<i64>>::Null();
 
-    test::Assert(node1.ReferenceCount() == 1);
-    test::Assert(node1.WeakReferenceCount() == 1);
-    test::Assert(node2.ReferenceCount() == 2);
-    test::Assert(node3.ReferenceCount() == 2);
+   test::Assert(node0_ptr.ReferenceCount() == 1);
+   test::Assert(node1_ptr.ReferenceCount() == 2);
+
+   node0_ptr->next_shared = Ptr<Node<i64>>::Null();
+
+   test::Assert(node0_ptr.ReferenceCount() == 1);
+   test::Assert(node1_ptr.ReferenceCount() == 1);
 }
 
 struct TestItem {

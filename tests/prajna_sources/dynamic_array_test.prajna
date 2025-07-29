@@ -23,3 +23,15 @@ func TestDynamicArray() {
     darray.Push(100.0);
     test::Assert(darray[2] == 100.0);
 }
+
+
+@test
+func TestDynamicArrayReAllocate() {
+    var darray  = DynamicArray<i64>::Create(8);
+    darray[7] = 7;
+    darray.Push(8);
+    test::Assert(darray.Length() == 9);
+    test::Assert(darray.Capacity() == 16);
+    test::Assert(darray[7] == 7);
+    test::Assert(darray[8] == 8);
+}

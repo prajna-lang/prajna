@@ -231,17 +231,15 @@ class IrBuilder {
     }
 
     std::shared_ptr<ir::VariableLiked> VariableLikedNormalize(std::shared_ptr<ir::Value> ir_value) {
-        PRAJNA_ASSERT(ir_value);
         auto ir_variable_liked = Cast<ir::VariableLiked>(ir_value);
         if (ir_variable_liked) {
             return ir_variable_liked;
         } else {
             ir_variable_liked = this->Create<ir::LocalVariable>(ir_value->type);
-            ir_variable_liked->annotation_dict["DisableReferenceCount"];
             auto ir_write_variable_liked =
                 this->Create<ir::WriteVariableLiked>(ir_value, ir_variable_liked);
-            ir_write_variable_liked->annotation_dict["DisableReferenceCount"];
-
+            ir_variable_liked->fullname = ir_value->fullname + "_tmp";
+            ir_variable_liked->name = ir_value->name + "_tmp";
             return ir_variable_liked;
         }
     }

@@ -37,6 +37,9 @@ inline std::string MangleNvvmName(std::string name) {
             case ' ':
                 str_re.append("_S_");
                 continue;
+            case '*':
+                str_re.append("_P_");
+                continue;
         }
         str_re.push_back(*iter);
     }

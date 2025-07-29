@@ -56,6 +56,11 @@ void exit_c(int64_t ret_code) {
     longjmp(buf, 1);
 }
 
+void print_i64_i64(int64_t i, int64_t j) {
+    std::string msg = std::to_string(i) + ": " + std::to_string(j) + "\n";
+    print_c(msg.c_str());
+}
+
 float Clock() {
     // steady_clock是统计物理世界的时间
     return std::chrono::steady_clock::now().time_since_epoch().count() * 1.0 *
@@ -241,6 +246,8 @@ void ExecutionEngine::BindBuiltinFunction() {
 
     this->BindCFunction(reinterpret_cast<void *>(print_c), "::bindings::print");
     this->BindCFunction(reinterpret_cast<void *>(input_c), "::bindings::input");
+
+    this->BindCFunction(reinterpret_cast<void *>(print_i64_i64), "::bindings::print_i64_i64");
 
 #if defined(__linux__) || defined(WIN32)
     this->BindCFunction(reinterpret_cast<void *>(__truncdfhf2), "__truncdfhf2");

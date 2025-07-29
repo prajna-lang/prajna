@@ -28,3 +28,8 @@ func TestMain() {
     str2 = "";
     test::Assert(str1 == str2);
 }
+
+@test
+func TestTmpPush(){
+    "t".Push('0');
+}

@@ -853,9 +853,8 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
         ir_module->llvm_module->dump();
     }
 
-    // TODO: 存在未知错误
-    // auto verify_result = llvm::verifyModule(*ir_module->llvm_module, &llvm::errs());
-    // PRAJNA_ASSERT(verify_result);
+    // no errors, return false
+    PRAJNA_ASSERT(!llvm::verifyModule(*ir_module->llvm_module, &llvm::errs()));
 
     auto ir_nvptx_module = ir_module->modules[prajna::ir::Target::nvptx];
     if (ir_nvptx_module && ir_nvptx_module->llvm_module) {

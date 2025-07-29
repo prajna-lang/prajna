@@ -200,10 +200,16 @@ void Compiler::AddPackageDirectoryPath(std::string package_directory) {
 void Compiler::RunTests(std::filesystem::path prajna_source_package_path) {
     auto ir_module = this->CompileProgram(prajna_source_package_path, false);
     for (auto ir_function : ir_module->functions) {
-        if (ir_function->annotation_dict.count("test")) {
-            auto function_pointer = GetSymbolValue(ir_function->fullname);
-            jit_engine->CatchRuntimeError();
-            reinterpret_cast<void (*)(void)>(function_pointer)();
+        try {
+            if (ir_function->annotation_dict.count("test")) {
+                auto function_pointer = GetSymbolValue(ir_function->fullname);
+                print_callback("test function: " + ir_function->name + "\n");
+                jit_engine->CatchRuntimeError();
+                reinterpret_cast<void (*)(void)>(function_pointer)();
+            }
+        } catch (RuntimeError error) {
+            logger->Error("test function: " + ir_function->name + " failed",
+                          ir_function->source_location);
         }
     }
 }

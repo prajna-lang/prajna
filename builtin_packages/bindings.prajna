@@ -10,3 +10,5 @@ func malloc(bytes: i64)->ptr<undef>;
 func free(pointer: ptr<undef>);
 
 func getchar()->char;
+
+func print_i64_i64(i: i64, j: i64);

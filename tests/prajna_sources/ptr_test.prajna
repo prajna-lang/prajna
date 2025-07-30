@@ -1,103 +1,248 @@
 @test
-func TestMain(){
+func TestDefaultConstruction() {
     var p: Ptr<i64>;
-    p.ToInt64();
-
-    test::Assert(p.ToInt64() == 0i64);
-    // test::Assert(p == Ptr<i64>::Null());
     test::Assert(p.IsNull());
-
-    p = Ptr<i64>::New();
-    test::Assert(!p.IsNull());
+    test::Assert(p.ToInt64() == 0i64);
+    test::Assert(p.ReferenceCount() == 1);
 }
 
 @test
-func TestLocal() {
-    var p: Ptr<i64>;
-    p.ToInt64();
-
-    test::Assert(p.ToInt64() == 0i64);
+func TestNullStaticMethod() {
+    var p = Ptr<i64>::Null();
     test::Assert(p.IsNull());
-    {
-       var p1 = Ptr<i64>::New();
-       test::Assert(!p1.IsNull());
-       p = p1;
-    }
-    test::Assert(!p.IsNull());
+    test::Assert(p.ToInt64() == 0i64);
 }
 
 @test
-func TestIndex() {
+func TestNewAllocation() {
+    var p = Ptr<i64>::New();
+    test::Assert(!p.IsNull());
+    test::Assert(p.ToInt64() != 0i64);
+    test::Assert(p.ReferenceCount() == 1);
+
+    p[0] = 42;
+    test::Assert(p[0] == 42);
+}
+
+@test
+func TestAllocateMultiple() {
     var p = Ptr<i64>::Allocate(10);
-    p[9] = 10;
-    test::Assert(p[9] == 10);
-}
+    test::Assert(!p.IsNull());
+    test::Assert(p.ReferenceCount() == 1);
 
+    for i in 0 to 10 {
+        p[i] = i;
+    }
+    for i in 0 to 10 {
+        test::Assert(p[i] == i);
+    }
+}
 
 @test
-func TestNested() {
-    var p = Ptr<Ptr<i64>>::New();
-    var pp = p[0];
-    test::Assert(p[0].IsNull());
+func TestCopyIncrementsRefCount() {
+    var p1 = Ptr<i64>::New();
+    test::Assert(p1.ReferenceCount() == 1);
 
-    p[0] = Ptr<i64>::New();
+    var p2 = p1;
+    test::Assert(p1.ReferenceCount() == 2);
+    test::Assert(p2.ReferenceCount() == 2);
 }
 
-struct Tmp{
-    v: i64;
+@test
+func TestAssignmentRefCount() {
+    var p1 = Ptr<i64>::New();
+    var p2 = Ptr<i64>::New();
+
+    test::Assert(p1.ReferenceCount() == 1);
+    test::Assert(p2.ReferenceCount() == 1);
+
+    p2 = p1;
+    test::Assert(p1.ReferenceCount() == 2);
+    test::Assert(p2.ReferenceCount() == 2);
 }
 
-implement Tmp {
+@test
+func TestScopeRefCount() {
+    var p: Ptr<i64>;
+    {
+        var p1 = Ptr<i64>::New();
+        test::Assert(p1.ReferenceCount() == 1);
+        p = p1;
+        test::Assert(p1.ReferenceCount() == 2);
+        test::Assert(p.ReferenceCount() == 2);
+    }
+    test::Assert(p.ReferenceCount() == 1);
+    test::Assert(!p.IsNull());
+}
+
+@test
+func TestWeakPtrBasic() {
+    var shared = Ptr<i64>::New();
+    shared[0] = 100;
+
+    var weak = WeakPtr<i64>::FromPtr(shared);
+    test::Assert(!weak.IsNull());
+    test::Assert(!weak.IsExpired());
+    test::Assert(weak.ReferenceCount() == 1);
+    test::Assert(weak.WeakReferenceCount() == 1);
+}
+
+@test
+func TestWeakPtrLock() {
+    var shared = Ptr<i64>::New();
+    shared[0] = 200;
+    var weak = WeakPtr<i64>::FromPtr(shared);
+
+    var locked = weak.Lock();
+    test::Assert(!locked.IsNull());
+    test::Assert(locked[0] == 200);
+    test::Assert(shared.ReferenceCount() == 2);  // shared + locked
+}
+
+@test
+func TestWeakPtrExpired() {
+    var weak: WeakPtr<i64>;
+    {
+        var shared = Ptr<i64>::New();
+        weak = WeakPtr<i64>::FromPtr(shared);
+        test::Assert(!weak.IsExpired());
+    }
+    test::Assert(weak.IsExpired());
+
+    var locked = weak.Lock();
+    test::Assert(locked.IsNull());
+}
+
+struct TestObject {
+    value: i64;
+    initialized: bool;
+    finalized: bool;
+}
+
+implement TestObject {
     func __initialize__() {
-        "initialize Tmp".PrintLine();
+        this.value = 0;
+        this.initialized = true;
+        this.finalized = false;
+        "TestObject::initialize".PrintLine();
     }
 
     func __copy__() {
-        "inc tmp".PrintLine();
+        "TestObject::copy".PrintLine();
     }
 
     func __finalize__() {
-        "dec tmp".PrintLine();
+        this.finalized = true;
+        "TestObject::finalize".PrintLine();
     }
 }
-
-struct Tmp2{
-    tmp: Tmp;
-}
-
-implement Tmp2 {
-    func __initialize__() {
-        "initialzie TMP2".PrintLine();
-    }
-}
-
 
 @test
-func TestAllocate() {
-    var p_ts1 = Ptr<Tmp2>::New();
-    p_ts1->tmp;
+func TestObjectLifecycle() {
+    var p = Ptr<TestObject>::New();
+    test::Assert(p->initialized);
+    test::Assert(!p->finalized);
+    p->value = 42;
+    test::Assert(p->value == 42);
+}
+
+@test
+func TestNestedPtr() {
+    var p = Ptr<Ptr<i64>>::New();
+    test::Assert(!p.IsNull());
+    test::Assert(p[0].IsNull());
+
+    p[0] = Ptr<i64>::New();
+    test::Assert(!p[0].IsNull());
+    p[0][0] = 123;
+    test::Assert(p[0][0] == 123);
 }
 
 template <Type>
-struct Node{
-    object: Type;
-    next_shared: Ptr<Node<Type>>;
+struct Node {
+    value: Type;
+    next_strong: Ptr<Node<Type>>;
     next_weak: WeakPtr<Node<Type>>;
 }
 
 @test
-func TestCircularReference() {
-   var node0_ptr = Ptr<Node<i64>>::New();
+func TestSimpleCircularReference() {
+    var node1 = Ptr<Node<i64>>::New();
+    var node2 = Ptr<Node<i64>>::New();
 
-   var node1_shared_ptr = Ptr<Node<i64>>::New();
-   var node1_ptr = WeakPtr<Node<i64>>::FromPtr(node1_shared_ptr);
+    node1->next_strong = node2;
+    node2->next_weak = WeakPtr<Node<i64>>::FromPtr(node1);
 
-   test::Assert(node0_ptr.ReferenceCount() == 1);
-   test::Assert(node1_ptr.ReferenceCount() == 1);
+    test::Assert(node1.ReferenceCount() == 1);
+    test::Assert(node1.WeakReferenceCount() == 1);
+    test::Assert(node2.ReferenceCount() == 2);
+}
 
-   node1_shared_ptr->next_weak = node1_ptr;
-   node1_shared_ptr->next_shared = node0_ptr;
+@test
+func TestComplexCircularReference() {
+    var node1 = Ptr<Node<i64>>::New();
+    var node2 = Ptr<Node<i64>>::New();
+    var node3 = Ptr<Node<i64>>::New();
 
-   test::Assert(node0_ptr.ReferenceCount() == 2);
-   test::Assert(node1_ptr.ReferenceCount() == 1);
+    node1->next_strong = node2;
+    node2->next_strong = node3;
+    node3->next_weak = WeakPtr<Node<i64>>::FromPtr(node1);
+
+    test::Assert(node1.ReferenceCount() == 1);
+    test::Assert(node1.WeakReferenceCount() == 1);
+    test::Assert(node2.ReferenceCount() == 2);
+    test::Assert(node3.ReferenceCount() == 2);
+}
+
+struct TestItem {
+    value: i64;
+}
+
+implement TestItem {
+    func __initialize__() {
+        this.value = 0;
+        "TestItem::initialize".PrintLine();
+    }
+
+    func __copy__() {
+        "TestItem::copy".PrintLine();
+    }
+
+    func __finalize__() {
+        "TestItem::finalize".PrintLine();
+    }
+}
+
+struct CompositeObject {
+    item: TestItem;
+    id: i64;
+}
+
+implement CompositeObject {
+    func __initialize__() {
+        this.id = -1;
+        "CompositeObject::initialize".PrintLine();
+    }
+
+    func __copy__() {
+        "CompositeObject::copy".PrintLine();
+    }
+
+    func __finalize__() {
+        "CompositeObject::finalize".PrintLine();
+    }
+}
+
+@test
+func TestCompositeObjectAllocation() {
+    var composite_ptr = Ptr<CompositeObject>::New();
+
+    test::Assert(!composite_ptr.IsNull());
+    test::Assert(composite_ptr.ReferenceCount() == 1);
+
+    composite_ptr->id = 100;
+    composite_ptr->item.value = 42;
+
+    test::Assert(composite_ptr->id == 100);
+    test::Assert(composite_ptr->item.value == 42);
 }

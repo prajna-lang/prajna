@@ -1,0 +1,42 @@
+// Network C library bindings
+
+struct socket_addr_in {
+    sin_family: u16;
+    sin_port: u16;
+    sin_addr: u32;
+    sin_zero: array<u8, 8>;
+}
+
+// Socket functions
+func socket(domain: i32, type: i32, protocol: i32) -> i32;
+func bind(sockfd: i32, addr: ptr<socket_addr_in>, addrlen: u32) -> i32;
+func listen(sockfd: i32, backlog: i32) -> i32;
+func accept(sockfd: i32, addr: ptr<socket_addr_in>, addrlen: ptr<u32>) -> i32;
+func connect(sockfd: i32, addr: ptr<socket_addr_in>, addrlen: u32) -> i32;
+func recv(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
+func send(sockfd: i32, buf: ptr<u8>, len: i64, flags: i32) -> i64;
+func close(fd: i32) -> i32;
+
+// Network byte order conversion functions
+func htons(hostshort: u16) -> u16;
+
+func create_socket_addr_in(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> socket_addr_in {
+    var addr: socket_addr_in;
+
+    addr.sin_family = 2u16;  // AF_INET
+    addr.sin_port = htons(port);
+
+    var ip_addr = cast<u8, u32>(ip_a) +
+                  cast<u8, u32>(ip_b) * 256u32 +
+                  cast<u8, u32>(ip_c) * 256u32 * 256u32 +
+                  cast<u8, u32>(ip_d) * 256u32 * 256u32 * 256u32;
+    addr.sin_addr = ip_addr;
+
+    var i = 0i64;
+    while (i < 8i64) {
+        addr.sin_zero[i] = 0u8;
+        i = i + 1i64;
+    }
+
+    return addr;
+}

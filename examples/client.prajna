@@ -1,0 +1,50 @@
+use net::_c;
+
+func Main() {
+    var client_fd = net::_c::socket(2i32, 1i32, 6i32);
+    debug::Assert(client_fd >= 0i32);
+
+    var server_addr = net::_c::create_socket_addr_in(127u8, 0u8, 0u8, 1u8, 8887u16);
+    var server_addr_ptr = &server_addr;
+
+    var connect_result = net::_c::connect(client_fd, server_addr_ptr, 16u32);
+    debug::Assert(connect_result == 0i32);
+
+    "Connected to server successfully!".PrintLine();
+
+    var message_buffer: array<u8, 1024>;
+
+    message_buffer[0] = 72u8;
+    message_buffer[1] = 101u8;
+
+    var message_len = 2i64;
+    var message_ptr = &message_buffer[0];
+
+
+    "Sending message: 72 101 to server...".PrintLine();
+    var bytes_sent = net::_c::send(client_fd, message_ptr, message_len, 0i32);
+    debug::Assert(bytes_sent > 0i64);
+
+    // Receive echo response from server
+    var response_buffer: array<u8, 1024>;
+    var response_ptr = &response_buffer[0];
+    var bytes_received = net::_c::recv(client_fd, response_ptr, 1024i64, 0i32);
+
+    debug::Assert(bytes_received > 0i64);
+    ("Received " + bytes_received.ToString() + " bytes from server").PrintLine();
+    "Server response (raw bytes):".PrintLine();
+
+    var i = 0i64;
+    var line = "";
+    while (i < bytes_received && i < 30i64) {
+        line = line + response_buffer[i].ToString();
+        i = i + 1i64;
+        if (i < bytes_received && i < 30i64) {
+            line = line + " ";
+        }
+    }
+    line.PrintLine();
+
+    var close_result = net::_c::close(client_fd);
+    debug::Assert(close_result == 0i32);
+}

@@ -1,8 +1,19 @@
-
 #include "prajna/jit/execution_engine.h"
 
 #include <setjmp.h>
 #include <stdio.h>
+
+#if defined(__linux__) || defined(__APPLE__)
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#elif defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 #include <algorithm>
 #include <atomic>
@@ -85,6 +96,10 @@ void __close_dynamic_library(llvm::sys::DynamicLibrary dl) {
 }
 
 llvm::ExitOnError exit_on_error;
+
+#ifdef __APPLE__
+uint16_t htons_wrapper_macos(uint16_t hostshort) { return htons(hostshort); }
+#endif
 
 ExecutionEngine::ExecutionEngine() {
     LLVMInitializeNativeTarget();
@@ -266,6 +281,27 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(fflush), "::fs::_c::fflush");
     this->BindCFunction(reinterpret_cast<void *>(fread), "::fs::_c::fread");
     this->BindCFunction(reinterpret_cast<void *>(fwrite), "::fs::_c::fwrite");
+
+    // Network socket functions
+    this->BindCFunction(reinterpret_cast<void *>(socket), "::net::_c::socket");
+    this->BindCFunction(reinterpret_cast<void *>(bind), "::net::_c::bind");
+    this->BindCFunction(reinterpret_cast<void *>(listen), "::net::_c::listen");
+    this->BindCFunction(reinterpret_cast<void *>(accept), "::net::_c::accept");
+    this->BindCFunction(reinterpret_cast<void *>(connect), "::net::_c::connect");
+    this->BindCFunction(reinterpret_cast<void *>(recv), "::net::_c::recv");
+    this->BindCFunction(reinterpret_cast<void *>(send), "::net::_c::send");
+#if defined(__APPLE__) || defined(__linux__)
+    this->BindCFunction(reinterpret_cast<void *>(close), "::net::_c::close");
+#elif defined(WIN32)
+    this->BindCFunction(reinterpret_cast<void *>(closesocket), "::net::_c::close");
+#endif
+
+    // Network byte order functions
+#if defined(__APPLE__)
+    this->BindCFunction(reinterpret_cast<void *>(htons_wrapper_macos), "::net::_c::htons");
+#elif defined(__linux__) || defined(WIN32)
+    this->BindCFunction(reinterpret_cast<void *>(htons), "::net::_c::htons");
+#endif
 
     this->BindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");
     this->BindCFunction(reinterpret_cast<void *>(Sleep), "::chrono::Sleep");

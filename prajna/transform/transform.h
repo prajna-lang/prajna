@@ -9,7 +9,6 @@
 #include "prajna/lowering/statement_lowering_visitor.hpp"
 #include "prajna/mangle_name.hpp"
 #include "prajna/parser/parse.h"
-#include "prajna/transform/extract_gpu_grid_pass.hpp"
 #include "prajna/transform/flattern_block.hpp"
 #include "prajna/transform/inline_function.hpp"
 #include "prajna/transform/reference_count.hpp"

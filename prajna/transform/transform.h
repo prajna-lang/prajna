@@ -178,7 +178,8 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
     }
 }
 
-inline void ConvertKernelFunctionOperandToGlobalVariable(std::shared_ptr<ir::Module> ir_module) {
+inline void ReplaceKernelFunctionOperandToKernelGlobalAddress(
+    std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         if (ir_function->annotation_dict.count("kernel")) {
             auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
@@ -520,10 +521,7 @@ inline bool TopAlloca(std::shared_ptr<ir::Module> ir_module) {
     return true;
 }
 
-inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_module) {
-    auto ir_nvptx_module = ir_module->modules[ir::Target::nvptx];
-    if (!ir_nvptx_module) return;
-
+inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_nvptx_module) {
     std::list<ir::Function> ir_llvm_intrinsics;
     std::map<std::string, std::string> name_map = {{"llvm.sin.f32", "__nv_sinf"},
                                                    {"llvm.cos.f32", "__nv_cosf"},
@@ -546,18 +544,13 @@ inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_m
 //   llvm.sin.f32  ->  __ocml_sin_f32
 //   llvm.asin.f32 ->  __ocml_asin_f32
 
-inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir_module) {
-    auto ir_amdgpu_module = ir_module->modules[ir::Target::amdgpu];
-    if (!ir_amdgpu_module) return;
-
+inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir_amdgpu_module) {
     std::list<ir::Function> ir_llvm_intrinsics;
     // 替换 LLVM intrinsics 为 OCML 函数
     std::map<std::string, std::string> name_map = {{"llvm.sin.f32", "__ocml_sin_f32"},
                                                    {"llvm.cos.f32", "__ocml_cos_f32"},
                                                    {"llvm.asin.f32", "__ocml_asin_f32"},
-                                                   {"llvm.acos.f32", "__ocml_acos_f32"}
-
-    };
+                                                   {"llvm.acos.f32", "__ocml_acos_f32"}};
     for (auto ir_function : ir_amdgpu_module->functions) {
         if (name_map.count(ir_function->fullname)) {
             ir_function->fullname = name_map[ir_function->fullname];
@@ -565,48 +558,42 @@ inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir
     };
 }
 
-inline void ConvertSharedMemoryLocalVariableToGlobalAlloca(std::shared_ptr<ir::Module> ir_module) {
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (!ir_sub_module) continue;
+inline void ConvertSharedMemoryLocalVariableToGlobalAllocaWithAddressSpace3(
+    std::shared_ptr<ir::Module> ir_module, ir::Target ir_target) {
+    for (auto ir_shared_variable : utility::GetAll<ir::LocalVariable>(ir_module)) {
+        if (ir_shared_variable->annotation_dict.count("shared") == 0) continue;
 
-        auto ir_shared_variable_list = utility::GetAll<ir::LocalVariable>(ir_sub_module);
-        ir_shared_variable_list.remove_if([](auto ir_local_variable) {
-            return ir_local_variable->annotation_dict.count("shared") == 0;
-        });
-
-        for (auto ir_shared_variable : ir_shared_variable_list) {
-            auto ir_global_alloca = ir::GlobalAlloca::Create(ir_shared_variable->type);
-            ir_global_alloca->address_space = 3;  // nvptx/amd shared memory
-            ir_global_alloca->name = ir_shared_variable->name;
-            if (ir_target == ir::Target::nvptx) {
-                ir_global_alloca->fullname = MangleNvvmName(ir_shared_variable->fullname);
-            } else if (ir_target == ir::Target::amdgpu) {
-                ir_global_alloca->fullname = MangleHipName(ir_shared_variable->fullname);
-            } else {
-                PRAJNA_UNREACHABLE;
-            }
-
-            ir_global_alloca->is_external = false;
-            ir_sub_module->AddGlobalAlloca(ir_global_alloca);
-
-            auto ir_builder = lowering::IrBuilder::Create();
-            auto parent = ir_shared_variable->GetParentBlock();
-            auto scope = ir_builder->PushBlockRAII(parent);
-            // 在最开始插入就行, 留意AddressCast是不是统一转换一次就行了
-            ir_builder->inserter_iterator = parent->begin();
-            auto ir_address_cast = ir_builder->Create<ir::CastInstruction>(
-                ir::CastInstruction::Operation::AddrSpaceCast, ir_global_alloca,
-                ir_global_alloca->type);
-            auto ir_deference_pointer = ir_builder->Create<ir::DeferencePointer>(ir_address_cast);
-
-            for (auto [ir_instruction, op_idx] :
-                 Clone(ir_shared_variable->instruction_with_index_list)) {
-                Lock(ir_instruction)->SetOperand(op_idx, ir_deference_pointer);
-            }
-
-            utility::RemoveFromParent(ir_shared_variable);
-            ir_shared_variable->Finalize();
+        auto ir_global_alloca = ir::GlobalAlloca::Create(ir_shared_variable->type);
+        ir_global_alloca->address_space = 3;  // nvptx/amd shared memory
+        ir_global_alloca->name = ir_shared_variable->name;
+        if (ir_target == ir::Target::nvptx) {
+            ir_global_alloca->fullname = MangleNvvmName(ir_shared_variable->fullname);
+        } else if (ir_target == ir::Target::amdgpu) {
+            ir_global_alloca->fullname = MangleHipName(ir_shared_variable->fullname);
+        } else {
+            PRAJNA_UNREACHABLE;
         }
+
+        ir_global_alloca->is_external = false;
+        ir_module->AddGlobalAlloca(ir_global_alloca);
+
+        auto ir_builder = lowering::IrBuilder::Create();
+        auto parent = ir_shared_variable->GetParentBlock();
+        auto scope = ir_builder->PushBlockRAII(parent);
+        // 在最开始插入就行, 留意AddressCast是不是统一转换一次就行了
+        ir_builder->inserter_iterator = parent->begin();
+        auto ir_address_cast =
+            ir_builder->Create<ir::CastInstruction>(ir::CastInstruction::Operation::AddrSpaceCast,
+                                                    ir_global_alloca, ir_global_alloca->type);
+        auto ir_deference_pointer = ir_builder->Create<ir::DeferencePointer>(ir_address_cast);
+
+        for (auto [ir_instruction, op_idx] :
+             Clone(ir_shared_variable->instruction_with_index_list)) {
+            Lock(ir_instruction)->SetOperand(op_idx, ir_deference_pointer);
+        }
+
+        utility::RemoveFromParent(ir_shared_variable);
+        ir_shared_variable->Finalize();
     }
 }
 
@@ -689,14 +676,11 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     ConvertPropertyToFunctionCall(ir_module);
 
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
-    ConvertKernelFunctionOperandToGlobalVariable(ir_module);
+    ReplaceKernelFunctionOperandToKernelGlobalAddress(ir_module);
 
     ConvertGlobalVariableToGlobalAlloca(ir_module);
 
     SperateGpuModule(ir_module);
-    ConvertSharedMemoryLocalVariableToGlobalAlloca(ir_module);
-    ConvertLLVMIntrinsicToNVVMLibdevice(ir_module);
-    ConvertLLVMIntrinsicToAmdGPULibdevice(ir_module);
 
     ApplySSATransformations(ir_module);
     // 只申明host module的外部函数, gPU module目前不引用外部函数
@@ -705,7 +689,14 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
 
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (!ir_sub_module) continue;
+
+        ConvertSharedMemoryLocalVariableToGlobalAllocaWithAddressSpace3(ir_sub_module, ir_target);
         ApplySSATransformations(ir_sub_module);
+        if (ir_target == ir::Target::nvptx) {
+            ConvertLLVMIntrinsicToNVVMLibdevice(ir_sub_module);
+        } else if (ir_target == ir::Target::amdgpu) {
+            ConvertLLVMIntrinsicToAmdGPULibdevice(ir_sub_module);
+        }
     }
 
     // 确保所有IR都合法, 规则并不完善

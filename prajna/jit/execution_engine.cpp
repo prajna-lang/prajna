@@ -42,6 +42,7 @@
 #include "prajna/jit/cuda_runtime_loader.cpp"
 #include "prajna/jit/gpu_compiler.hpp"
 #include "prajna/jit/hip_runtime_loader.cpp"
+#include "prajna/mangle_name.hpp"
 
 #if defined(__linux__) || defined(WIN32)
 extern "C" uint16_t __truncdfhf2(double);
@@ -206,7 +207,8 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                     auto kernel_fun_address_name = GetKernelFunctionAddressName(ir_function);
                     auto test_kernel_fun =
                         reinterpret_cast<int64_t *>(this->GetValue(kernel_fun_address_name));
-                    std::string function_name = MangleNvvmName(ir_function->fullname);
+                    std::string function_name =
+                        MangledNameForGpuLLVMBackend(ir_function->fullname, ir_target);
                     auto cu_re =
                         cu_library_get_kernel(test_kernel_fun, cu_library, function_name.c_str());
                     PRAJNA_ASSERT(cu_re == 0, std::to_string(cu_re));
@@ -219,7 +221,8 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
             // 内核函数的地址存储到 JIT 环境中
             for (auto ir_function : ir_sub_module->functions) {
                 if (ir_function->annotation_dict.count("kernel")) {
-                    std::string function_name = MangleHipName(ir_function->fullname);
+                    std::string function_name =
+                        MangledNameForGpuLLVMBackend(ir_function->fullname, ir_target);
                     hipFunction_t kernel_func =
                         hip_loader.LoadKernelFunction(hsaco_data, function_name);
                     auto kernel_name_address_name = GetKernelFunctionAddressName(ir_function);

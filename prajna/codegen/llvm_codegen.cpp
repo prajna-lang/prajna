@@ -32,6 +32,7 @@
 #include "prajna/ir/ir.hpp"
 #include "prajna/ir/target.hpp"
 #include "prajna/ir/visitor.hpp"
+#include "prajna/mangle_name.hpp"
 #include "third_party/llvm-project/llvm/include/llvm-c/Target.h"
 #include "third_party/llvm-project/llvm/include/llvm/Analysis/AliasAnalysis.h"
 #include "third_party/llvm-project/llvm/include/llvm/IR/AutoUpgrade.h"
@@ -175,7 +176,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
-            this->EmitFunctionDeclaration(ir_function, this->ir_target);
+            this->EmitFunctionDeclaration(ir_function);
             if (ir_function->annotation_dict.count("kernel")) {
                 std::string metadata;
                 if (ir_target == prajna::ir::Target::nvptx) {
@@ -202,17 +203,9 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
     }
 
-    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function,
-                                 prajna::ir::Target ir_target) {
-        std::string function_fullname;
-        if (ir_target == prajna::ir::Target::nvptx) {
-            function_fullname = MangleNvvmName(ir_function->fullname);
-        } else if (ir_target == prajna::ir::Target::amdgpu) {
-            function_fullname = MangleHipName(ir_function->fullname);
-        } else {
-            function_fullname = ir_function->fullname;
-        }
-
+    void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function) {
+        std::string function_fullname =
+            MangledNameForGpuLLVMBackend(ir_function->fullname, this->ir_target);
         PRAJNA_ASSERT(ir_function->function_type->llvm_type);
         llvm::FunctionType *llvm_fun_type =
             static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
@@ -271,7 +264,6 @@ class LlvmCodegen : public prajna::ir::Visitor {
             nullptr);
 
         for (auto ir_value : *ir_block) {
-            // EmitValue(ir_value, ir_target);
             if (Is<ir::Function>(ir_value)) {
                 continue;
             }
@@ -751,9 +743,8 @@ class LlvmCodegen : public prajna::ir::Visitor {
     prajna::ir::Target ir_target;
 };
 
-std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module,
-                                        prajna::ir::Target ir_target) {
-    auto llvm_codegen = LlvmCodegen::Create(ir_target);
+std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module) {
+    auto llvm_codegen = LlvmCodegen::Create(ir_module->target);
 
     // emit type
     for (auto type : ir::global_context.created_types) {
@@ -772,7 +763,7 @@ std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module,
             continue;
         }
 
-        LlvmCodegen(ir_sub_module, ir_target);
+        LlvmCodegen(ir_sub_module);
     }
 
     return ir_module;

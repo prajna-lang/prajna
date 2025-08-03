@@ -1547,8 +1547,6 @@ class Module : public Value {
    public:
     static std::shared_ptr<Module> Create() {
         auto self = std::shared_ptr<Module>(new Module);
-        self->modules[Target::nvptx] = std::shared_ptr<Module>(new Module);
-        self->modules[Target::amdgpu] = std::shared_ptr<Module>(new Module);
         return self;
     }
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) {
@@ -1583,6 +1581,7 @@ class Module : public Value {
     std::list<std::shared_ptr<GlobalAlloca>> global_allocas;
     std::shared_ptr<lowering::SymbolTable> symbol_table = nullptr;
     std::unordered_map<Target, std::shared_ptr<Module>> modules;
+    Target target = Target::host;
     llvm::Module* llvm_module = nullptr;
 };
 

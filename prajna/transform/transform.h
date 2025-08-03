@@ -7,6 +7,7 @@
 #include "prajna/ir/ir.hpp"
 #include "prajna/logger.hpp"
 #include "prajna/lowering/statement_lowering_visitor.hpp"
+#include "prajna/mangle_name.hpp"
 #include "prajna/parser/parse.h"
 #include "prajna/transform/extract_gpu_grid_pass.hpp"
 #include "prajna/transform/flattern_block.hpp"
@@ -26,6 +27,12 @@ class Statements;
 namespace prajna::transform {
 
 inline void SperateGpuModule(std::shared_ptr<ir::Module> ir_module) {
+    ir_module->modules[ir::Target::nvptx] = ir::Module::Create();
+    ir_module->modules[ir::Target::amdgpu] = ir::Module::Create();
+
+    ir_module->modules[ir::Target::nvptx]->target = ir::Target::nvptx;
+    ir_module->modules[ir::Target::amdgpu]->target = ir::Target::amdgpu;
+
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (!ir_sub_module) continue;
 
@@ -559,20 +566,15 @@ inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir
 }
 
 inline void ConvertSharedMemoryLocalVariableToGlobalAllocaWithAddressSpace3(
-    std::shared_ptr<ir::Module> ir_module, ir::Target ir_target) {
+    std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_shared_variable : utility::GetAll<ir::LocalVariable>(ir_module)) {
         if (ir_shared_variable->annotation_dict.count("shared") == 0) continue;
 
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_shared_variable->type);
         ir_global_alloca->address_space = 3;  // nvptx/amd shared memory
         ir_global_alloca->name = ir_shared_variable->name;
-        if (ir_target == ir::Target::nvptx) {
-            ir_global_alloca->fullname = MangleNvvmName(ir_shared_variable->fullname);
-        } else if (ir_target == ir::Target::amdgpu) {
-            ir_global_alloca->fullname = MangleHipName(ir_shared_variable->fullname);
-        } else {
-            PRAJNA_UNREACHABLE;
-        }
+        ir_global_alloca->fullname =
+            MangledNameForGpuLLVMBackend(ir_shared_variable->fullname, ir_module->target);
 
         ir_global_alloca->is_external = false;
         ir_module->AddGlobalAlloca(ir_global_alloca);
@@ -690,7 +692,7 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     for (auto [ir_target, ir_sub_module] : ir_module->modules) {
         if (!ir_sub_module) continue;
 
-        ConvertSharedMemoryLocalVariableToGlobalAllocaWithAddressSpace3(ir_sub_module, ir_target);
+        ConvertSharedMemoryLocalVariableToGlobalAllocaWithAddressSpace3(ir_sub_module);
         ApplySSATransformations(ir_sub_module);
         if (ir_target == ir::Target::nvptx) {
             ConvertLLVMIntrinsicToNVVMLibdevice(ir_sub_module);

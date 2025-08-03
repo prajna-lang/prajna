@@ -1545,8 +1545,9 @@ class Module : public Value {
     Module() = default;
 
    public:
-    static std::shared_ptr<Module> Create() {
+    static std::shared_ptr<Module> Create(Target target = Target::host) {
         auto self = std::shared_ptr<Module>(new Module);
+        self->target = target;
         return self;
     }
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) {
@@ -1580,7 +1581,7 @@ class Module : public Value {
     std::list<std::shared_ptr<GlobalVariable>> global_variables;
     std::list<std::shared_ptr<GlobalAlloca>> global_allocas;
     std::shared_ptr<lowering::SymbolTable> symbol_table = nullptr;
-    std::unordered_map<Target, std::shared_ptr<Module>> modules;
+    std::list<std::shared_ptr<Module>> modules;
     Target target = Target::host;
     llvm::Module* llvm_module = nullptr;
 };

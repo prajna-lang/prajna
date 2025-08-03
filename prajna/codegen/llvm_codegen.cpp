@@ -752,25 +752,15 @@ std::shared_ptr<ir::Module> LlvmCodegen(std::shared_ptr<ir::Module> ir_module) {
     }
     ir_module->ApplyVisitor(llvm_codegen);
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
-        if (ir_sub_module == nullptr) continue;
-
-        // 如果没有核函数, 则不生成. 因为不会被使用, gpu会把所用的的ir都拷贝过去
-        if (std::ranges::none_of(ir_sub_module->functions,
-                                 [](std::shared_ptr<ir::Function> ir_function) {
-                                     return ir_function->annotation_dict.count("kernel");
-                                 })) {
-            continue;
-        }
-
+    for (auto ir_sub_module : ir_module->modules) {
         LlvmCodegen(ir_sub_module);
     }
 
     return ir_module;
 }
 
-inline void LinkLibdeviceBitcodeFiles(llvm::Module &llvm_module, llvm::LLVMContext &context,
-                                      const std::string &isa_version = "906") {
+inline void LinkAmdLibdeviceBitcodeFiles(llvm::Module &llvm_module, llvm::LLVMContext &context,
+                                         const std::string &isa_version = "906") {
     llvm::SMDiagnostic err;
     llvm::Linker linker(llvm_module);
 
@@ -793,7 +783,35 @@ inline void LinkLibdeviceBitcodeFiles(llvm::Module &llvm_module, llvm::LLVMConte
     link_bc("/opt/rocm/amdgcn/bitcode/oclc_isa_version_" + isa_version + ".bc");
 }
 
-std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
+inline void LinkNvptxLibdeviceBitcodeFiles(llvm::Module &llvm_module, llvm::LLVMContext &context) {
+    llvm::Linker linker(llvm_module);
+    llvm::SMDiagnostic err;
+#ifdef _WIN32
+    // TODO: 后期增加cuda版本配置的功能, 目前使用最新版本
+    auto cuda_path = std::filesystem::path(
+        "C:\\Program Files\\NVIDIA GPU Computing "
+        "Toolkit\\CUDA");
+    auto libdevice_bc_path_postfix = std::filesystem::path("nvvm\\libdevice\\libdevice.10.bc");
+    PRAJNA_ASSERT(std::filesystem::is_directory(cuda_path),
+                  "Can't find cuda in " + cuda_path.string());
+    auto cuda_version_dir_iter = std::filesystem::directory_iterator(cuda_path);
+    auto dir_iter_end = std::filesystem::directory_iterator();
+    // 使用最新那版本的cuda
+    auto cuda_version_path = (*std::max_element(cuda_version_dir_iter, dir_iter_end)).path();
+    auto libdevice_bc_path = cuda_version_path / libdevice_bc_path_postfix;
+    auto uq_llvm_libdevice_module =
+        llvm::parseIRFile(libdevice_bc_path.string(), err, static_llvm_context);
+    PRAJNA_ASSERT(uq_llvm_libdevice_module, "Failed to parse " + libdevice_bc_path.string());
+#else
+    auto uq_llvm_libdevice_module = llvm::parseIRFile(
+        "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc", err, static_llvm_context);
+    PRAJNA_ASSERT(uq_llvm_libdevice_module,
+                  "\"/usr/local/cuda/nvvm/libdevice/libdevice.10.bc\" is not found");
+#endif
+    linker.linkInModule(std::move(uq_llvm_libdevice_module));
+}
+
+void GenerateLlvmPass(std::shared_ptr<ir::Module> ir_module) {
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
 
@@ -802,7 +820,6 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
     JTMB->setCPU("");
     JTMB->setRelocationModel(std::nullopt);
     JTMB->setCodeModel(std::nullopt);
-    // JTMB->setCodeGenOptLevel(llvm::CodeGenOpt::);
     JTMB->addFeatures(std::vector<std::string>());
     auto TM = JTMB->createTargetMachine();
     PRAJNA_VERIFY(TM && TM.get());
@@ -846,49 +863,25 @@ std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
 
     // no errors, return false
     PRAJNA_ASSERT(!llvm::verifyModule(*ir_module->llvm_module, &llvm::errs()));
+}
 
-    auto ir_nvptx_module = ir_module->modules[prajna::ir::Target::nvptx];
-    if (ir_nvptx_module && ir_nvptx_module->llvm_module) {
-        llvm::Linker linker(*ir_nvptx_module->llvm_module);
-        llvm::SMDiagnostic err;
-#ifdef _WIN32
-        // TODO: 后期增加cuda版本配置的功能, 目前使用最新版本
-        auto cuda_path = std::filesystem::path(
-            "C:\\Program Files\\NVIDIA GPU Computing "
-            "Toolkit\\CUDA");
-        auto libdevice_bc_path_postfix = std::filesystem::path("nvvm\\libdevice\\libdevice.10.bc");
-        PRAJNA_ASSERT(std::filesystem::is_directory(cuda_path),
-                      "Can't find cuda in " + cuda_path.string());
-        auto cuda_version_dir_iter = std::filesystem::directory_iterator(cuda_path);
-        auto dir_iter_end = std::filesystem::directory_iterator();
-        // 使用最新那版本的cuda
-        auto cuda_version_path = (*std::max_element(cuda_version_dir_iter, dir_iter_end)).path();
-        auto libdevice_bc_path = cuda_version_path / libdevice_bc_path_postfix;
-        auto uq_llvm_libdevice_module =
-            llvm::parseIRFile(libdevice_bc_path.string(), err, static_llvm_context);
-        PRAJNA_ASSERT(uq_llvm_libdevice_module, "Failed to parse " + libdevice_bc_path.string());
-#else
-        auto uq_llvm_libdevice_module = llvm::parseIRFile(
-            "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc", err, static_llvm_context);
-        PRAJNA_ASSERT(uq_llvm_libdevice_module,
-                      "\"/usr/local/cuda/nvvm/libdevice/libdevice.10.bc\" is not found");
+std::shared_ptr<ir::Module> LlvmPass(std::shared_ptr<ir::Module> ir_module) {
+    GenerateLlvmPass(ir_module);
+
+    for (auto ir_sub_module : ir_module->modules) {
+        GenerateLlvmPass(ir_sub_module);
+
+        if (ir_sub_module->target == prajna::ir::Target::nvptx) {
+#ifdef PRAJNA_WITH_CUDA
+            LinkNvptxLibdeviceBitcodeFiles(*ir_sub_module->llvm_module, static_llvm_context);
 #endif
-        linker.linkInModule(std::move(uq_llvm_libdevice_module));
-
-        prajna::codegen::LlvmPass(ir_nvptx_module);
-    }
-
-    auto ir_amdgpu_module = ir_module->modules[prajna::ir::Target::amdgpu];
-    if (ir_amdgpu_module && ir_amdgpu_module->llvm_module) {
-#ifdef _WIN32
-        // ToDo
-#else
-
-        LinkLibdeviceBitcodeFiles(*ir_amdgpu_module->llvm_module, static_llvm_context);
-
+        } else if (ir_sub_module->target == prajna::ir::Target::amdgpu) {
+#ifdef PRAJNA_WITH_ROCM
+            LinkAmdLibdeviceBitcodeFiles(*ir_sub_module->llvm_module, static_llvm_context);
 #endif
-
-        prajna::codegen::LlvmPass(ir_amdgpu_module);
+        } else {
+            PRAJNA_UNREACHABLE;
+        }
     }
 
     return ir_module;

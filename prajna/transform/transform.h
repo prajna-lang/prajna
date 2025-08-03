@@ -26,13 +26,10 @@ class Statements;
 namespace prajna::transform {
 
 inline void SperateGpuModule(std::shared_ptr<ir::Module> ir_module) {
-    ir_module->modules[ir::Target::nvptx] = ir::Module::Create();
-    ir_module->modules[ir::Target::amdgpu] = ir::Module::Create();
+    ir_module->modules.push_back(ir::Module::Create(ir::Target::nvptx));
+    ir_module->modules.push_back(ir::Module::Create(ir::Target::amdgpu));
 
-    ir_module->modules[ir::Target::nvptx]->target = ir::Target::nvptx;
-    ir_module->modules[ir::Target::amdgpu]->target = ir::Target::amdgpu;
-
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+    for (auto ir_sub_module : ir_module->modules) {
         if (!ir_sub_module) continue;
 
         auto function_cloner = ir::FunctionCloner::Create(ir_sub_module, false);
@@ -40,7 +37,7 @@ inline void SperateGpuModule(std::shared_ptr<ir::Module> ir_module) {
              iter_function != ir_module->functions.end();) {
             auto ir_function = *iter_function;
             if (std::ranges::count(ir_function->annotation_dict["target"],
-                                   ir::TargetToString(ir_target))) {
+                                   ir::TargetToString(ir_sub_module->target))) {
                 auto ir_function_new = Cast<ir::Function>(function_cloner->Clone(ir_function));
                 ir_sub_module->functions.remove(ir_function);
                 PRAJNA_ASSERT(ir::Verify(ir_function_new));
@@ -688,14 +685,14 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     DeclareExternalFunction(ir_module);
     PRAJNA_ASSERT(ir::Verify(ir_module));
 
-    for (auto [ir_target, ir_sub_module] : ir_module->modules) {
+    for (auto ir_sub_module : ir_module->modules) {
         if (!ir_sub_module) continue;
 
         ConvertSharedMemoryLocalVariableToGlobalAllocaWithAddressSpace3(ir_sub_module);
         ApplySSATransformations(ir_sub_module);
-        if (ir_target == ir::Target::nvptx) {
+        if (ir_sub_module->target == ir::Target::nvptx) {
             ConvertLLVMIntrinsicToNVVMLibdevice(ir_sub_module);
-        } else if (ir_target == ir::Target::amdgpu) {
+        } else if (ir_sub_module->target == ir::Target::amdgpu) {
             ConvertLLVMIntrinsicToAmdGPULibdevice(ir_sub_module);
         }
     }

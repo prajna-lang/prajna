@@ -79,3 +79,12 @@ target_link_libraries(prajna_core
     INTERFACE prajna_config_target
     INTERFACE prajna_compiler
 )
+
+
+if (PRAJNA_WITH_CUDA)
+    target_compile_definitions(prajna_config_target INTERFACE PRAJNA_WITH_CUDA)
+endif()
+
+if (PRAJNA_WITH_ROCM)
+    target_compile_definitions(prajna_config_target INTERFACE PRAJNA_WITH_ROCM)
+endif()

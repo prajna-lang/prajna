@@ -86,9 +86,10 @@ std::shared_ptr<ir::Module> Compiler::CompileCode(
         prajna::lowering::lower(ast, symbol_table, logger, shared_from_this(), is_interpreter);
     ir_lowering_module->name = file_name;
     ir_lowering_module->fullname = ir_lowering_module->name;
-    for (auto [ir_target, ir_sub_module] : ir_lowering_module->modules) {
+    for (auto ir_sub_module : ir_lowering_module->modules) {
         if (ir_sub_module == nullptr) continue;
-        ir_sub_module->name = ir_lowering_module->name + "_" + ir::TargetToString(ir_target);
+        ir_sub_module->name =
+            ir_lowering_module->name + "_" + ir::TargetToString(ir_sub_module->target);
         ir_sub_module->fullname = ir_sub_module->name;
     }
     auto ir_ssa_module = prajna::transform::Transform(ir_lowering_module);

@@ -50,7 +50,6 @@ if (PRAJNA_WITH_CUDA)
         PRIVATE LLVMNVPTXInfo     # NVPTX 目标信息
         PRIVATE LLVMAsmPrinter    # 支持 PTX 汇编输出
     )
-    target_compile_definitions(prajna_jit PRIVATE PRAJNA_WITH_CUDA)
 endif()
 
 if (PRAJNA_WITH_ROCM)
@@ -60,5 +59,4 @@ if (PRAJNA_WITH_ROCM)
         PRIVATE LLVMAMDGPUInfo     # HSACO 目标信息
         PRIVATE LLVMAsmPrinter    # 支持 HSACO 汇编输出
     )
-    target_compile_definitions(prajna_jit PRIVATE PRAJNA_WITH_ROCM)
 endif()

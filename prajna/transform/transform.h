@@ -200,49 +200,27 @@ inline void ConvertKernelFunctionOperandToGlobalVariable(std::shared_ptr<ir::Mod
     }
 }
 
-inline void ConvertGlobalVariableToPointer(std::shared_ptr<ir::Module> ir_module) {
-    for (auto ir_global_variable : ir_module->global_variables) {
+inline void ConvertGlobalVariableToGlobalAlloca(std::shared_ptr<ir::Module> ir_module) {
+    for (auto ir_global_variable : Clone(ir_module->global_variables)) {
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_global_variable->type);
         ir_global_alloca->name = ir_global_variable->name;
         ir_global_alloca->fullname = ir_global_variable->fullname;
         // ir_global_variable->is_external默认为false
         ir_global_alloca->is_external = ir_global_variable->is_external;
         ir_module->AddGlobalAlloca(ir_global_alloca);
+
+        for (auto [wp_ir_instruction, op_idx] :
+             Clone(ir_global_variable->instruction_with_index_list)) {
+            auto ir_instruction = Lock(wp_ir_instruction);
+            auto ir_deference_pointer = ir::DeferencePointer::Create(ir_global_alloca);
+            auto ir_block = ir_instruction->GetParentBlock();
+            auto iter = std::ranges::find(*ir_block, ir_instruction);
+            ir_block->Insert(iter, ir_deference_pointer);
+            ir_instruction->SetOperand(op_idx, ir_deference_pointer);
+        }
     }
 
     ir_module->global_variables.clear();
-
-    for (auto ir_function : ir_module->functions) {
-        auto ir_instructions = utility::GetAll<ir::Instruction>(ir_function);
-        for (auto ir_instruction : ir_instructions) {
-            for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-                // @note 全局变量目前遵循如果使用其他module的则自身为external的原则
-                if (auto ir_global_variable =
-                        Cast<ir::GlobalVariable>(ir_instruction->GetOperand(i))) {
-                    auto iter_global_alloca = std::ranges::find_if(
-                        ir_module->global_allocas, [=](std::shared_ptr<ir::GlobalAlloca> x) {
-                            return x->fullname == ir_global_variable->fullname;
-                        });
-                    std::shared_ptr<ir::GlobalAlloca> ir_global_alloca = nullptr;
-                    if (iter_global_alloca != ir_module->global_allocas.end()) {
-                        ir_global_alloca = *iter_global_alloca;
-                    } else {
-                        ir_global_alloca = ir::GlobalAlloca::Create(ir_global_variable->type);
-                        ir_global_alloca->name = ir_global_variable->name;
-                        ir_global_alloca->fullname = ir_global_variable->fullname;
-                        ir_global_alloca->is_external = true;
-                        ir_module->AddGlobalAlloca(ir_global_alloca);
-                    }
-
-                    auto ir_deference_pointer = ir::DeferencePointer::Create(ir_global_alloca);
-                    auto ir_block = ir_instruction->GetParentBlock();
-                    auto iter = std::ranges::find(*ir_block, ir_instruction);
-                    ir_block->Insert(iter, ir_deference_pointer);
-                    ir_instruction->SetOperand(i, ir_deference_pointer);
-                }
-            }
-        }
-    }
 }
 
 // @brief 移除return后面的指令. 若不移除, 会存在未知错误
@@ -713,7 +691,7 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
     ConvertKernelFunctionOperandToGlobalVariable(ir_module);
 
-    ConvertGlobalVariableToPointer(ir_module);
+    ConvertGlobalVariableToGlobalAlloca(ir_module);
 
     SperateGpuModule(ir_module);
     ConvertSharedMemoryLocalVariableToGlobalAlloca(ir_module);

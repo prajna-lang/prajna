@@ -169,8 +169,8 @@ class LlvmCodegen : public prajna::ir::Visitor {
         PRAJNA_ASSERT(!ir_module->llvm_module);
         ir_module->llvm_module = new llvm::Module(ir_module->name, static_llvm_context);
 
+        PRAJNA_ASSERT(ir_module->global_variables.empty());
         for (auto ir_global_alloca : ir_module->global_allocas) {
-            // this->EmitGlobalAlloca(ir_global_alloca);
             ir_global_alloca->ApplyVisitor(this->shared_from_this());
         }
 

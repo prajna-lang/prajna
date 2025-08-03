@@ -91,7 +91,7 @@ std::shared_ptr<ir::Module> Compiler::CompileCode(
         ir_sub_module->name = ir_lowering_module->name + "_" + ir::TargetToString(ir_target);
         ir_sub_module->fullname = ir_sub_module->name;
     }
-    auto ir_ssa_module = prajna::transform::transform(ir_lowering_module);
+    auto ir_ssa_module = prajna::transform::Transform(ir_lowering_module);
     auto ir_codegen_module = prajna::codegen::LlvmCodegen(ir_ssa_module, ir::Target::host);
     auto ir_llvm_optimize_module = prajna::codegen::LlvmPass(ir_codegen_module);
 
@@ -101,7 +101,7 @@ std::shared_ptr<ir::Module> Compiler::CompileCode(
 }
 
 void Compiler::GenLlvm(std::shared_ptr<ir::Module> ir_module) {
-    auto ir_ssa_module = prajna::transform::transform(ir_module);
+    auto ir_ssa_module = prajna::transform::Transform(ir_module);
     auto ir_codegen_module = prajna::codegen::LlvmCodegen(ir_ssa_module, ir::Target::host);
     // 调用Value::Detach 解除循环引用
     auto ir_llvm_optimize_module = prajna::codegen::LlvmPass(ir_codegen_module);

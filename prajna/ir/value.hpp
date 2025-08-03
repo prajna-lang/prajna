@@ -1571,6 +1571,9 @@ class Module : public Value {
     }
 
     void AddGlobalAlloca(std::shared_ptr<GlobalAlloca> ir_global_alloca) {
+        PRAJNA_ASSERT(std::ranges::count_if(this->global_allocas, [&](auto x) {
+                          return x->fullname == ir_global_alloca->fullname;
+                      }) == 0);
         ir_global_alloca->parent = shared_from_this();
         this->global_allocas.push_back(ir_global_alloca);
     }

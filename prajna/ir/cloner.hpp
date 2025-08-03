@@ -165,6 +165,9 @@ class FunctionCloner : public Visitor {
             return;
         }
         std::shared_ptr<LocalVariable> ir_new = LocalVariable::Create(ir_local_variable->type);
+        ir_new->annotation_dict = ir_local_variable->annotation_dict;
+        ir_new->fullname = ir_local_variable->fullname;
+        ir_new->name = ir_local_variable->name;
         this->value_dict[ir_local_variable] = ir_new;
     }
 

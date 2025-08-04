@@ -74,6 +74,10 @@ use io::Input;
 
 use fs;
 
+use net::_c;
+use net::tcp::TcpStream;
+use net::tcp::TcpListener;
+
 use chrono;
 
 func __load_dynamic_library(lib_name: ptr<char>)->i64;

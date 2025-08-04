@@ -1,0 +1,42 @@
+@test
+func Main() {
+    var listener = TcpListener::Bind(0u8, 0u8, 0u8, 0u8, 8887u16, 5i32);
+
+    test::Assert(listener.IsListening());
+    "Server listening, waiting for ONE connection...".PrintLine();
+
+    var client_stream = listener.Accept();
+
+    test::Assert(client_stream.IsConnected());
+    var buffer: array<u8, 128>;
+    var bytes_read = client_stream.Read<128>(&buffer);
+
+    if (bytes_read > 0i64) {
+        ("Received " + bytes_read.ToString() + " bytes: " + buffer[0].ToString()).PrintLine();
+
+        var echo_byte: array<u8, 1>;
+        echo_byte[0] = buffer[0];
+        client_stream.Write<1>(echo_byte);
+
+        var buffer2: array<u8, 128>;
+        var bytes_read2 = client_stream.Read<128>(&buffer2);
+
+        if (bytes_read2 > 0i64) {
+            ("Received array: ").Print();
+            var i = 0i64;
+            while (i < bytes_read2 && i < 10i64) {
+                buffer2[i].ToString().Print();
+                " ".Print();
+                i = i + 1i64;
+            }
+            "\n".Print();
+
+            var response: array<u8, 4>;
+            response[0] = buffer2[0];
+            response[1] = buffer2[1];
+            response[2] = buffer2[2];
+            response[3] = buffer2[3];
+            client_stream.Write<4>(response);
+        }
+    }
+}

@@ -1,0 +1,22 @@
+@test
+func Main() {
+    var stream = TcpStream::Connect(127u8, 0u8, 0u8, 1u8, 8887u16);
+
+    test::Assert(stream.IsConnected());
+    var message_buffer: array<u8, 5>;
+    message_buffer[0] = 72u8;  // 'H'
+    message_buffer[1] = 101u8; // 'e'
+    message_buffer[2] = 108u8; // 'l'
+    message_buffer[3] = 108u8; // 'l'
+    message_buffer[4] = 111u8; // 'o'
+
+    var message_ptr = &message_buffer[0];
+    var bytes_sent = stream.Send(message_ptr, 5i64);
+
+    var response_buffer: array<u8, 1024>;
+    var response_ptr = &response_buffer[0];
+    var bytes_received = stream.Receive(response_ptr, 1024i64);
+
+    ("Original interface: sent " + bytes_sent.ToString() +
+     ", received " + bytes_received.ToString()).PrintLine();
+}

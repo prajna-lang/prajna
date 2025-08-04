@@ -1,0 +1,243 @@
+use net::_c;
+
+struct TcpStream {
+    socket_fd: i32;
+    is_connected: bool;
+    _reference_counter: ptr<i64>;
+}
+
+implement TcpStream {
+    @static
+    func Connect(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16) -> TcpStream {
+        var stream: TcpStream;
+        stream.socket_fd = net::_c::socket(2i32, 1i32, 6i32); // AF_INET, SOCK_STREAM, IPPROTO_TCP
+
+        if (stream.socket_fd < 0i32) {
+            ("Failed to create socket").PrintLine();
+            return stream;
+        }
+
+        var server_addr = net::_c::create_socket_addr_in(ip_a, ip_b, ip_c, ip_d, port);
+        var server_addr_ptr = &server_addr;
+        var connect_result = net::_c::connect(stream.socket_fd, server_addr_ptr, 16u32);
+
+        if (connect_result == 0i32) {
+            stream.is_connected = true;
+            ("Connected to " + ip_a.ToString() + "." + ip_b.ToString() + "." +
+             ip_c.ToString() + "." + ip_d.ToString() + ":" + port.ToString()).PrintLine();
+        } else {
+            ("Failed to connect to server").PrintLine();
+            net::_c::close(stream.socket_fd);
+            stream.socket_fd = -1i32;
+        }
+
+        return stream;
+    }
+
+    @static
+    func FromSocket(socket_fd: i32) -> TcpStream {
+        var stream: TcpStream;
+        stream.socket_fd = socket_fd;
+        stream.is_connected = true;
+        return stream;
+    }
+
+    template <Length>
+    func Write(data: array<u8, Length>) -> i64 {
+        if (!this.is_connected || this.socket_fd < 0i32) {
+            return -1i64;
+        }
+
+        var data_ptr = &data[0];
+        var bytes_sent = net::_c::send(this.socket_fd, data_ptr, Length, 0i32);
+        return bytes_sent;
+    }
+
+    template <Length>
+    func Read(buffer: ptr<array<u8, Length>>) -> i64 {
+        if (!this.is_connected || this.socket_fd < 0i32) {
+            return -1i64;
+        }
+
+        var buffer_ptr = &(*buffer)[0];
+        var bytes_received = net::_c::recv(this.socket_fd, buffer_ptr, Length, 0i32);
+
+        if (bytes_received == 0i64) {
+            this.is_connected = false;
+        }
+        return bytes_received;
+    }
+
+    func Send(data: ptr<u8>, length: i64) -> i64 {
+        if (!this.is_connected || this.socket_fd < 0i32) {
+            return -1i64;
+        }
+
+        var bytes_sent = net::_c::send(this.socket_fd, data, length, 0i32);
+        return bytes_sent;
+    }
+
+    func Receive(buffer: ptr<u8>, buffer_size: i64) -> i64 {
+        if (!this.is_connected || this.socket_fd < 0i32) {
+            return -1i64;
+        }
+
+        var bytes_received = net::_c::recv(this.socket_fd, buffer, buffer_size, 0i32);
+        if (bytes_received == 0i64) {
+            this.is_connected = false;
+        }
+        return bytes_received;
+    }
+
+    func Close() {
+        if (this.is_connected && this.socket_fd >= 0i32) {
+            var close_result = net::_c::close(this.socket_fd);
+            if (close_result == 0i32) {
+                ("Connection closed successfully").PrintLine();
+            } else {
+                ("Failed to close connection").PrintLine();
+            }
+            this.is_connected = false;
+            this.socket_fd = -1i32;
+        }
+    }
+
+    func IsConnected() -> bool {
+        return this.is_connected && this.socket_fd >= 0i32;
+    }
+
+    func GetSocketFd() -> i32 {
+        return this.socket_fd;
+    }
+
+    func __initialize__() {
+        this.socket_fd = -1i32;
+        this.is_connected = false;
+        this._reference_counter = ptr<i64>::Allocate(1i64);
+        *this._reference_counter = 1i64;
+    }
+
+    func __copy__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter + 1i64;
+        }
+    }
+
+    func __finalize__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter - 1i64;
+            if (*this._reference_counter == 0i64) {
+                this.Close();
+                this._reference_counter.Free();
+            }
+        }
+    }
+}
+
+struct TcpListener {
+    socket_fd: i32;
+    is_listening: bool;
+    _reference_counter: ptr<i64>;
+}
+
+implement TcpListener {
+    @static
+    func Bind(ip_a: u8, ip_b: u8, ip_c: u8, ip_d: u8, port: u16, backlog: i32) -> TcpListener {
+        var listener: TcpListener;
+        listener.socket_fd = net::_c::socket(2i32, 1i32, 6i32); // AF_INET, SOCK_STREAM, IPPROTO_TCP
+
+        if (listener.socket_fd < 0i32) {
+            ("Failed to create listener socket").PrintLine();
+            return listener;
+        }
+
+        var server_addr = net::_c::create_socket_addr_in(ip_a, ip_b, ip_c, ip_d, port);
+        var server_addr_ptr = &server_addr;
+        var bind_result = net::_c::bind(listener.socket_fd, server_addr_ptr, 16u32);
+
+        if (bind_result != 0i32) {
+            ("Failed to bind to address").PrintLine();
+            net::_c::close(listener.socket_fd);
+            listener.socket_fd = -1i32;
+            return listener;
+        }
+
+        var listen_result = net::_c::listen(listener.socket_fd, backlog);
+        if (listen_result != 0i32) {
+            ("Failed to start listening").PrintLine();
+            net::_c::close(listener.socket_fd);
+            listener.socket_fd = -1i32;
+            return listener;
+        }
+
+        listener.is_listening = true;
+        ("Server listening on " + ip_a.ToString() + "." + ip_b.ToString() + "." +
+         ip_c.ToString() + "." + ip_d.ToString() + ":" + port.ToString()).PrintLine();
+
+        return listener;
+    }
+
+    func Accept() -> TcpStream {
+        var empty_stream: TcpStream;
+
+        if (!this.is_listening || this.socket_fd < 0i32) {
+            ("Listener is not active").PrintLine();
+            return empty_stream;
+        }
+
+        var client_addr: net::_c::socket_addr_in;
+        var client_addr_ptr = &client_addr;
+        var addr_len = 16u32;
+        var addr_len_ptr = &addr_len;
+
+        var client_fd = net::_c::accept(this.socket_fd, client_addr_ptr, addr_len_ptr);
+
+        if (client_fd < 0i32) {
+            ("Failed to accept client connection").PrintLine();
+            return empty_stream;
+        }
+
+        ("Client connected! Client FD: " + client_fd.ToString()).PrintLine();
+        return TcpStream::FromSocket(client_fd);
+    }
+
+    func Close() {
+        if (this.is_listening && this.socket_fd >= 0i32) {
+            var close_result = net::_c::close(this.socket_fd);
+            if (close_result == 0i32) {
+                ("Listener closed successfully").PrintLine();
+            } else {
+                ("Failed to close listener").PrintLine();
+            }
+            this.is_listening = false;
+            this.socket_fd = -1i32;
+        }
+    }
+
+    func IsListening() -> bool {
+        return this.is_listening && this.socket_fd >= 0i32;
+    }
+
+    func __initialize__() {
+        this.socket_fd = -1i32;
+        this.is_listening = false;
+        this._reference_counter = ptr<i64>::Allocate(1i64);
+        *this._reference_counter = 1i64;
+    }
+
+    func __copy__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter + 1i64;
+        }
+    }
+
+    func __finalize__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter - 1i64;
+            if (*this._reference_counter == 0i64) {
+                this.Close();
+                this._reference_counter.Free();
+            }
+        }
+    }
+}

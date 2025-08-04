@@ -1,7 +1,45 @@
 # Prajna 编译器异构 GPU 后端支持实践：：NVIDIA & AMD 一站式适配
 
-
 在 GPU 计算时代，如何让自研的 DSL 语言或编译器高效地跑在 NVIDIA/AMD GPU 上，成为许多开发者关注的问题。Prajna 编译器也不例外，我们在实现过程中选择了 LLVM 的 NVPTX（NVIDIA）和 AMDGPU（AMD）后端，借助其提供的低级汇编能力，实现了对主流 GPU 的灵活支持。本文全面介绍 Prajna 在双后端支持下的实现机制、工程架构、关键代码及平台适配经验。
+
+## Prajna IR的分离
+
+Prajna为了更好地实现编译器, 设计了一套更为上层的IR, 也就是Prajna IR. 我的编译器的主药流程如下图所示
+
+```mermaid
+flowchart LR
+  A("Prajna Code") -->AST("AST")  --> B("Prajna IR") --> C("LLVM IR") --> D("Native Code")
+```
+
+Prajna是一个支持异构计算的编程语言, 和cuda一样, 我们首先要解决的一个首要问题就是多设备的代码分离, Prajna改善了异构编程的流程, 我们可以根据调用的逻辑, 自动把代码发射到对应的平台上, 而不止是根据代码标注来确定.
+
+```mermaid
+flowchart LR
+  A("Prajna IR") -->|"默认 CPU 代码"| C("Host Module") --> Backend1("LLVM IR") --> Asm("Asm")
+  A("Prajna IR") -->|"通过@target或调用关系"| D("Nvgpu Module") --> Backend2("NVVM IR") --> Ptx("Ptx")
+  A("Prajna IR") -->|"通过@target或调用关系"| E("Amdgpu Module") --> Backend3("AmdGPU IR") --> Hsaco("Hsaco")
+```
+
+我们会通过下面的方式进行标注
+
+```prajna
+@target("amdgpu")
+func AmdGpuFun()->void \\ amdgpu平台代码
+
+@target("nvptx")
+func NvGpuFun() ->void \\ nvgpu平台代码
+```
+
+只有平台相关的代码需要标注, 大部分代码可以根据调用关系来判断归属平台.
+
+核函数必须通过@kernel标注
+
+```prajna
+@kernel
+func TestKernel() -> void \\
+```
+
+我们会根据__launch__<TestKernel, nvgpu|amdgpu>来确定核函数的平台, 如果是平台相关的核函数, 我们也可以通过”@target(...)"来限制
 
 ---
 
@@ -19,7 +57,7 @@
 ```mermaid
 flowchart TD
     %% 前端到中间IR
-    A(["Prajna 程序"]) 
+    A(["Prajna 程序"])
     A --> B(["Prajna IR 生成"])
     B --> B0(["LLVM IR"])
     %% IR分三路
@@ -76,7 +114,7 @@ flowchart TD
 
 ## 关键实现细节与平台 Loader 封装
 
-###  多平台 GPU 标准库设计
+### 多平台 GPU 标准库设计
 
 * 所有 CUDA/HIP 相关 API、原语、线程索引、内存操作，**都以 DSL 标准库（如 nvgpu.prajna/amdgpu.prajna）方式实现**。
 * 类型系统和高阶 API 可以和张量等自定义结构无缝组合，极大提升维护性与可移植性。
@@ -86,7 +124,7 @@ flowchart TD
 
 ### 目标代码生成（PTX/HSACO）
 
-####  NVPTX 后端（NVIDIA）
+#### NVPTX 后端（NVIDIA）
 
 * **目标 triple 配置**：
   `module->setTargetTriple("nvptx64-nvidia-cuda");`
@@ -97,6 +135,7 @@ flowchart TD
   auto target_machine = target->createTargetMachine(triple, sm_version, "", opts, ...);
   module->setDataLayout(target_machine->createDataLayout());
   ```
+
 * **PTX 汇编生成**：
   使用 legacy PassManager 及 target\_machine->addPassesToEmitFile 输出 PTX 字符串（或文件）。
 
@@ -242,14 +281,9 @@ flowchart TD
 * **平台参数（triple、sm、gfx）须明确自动检测，防止编译和兼容性错误。**
 * **标准库抽象 GPU API，有助于后续适配更多异构平台。**
 
-
-
-
-
 ---
 
 ## 项目链接
 
 * 项目主页：[https://github.com/prajna](https://github.com/prajna)
 * 欢迎关注我们的公众号，留言交流你在 GPU 编译和多后端平台实践中的经验与疑问！
-

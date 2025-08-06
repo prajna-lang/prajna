@@ -105,6 +105,158 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
     return !ir_access_properties.empty();
 }
 
+// inline bool IdentifyKernelFunctionAndTarget(std::shared_ptr<ir::Module> ir_module) {
+//     bool changed = false;
+
+//     for (auto ir_function : ir_module->functions) {
+//         // 直接获取所有 KernelFunctionCall
+//         auto ir_kernel_calls = utility::GetAll<ir::KernelFunctionCall>(ir_function);
+//         for (auto ir_kernel_call : ir_kernel_calls) {
+//             auto ir_kernel_function = ir_kernel_call->Function();
+//             if (!ir_kernel_function) continue;
+
+//             // 规范化 fullname，移除可选的全局前缀 ::
+//             std::string callee_fullname = ir_kernel_function->fullname;
+//             if (callee_fullname.substr(0, 2) == "::") {
+//                 callee_fullname = callee_fullname.substr(2);
+//             }
+
+//             // 自动标记 kernel（兼容旧代码）
+//             ir_kernel_function->annotation_dict["kernel"] = {"true"};
+
+//             // 自动检测 target
+//             if (callee_fullname == "nvgpu::LaunchKernel") {
+//                 ir_kernel_function->annotation_dict["target"] = {"nvptx"};
+//             } else if (callee_fullname == "amdgpu::LaunchKernel") {
+//                 ir_kernel_function->annotation_dict["target"] = {"amdgpu"};
+//             } else {
+//                 PRAJNA_UNIMPLEMENT;
+//             }
+//             changed = true;
+//         }
+//     }
+
+//     // 递归处理子模块
+//     for (const auto& ir_sub_module : ir_module->modules) {
+//         if (ir_sub_module) {
+//             changed |= IdentifyKernelFunctionAndTarget(ir_sub_module);
+//         }
+//     }
+//     return changed;
+// }
+
+inline std::shared_ptr<ir::Function> ResolveKernelFunction(std::shared_ptr<ir::Value> v) {
+    while (true) {
+        if (!v) return nullptr;
+
+        // --- 直接是 Function ---
+        if (auto func = Cast<ir::Function>(v)) {
+            return func;
+        }
+
+        // --- LocalVariable，尝试读取 initial_value ---
+        if (auto local = Cast<ir::LocalVariable>(v)) {
+            if (!local->initial_value) return nullptr;
+            v = local->initial_value;
+            continue;
+        }
+
+        // --- bit_cast 调用，取第一个参数 ---
+        if (auto call = Cast<ir::Call>(v)) {
+            auto callee = call->Function();
+            if (callee && callee->fullname.find("bit_cast") != std::string::npos) {
+                if (call->ArgumentSize() > 0) {
+                    v = call->Argument(0);
+                    continue;
+                } else {
+                    return nullptr;
+                }
+            }
+        }
+
+        break;
+    }
+    return nullptr;
+}
+
+inline void ConvertRuntimeLaunchToKernelFunctionCall(std::shared_ptr<ir::Module> ir_module) {
+    auto ir_builder = lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
+    for (auto ir_function : ir_module->functions) {
+        auto calls = utility::GetAll<ir::Call>(ir_function);
+        for (auto ir_call : calls) {
+            auto ir_callee = ir_call->Function();
+            if (!ir_callee) continue;
+
+            // 规范化 fullname，移除可选的全局前缀 ::
+            std::string fullname = ir_callee->fullname;
+            if (fullname.substr(0, 2) == "::") {
+                fullname = fullname.substr(2);
+            }
+            if (fullname != "nvgpu::LaunchKernel" && fullname != "amdgpu::LaunchKernel") continue;
+
+            // 提取 kernel
+            // std::shared_ptr<ir::Function> ir_kernel_function = nullptr;
+            // auto ir_kernel_function_ptr = ir_call->Argument(0);
+            // if (auto local_var = Cast<ir::LocalVariable>(ir_kernel_function_ptr)) {
+            //     auto value = local_var->initial_value;
+            //     // 支持 bit_cast(function)
+            //     if (auto ir_bit_cast = Cast<ir::BitCast>(ir_kernel_function_ptr)) {
+            //         ir_kernel_function = Cast<ir::Function>(ir_bit_cast->Value());
+            //     } else {
+            //         ir_kernel_function = Cast<ir::Function>(ir_kernel_function_ptr);
+            //     }
+            // }
+
+            auto ir_kernel_function_ptr = ir_call->Argument(0);
+            auto ir_kernel_function = ResolveKernelFunction(ir_kernel_function_ptr);
+            if (!ir_kernel_function) continue;
+
+            // 标记 kernel & target
+            ir_kernel_function->annotation_dict["kernel"] = {"true"};
+            if (fullname == "nvgpu::LaunchKernel") {
+                ir_kernel_function->annotation_dict["target"] = std::list<std::string>{"nvptx"};
+            } else {
+                ir_kernel_function->annotation_dict["target"] = std::list<std::string>{"amdgpu"};
+            }
+
+            
+
+            // 标记 kernel & target
+            ir_kernel_function->annotation_dict["kernel"] = {"true"};
+            if (fullname == "nvgpu::LaunchKernel") {
+                ir_kernel_function->annotation_dict["target"] = std::list<std::string>{"nvptx"};
+            } else {
+                ir_kernel_function->annotation_dict["target"] = std::list<std::string>{"amdgpu"};
+            }
+
+            // grid/block/args
+            auto ir_grid_shape = ir_call->Argument(1);
+            auto ir_block_shape = ir_call->Argument(2);
+            std::list<std::shared_ptr<ir::Value>> ir_args;
+            for (int i = 3; i < ir_call->ArgumentSize(); ++i) {
+                ir_args.push_back(ir_call->Argument(i));
+            }
+
+            // 插入新节点
+            auto ir_block = ir_call->GetParentBlock();
+            auto scope = ir_builder->PushBlockRAII(ir_block);
+            ir_builder->inserter_iterator = std::ranges::find(*ir_block, ir_call);
+
+            auto ir_kernel_call = ir_builder->Create<ir::KernelFunctionCall>(
+                ir_kernel_function, ir_grid_shape, ir_block_shape, ir_args);
+
+            utility::RemoveFromParent(ir_call);
+            ir_call->Finalize();
+        }
+    }
+
+    for (auto ir_sub_module : ir_module->modules) {
+        if (ir_sub_module) ConvertRuntimeLaunchToKernelFunctionCall(ir_sub_module);
+    }
+}
+
+
+
 inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
     std::string runtime_namespace;
     // PRAJNA_ASSERT(!runtime_namespace.empty());
@@ -151,6 +303,8 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                     ir_module->symbol_table->RootSymbolTable()->Get(runtime_namespace))
                     ->Get("LaunchKernel"));
             PRAJNA_ASSERT(ir_launch_function);
+
+            // 构建 LaunchKernel 调用
             std::list<std::shared_ptr<ir::Value>> ir_arguments;
             ir_arguments.push_back(ir_builder->Create<ir::BitCast>(
                 ir_kernel_function, ir::PointerType::Create(ir::i8)));
@@ -163,6 +317,8 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                 ir::PointerType::Create(ir::PointerType::Create(ir::i8)));
             ir_arguments.push_back(ir_array_address);
             auto ir_kernel_call = ir_builder->Call(ir_launch_function, ir_arguments);
+
+            // 添加错误检查
             auto ir_zero = ir_builder->GetConstant<int64_t>(0);
             auto ir_condition = ir_builder->CallBinaryOperator(ir_kernel_call, "!=", ir_zero);
             auto ir_if =
@@ -464,8 +620,8 @@ inline bool ExternCFunction(std::shared_ptr<ir::Module> ir_module) {
 
 inline void TopologicalSortFunctionVisit(
     std::shared_ptr<ir::Function> ir_function,
-    std::list<std::shared_ptr<ir::Function>> &ir_function_list,
-    std::set<std::shared_ptr<ir::Function>> &ir_gray_function_set) {
+    std::list<std::shared_ptr<ir::Function>>& ir_function_list,
+    std::set<std::shared_ptr<ir::Function>>& ir_gray_function_set) {
     // 标记要访问的函数
     ir_gray_function_set.insert(ir_function);
     auto ir_instructions = utility::GetAll<ir::Instruction>(ir_function);
@@ -672,7 +828,8 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     FlatternBlock(ir_module);
     RemoveValuesAfterReturn(ir_module);
     ConvertPropertyToFunctionCall(ir_module);
-
+    // IdentifyKernelFunctionAndTarget(ir_module);
+    ConvertRuntimeLaunchToKernelFunctionCall(ir_module);
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
     ReplaceKernelFunctionOperandToKernelGlobalAddress(ir_module);
 

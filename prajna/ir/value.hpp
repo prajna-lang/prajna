@@ -515,6 +515,7 @@ class LocalVariable : public Variable {
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<LocalVariable>(this->shared_from_this()));
     }
+    std::shared_ptr<ir::Value> initial_value = nullptr; 
 };
 
 /// @brief

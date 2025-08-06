@@ -240,6 +240,123 @@ class ExpressionLoweringVisitor {
         auto ir_arguments = *Cast<ir::ValueCollection>(applyOperand(ast_binary_operation.operand));
         PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
         auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operation.operand);
+
+        // if (auto func = Cast<ir::Function>(ir_lhs)) {
+        //     auto symbol_bit_cast = ir_builder->symbol_table->Get("bit_cast");
+        //     std::shared_ptr<Template> bit_cast_template = nullptr;
+        //     if (SymbolIs<Template>(symbol_bit_cast)) {
+        //         bit_cast_template = SymbolGet<Template>(symbol_bit_cast);
+        //     }
+
+        //     if (bit_cast_template && func->template_impl == bit_cast_template) {
+        //         if (func->parameters.size() != 2) {
+        //             logger->Error("bit_cast must have exactly two template arguments",
+        //                           ast_expressions);
+        //         }
+
+        //         // 提取模板参数
+        //         auto iter = func->parameters.begin();
+        //         auto src_type_symbol = *iter++;
+        //         auto dst_type_symbol = *iter;
+
+        //         auto src_type = SymbolGet<ir::Type>(src_type_symbol);
+        //         auto dst_type = SymbolGet<ir::Type>(dst_type_symbol);
+        //         if (!src_type || !dst_type) {
+        //             logger->Error("bit_cast template parameter type is invalid",
+        //             ast_expressions);
+        //         }
+
+        //         auto value = ir_arguments[0];
+        //         // 检查传入值的类型
+        //         if (value->type != src_type) {
+        //             logger->Error(fmt::format("bit_cast source type mismatch: expected {}, got{}
+        //             ",
+        //                                       src_type->fullname, value->type->fullname),
+        //                           ast_expressions);
+        //         }
+
+        //         // 生成 IR
+        //         return ir_builder->Create<ir::BitCast>(value, dst_type);
+        //     }
+        // }
+
+        // if (auto func = Cast<ir::Function>(ir_lhs)) {
+        //     // --- 改动1: 通过fullname判断 ---
+        //     auto fullname = func->fullname;
+        //     if (fullname.rfind("::", 0) == 0) {
+        //         fullname = fullname.substr(2);  // 去掉全局前缀
+        //     }
+
+        //     // 提取最后的函数名（去掉命名空间前缀）
+        //     auto last_double_colon = fullname.find_last_of(':');
+        //     std::string base_name = (last_double_colon == std::string::npos)
+        //                                 ? fullname
+        //                                 : fullname.substr(last_double_colon + 1);
+
+        //     if (base_name.rfind("bit_cast", 0) == 0) {
+        //         // if (func->parameters.size() != 2) {
+        //         //     logger->Error("bit_cast must have exactly two template arguments",
+        //         //                   ast_expressions);
+        //         // }
+
+        //         // --- 改动2: 用迭代器取模板参数 ---
+        //         auto iter = func->parameters.begin();
+        //         auto src_type_symbol = *iter++;
+        //         auto dst_type_symbol = *iter;
+
+        //         auto src_type = SymbolGet<ir::Type>(src_type_symbol);
+        //         auto dst_type = SymbolGet<ir::Type>(dst_type_symbol);
+        //         if (!src_type || !dst_type) {
+        //             // 临时兼容 ptr<undef> 或 ptr<Type> 未实例化的情况
+        //             auto src_name = boost::apply_visitor(
+        //                 [](auto const& sym) { return typeid(sym).name(); }, src_type_symbol);
+        //             auto dst_name = boost::apply_visitor(
+        //                 [](auto const& sym) { return typeid(sym).name(); }, dst_type_symbol);
+        //             if (src_name.find("ptr<undef>") != std::string::npos ||
+        //                 dst_name.find("ptr<undef>") != std::string::npos) {
+        //                 // 允许继续，不报错
+        //             } else {
+        //                 logger->Error("bit_cast template parameter type is invalid",
+        //                               ast_expressions);
+        //             }
+        //         }
+
+        //         // --- 改动3: 从list中取参数 ---
+        //         auto value = ir_arguments.front();
+        //         if (value->type != src_type) {
+        //             logger->Error(fmt::format("bit_cast source type mismatch: expected {}, got
+        //             {}",
+        //                                       src_type->fullname, value->type->fullname),
+        //                           ast_expressions);
+        //         }
+
+        //         return ir_builder->Create<ir::BitCast>(value, dst_type);
+        //     }
+        // }
+
+        // // 处理 bit_cast 调用
+        // if (auto func = Cast<ir::Function>(ir_lhs)) {
+        //     if (func->name == "bit_cast") {
+        //         if (ir_arguments.size() != 1) {
+        //             logger->Error("bit_cast expects exactly one argument", ast_expressions);
+        //         }
+        //         auto value = ir_arguments[0];
+        //         // 假设 bit_cast 的类型信息通过符号表或 AST 提供
+        //         auto src_type = value->type;
+        //         auto dst_type = ir_builder->GetTypeFromAst(ast_binary_operation.lhs);  // 需实现
+        //         if (!dst_type) {
+        //             logger->Error("bit_cast destination type not found", ast_expressions);
+        //         }
+        //         if (value->type != src_type) {
+        //             logger->Error(fmt::format("bit_cast source type mismatch: expected {}, got
+        //             {}",
+        //                                       src_type->fullname, value->type->fullname),
+        //                           ast_expressions);
+        //         }
+        //         return ir_builder->Create<ir::BitCast>(value, dst_type);
+        //     }
+        // }
+
         if (auto ir_member_function_with_this_pointer =
                 Cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
             auto ir_function_type =

@@ -128,7 +128,7 @@ prajna repl
 Similar to Python’s command-line interface, it provides a friendly interactive experience:
 
 ```bash
-(base) ➜  local prajna repl
+(base) ➜  prajna repl
 Prajna 0.0.0, all copyrights @ "www.github.com/matazure"
 prajna > "Hello World!"                                                  1,15  ]
 Hello World!

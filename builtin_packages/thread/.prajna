@@ -1,0 +1,240 @@
+use _c;
+
+struct Thread {
+    _pthread: _c::pthread_t;
+    _is_running: bool;
+    _is_detached: bool;
+    _reference_counter: ptr<i64>;
+}
+
+implement Thread {
+    @static
+    func Spawn(start_routine: function<ptr<undef>, ptr<undef>>, arg: ptr<undef>) -> Thread {
+        var thread: Thread;
+        var result = _c::pthread_create(&thread._pthread, ptr<_c::pthread_attr_t>::Null(),
+                                       start_routine, arg);
+        if (result == 0i32) {
+            thread._is_running = true;
+        } else {
+            ("Failed to create thread, error code: " + result.ToString()).PrintLine();
+        }
+        return thread;
+    }
+
+    func Join() {
+        if (this._is_running && !this._is_detached) {
+            var retval: ptr<undef>;
+            var result = _c::pthread_join(this._pthread, &retval);
+            if (result == 0i32) {
+                this._is_running = false;
+            } else {
+                ("Failed to join thread, error code: " + result.ToString()).PrintLine();
+            }
+        }
+    }
+
+    func Detach() {
+        if (this._is_running && !this._is_detached) {
+            var result = _c::pthread_detach(this._pthread);
+            if (result == 0i32) {
+                this._is_detached = true;
+            } else {
+                ("Failed to detach thread, error code: " + result.ToString()).PrintLine();
+            }
+        }
+    }
+
+    func IsRunning() -> bool {
+        return this._is_running;
+    }
+
+    func IsDetached() -> bool {
+        return this._is_detached;
+    }
+
+    func __initialize__() {
+        var pthread: _c::pthread_t;
+        for i in 0 to 7 {
+            pthread._data[i] = 0;
+        }
+        this._pthread = pthread;
+        this._is_running = false;
+        this._is_detached = false;
+        this._reference_counter = ptr<i64>::Allocate(1i64);
+        *this._reference_counter = 1i64;
+    }
+
+    func __copy__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter + 1;
+        }
+    }
+
+    func __finalize__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter - 1;
+            if (*this._reference_counter == 0) {
+                if (this._is_running && !this._is_detached) {
+                    this.Join();
+                }
+                this._reference_counter.Free();
+            }
+        }
+    }
+}
+
+
+struct Mutex {
+    _mutex: _c::pthread_mutex_t;
+    _is_initialized: bool;
+    _reference_counter: ptr<i64>;
+}
+
+implement Mutex {
+    func Lock() {
+        if (this._is_initialized) {
+            var result = _c::pthread_mutex_lock(&this._mutex);
+            if (result != 0i32) {
+                ("Failed to lock mutex, error code: " + result.ToString()).PrintLine();
+            }
+        }
+    }
+
+    func TryLock() -> bool {
+        if (this._is_initialized) {
+            var result = _c::pthread_mutex_trylock(&this._mutex);
+            return result == 0i32;
+        }
+        return false;
+    }
+
+    func Unlock() {
+        if (this._is_initialized) {
+            var result = _c::pthread_mutex_unlock(&this._mutex);
+            if (result != 0i32) {
+                ("Failed to unlock mutex, error code: " + result.ToString()).PrintLine();
+            }
+        }
+    }
+
+    func __initialize__() {
+        var mutex: _c::pthread_mutex_t;
+        for i in 0 to 7 {
+            mutex._data[i] = 0;
+        }
+        this._mutex = mutex;
+        var result = _c::pthread_mutex_init(&this._mutex, ptr<_c::pthread_mutexattr_t>::Null());
+        this._is_initialized = (result == 0i32);
+        this._reference_counter = ptr<i64>::Allocate(1);
+        *this._reference_counter = 1;
+
+        if (!this._is_initialized) {
+            ("Failed to initialize mutex, error code: " + result.ToString()).PrintLine();
+        }
+    }
+
+    func __copy__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter + 1;
+        }
+    }
+
+    func __finalize__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter - 1;
+            if (*this._reference_counter == 0) {
+                if (this._is_initialized) {
+                    var result = _c::pthread_mutex_destroy(&this._mutex);
+                    if (result != 0i32) {
+                        ("Failed to destroy mutex, error code: " + result.ToString()).PrintLine();
+                    }
+                }
+                this._reference_counter.Free();
+            }
+        }
+    }
+}
+
+struct ConditionVariable {
+    _cond: _c::pthread_cond_t;
+    _is_initialized: bool;
+    _reference_counter: ptr<i64>;
+}
+
+implement ConditionVariable {
+    func Wait(mutex: ptr<Mutex>) {
+        if (this._is_initialized && (mutex != ptr<Mutex>::Null())) {
+            var result = _c::pthread_cond_wait(&this._cond, &mutex->_mutex);
+            if (result != 0i32) {
+                ("Failed to wait on condition variable, error code: " + result.ToString()).PrintLine();
+            }
+        }
+    }
+
+    func Signal() {
+        if (this._is_initialized) {
+            var result = _c::pthread_cond_signal(&this._cond);
+            if (result != 0i32) {
+                ("Failed to signal condition variable, error code: " + result.ToString()).PrintLine();
+            }
+        }
+    }
+
+    func Broadcast() {
+        if (this._is_initialized) {
+            var result = _c::pthread_cond_broadcast(&this._cond);
+            if (result != 0i32) {
+                ("Failed to broadcast condition variable, error code: " + result.ToString()).PrintLine();
+            }
+        }
+    }
+
+    func __initialize__() {
+        var cond: _c::pthread_cond_t;
+        for i in 0 to 7 {
+            cond._data[i] = 0;
+        }
+        this._cond = cond;
+        var result = _c::pthread_cond_init(&this._cond, ptr<_c::pthread_condattr_t>::Null());
+        this._is_initialized = (result == 0i32);
+        this._reference_counter = ptr<i64>::Allocate(1);
+        *this._reference_counter = 1;
+
+        if (!this._is_initialized) {
+            ("Failed to initialize condition variable, error code: " + result.ToString()).PrintLine();
+        }
+    }
+
+    func __copy__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter + 1;
+        }
+    }
+
+    func __finalize__() {
+        if (this._reference_counter != ptr<i64>::Null()) {
+            *this._reference_counter = *this._reference_counter - 1;
+            if (*this._reference_counter == 0) {
+                if (this._is_initialized) {
+                    var result = _c::pthread_cond_destroy(&this._cond);
+                    if (result != 0i32) {
+                        ("Failed to destroy condition variable, error code: " + result.ToString()).PrintLine();
+                    }
+                }
+                this._reference_counter.Free();
+            }
+        }
+    }
+}
+
+func GetCurrentThreadId() -> _c::pthread_t {
+    return _c::pthread_self();
+}
+
+func ThreadsEqual(t1: _c::pthread_t, t2: _c::pthread_t) -> bool {
+    return _c::pthread_equal(t1, t2) != 0i32;
+}
+
+func ExitCurrentThread(retval: ptr<undef>) {
+    _c::pthread_exit(retval);
+}

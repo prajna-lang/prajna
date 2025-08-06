@@ -15,6 +15,10 @@
 #include <ws2tcpip.h>
 #endif
 
+#if defined(__linux__) || defined(__APPLE__)
+#include <pthread.h>
+#endif
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -304,6 +308,40 @@ void ExecutionEngine::BindBuiltinFunction() {
     this->BindCFunction(reinterpret_cast<void *>(htons_wrapper_macos), "::net::_c::htons");
 #elif defined(__linux__) || defined(WIN32)
     this->BindCFunction(reinterpret_cast<void *>(htons), "::net::_c::htons");
+#endif
+
+#if defined(__APPLE__) || defined(__linux__)
+    // Pthread basic functions
+    this->BindCFunction(reinterpret_cast<void *>(pthread_create), "::thread::_c::pthread_create");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_join), "::thread::_c::pthread_join");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_detach), "::thread::_c::pthread_detach");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_exit), "::thread::_c::pthread_exit");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_self), "::thread::_c::pthread_self");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_equal), "::thread::_c::pthread_equal");
+
+    // Pthread mutex functions
+    this->BindCFunction(reinterpret_cast<void *>(pthread_mutex_init),
+                        "::thread::_c::pthread_mutex_init");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_mutex_destroy),
+                        "::thread::_c::pthread_mutex_destroy");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_mutex_lock),
+                        "::thread::_c::pthread_mutex_lock");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_mutex_trylock),
+                        "::thread::_c::pthread_mutex_trylock");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_mutex_unlock),
+                        "::thread::_c::pthread_mutex_unlock");
+
+    // Pthread cond functions
+    this->BindCFunction(reinterpret_cast<void *>(pthread_cond_init),
+                        "::thread::_c::pthread_cond_init");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_cond_destroy),
+                        "::thread::_c::pthread_cond_destroy");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_cond_wait),
+                        "::thread::_c::pthread_cond_wait");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_cond_signal),
+                        "::thread::_c::pthread_cond_signal");
+    this->BindCFunction(reinterpret_cast<void *>(pthread_cond_broadcast),
+                        "::thread::_c::pthread_cond_broadcast");
 #endif
 
     this->BindCFunction(reinterpret_cast<void *>(Clock), "::chrono::Clock");

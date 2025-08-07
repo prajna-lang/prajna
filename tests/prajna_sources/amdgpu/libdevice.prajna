@@ -2,8 +2,18 @@ use ::amdgpu as gpu;
 
 @kernel
 @target("amdgpu")
-func myKernel(){
-    var tmp = 3.1415;
-    tmp.Sin();
+func myKernel(tensor: gpu::Tensor<f32, 1>){
+    var tmp = 3.1415 * 0.5;
+    tensor[0] = tmp.Sin();
 }
 
+@test
+func TestSin(){
+    var shape = [1];
+    var gpu_tensor = gpu::Tensor<f32, 1>::Create(shape);
+    myKernel<|[1,1,1], [1,1,1]|>(gpu_tensor);
+    gpu::Synchronize();
+
+    var host_tensor = gpu_tensor.ToHost();
+    test::Assert(host_tensor[0] == 1.0f32);
+}

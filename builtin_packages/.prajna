@@ -72,6 +72,8 @@ use sort;
 
 use io::Input;
 
+use thread;
+
 use fs;
 
 use net::_c;

@@ -515,7 +515,7 @@ class LocalVariable : public Variable {
     void ApplyVisitor(std::shared_ptr<Visitor> interpreter) override {
         interpreter->Visit(Cast<LocalVariable>(this->shared_from_this()));
     }
-    std::shared_ptr<ir::Value> initial_value = nullptr; 
+    // std::shared_ptr<ir::Value> initial_value = nullptr;
 };
 
 /// @brief
@@ -1611,8 +1611,8 @@ class KernelFunctionCall : public Instruction {
    public:
     static std::shared_ptr<KernelFunctionCall> Create(
         std::shared_ptr<ir::Value> ir_function_value, std::shared_ptr<ir::Value> ir_grid_shape,
-        std::shared_ptr<ir::Value> ir_block_shape,
-        std::list<std::shared_ptr<ir::Value>> arguments) {
+        std::shared_ptr<ir::Value> ir_block_shape, std::list<std::shared_ptr<ir::Value>> arguments,
+        std::shared_ptr<ir::Type> status_type = nullptr) {
         PRAJNA_ASSERT(ir_function_value);
         PRAJNA_ASSERT(ir_grid_shape);
         PRAJNA_ASSERT(ir_block_shape);
@@ -1632,7 +1632,12 @@ class KernelFunctionCall : public Instruction {
             self->Argument(i, *iter_argument);
         }
 
-        self->type = ir_function_type->return_type;
+        // Kernel 调用的“语义返回值”是 status（与 runtime LaunchKernel 对齐）
+        if (!status_type) {
+            // status_type = ir::IntType::Create(64, true);
+            status_type = ir_function_type->return_type;
+        }
+        self->type = status_type;
         self->tag = "KernelFunctionCall";
         return self;
     }

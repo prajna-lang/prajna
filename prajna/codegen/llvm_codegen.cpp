@@ -565,8 +565,44 @@ class LlvmCodegen : public prajna::ir::Visitor {
         auto llvm_basic_block = GetLlvmBasicBlock(ir_bit_cast);
         PRAJNA_ASSERT(ir_bit_cast->Value()->llvm_value);
         PRAJNA_ASSERT(ir_bit_cast->type->llvm_type);
-        ir_bit_cast->llvm_value = new llvm::BitCastInst(
-            ir_bit_cast->Value()->llvm_value, ir_bit_cast->type->llvm_type, "", llvm_basic_block);
+
+        auto *srcV = ir_bit_cast->Value()->llvm_value;
+        auto *dstTy = ir_bit_cast->type->llvm_type;
+        auto *srcTy = srcV->getType();
+
+        // 指针 -> 指针
+        if (srcTy->isPointerTy() && dstTy->isPointerTy()) {
+            unsigned srcAS = srcTy->getPointerAddressSpace();
+            unsigned dstAS = dstTy->getPointerAddressSpace();
+            if (srcAS != dstAS) {
+                // 地址空间不同，必须 AddrSpaceCast
+                ir_bit_cast->llvm_value =
+                    new llvm::AddrSpaceCastInst(srcV, dstTy, "", llvm_basic_block);
+                return;
+            }
+            // 地址空间相同，用 BitCast
+            ir_bit_cast->llvm_value = new llvm::BitCastInst(srcV, dstTy, "", llvm_basic_block);
+            return;
+        }
+
+        // 非指针之间（必须等位宽）
+        if (!srcTy->isPointerTy() && !dstTy->isPointerTy()) {
+            ir_bit_cast->llvm_value = new llvm::BitCastInst(srcV, dstTy, "", llvm_basic_block);
+            return;
+        }
+
+        // 指针 <-> 整数，这不是 bitcast；要用 ptrtoint / inttoptr
+        if (srcTy->isPointerTy() && dstTy->isIntegerTy()) {
+            ir_bit_cast->llvm_value = new llvm::PtrToIntInst(srcV, dstTy, "", llvm_basic_block);
+            return;
+        }
+        if (srcTy->isIntegerTy() && dstTy->isPointerTy()) {
+            ir_bit_cast->llvm_value = new llvm::IntToPtrInst(srcV, dstTy, "", llvm_basic_block);
+            return;
+        }
+
+        // 其它不支持的情况
+        PRAJNA_ASSERT(false && "Unsupported BitCast lowering case");
     }
 
     void Visit(std::shared_ptr<ir::CastInstruction> ir_cast_instruction) override {

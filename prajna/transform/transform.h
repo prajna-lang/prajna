@@ -130,7 +130,7 @@ inline std::shared_ptr<ir::Function> ResolveKernelFunction(std::shared_ptr<ir::V
     return nullptr;
 }
 
-inline void ConvertRuntimeLaunchToKernelFunctionCall(std::shared_ptr<ir::Module> ir_module) {
+inline void IdentifyKernelFunctionAndTarget(std::shared_ptr<ir::Module> ir_module) {
     auto print = prajna::ir::IRPrinter::Create();
     auto ir_builder = lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
     for (auto ir_function : ir_module->functions) {
@@ -732,8 +732,7 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     FlatternBlock(ir_module);
     RemoveValuesAfterReturn(ir_module);
     ConvertPropertyToFunctionCall(ir_module);
-
-    ConvertRuntimeLaunchToKernelFunctionCall(ir_module);
+    IdentifyKernelFunctionAndTarget(ir_module);
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
     ReplaceKernelFunctionOperandToKernelGlobalAddress(ir_module);
 

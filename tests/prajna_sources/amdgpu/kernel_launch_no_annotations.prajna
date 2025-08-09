@@ -19,8 +19,7 @@ func TestKernel(){
     var value = 1023;
     parameters[1] = bit_cast<ptr<i64> ,ptr<i8>>(&value);
     var parameters_ptr = &parameters[0];
-    var t = bit_cast<function<gpu::Tensor<i64, 1>, i64, void> ,ptr<i8>>(myKernel);
-    var re = gpu::LaunchKernel(t, GridShape, BlockShape, parameters_ptr);
+    var re = gpu::LaunchKernel(bit_cast<function<gpu::Tensor<i64, 1>, i64, void> ,ptr<i8>>(myKernel), GridShape, BlockShape, parameters_ptr);
     test::AssertWithMessage(re == 0, re.ToString());
     gpu::Synchronize();
 

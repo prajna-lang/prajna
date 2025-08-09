@@ -237,9 +237,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         return ir_block;
     }
 
-   
-
-
     Symbol operator()(ast::VariableDeclaration ast_variable_declaration,
                       bool use_global_variable = false) {
         std::shared_ptr<ir::Type> ir_type = nullptr;
@@ -276,7 +273,6 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_variable_liked = ir_global_variable;
         } else {
             ir_variable_liked = ir_builder->Create<ir::LocalVariable>(ir_type);
-            
         }
         ir_variable_liked->annotation_dict =
             this->ApplyAnnotations(ast_variable_declaration.annotation_dict);
@@ -290,29 +286,10 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         return ir_variable_liked;
     }
 
-    static std::string IdentifierPathToString(const prajna::ast::IdentifierPath& path) {
-        std::string result;
-        bool first = true;
-        for (auto& ident : path.identifiers) {
-            if (!first) result += "::";
-            result += ident.identifier;  // 这里 identifier 是 std::string
-            first = false;
-        }
-        return result;
-    }
-
     Symbol operator()(ast::Assignment ast_assignment) {
         // 右值应该先解析
         auto ir_rhs = expression_lowering_visitor->applyOperand(ast_assignment.right);
         auto ir_lhs = expression_lowering_visitor->applyOperand(ast_assignment.left);
-
-        // 先判断左边是不是一个变量引用（IdentifierPath）
-        if (auto identifier = boost::get<ast::IdentifierPath>(&ast_assignment.left.first)) {
-            // auto symbol = ir_builder->symbol_table->GetSymbol(*identifier);
-            auto symbol = ir_builder->symbol_table->Get(IdentifierPathToString(*identifier));
-
-            
-        }
 
         if (auto ir_variable_liked = Cast<ir::VariableLiked>(ir_lhs)) {
             if (ir_variable_liked->type != ir_rhs->type) {

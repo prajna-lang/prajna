@@ -5,7 +5,6 @@
 #include <stack>
 
 #include "prajna/ir/ir.hpp"
-#include "prajna/ir/ir_print_visitor.hpp"
 #include "prajna/logger.hpp"
 #include "prajna/lowering/statement_lowering_visitor.hpp"
 #include "prajna/mangle_name.hpp"
@@ -119,7 +118,6 @@ inline std::shared_ptr<ir::Function> ResolveKernelFunction(std::shared_ptr<ir::V
             [](auto x) { return Is<ir::WriteVariableLiked>(Lock(x.instruction)); });
         PRAJNA_ASSERT(iter != local->instruction_with_index_list.rend());
         auto ir_write_variable_liked = Cast<ir::WriteVariableLiked>(Lock(iter->instruction));
-        // auto ir_value = ir_write_variable_liked->Value();
         return ResolveKernelFunction(ir_write_variable_liked->Value());
     }
 
@@ -131,8 +129,6 @@ inline std::shared_ptr<ir::Function> ResolveKernelFunction(std::shared_ptr<ir::V
     PRAJNA_UNREACHABLE;
     return nullptr;
 }
-
-inline bool IsValueParamType(const std::shared_ptr<ir::Type>& t) { return !Is<ir::PointerType>(t); }
 
 inline void ConvertRuntimeLaunchToKernelFunctionCall(std::shared_ptr<ir::Module> ir_module) {
     auto print = prajna::ir::IRPrinter::Create();
@@ -161,74 +157,6 @@ inline void ConvertRuntimeLaunchToKernelFunctionCall(std::shared_ptr<ir::Module>
             } else {
                 ir_kernel_function->annotation_dict["target"] = std::list<std::string>{"amdgpu"};
             }
-
-
-            // 插入点：旧 call 之前
-            auto ir_block = ir_call->GetParentBlock();
-            auto scope = ir_builder->PushBlockRAII(ir_block);
-            ir_builder->inserter_iterator = std::ranges::find(*ir_block, ir_call);
-
-            // grid/block
-            auto ir_grid_shape = ir_call->Argument(1);
-            auto ir_block_shape = ir_call->Argument(2);
-
-            // 解码参数数组
-            auto ir_args_ptr = ir_call->Argument(3);  // 参数数组的地址 ptr<ptr<i8>>
-            auto ir_function_type = ir_kernel_function->GetFunctionType();
-            auto param_types = ir_function_type->parameter_types;
-            auto iter_param_type = ir_function_type->parameter_types.begin();
-            std::list<std::shared_ptr<ir::Value>> ir_args;
-
-            for (int i = 0; i < param_types.size(); ++i, ++iter_param_type) {
-                auto param_type = *iter_param_type;
-
-                // 计算偏移: gep ir_args_ptr, i
-                // args[i] -> gep -> load (ptr<i8>)
-                auto index_value = ir_builder->GetConstant<int32_t>(static_cast<int32_t>(i));
-                auto gep =
-                    ir_builder->Create<ir::GetPointerElementPointer>(ir_args_ptr, index_value);
-                auto ptr_i8 = ir_builder->Create<ir::LoadPointer>(gep);
-
-                // bitcast 到真实“地址类型” ptr<param_type>
-                auto ptr_to_param_ty = ir::PointerType::Create(param_type);  // T* 或 P*
-                auto casted_ptr = ir_builder->Create<ir::BitCast>(ptr_i8, ptr_to_param_ty);
-
-                // std::shared_ptr<ir::Value> arg = nullptr;
-                // 统一从地址取“值”（指针/值形参都符合 PTX 的 by-value 取参语义）
-                auto arg = ir_builder->Create<ir::LoadPointer>(casted_ptr);
-
-                if (IsValueParamType(param_type)) {
-                    std::cerr << "[KFC unpack] arg#" << i << " value-bytes=" << param_type->bytes
-                              << "\n";
-                }
-
-                std::cerr << "arg#" << i << " want=" << param_type->fullname
-                          << " got=" << arg->type->fullname << "\n";
-
-                PRAJNA_ASSERT(arg->type == param_type);
-                ir_args.push_back(arg);
-            }
-
-            // KernelFunctionCall 的“值类型” = 旧 ir_call 的返回类型（状态码）
-            auto status_ty =
-                ir_call->type ? ir_call->type
-                              : std::static_pointer_cast<ir::Type>(ir::IntType::Create(64, true));
-
-            auto ir_kernel_call = ir_builder->Create<ir::KernelFunctionCall>(
-                ir_kernel_function, ir_grid_shape, ir_block_shape, ir_args, status_ty);
-
-            std::cerr << "[ConvertRuntimeLaunchToKernelFunctionCall] "
-                      << "ir_kernel_function_call: " << print->Print(ir_kernel_call) << "\n";
-
-            //  把所有 uses 从旧 ir_call 改到 ir_kernel_call
-            for (auto [user_w, op_idx] : Clone(ir_call->instruction_with_index_list)) {
-                if (auto user = Lock(user_w)) {
-                    user->SetOperand(op_idx, ir_kernel_call);  // 正确维护 use-list
-                }
-            }
-
-            utility::RemoveFromParent(ir_call);
-            ir_call->Finalize();
         }
     }
 
@@ -238,18 +166,11 @@ inline void ConvertRuntimeLaunchToKernelFunctionCall(std::shared_ptr<ir::Module>
 }
 
 inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> ir_module) {
-    auto print = prajna::ir::IRPrinter::Create();
-    auto dbgTy = [](std::shared_ptr<ir::Value> v) {
-        return v ? (v->tag + " ty=" + v->type->fullname) : std::string("<null>");
-    };
     std::string runtime_namespace;
     // PRAJNA_ASSERT(!runtime_namespace.empty());
     for (auto ir_function : ir_module->functions) {
         auto ir_kernel_function_calls = utility::GetAll<ir::KernelFunctionCall>(ir_function);
         for (auto ir_kernel_function_call : ir_kernel_function_calls) {
-            std::cerr << "[ConvertKernelFunctionCallToKernelLaunch] "
-                      << "ir_kernel_function_call: " << print->Print(ir_kernel_function_call)
-                      << "\n";
             auto ir_kernel_function = ir_kernel_function_call->Function();
             auto ir_grid_shape = ir_kernel_function_call->GridShape();
             auto ir_block_shape = ir_kernel_function_call->BlockShape();
@@ -265,8 +186,6 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
             auto ir_kernel_arguments_address_array_i8ptr =
                 ir_builder->Create<ir::LocalVariable>(ir::ArrayType::Create(
                     ir::PointerType::Create(ir::i8), ir_kernel_function_call->ArgumentSize()));
-
-            std::cerr << "[args] count=" << ir_kernel_function_call->ArgumentSize() << "\n";
             for (int64_t i = 0; i < ir_kernel_function_call->ArgumentSize(); ++i) {
                 auto ir_argument = ir_kernel_function_call->Argument(i);
                 auto ir_kernel_argument_address_i8ptr = ir_builder->Create<ir::BitCast>(
@@ -277,17 +196,6 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                     ir_kernel_arguments_address_array_i8ptr, ir_builder->GetConstant<int64_t>(i));
                 auto ir_array_index_write = ir_builder->Create<ir::WriteVariableLiked>(
                     ir_kernel_argument_address_i8ptr, ir_array_index);
-
-                // 对“值形参”打印/校验 bytes
-                if (IsValueParamType(ir_argument->type)) {
-                    std::cerr << "  args[" << i << "] value-bytes=" << ir_argument->type->bytes
-                              << "\n";
-                } else {
-                    std::cerr << "  args[" << i << "] pointer-as-value-bytes=8\n";
-                }
-
-                // std::cerr << "  args[" << i << "]: want=" << ir_argument->type->fullname
-                //           << " stored=ptr<i8> (addr of arg)\n";
             }
 
             if (ir_kernel_function->annotation_dict["target"].front() == "nvptx") {
@@ -302,17 +210,7 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                 lowering::SymbolGet<lowering::SymbolTable>(
                     ir_module->symbol_table->RootSymbolTable()->Get(runtime_namespace))
                     ->Get("LaunchKernel"));
-
             PRAJNA_ASSERT(ir_launch_function);
-            auto launch_ty = ir_launch_function->GetFunctionType();
-
-            std::cerr << "[LaunchKernel.sig] ret=" << launch_ty->return_type->fullname << "\n";
-            int pi = 0;
-            for (auto& pty : launch_ty->parameter_types) {
-                std::cerr << "  param#" << pi++ << " = " << pty->fullname << "\n";
-            }
-
-            // 构建 LaunchKernel 调用
             std::list<std::shared_ptr<ir::Value>> ir_arguments;
             ir_arguments.push_back(ir_builder->Create<ir::BitCast>(
                 ir_kernel_function, ir::PointerType::Create(ir::i8)));
@@ -324,24 +222,9 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                 ir_builder->Create<ir::GetAddressOfVariableLiked>(ir_array_index0),
                 ir::PointerType::Create(ir::PointerType::Create(ir::i8)));
             ir_arguments.push_back(ir_array_address);
-
-            std::cerr << "[LaunchKernel] fn  = " << dbgTy(ir_arguments.front()) << "\n";
-            std::cerr << "[LaunchKernel] grid= " << dbgTy(ir_grid_shape) << "\n";
-            std::cerr << "[LaunchKernel] block= " << dbgTy(ir_block_shape) << "\n";
-            std::cerr << "[LaunchKernel] args_ptr= " << dbgTy(ir_array_address) << "\n";
-
-            // grid/block 形状断言（你们接口约定是 Array<i64,3>）
-            PRAJNA_ASSERT(ir_grid_shape->type->fullname == "::_array::<i64, 3>::Array<i64, 3>");
-            PRAJNA_ASSERT(ir_block_shape->type->fullname == "::_array::<i64, 3>::Array<i64, 3>");
-
-            auto ir_ret = ir_builder->Call(ir_launch_function, ir_arguments);
-
-            std::cerr << "[ConvertKernelFunctionCallToKernelLaunch] "
-                      << "ir_launch_function: " << print->Print(ir_ret) << "\n";
-
-            // 添加错误检查
+            auto ir_kernel_call = ir_builder->Call(ir_launch_function, ir_arguments);
             auto ir_zero = ir_builder->GetConstant<int64_t>(0);
-            auto ir_condition = ir_builder->CallBinaryOperator(ir_ret, "!=", ir_zero);
+            auto ir_condition = ir_builder->CallBinaryOperator(ir_kernel_call, "!=", ir_zero);
             auto ir_if =
                 ir_builder->Create<ir::If>(ir_condition, ir::Block::Create(), ir::Block::Create());
 
@@ -349,19 +232,8 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
                 auto scope = ir_builder->PushBlockRAII(ir_if->TrueBlock());
                 auto ir_str = ir_builder->GetString("Failed launch kernel: ret: ");
                 ir_builder->CallMemberFunction(ir_str, "Print", {});
-                ir_builder->CallMemberFunction(ir_ret, "PrintLine", {});
+                ir_builder->CallMemberFunction(ir_kernel_call, "PrintLine", {});
             }
-
-            // 把所有 KernelFunctionCall 的 uses 指到 ret
-            for (auto [user_w, op_idx] :
-                 Clone(ir_kernel_function_call->instruction_with_index_list)) {
-                if (auto user = Lock(user_w)) {
-                    user->SetOperand(op_idx, ir_ret);
-                }
-            }
-
-            // std::cerr << "[ConvertKernelFunctionCallToKernelLaunch] "
-            //           << "moudle 后: " << print->Print(ir_module) << "\n";
 
             utility::RemoveFromParent(ir_kernel_function_call);
             ir_kernel_function_call->Finalize();
@@ -860,7 +732,7 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     FlatternBlock(ir_module);
     RemoveValuesAfterReturn(ir_module);
     ConvertPropertyToFunctionCall(ir_module);
-   
+
     ConvertRuntimeLaunchToKernelFunctionCall(ir_module);
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
     ReplaceKernelFunctionOperandToKernelGlobalAddress(ir_module);

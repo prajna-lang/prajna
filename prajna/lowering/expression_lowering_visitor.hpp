@@ -240,9 +240,6 @@ class ExpressionLoweringVisitor {
         auto ir_arguments = *Cast<ir::ValueCollection>(applyOperand(ast_binary_operation.operand));
         PRAJNA_ASSERT(ast_binary_operation.operand.type() == typeid(ast::Expressions));
         auto ast_expressions = boost::get<ast::Expressions>(ast_binary_operation.operand);
-
-        
-
         if (auto ir_member_function_with_this_pointer =
                 Cast<ir::MemberFunctionWithThisPointer>(ir_lhs)) {
             auto ir_function_type =

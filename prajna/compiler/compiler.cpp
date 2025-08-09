@@ -13,8 +13,6 @@
 #include "prajna/parser/parse.h"
 #include "prajna/transform/transform.h"
 #include "prajna/transform/utility.hpp"
-#include <llvm/IR/Verifier.h>
-
 
 namespace prajna {
 
@@ -96,8 +94,6 @@ std::shared_ptr<ir::Module> Compiler::CompileCode(
     }
     auto ir_ssa_module = prajna::transform::Transform(ir_lowering_module);
     auto ir_codegen_module = prajna::codegen::LlvmCodegen(ir_ssa_module);
-    PRAJNA_ASSERT(!llvm::verifyModule(*ir_codegen_module->llvm_module, &llvm::errs()));
-
     auto ir_llvm_optimize_module = prajna::codegen::LlvmPass(ir_codegen_module);
 
     jit_engine->AddIRModule(ir_llvm_optimize_module);

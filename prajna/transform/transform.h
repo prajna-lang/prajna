@@ -161,7 +161,7 @@ inline void IdentifyKernelFunctionAndTarget(std::shared_ptr<ir::Module> ir_modul
     }
 
     for (auto ir_sub_module : ir_module->modules) {
-        if (ir_sub_module) ConvertRuntimeLaunchToKernelFunctionCall(ir_sub_module);
+        if (ir_sub_module) IdentifyKernelFunctionAndTarget(ir_sub_module);
     }
 }
 

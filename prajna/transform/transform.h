@@ -24,30 +24,6 @@ class Statements;
 
 namespace prajna::transform {
 
-inline void SperateGpuModule(std::shared_ptr<ir::Module> ir_module) {
-    ir_module->modules.push_back(ir::Module::Create(ir::Target::nvptx));
-    ir_module->modules.push_back(ir::Module::Create(ir::Target::amdgpu));
-
-    for (auto ir_sub_module : ir_module->modules) {
-        if (!ir_sub_module) continue;
-
-        auto function_cloner = ir::FunctionCloner::Create(ir_sub_module, false);
-        for (auto iter_function = ir_module->functions.begin();
-             iter_function != ir_module->functions.end();) {
-            auto ir_function = *iter_function;
-            if (std::ranges::count(ir_function->annotation_dict["target"],
-                                   ir::TargetToString(ir_sub_module->target))) {
-                auto ir_function_new = Cast<ir::Function>(function_cloner->Clone(ir_function));
-                ir_sub_module->functions.remove(ir_function);
-                PRAJNA_ASSERT(ir::Verify(ir_function_new));
-                iter_function = ir_module->functions.erase(iter_function);
-            } else {
-                ++iter_function;
-            }
-        }
-    }
-}
-
 inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module) {
     auto ir_access_properties = utility::GetAll<ir::AccessProperty>(ir_module);
     for (auto ir_access_property : ir_access_properties) {
@@ -104,15 +80,46 @@ inline bool ConvertPropertyToFunctionCall(std::shared_ptr<ir::Module> ir_module)
     return !ir_access_properties.empty();
 }
 
-inline std::shared_ptr<ir::Function> ResolveKernelFunction(std::shared_ptr<ir::Value> v) {
-    if (!v) return nullptr;
+inline bool DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
+    Each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
+        for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
+            auto ir_operand = ir_instruction->GetOperand(i);
+
+            if (auto ir_function = Cast<ir::Function>(ir_operand)) {
+                if (ir_function->GetParentModule() != ir_module) {
+                    std::shared_ptr<ir::Function> ir_decl_function = nullptr;
+                    auto iter_fun = std::ranges::find_if(ir_module->functions, [=](auto ir_x) {
+                        return ir_x->fullname == ir_function->fullname;
+                    });
+                    // 声明过了, 就不在声明了
+                    if (iter_fun != ir_module->functions.end()) {
+                        ir_decl_function = *iter_fun;
+                    } else {
+                        ir_decl_function = ir::Function::Create(ir_function->function_type);
+                        ir_decl_function->fullname = ir_function->fullname;
+                        ir_decl_function->name = ir_function->name;
+                        ir_decl_function->parent = ir_module;
+                        ir_module->functions.push_front(ir_decl_function);
+                    }
+
+                    ir_instruction->SetOperand(i, ir_decl_function);
+                }
+            }
+        }
+    });
+
+    return true;
+}
+
+inline std::shared_ptr<ir::Function> ResolveKernelFunction(std::shared_ptr<ir::Value> value) {
+    if (!value) return nullptr;
 
     // --- 直接是 Function ---
-    if (auto func = Cast<ir::Function>(v)) {
+    if (auto func = Cast<ir::Function>(value)) {
         return func;
     }
 
-    if (auto local = Cast<ir::LocalVariable>(v)) {
+    if (auto local = Cast<ir::LocalVariable>(value)) {
         auto iter = std::find_if(
             local->instruction_with_index_list.rbegin(), local->instruction_with_index_list.rend(),
             [](auto x) { return Is<ir::WriteVariableLiked>(Lock(x.instruction)); });
@@ -121,18 +128,69 @@ inline std::shared_ptr<ir::Function> ResolveKernelFunction(std::shared_ptr<ir::V
         return ResolveKernelFunction(ir_write_variable_liked->Value());
     }
 
-    if (auto ir_instruction = Cast<ir::Instruction>(v)) {
+    if (auto ir_instruction = Cast<ir::Instruction>(value)) {
         auto ir_operand = ir_instruction->GetOperand(0);
         auto ir_kernel_function = ResolveKernelFunction(ir_operand);
         return ir_kernel_function;
+    }
+    if (Cast<ir::GlobalVariable>(value)) {
+        return nullptr;
     }
     PRAJNA_UNREACHABLE;
     return nullptr;
 }
 
-inline void IdentifyKernelFunctionAndTarget(std::shared_ptr<ir::Module> ir_module) {
-    auto print = prajna::ir::IRPrinter::Create();
-    auto ir_builder = lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
+inline void PartitionGpuKernelsAndMarkTargets(std::shared_ptr<ir::Module> ir_module) {
+    // 添加 NVPTX 和 AMDGPU 子模块
+    ir_module->modules.push_back(ir::Module::Create(ir::Target::nvptx));
+    ir_module->modules.push_back(ir::Module::Create(ir::Target::amdgpu));
+
+    // 检查函数是否使用 GPU intrinsic
+    auto uses_gpu_intrinsic = [](std::shared_ptr<ir::Function> f) {
+        for (auto c : utility::GetAll<ir::Call>(f)) {
+            if (auto callee = Cast<ir::Function>(c->Function())) {
+                const std::string& n = callee->fullname;
+                if (n.starts_with("llvm.nvvm.") || n.starts_with("llvm.amdgcn.")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    // 标记设备子图的辅助函数
+    auto mark_device_subgraph = [&](std::shared_ptr<ir::Function> entry,
+                                    const std::string& target) {
+        std::vector<std::shared_ptr<ir::Function>> stack{entry};
+        std::unordered_set<std::shared_ptr<ir::Function>> visited;
+
+        while (!stack.empty()) {
+            auto f = stack.back();
+            stack.pop_back();
+            if (!visited.insert(f).second) continue;
+
+            // 添加 target 注解
+            auto& tlist = f->annotation_dict["target"];
+            if (std::ranges::count(tlist, target) == 0) {
+                tlist.push_back(target);
+            }
+
+            // 仅对入口函数或包含 GPU intrinsic 的函数标记 host_skip_codegen
+            if (f == entry || uses_gpu_intrinsic(f)) {
+                f->annotation_dict["host_skip_codegen"] = {"true"};
+            }
+
+            // 遍历同模块内的被调用函数
+            for (auto c : utility::GetAll<ir::Call>(f)) {
+                if (auto callee = Cast<ir::Function>(c->Function())) {
+                    if (callee->GetParentModule() == f->GetParentModule()) {
+                        stack.push_back(callee);
+                    }
+                }
+            }
+        }
+    };
+
     for (auto ir_function : ir_module->functions) {
         auto calls = utility::GetAll<ir::Call>(ir_function);
         for (auto ir_call : calls) {
@@ -144,24 +202,80 @@ inline void IdentifyKernelFunctionAndTarget(std::shared_ptr<ir::Module> ir_modul
             if (fullname.substr(0, 2) == "::") {
                 fullname = fullname.substr(2);
             }
-            if (fullname != "nvgpu::LaunchKernel" && fullname != "amdgpu::LaunchKernel") continue;
+            // 检查是否为 LaunchKernel 调用
+            std::string target;
+            if (fullname == "nvgpu::LaunchKernel") {
+                target = "nvptx";
+            } else if (fullname == "amdgpu::LaunchKernel") {
+                target = "amdgpu";
+            } else {
+                continue;
+            }
 
-            auto ir_kernel_function_ptr = ir_call->Argument(0);
-            auto ir_kernel_function = ResolveKernelFunction(ir_kernel_function_ptr);
+            // 解析 kernel 函数
+            auto ir_kernel_function = ResolveKernelFunction(ir_call->Argument(0));
             if (!ir_kernel_function) continue;
 
-            // 标记 kernel & target
+            // 标记 kernel 和 target
             ir_kernel_function->annotation_dict["kernel"] = {"true"};
-            if (fullname == "nvgpu::LaunchKernel") {
-                ir_kernel_function->annotation_dict["target"] = std::list<std::string>{"nvptx"};
-            } else {
-                ir_kernel_function->annotation_dict["target"] = std::list<std::string>{"amdgpu"};
+            ir_kernel_function->annotation_dict["target"] = {target};
+            // host_skip_codegen = true 表示在 Host 侧不生成这个函数的代码
+            ir_kernel_function->annotation_dict["host_skip_codegen"] = {"true"};
+
+            // 标记设备子图
+            mark_device_subgraph(ir_kernel_function, target);
+        }
+    }
+
+    // 对每一个 kernel 函数，生成一个对应的 GlobalVariable 作为它的符号引用
+    for (auto ir_function : ir_module->functions) {
+        if (ir_function->annotation_dict.count("kernel")) {
+            auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
+
+            // 后续的处理中, 我们会在像ir_global_variable里写入device
+            // module里获取的kernel函数的symbol value
+            std::shared_ptr<ir::GlobalVariable> ir_global_variable =
+                ir::GlobalVariable::Create(ir_function->type);
+            ir_global_variable->name = global_variable_fullname;
+            ir_global_variable->fullname = ir_global_variable->name;
+            ir_global_variable->annotation_dict = ir_function->annotation_dict;
+            ir_global_variable->is_external = false;
+            ir_module->AddGlobalVariable(ir_global_variable);
+            // 替换所有对 kernel 函数的引用为这个 GlobalVariable
+            for (auto [ir_instruction, op_idx] : Clone(ir_function->instruction_with_index_list)) {
+                Lock(ir_instruction)->SetOperand(op_idx, ir_global_variable);
             }
         }
     }
 
+    // 把匹配 target 的函数克隆到对应子模块（主模块保留原函数，不删除）
     for (auto ir_sub_module : ir_module->modules) {
-        if (ir_sub_module) IdentifyKernelFunctionAndTarget(ir_sub_module);
+        if (!ir_sub_module) continue;
+
+        auto function_cloner = ir::FunctionCloner::Create(ir_sub_module, false);
+        for (auto ir_function : ir_module->functions) {
+            for (auto iter_function = ir_module->functions.begin();
+                 iter_function != ir_module->functions.end();) {
+                auto ir_function = *iter_function;
+                if (std::ranges::count(ir_function->annotation_dict["target"],
+                                       ir::TargetToString(ir_sub_module->target))) {
+                    auto ir_function_new = Cast<ir::Function>(function_cloner->Clone(ir_function));
+                    PRAJNA_ASSERT(ir::Verify(ir_function_new));
+
+                    ++iter_function;
+                } else {
+                    ++iter_function;
+                }
+            }
+        }
+    }
+
+    // 标记直接调用 GPU intrinsic 的函数
+    for (auto& f : ir_module->functions) {
+        if (f->IsDeclaration()) continue;
+        if (uses_gpu_intrinsic(f)) {
+            f->annotation_dict["host_skip_codegen"] = {"true"};
+        }
     }
 }
 
@@ -241,29 +355,6 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
     }
 }
 
-inline void ReplaceKernelFunctionOperandToKernelGlobalAddress(
-    std::shared_ptr<ir::Module> ir_module) {
-    for (auto ir_function : ir_module->functions) {
-        if (ir_function->annotation_dict.count("kernel")) {
-            auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
-
-            // 后续的处理中, 我们会在像ir_global_variable里写入device
-            // module里获取的kernel函数的symbol value
-            std::shared_ptr<ir::GlobalVariable> ir_global_variable =
-                ir::GlobalVariable::Create(ir_function->type);
-            ir_global_variable->name = global_variable_fullname;
-            ir_global_variable->fullname = ir_global_variable->name;
-            ir_global_variable->annotation_dict = ir_function->annotation_dict;
-            ir_global_variable->is_external = false;
-            ir_module->AddGlobalVariable(ir_global_variable);
-
-            for (auto [ir_instruction, op_idx] : Clone(ir_function->instruction_with_index_list)) {
-                Lock(ir_instruction)->SetOperand(op_idx, ir_global_variable);
-            }
-        }
-    }
-}
-
 inline void ConvertGlobalVariableToGlobalAlloca(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_global_variable : Clone(ir_module->global_variables)) {
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_global_variable->type);
@@ -300,37 +391,6 @@ inline void RemoveValuesAfterReturn(std::shared_ptr<ir::Module> ir_module) {
             }
         }
     }
-}
-
-inline bool DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
-    Each<ir::Instruction>(ir_module, [=](std::shared_ptr<ir::Instruction> ir_instruction) {
-        for (int64_t i = 0; i < ir_instruction->OperandSize(); ++i) {
-            auto ir_operand = ir_instruction->GetOperand(i);
-
-            if (auto ir_function = Cast<ir::Function>(ir_operand)) {
-                if (ir_function->GetParentModule() != ir_module) {
-                    std::shared_ptr<ir::Function> ir_decl_function = nullptr;
-                    auto iter_fun = std::ranges::find_if(ir_module->functions, [=](auto ir_x) {
-                        return ir_x->fullname == ir_function->fullname;
-                    });
-                    // 声明过了, 就不在声明了
-                    if (iter_fun != ir_module->functions.end()) {
-                        ir_decl_function = *iter_fun;
-                    } else {
-                        ir_decl_function = ir::Function::Create(ir_function->function_type);
-                        ir_decl_function->fullname = ir_function->fullname;
-                        ir_decl_function->name = ir_function->name;
-                        ir_decl_function->parent = ir_module;
-                        ir_module->functions.push_front(ir_decl_function);
-                    }
-
-                    ir_instruction->SetOperand(i, ir_decl_function);
-                }
-            }
-        }
-    });
-
-    return true;
 }
 
 inline void ConvertForMultiDimToFor1Dim(std::shared_ptr<ir::Module> ir_module) {
@@ -732,14 +792,10 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     FlatternBlock(ir_module);
     RemoveValuesAfterReturn(ir_module);
     ConvertPropertyToFunctionCall(ir_module);
-    IdentifyKernelFunctionAndTarget(ir_module);
+
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
-    ReplaceKernelFunctionOperandToKernelGlobalAddress(ir_module);
-
+    PartitionGpuKernelsAndMarkTargets(ir_module);
     ConvertGlobalVariableToGlobalAlloca(ir_module);
-
-    SperateGpuModule(ir_module);
-
     ApplySSATransformations(ir_module);
     // 只申明host module的外部函数, gPU module目前不引用外部函数
     DeclareExternalFunction(ir_module);

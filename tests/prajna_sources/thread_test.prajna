@@ -1,0 +1,263 @@
+use thread::Thread;
+use thread::Mutex;
+use thread::ConditionVariable;
+
+func ThreadFunction(arg: ptr<undef>) -> ptr<undef> {
+    var i = 0;
+
+    while (i < 5) {
+            ("Thread working: " + i.ToString()).PrintLine();
+        chrono::Sleep(1.0f32);
+        i = i + 1i64;
+    }
+
+    return ptr<undef>::Null();
+}
+
+@test
+func TestJoinThread() {
+    var thread = Thread::Spawn(ThreadFunction, ptr<undef>::Null());
+    thread.Join();
+}
+
+@test
+func TestDetachedThread() {
+    var thread = Thread::Spawn(ThreadFunction, ptr<undef>::Null());
+
+    thread.Detach();
+
+    chrono::Sleep(2.0f32);
+}
+
+func ThreadWithDataFunction(arg: ptr<undef>) -> ptr<undef> {
+    var data_ptr = bit_cast<ptr<undef>, ptr<i64>>(arg);
+    var data = *data_ptr;
+
+    ("Thread received data: " + data.ToString()).PrintLine();
+
+    *data_ptr = data * 2i64;
+
+    ("Thread modified data to: " + (*data_ptr).ToString()).PrintLine();
+
+    return ptr<undef>::Null();
+}
+
+
+@test
+func TestThreadWithData() {
+    var data: i64 = 42i64;
+    var data_ptr = &data;
+
+    ("Original data: " + data.ToString()).PrintLine();
+
+    var thread = Thread::Spawn(ThreadWithDataFunction, bit_cast<ptr<i64>, ptr<undef>>(data_ptr));
+
+    thread.Join();
+
+    test::Assert(data == 84);
+
+    ("Final data: " + data.ToString()).PrintLine();
+}
+
+@test
+func TestMutexSimple() {
+    var mutex: Mutex;
+    mutex.Lock();
+    mutex.Unlock();
+}
+
+struct ThreadArgs {
+    iterations: i64;
+    mutex_ptr: ptr<Mutex>;
+    counter_ptr: ptr<i64>;
+}
+
+func SafeIncrementFunction(arg: ptr<undef>) -> ptr<undef> {
+    var args = bit_cast<ptr<undef>, ptr<ThreadArgs>>(arg);
+
+    var i: i64 = 0;
+
+    while (i < args->iterations) {
+        args->mutex_ptr->Lock();
+
+        var old_value = *args->counter_ptr;
+        *args->counter_ptr = old_value + 1;
+
+        ("Thread incremented counter to: " + (*args->counter_ptr).ToString()).PrintLine();
+
+        args->mutex_ptr->Unlock();
+
+        chrono::Sleep(0.01f32);
+
+        i = i + 1;
+    }
+    return ptr<undef>::Null();
+}
+
+@test
+func TestMutexComplex() {
+    var global_counter = 0;
+    var global_mutex: Mutex;
+
+    var args1: ThreadArgs;
+    args1.iterations = 3;
+    args1.mutex_ptr = &global_mutex;
+    args1.counter_ptr = &global_counter;
+
+    var args2: ThreadArgs;
+    args2.iterations = 3;
+    args2.mutex_ptr = &global_mutex;
+    args2.counter_ptr = &global_counter;
+
+    ("Initial counter value: " + global_counter.ToString()).PrintLine();
+
+    var thread1 = Thread::Spawn(SafeIncrementFunction, bit_cast<ptr<ThreadArgs>, ptr<undef>>(&args1));
+    var thread2 = Thread::Spawn(SafeIncrementFunction, bit_cast<ptr<ThreadArgs>, ptr<undef>>(&args2));
+
+    thread1.Join();
+    thread2.Join();
+
+    ("Final counter value: " + global_counter.ToString()).PrintLine();
+    test::Assert(global_counter == 6);
+}
+
+@test
+func TestConditionVariableSimple() {
+    var cond: ConditionVariable;
+}
+
+struct CondArgs {
+    mutex_ptr: ptr<Mutex>;
+    cond_ptr: ptr<ConditionVariable>;
+    data_ptr: ptr<i64>;
+    ready_ptr: ptr<bool>;
+}
+
+func ProducerFunction(arg: ptr<undef>) -> ptr<undef> {
+    var args = bit_cast<ptr<undef>, ptr<CondArgs>>(arg);
+
+    chrono::Sleep(0.5f32);
+
+    args->mutex_ptr->Lock();
+    *args->data_ptr = 100;
+    *args->ready_ptr = true;
+    ("Producer set data to: " + (*args->data_ptr).ToString()).PrintLine();
+    args->cond_ptr->Signal();
+    args->mutex_ptr->Unlock();
+
+    return ptr<undef>::Null();
+}
+
+func ConsumerFunction(arg: ptr<undef>) -> ptr<undef> {
+    var args = bit_cast<ptr<undef>, ptr<CondArgs>>(arg);
+
+    args->mutex_ptr->Lock();
+    while (!(*args->ready_ptr)) {
+        "Consumer waiting...".PrintLine();
+        args->cond_ptr->Wait(args->mutex_ptr);
+    }
+    ("Consumer got data: " + (*args->data_ptr).ToString()).PrintLine();
+    args->mutex_ptr->Unlock();
+
+    return ptr<undef>::Null();
+}
+
+@test
+func TestConditionVariable() {
+    var mutex: Mutex;
+    var cond: ConditionVariable;
+    var data = 0;
+    var ready = false;
+
+    var args: CondArgs;
+    args.mutex_ptr = &mutex;
+    args.cond_ptr = &cond;
+    args.data_ptr = &data;
+    args.ready_ptr = &ready;
+
+    var consumer = Thread::Spawn(ConsumerFunction, bit_cast<ptr<CondArgs>, ptr<undef>>(&args));
+    var producer = Thread::Spawn(ProducerFunction, bit_cast<ptr<CondArgs>, ptr<undef>>(&args));
+
+    consumer.Join();
+    producer.Join();
+
+    test::Assert(data == 100);
+ }
+
+struct BroadcastArgs {
+    thread_id: i64;
+    mutex_ptr: ptr<Mutex>;
+    cond_ptr: ptr<ConditionVariable>;
+    start_flag_ptr: ptr<bool>;
+    counter_ptr: ptr<i64>;
+}
+
+func BroadcastWorkerFunction(arg: ptr<undef>) -> ptr<undef> {
+    var args = bit_cast<ptr<undef>, ptr<BroadcastArgs>>(arg);
+
+    ("Worker " + args->thread_id.ToString() + ": Starting...").PrintLine();
+
+    args->mutex_ptr->Lock();
+
+    while (!(*args->start_flag_ptr)) {
+        ("Worker " + args->thread_id.ToString() + ": Waiting for broadcast...").PrintLine();
+        args->cond_ptr->Wait(args->mutex_ptr);
+    }
+
+    ("Worker " + args->thread_id.ToString() + ": Received broadcast, working...").PrintLine();
+
+    *args->counter_ptr = *args->counter_ptr + 1;
+
+    args->mutex_ptr->Unlock();
+
+    ("Worker " + args->thread_id.ToString() + ": Finished").PrintLine();
+    return ptr<undef>::Null();
+}
+
+@test
+func TestConditionVariableBroadcast() {
+    var mutex: Mutex;
+    var cond: ConditionVariable;
+    var start_flag: bool = false;
+    var counter: i64 = 0;
+
+    var args1: BroadcastArgs;
+    args1.thread_id = 1;
+    args1.mutex_ptr = &mutex;
+    args1.cond_ptr = &cond;
+    args1.start_flag_ptr = &start_flag;
+    args1.counter_ptr = &counter;
+
+    var args2: BroadcastArgs;
+    args2.thread_id = 2;
+    args2.mutex_ptr = &mutex;
+    args2.cond_ptr = &cond;
+    args2.start_flag_ptr = &start_flag;
+    args2.counter_ptr = &counter;
+
+    var args3: BroadcastArgs;
+    args3.thread_id = 3;
+    args3.mutex_ptr = &mutex;
+    args3.cond_ptr = &cond;
+    args3.start_flag_ptr = &start_flag;
+    args3.counter_ptr = &counter;
+
+    var worker1 = Thread::Spawn(BroadcastWorkerFunction, bit_cast<ptr<BroadcastArgs>, ptr<undef>>(&args1));
+    var worker2 = Thread::Spawn(BroadcastWorkerFunction, bit_cast<ptr<BroadcastArgs>, ptr<undef>>(&args2));
+    var worker3 = Thread::Spawn(BroadcastWorkerFunction, bit_cast<ptr<BroadcastArgs>, ptr<undef>>(&args3));
+
+    chrono::Sleep(1.0f32);
+
+    mutex.Lock();
+    start_flag = true;
+    cond.Broadcast();
+    mutex.Unlock();
+
+    worker1.Join();
+    worker2.Join();
+    worker3.Join();
+
+    ("Main: All workers finished, counter = " + counter.ToString()).PrintLine();
+
+    test::Assert(counter == 3);
+}

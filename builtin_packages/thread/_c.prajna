@@ -1,0 +1,23 @@
+struct pthread_t { _data: array<i64, 8>; }
+struct pthread_attr_t { _data: array<i64, 8>; }
+struct pthread_mutex_t { _data: array<i64, 8>; }
+struct pthread_mutexattr_t { _data: array<i64, 8>; }
+struct pthread_cond_t { _data: array<i64, 8>; }
+struct pthread_condattr_t { _data: array<i64, 8>; }
+
+func pthread_create(thread: ptr<pthread_t>, attr: ptr<pthread_attr_t>, start_routine: function<ptr<undef>, ptr<undef>>, arg: ptr<undef>) -> i32;
+func pthread_join(thread: pthread_t, retval: ptr<ptr<undef>>) -> i32;
+func pthread_detach(thread: pthread_t) -> i32;
+func pthread_exit(retval: ptr<undef>);
+func pthread_self() -> pthread_t;
+func pthread_equal(t1: pthread_t, t2: pthread_t) -> i32;
+func pthread_mutex_init(mutex: ptr<pthread_mutex_t>, attr: ptr<pthread_mutexattr_t>) -> i32;
+func pthread_mutex_destroy(mutex: ptr<pthread_mutex_t>) -> i32;
+func pthread_mutex_lock(mutex: ptr<pthread_mutex_t>) -> i32;
+func pthread_mutex_trylock(mutex: ptr<pthread_mutex_t>) -> i32;
+func pthread_mutex_unlock(mutex: ptr<pthread_mutex_t>) -> i32;
+func pthread_cond_init(cond: ptr<pthread_cond_t>, attr: ptr<pthread_condattr_t>) -> i32;
+func pthread_cond_destroy(cond: ptr<pthread_cond_t>) -> i32;
+func pthread_cond_wait(cond: ptr<pthread_cond_t>, mutex: ptr<pthread_mutex_t>) -> i32;
+func pthread_cond_signal(cond: ptr<pthread_cond_t>) -> i32;
+func pthread_cond_broadcast(cond: ptr<pthread_cond_t>) -> i32;

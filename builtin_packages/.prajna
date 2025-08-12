@@ -72,7 +72,7 @@ use sort;
 
 use io::Input;
 
-use thread;
+// use thread;
 
 use fs;
 

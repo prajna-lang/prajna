@@ -1,6 +1,6 @@
 use ::amdgpu as gpu;
 
-
+@kernel
 func myKernel(tensor: gpu::Tensor<i64, 1>, value: i64){
     var idx = gpu::ThreadIndex()[0];
     tensor[idx] = value;

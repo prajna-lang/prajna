@@ -145,52 +145,7 @@ inline void PartitionGpuKernelsAndMarkTargets(std::shared_ptr<ir::Module> ir_mod
     ir_module->modules.push_back(ir::Module::Create(ir::Target::nvptx));
     ir_module->modules.push_back(ir::Module::Create(ir::Target::amdgpu));
 
-    // 检查函数是否使用 GPU intrinsic
-    auto uses_gpu_intrinsic = [](std::shared_ptr<ir::Function> f) {
-        for (auto c : utility::GetAll<ir::Call>(f)) {
-            if (auto callee = Cast<ir::Function>(c->Function())) {
-                const std::string& n = callee->fullname;
-                if (n.starts_with("llvm.nvvm.") || n.starts_with("llvm.amdgcn.")) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
-    // 标记设备子图的辅助函数
-    auto mark_device_subgraph = [&](std::shared_ptr<ir::Function> entry,
-                                    const std::string& target) {
-        std::vector<std::shared_ptr<ir::Function>> stack{entry};
-        std::unordered_set<std::shared_ptr<ir::Function>> visited;
-
-        while (!stack.empty()) {
-            auto f = stack.back();
-            stack.pop_back();
-            if (!visited.insert(f).second) continue;
-
-            // 添加 target 注解
-            auto& tlist = f->annotation_dict["target"];
-            if (std::ranges::count(tlist, target) == 0) {
-                tlist.push_back(target);
-            }
-
-            // 仅对入口函数或包含 GPU intrinsic 的函数标记 host_skip_codegen
-            if (f == entry || uses_gpu_intrinsic(f)) {
-                f->annotation_dict["host_skip_codegen"] = {"true"};
-            }
-
-            // 遍历同模块内的被调用函数
-            for (auto c : utility::GetAll<ir::Call>(f)) {
-                if (auto callee = Cast<ir::Function>(c->Function())) {
-                    if (callee->GetParentModule() == f->GetParentModule()) {
-                        stack.push_back(callee);
-                    }
-                }
-            }
-        }
-    };
-
+    // 扫描 host 侧 LaunchKernel 调用，解析第0实参 => kernel function，并打注解
     for (auto ir_function : ir_module->functions) {
         auto calls = utility::GetAll<ir::Call>(ir_function);
         for (auto ir_call : calls) {
@@ -199,7 +154,7 @@ inline void PartitionGpuKernelsAndMarkTargets(std::shared_ptr<ir::Module> ir_mod
 
             // 规范化 fullname，移除可选的全局前缀 ::
             std::string fullname = ir_callee->fullname;
-            if (fullname.substr(0, 2) == "::") {
+            if (fullname.rfind("::", 0) == 0) {
                 fullname = fullname.substr(2);
             }
             // 检查是否为 LaunchKernel 调用
@@ -221,13 +176,21 @@ inline void PartitionGpuKernelsAndMarkTargets(std::shared_ptr<ir::Module> ir_mod
             ir_kernel_function->annotation_dict["target"] = {target};
             // host_skip_codegen = true 表示在 Host 侧不生成这个函数的代码
             ir_kernel_function->annotation_dict["host_skip_codegen"] = {"true"};
+        }
 
-            // 标记设备子图
-            mark_device_subgraph(ir_kernel_function, target);
+        // 检查显式 target 注解并标记 host_skip_codegen
+        auto iter_target = ir_function->annotation_dict.find("target");
+        if (iter_target != ir_function->annotation_dict.end()) {
+            for (auto& target : iter_target->second) {
+                if (target == "nvptx" || target == "amdgpu") {
+                    ir_function->annotation_dict["host_skip_codegen"] = {"true"};
+                    break;
+                }
+            }
         }
     }
 
-    // 对每一个 kernel 函数，生成一个对应的 GlobalVariable 作为它的符号引用
+    // 对每一个 kernel 函数，生成一个对应的 GlobalVariable 作为它的符号引用,并仅替换该函数自身 uses
     for (auto ir_function : ir_module->functions) {
         if (ir_function->annotation_dict.count("kernel")) {
             auto global_variable_fullname = GetKernelFunctionAddressName(ir_function);
@@ -251,30 +214,13 @@ inline void PartitionGpuKernelsAndMarkTargets(std::shared_ptr<ir::Module> ir_mod
     // 把匹配 target 的函数克隆到对应子模块（主模块保留原函数，不删除）
     for (auto ir_sub_module : ir_module->modules) {
         if (!ir_sub_module) continue;
-
+        auto target_str = ir::TargetToString(ir_sub_module->target);
         auto function_cloner = ir::FunctionCloner::Create(ir_sub_module, false);
         for (auto ir_function : ir_module->functions) {
-            for (auto iter_function = ir_module->functions.begin();
-                 iter_function != ir_module->functions.end();) {
-                auto ir_function = *iter_function;
-                if (std::ranges::count(ir_function->annotation_dict["target"],
-                                       ir::TargetToString(ir_sub_module->target))) {
-                    auto ir_function_new = Cast<ir::Function>(function_cloner->Clone(ir_function));
-                    PRAJNA_ASSERT(ir::Verify(ir_function_new));
-
-                    ++iter_function;
-                } else {
-                    ++iter_function;
-                }
+            if (std::ranges::count(ir_function->annotation_dict["target"], target_str)) {
+                auto ir_function_new = Cast<ir::Function>(function_cloner->Clone(ir_function));
+                PRAJNA_ASSERT(ir::Verify(ir_function_new));
             }
-        }
-    }
-
-    // 标记直接调用 GPU intrinsic 的函数
-    for (auto& f : ir_module->functions) {
-        if (f->IsDeclaration()) continue;
-        if (uses_gpu_intrinsic(f)) {
-            f->annotation_dict["host_skip_codegen"] = {"true"};
         }
     }
 }
@@ -792,7 +738,6 @@ inline std::shared_ptr<ir::Module> Transform(std::shared_ptr<ir::Module> ir_modu
     FlatternBlock(ir_module);
     RemoveValuesAfterReturn(ir_module);
     ConvertPropertyToFunctionCall(ir_module);
-
     ConvertKernelFunctionCallToKernelLaunch(ir_module);
     PartitionGpuKernelsAndMarkTargets(ir_module);
     ConvertGlobalVariableToGlobalAlloca(ir_module);

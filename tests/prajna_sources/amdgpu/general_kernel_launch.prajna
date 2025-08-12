@@ -1,0 +1,2 @@
+use ::amdgpu;
+use ::tests::prajna_sources::general::general_kernel_launch_test::GeneralKernelLaunchTest<amdgpu>;

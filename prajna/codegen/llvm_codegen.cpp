@@ -176,6 +176,10 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
+            if (ir_target == prajna::ir::Target::host &&
+                ir_function->annotation_dict.count("host_skip_codegen")) {
+                continue;
+            }
             this->EmitFunctionDeclaration(ir_function);
             if (ir_function->annotation_dict.count("kernel")) {
                 std::string metadata;
@@ -197,6 +201,10 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
         for (std::shared_ptr<ir::Function> ir_function : ir_module->functions) {
             if (!ir_function->IsDeclaration()) {
+                if (ir_target == prajna::ir::Target::host &&
+                    ir_function->annotation_dict.count("host_skip_codegen")) {
+                    continue;  // 既不声明也不定义
+                }
                 // this->EmitFunction(ir_function);
                 ir_function->ApplyVisitor(this->shared_from_this());
             }

@@ -15,6 +15,8 @@ inline std::vector<std::string> getFiles(std::string dir) {
     std::vector<std::string> files;
     for (const auto& file : std::filesystem::recursive_directory_iterator(dir)) {
         if (std::filesystem::is_directory(file)) continue;
+        // Exclude files from the general subdirectory
+        if (file.path().string().find("/general/") != std::string::npos) continue;
         files.push_back(file.path().string());
     }
 
@@ -33,7 +35,7 @@ struct PrintFileName {
              ++iter) {
             name += iter->string();
             if (std::next(iter) == test_file_path.end()) continue;
-            name += "_s_";
+            name += "__";
         }
         return name;
     }

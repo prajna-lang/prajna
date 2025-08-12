@@ -15,3 +15,10 @@ module test1::test2{
 func TestMain(){
     test1::test2::Hello2();
 }
+
+use ::tests::prajna_sources::general::tmp_a::TmpA;
+
+@test
+func TestExternalModule(){
+    TmpA();
+}

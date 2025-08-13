@@ -27,7 +27,7 @@ func TestDetachedThread() {
 
     thread.Detach();
 
-    chrono::Sleep(2.0f32);
+    chrono::Sleep(5.0f32);
 }
 
 func ThreadWithDataFunction(arg: ptr<undef>) -> ptr<undef> {

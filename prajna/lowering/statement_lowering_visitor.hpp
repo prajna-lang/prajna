@@ -2338,6 +2338,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             this->CreateTupleTemplate(), "Tuple");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateVariantTemplate(), "Variant");
+        ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
+            this->CreateLaunchTemplate(), "launch");
     }
 
     Symbol operator()(ast::Pragma ast_pragma);
@@ -2443,6 +2445,104 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         ir_builder->current_implement_type = nullptr;
 
         ir_interface_struct->interface_dict["Self"] = ir_interface;
+    }
+
+    std::shared_ptr<Template> CreateLaunchTemplate() {
+        auto template_launch = Template::Create();
+
+        template_launch->generator = [symbol_table = this->ir_builder->symbol_table,
+                                      logger = this->logger](
+                                         std::list<Symbol> template_arguments,
+                                         std::shared_ptr<ir::Module> module) -> Symbol {
+            // 模板参数：<Kernel, Backend>
+            if (template_arguments.size() != 2) {
+                logger->Error("launch<Kernel, Backend> requires exactly 2 template arguments");
+            }
+
+            auto it = template_arguments.begin();
+            Symbol kernel_symbol = *it++;
+            Symbol target_symbol = *it++;
+
+            // Kernel 必须是可调用的 ir::Value
+            auto ir_kernel_value = SymbolGet<ir::Value>(kernel_symbol);
+            if (!ir_kernel_value) {
+                logger->Error("the 1st template argument of launch must be a function value");
+            }
+
+            auto ir_kernel_function_type = ir_kernel_value->GetFunctionType();
+            if (!ir_kernel_function_type) {
+                logger->Error("the 1st template argument of launch must be callable (function)");
+            }
+            auto ir_kernel_function = Cast<ir::Function>(ir_kernel_value);
+            if (ir_kernel_function && !ir_kernel_function->annotation_dict.count("target")) {
+                // 根据 target_symbol 解析出 "amdgpu"/"nvptx"
+                std::string target_name;
+                if (target_symbol == symbol_table->RootSymbolTable()->Get("amdgpu") ||
+                    target_symbol == symbol_table->Get("amdgpu")) {
+                    target_name = "amdgpu";
+                } else if (target_symbol == symbol_table->RootSymbolTable()->Get("nvgpu") ||
+                           target_symbol == symbol_table->Get("nvgpu")) {
+                    target_name = "nvptx";   
+                } else {
+                    logger->Error("unknown backend in launch<..., Backend>");
+                }
+                ir_kernel_function->annotation_dict["target"].clear();
+                ir_kernel_function->annotation_dict["target"].push_back(target_name);
+            }
+
+            // 计算 Shape3 = Array<i64, 3>
+            auto sym_Array = symbol_table->Get("Array");
+            auto arr_template = SymbolGet<TemplateStruct>(sym_Array);
+            if (!arr_template) {
+                logger->Error("Array template not found in current symbol table");
+            }
+
+            std::list<Symbol> array_args;
+            array_args.push_back(ir::i64);                              // 元素类型
+            array_args.push_back(ir::ConstantInt::Create(ir::i64, 3));  // 长度常量
+
+            auto shape3_type = SymbolGet<ir::Type>(arr_template->Instantiate(array_args, module));
+            if (!shape3_type) {
+                logger->Error("failed to instantiate Array<i64,3> for Shape3");
+            }
+
+            // 生成函数：(Shape3, Shape3, kernel_params...) -> void
+            std::list<std::shared_ptr<ir::Type>> param_types;
+            param_types.push_back(shape3_type);  // grid
+            param_types.push_back(shape3_type);  // block
+            for (auto type : ir_kernel_function_type->parameter_types) {
+                param_types.push_back(type);
+            }
+            auto function_type = ir::FunctionType::Create(param_types, ir::VoidType::Create());
+            auto ir_builder = IrBuilder::Create(symbol_table, module, logger);
+
+            auto function_name =
+                std::string("__launch_stub") + GetTemplateArgumentsPostify(template_arguments);
+            auto function =
+                ir_builder->CreateFunction(ast::Identifier(function_name), function_type);
+            function->annotation_dict["inline"];
+            function->fullname = function_name;
+
+            ir_builder->CreateTopBlockForFunction(function);
+
+            auto& parameters = function->parameters;
+            PRAJNA_ASSERT(parameters.size() >= 2);
+            auto grid = parameters.front();
+            auto block = *std::next(parameters.begin(), 1);
+
+            std::list<std::shared_ptr<ir::Value>> kargs;
+            for (auto itp = std::next(parameters.begin(), 2); itp != parameters.end(); ++itp) {
+                kargs.push_back(*itp);
+            }
+
+            ir_builder->Create<ir::KernelFunctionCall>(ir_kernel_value, grid, block, kargs);
+            ir_builder->ReturnVoid();
+
+            return function;
+        };
+
+        template_launch->template_parameters_size = 2;
+        return template_launch;
     }
 
     Symbol operator()(ast::Blank) { return nullptr; }

@@ -2475,7 +2475,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             }
             auto ir_kernel_function = Cast<ir::Function>(ir_kernel_value);
             if (ir_kernel_function) {
-                // 根据 target_symbol 解析出 "amdgpu"/"nvptx"
+                // 根据 target_symbol 解析出 "amdgpu"/"nvgpu"
                 std::string target_name;
                 if (target_symbol == symbol_table->RootSymbolTable()->Get("amdgpu") ||
                     target_symbol == symbol_table->Get("amdgpu")) {
@@ -2487,17 +2487,23 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     logger->Error("unknown target in launch<..., target>");
                 }
 
-                // 如果内核函数上已经有 @target 注解，则做一致性检查
-                if (auto it = ir_kernel_function->annotation_dict.find("target");
-                    it != ir_kernel_function->annotation_dict.end()) {
-                    auto& vals = it->second;
-                    if (!vals.empty() && vals.front() != target_name) {
-                        logger->Error("the target in @target(...) on the kernel function is different from target in the launch<....,target> ");
-                    }
+                // kernel上有 @target 注解，
+                // 如果为空，提示为空；
+                // 不为空，判断launch<,target>中target是否包含在其中
+                auto annotations = ir_kernel_function->annotation_dict;
+                auto target_it = annotations.find("target");
+
+                if (target_it != annotations.end()) {  // kernel存在@target
+                    auto targets = target_it->second;
+                    PRAJNA_ASSERT(!targets.empty(), "@target() is empty");
+                    // 多值时做包含检查
+                    PRAJNA_ASSERT(
+                        std::find(targets.begin(), targets.end(), target_name) != targets.end(),
+                        fmt::format("launch target {} is not allowed by kernel @target()",
+                                    target_name));
                 }
 
-                ir_kernel_function->annotation_dict["target"].clear();
-                ir_kernel_function->annotation_dict["target"].push_back(target_name);
+                target_it->second.push_back(target_name);
             }
 
             // 计算 Shape3 = Array<i64, 3>

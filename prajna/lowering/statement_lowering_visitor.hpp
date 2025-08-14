@@ -155,6 +155,43 @@ inline void CopyVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
     }
 }
 
+class PlatformDetector {
+   public:
+    enum class Platform { Windows, Linux, MacOS, Other };
+
+    static Platform GetCurrentPlatform() {
+#ifdef WIN32
+        return Platform::Windows;
+#elif __linux__
+        return Platform::Linux;
+#elif __APPLE__
+        return Platform::MacOS;
+#else
+        return Platform::Other;
+#endif
+    }
+
+    static std::string PlatformToString(Platform platform) {
+        switch (platform) {
+            case Platform::Windows:
+                return "windows";
+            case Platform::Linux:
+                return "linux";
+            case Platform::MacOS:
+                return "macos";
+            default:
+                return "unknown";
+        }
+    }
+
+    static Platform StringToPlatfrom(const std::string& str) {
+        if (str == "windows") return Platform::Windows;
+        if (str == "linux") return Platform::Linux;
+        if (str == "macos") return Platform::MacOS;
+        return Platform::Other;
+    }
+};
+
 class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLoweringVisitor> {
     StatementLoweringVisitor() = default;
 
@@ -406,6 +443,27 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
     Symbol operator()(ast::Function ast_function) {
         try {
+            auto current_platform = PlatformDetector::GetCurrentPlatform();
+            bool should_compile = true;
+
+            for (auto& annotation : ast_function.declaration.annotation_dict) {
+                if (annotation.name == "platform") {
+                    should_compile = false;
+                    for (const auto& value : annotation.values) {
+                        auto specified_platform = PlatformDetector::StringToPlatfrom(value.value);
+                        if (specified_platform == current_platform) {
+                            should_compile = true;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+
+            if (!should_compile) {
+                return nullptr;
+            }
+
             ir_builder->is_static_function =
                 std::ranges::any_of(ast_function.declaration.annotation_dict,
                                     [](auto x) { return x.name == "static"; });

@@ -1,0 +1,13 @@
+@platform("windows")
+func WithinSpecifiedOS() { "Running windows".PrintLine(); }
+
+@platform("linux")
+func WithinSpecifiedOS() { "Running linux".PrintLine(); }
+
+@platform("macos")
+func WithinSpecifiedOS() { "Running macos".PrintLine(); }
+
+@test
+func TestOsSpecifiedAnnotation() {
+    WithinSpecifiedOS();
+}

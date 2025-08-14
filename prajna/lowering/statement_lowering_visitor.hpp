@@ -2474,7 +2474,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 logger->Error("the 1st template argument of launch must be callable (function)");
             }
             auto ir_kernel_function = Cast<ir::Function>(ir_kernel_value);
-            if (ir_kernel_function && !ir_kernel_function->annotation_dict.count("target")) {
+            if (ir_kernel_function) {
                 // 根据 target_symbol 解析出 "amdgpu"/"nvptx"
                 std::string target_name;
                 if (target_symbol == symbol_table->RootSymbolTable()->Get("amdgpu") ||
@@ -2482,10 +2482,20 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     target_name = "amdgpu";
                 } else if (target_symbol == symbol_table->RootSymbolTable()->Get("nvgpu") ||
                            target_symbol == symbol_table->Get("nvgpu")) {
-                    target_name = "nvptx";   
+                    target_name = "nvptx";
                 } else {
-                    logger->Error("unknown backend in launch<..., Backend>");
+                    logger->Error("unknown target in launch<..., target>");
                 }
+
+                // 如果内核函数上已经有 @target 注解，则做一致性检查
+                if (auto it = ir_kernel_function->annotation_dict.find("target");
+                    it != ir_kernel_function->annotation_dict.end()) {
+                    auto& vals = it->second;
+                    if (!vals.empty() && vals.front() != target_name) {
+                        logger->Error("the target in @target(...) on the kernel function is different from target in the launch<....,target> ");
+                    }
+                }
+
                 ir_kernel_function->annotation_dict["target"].clear();
                 ir_kernel_function->annotation_dict["target"].push_back(target_name);
             }

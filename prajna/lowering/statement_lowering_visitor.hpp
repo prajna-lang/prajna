@@ -2496,7 +2496,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 if (target_it != annotations.end()) {
                     // kernel存在@target
                     auto& targets = target_it->second;
-                    PRAJNA_ASSERT(!targets.empty(), "@target() is empty");
+                    if(targets.empty()){
+                        logger->Error("@target() is empty");
+                    }
                     // 多值时做包含检查
                     PRAJNA_ASSERT(
                         std::find(targets.begin(), targets.end(), target_name) != targets.end(),

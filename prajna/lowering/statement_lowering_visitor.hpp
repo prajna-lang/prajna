@@ -2490,20 +2490,27 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 // kernel上有 @target 注解，
                 // 如果为空，提示为空；
                 // 不为空，判断launch<,target>中target是否包含在其中
-                auto annotations = ir_kernel_function->annotation_dict;
+                auto& annotations = ir_kernel_function->annotation_dict;
                 auto target_it = annotations.find("target");
 
-                if (target_it != annotations.end()) {  // kernel存在@target
-                    auto targets = target_it->second;
+                if (target_it != annotations.end()) {
+                    // kernel存在@target
+                    auto& targets = target_it->second;
                     PRAJNA_ASSERT(!targets.empty(), "@target() is empty");
                     // 多值时做包含检查
                     PRAJNA_ASSERT(
                         std::find(targets.begin(), targets.end(), target_name) != targets.end(),
                         fmt::format("launch target {} is not allowed by kernel @target()",
                                     target_name));
-                }
+                    // 删除 targets 中与 target_name 相同的元素
+                    targets.erase(std::remove(targets.begin(), targets.end(), target_name),
+                                  targets.end());
 
-                target_it->second.push_back(target_name);
+                    targets.insert(targets.begin(), target_name);
+                } else {
+                    // 如果 @target 不存在，初始化并添加 target_name
+                    annotations["target"] = {target_name};
+                }
             }
 
             // 计算 Shape3 = Array<i64, 3>

@@ -529,6 +529,26 @@ class FunctionCloner : public Visitor {
         return value_dict[ir_value];
     }
 
+    void Visit(std::shared_ptr<ir::KernelFunctionCall> ir_kernel_function_call) override {
+        if (value_dict[ir_kernel_function_call]) return;
+
+        this->VisitOperands(ir_kernel_function_call);
+
+        // 取映射后的 function / grid / block
+        auto new_func = value_dict[ir_kernel_function_call->Function()];
+        auto new_grid = value_dict[ir_kernel_function_call->GridShape()];
+        auto new_block = value_dict[ir_kernel_function_call->BlockShape()];
+
+        // 取映射后的参数列表
+        std::list<std::shared_ptr<ir::Value>> new_args;
+        for (int64_t i = 0; i < ir_kernel_function_call->ArgumentSize(); ++i) {
+            new_args.push_back(value_dict[ir_kernel_function_call->Argument(i)]);
+        }
+
+        auto cloned = ir::KernelFunctionCall::Create(new_func, new_grid, new_block, new_args);
+        value_dict[ir_kernel_function_call] = cloned;
+    }
+
     std::unordered_map<std::shared_ptr<ir::Value>, std::shared_ptr<ir::Value>> value_dict;
 
     bool shallow_function_copy = false;

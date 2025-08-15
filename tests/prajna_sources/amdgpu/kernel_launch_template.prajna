@@ -1,0 +1,107 @@
+use ::amdgpu as gpu;
+
+@kernel
+@target("amdgpu")
+func myKernel(tensor: gpu::Tensor<i64, 1>){
+    var thread_idx = gpu::ThreadIndex();
+    var thread_idx_x = thread_idx[0];
+    tensor.data[thread_idx_x] = thread_idx_x;
+}
+
+@kernel
+func myKernel2(tensor: gpu::Tensor<i64, 1>){
+    var thread_idx = gpu::ThreadIndex();
+    var thread_idx_x = thread_idx[0];
+    tensor.data[thread_idx_x] = thread_idx_x;
+}
+
+@target("amdgpu")
+func myKernel3(tensor: gpu::Tensor<i64, 1>){
+    var thread_idx = gpu::ThreadIndex();
+    var thread_idx_x = thread_idx[0];
+    tensor.data[thread_idx_x] = thread_idx_x;
+}
+
+func myKernel4(tensor: gpu::Tensor<i64, 1>){
+    var thread_idx = gpu::ThreadIndex();
+    var thread_idx_x = thread_idx[0];
+    tensor.data[thread_idx_x] = thread_idx_x;
+}
+
+@target("nvptx","amdgpu")
+func myKernel5(tensor: gpu::Tensor<i64, 1>){
+    var thread_idx = gpu::ThreadIndex();
+    var thread_idx_x = thread_idx[0];
+    tensor.data[thread_idx_x] = thread_idx_x;
+}
+
+@target("amdgpu","nvptx")
+func myKernel6(tensor: gpu::Tensor<i64, 1>){
+    var thread_idx = gpu::ThreadIndex();
+    var thread_idx_x = thread_idx[0];
+    tensor.data[thread_idx_x] = thread_idx_x;
+}
+
+
+
+
+@test
+func TestKernel(){
+    var size = 13;
+    var GridShape = [1,1,1];
+    var BlockShape = [size, 1, 1];
+
+    var shape = [size];
+    var gpu_tensor = gpu::Tensor<i64, 1>::Create(shape);
+
+    launch<myKernel,amdgpu>(GridShape, BlockShape, gpu_tensor);
+    gpu::Synchronize();
+
+    var host_tensor = gpu_tensor.ToHost();
+    for i in 0 to size{
+        test::Assert(host_tensor[i] == i);
+    }
+
+    launch<myKernel2,amdgpu>(GridShape, BlockShape, gpu_tensor);
+    gpu::Synchronize();
+
+    host_tensor = gpu_tensor.ToHost();
+    for i in 0 to size{
+        test::Assert(host_tensor[i] == i);
+    }
+
+    launch<myKernel3,amdgpu>(GridShape, BlockShape, gpu_tensor);
+    gpu::Synchronize();
+
+    host_tensor = gpu_tensor.ToHost();
+    for i in 0 to size{
+        test::Assert(host_tensor[i] == i);
+    }
+
+    launch<myKernel4,amdgpu>(GridShape, BlockShape, gpu_tensor);
+    gpu::Synchronize();
+
+    host_tensor = gpu_tensor.ToHost();
+    for i in 0 to size{
+        test::Assert(host_tensor[i] == i);
+    }
+
+    launch<myKernel5,amdgpu>(GridShape, BlockShape, gpu_tensor);
+    gpu::Synchronize();
+
+    host_tensor = gpu_tensor.ToHost();
+    for i in 0 to size{
+        test::Assert(host_tensor[i] == i);
+    }
+    
+    launch<myKernel6,amdgpu>(GridShape, BlockShape, gpu_tensor);
+    gpu::Synchronize();
+
+    host_tensor = gpu_tensor.ToHost();
+    for i in 0 to size{
+        test::Assert(host_tensor[i] == i);
+    }
+
+
+
+}

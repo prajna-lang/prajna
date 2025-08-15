@@ -1,0 +1,2 @@
+use ::amdgpu;
+use ::tests::prajna_sources::general::general_matrix_multiply_test::GeneralMatrixMultiplyTest<amdgpu>;

@@ -2496,14 +2496,14 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 if (target_it != annotations.end()) {
                     // kernel存在@target
                     auto& targets = target_it->second;
-                    if(targets.empty()){
+                    if (targets.empty()) {
                         logger->Error("@target() is empty");
                     }
                     // 多值时做包含检查
-                    PRAJNA_ASSERT(
-                        std::find(targets.begin(), targets.end(), target_name) != targets.end(),
-                        fmt::format("launch target {} is not allowed by kernel @target()",
-                                    target_name));
+                    if (std::find(targets.begin(), targets.end(), target_name) == targets.end()) {
+                        logger->Error(fmt::format(
+                            "launch target {} is not allowed by kernel @target()", target_name));
+                    }
                     // 删除 targets 中与 target_name 相同的元素
                     targets.erase(std::remove(targets.begin(), targets.end(), target_name),
                                   targets.end());

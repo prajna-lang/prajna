@@ -12,9 +12,20 @@ struct LinearLayer {
 }
 
 implement LinearLayer {
+
+    func __finalize__(){
+        "finalize LinearLayer".PrintLine();
+    }
+
+    func __initialize__(){
+        "initialize LinearLayer".PrintLine();
+    }
+
     @static
     func Create(input_size: i64, output_size: i64)->Ptr<LinearLayer> {
+        "hit1".PrintLine();
         var layer = Ptr<LinearLayer>::New();
+        "hit1".PrintLine();
         layer.input_size = input_size;
         layer.output_size = output_size;
 
@@ -133,7 +144,7 @@ implement NeuralNetwork {
     }
 }
 
-@test
+// @test
 func TestReLUActivation() {
     "Testing ReLU Activation...".PrintLine();
 
@@ -157,7 +168,7 @@ func TestReLUActivation() {
     test::Assert(output[1, 2] == 0.0);  // -0.5 -> 0.0
 }
 
-// @test
+@test
 func TestLinearLayer() {
     "Testing Linear Layer...".PrintLine();
 

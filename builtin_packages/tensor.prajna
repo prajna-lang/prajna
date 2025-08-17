@@ -73,6 +73,15 @@ implement Tensor<Type, Dim>{
 
 template <Type, Dim>
 implement Tensor<Type, Dim> {
+
+    func __initialize__(){
+        "initialize Tensor".PrintLine();
+    }
+
+    func __finalize__(){
+        "finalize Tensor".PrintLine();
+    }
+
     @static
     func Create(shape :Array<i64, Dim>)->Tensor<Type, Dim>{
         var self: Tensor<Type, Dim>;

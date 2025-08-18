@@ -1,0 +1,45 @@
+template <Type>
+struct B {}
+
+template <Type>
+implement B<Type> {
+    func __initialize__() {
+        "initialize B".PrintLine();
+    }
+
+    func __finalize__() {
+        "finalize B".PrintLine();
+    }
+}
+
+struct B1 {}
+
+implement B1 {
+    func __initialize__() {
+        "initialize B1".PrintLine();
+    }
+
+    func __finalize__() {
+        "finalize B1".PrintLine();
+    }
+}
+
+struct C {
+    b: B<i32>;
+    b1: B1;
+}
+
+implement C {
+    func __initialize__() {
+        "initialize C".PrintLine();
+    }
+
+    func __finalize__() {
+        "finalize C".PrintLine();
+    }
+}
+
+@test
+func TestNestedStructureInitialize() {
+    var layer = Ptr<C>::New();
+}

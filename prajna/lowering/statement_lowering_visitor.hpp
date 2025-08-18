@@ -45,9 +45,14 @@ inline bool HasInitializable(std::shared_ptr<ir::Type> ir_type) {
 inline void InitializeVariableLikedCallback(std::shared_ptr<ir::VariableLiked> ir_variable_liked,
                                             std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_variable_liked->type;
+
+    ir_builder->InstantiateTypeImplements(ir_type);
+
     if (HasInitializable(ir_type)) {
         if (auto is_struct_type = Cast<ir::StructType>(ir_type)) {
             for (auto ir_field : is_struct_type->fields) {
+                ir_builder->InstantiateTypeImplements(ir_field->type);
+
                 if (HasInitializable(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->Create<ir::AccessField>(ir_variable_liked, ir_field);
@@ -106,9 +111,13 @@ inline bool HasFinalize(std::shared_ptr<ir::Type> ir_type) {
 inline void FinalizeVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
                                           std::shared_ptr<lowering::IrBuilder> ir_builder) {
     auto ir_type = ir_value->type;
+
+    ir_builder->InstantiateTypeImplements(ir_type);
+
     if (HasFinalize(ir_type)) {
         auto ir_variable_liked = ir_builder->VariableLikedNormalize(ir_value);
         // 和incresement的顺序是相反的,
+
         if (IsFinalize(ir_type)) {
             auto ir_function = ir_type->GetMemberFunction("__finalize__");
             ir_builder->CallMemberFunction(ir_variable_liked, ir_function, {});
@@ -119,6 +128,9 @@ inline void FinalizeVariableLikedCallback(std::shared_ptr<ir::Value> ir_value,
             for (auto iter_field = is_struct_type->fields.rbegin();
                  iter_field != is_struct_type->fields.rend(); ++iter_field) {
                 auto ir_field = *iter_field;
+
+                ir_builder->InstantiateTypeImplements(ir_field->type);
+
                 if (HasFinalize(ir_field->type)) {
                     auto ir_access_field =
                         ir_builder->Create<ir::AccessField>(ir_variable_liked, ir_field);

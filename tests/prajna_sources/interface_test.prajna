@@ -2,6 +2,10 @@ interface Say{
     func Say();
 }
 
+interface Say2{
+    func Say();
+}
+
 struct SayHi{
 }
 

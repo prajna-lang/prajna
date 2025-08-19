@@ -840,7 +840,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     ir::FunctionType::Create(ir_undef_this_pointer_function_argument_types,
                                              ir_function->function_type->return_type);
                 auto ir_undef_this_pointer_function = ir_builder->CreateFunction(
-                    ir_function->name + "/undef", ir_undef_this_pointer_function_type);
+                    ir_interface->name + "::" + ir_function->name + "/undef",
+                    ir_undef_this_pointer_function_type);
 
                 ir_interface->undef_this_pointer_functions.insert(
                     {ir_function, ir_undef_this_pointer_function});
@@ -2481,8 +2482,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 ir::PointerType::Create(ir_builder->current_implement_type));
             auto ir_member_function_type = ir::FunctionType::Create(
                 ir_member_function_argument_types, ir_function->function_type->return_type);
-            auto ir_member_function =
-                ir_builder->CreateFunction(ir_function->name + "/member", ir_member_function_type);
+            auto ir_member_function = ir_builder->CreateFunction(
+                ir_interface_prototype->name + "::" + ir_function->name + "/member",
+                ir_member_function_type);
             ir_member_function->name = ir_function->name;
             ir_member_function->fullname = ir_function->fullname;
 

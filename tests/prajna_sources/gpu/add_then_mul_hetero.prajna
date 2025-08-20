@@ -2,7 +2,6 @@ use ::amdgpu;
 use ::nvgpu;
 
 @kernel
-@target("amdgpu") 
 func addKernel(tensor: amdgpu::Tensor<f32, 1>) {
     var thread_idx_x = amdgpu::ThreadIndex()[0];
     // 计算 A[i] = i, B[i] = 2*i => tensor[i] = 3*i
@@ -16,25 +15,22 @@ func mulKernel(tensor: nvgpu::Tensor<f32, 1>, factor: f32) {
 }
 
 @test
-func testhetero_add_then_mul() {
+func TestKernel() {
     var size = 64;
     var shape = [size];
 
     // ===== amdgpu: 加法 =====
     var amd_grid  = [1, 1, 1];
     var amd_block = [size, 1, 1];
-
     var amdgpu_tensor = amdgpu::Tensor<f32, 1>::Create(shape);
     launch<addKernel, amdgpu>(amd_grid, amd_block, amdgpu_tensor);
     amdgpu::Synchronize();
-
     var host_tensor = amdgpu_tensor.ToHost();
 
     // ===== nvgpu: 乘法 =====
     var nv_grid  = [1, 1, 1];
     var nv_block = [size, 1, 1];
     var factor = 3.0f32;
-
     var nvgpu_tensor = host_tensor.ToGpu();
     launch<mulKernel, nvgpu>(nv_grid, nv_block, nvgpu_tensor, factor);
     nvgpu::Synchronize();

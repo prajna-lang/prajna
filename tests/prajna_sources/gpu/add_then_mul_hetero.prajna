@@ -17,9 +17,8 @@ func mulKernel(tensor: nvgpu::Tensor<f32, 1>, factor: f32) {
 @test
 func TestKernel() {
     var size = 64;
-    var shape = [size];
-
     // ===== amdgpu: 加法 =====
+    var shape = [size];
     var amd_grid  = [1, 1, 1];
     var amd_block = [size, 1, 1];
     var amdgpu_tensor = amdgpu::Tensor<f32, 1>::Create(shape);

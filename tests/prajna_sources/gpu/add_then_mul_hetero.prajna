@@ -1,0 +1,48 @@
+use ::amdgpu;
+use ::nvgpu;
+
+@kernel
+@target("amdgpu") 
+func addKernel(tensor: amdgpu::Tensor<f32, 1>) {
+    var thread_idx_x = amdgpu::ThreadIndex()[0];
+    // 计算 A[i] = i, B[i] = 2*i => tensor[i] = 3*i
+    tensor[thread_idx_x] = thread_idx_x.Cast<f32>() + 2.0f32 * thread_idx_x.Cast<f32>();
+}
+
+@kernel
+func mulKernel(tensor: nvgpu::Tensor<f32, 1>, factor: f32) {
+    var thread_idx_x = nvgpu::ThreadIndex()[0];
+    tensor[thread_idx_x] = tensor[thread_idx_x] * factor;
+}
+
+@test
+func testhetero_add_then_mul() {
+    var size = 64;
+    var shape = [size];
+
+    // ===== amdgpu: 加法 =====
+    var amd_grid  = [1, 1, 1];
+    var amd_block = [size, 1, 1];
+
+    var amdgpu_tensor = amdgpu::Tensor<f32, 1>::Create(shape);
+    launch<addKernel, amdgpu>(amd_grid, amd_block, amdgpu_tensor);
+    amdgpu::Synchronize();
+
+    var host_tensor = amdgpu_tensor.ToHost();
+
+    // ===== nvgpu: 乘法 =====
+    var nv_grid  = [1, 1, 1];
+    var nv_block = [size, 1, 1];
+    var factor = 3.0f32;
+
+    var nvgpu_tensor = host_tensor.ToGpu();
+    launch<mulKernel, nvgpu>(nv_grid, nv_block, nvgpu_tensor, factor);
+    nvgpu::Synchronize();
+    host_tensor = nvgpu_tensor.ToHost();
+
+    // ===== 校验 =====
+    for i in 0 to size {
+        var expect = 9.0f32 * i.Cast<f32>();
+        test::Assert(host_tensor[i] == expect);
+    }
+}

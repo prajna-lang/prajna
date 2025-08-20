@@ -16,6 +16,22 @@ implement Float<Bits> {
         return __cos<Float<Bits>>(this);
     }
 
+    func Tan()->Float<Bits> {
+        return __tan<Float<Bits>>(this);
+    }
+    
+    func Atan()->Float<Bits> {
+        return __atan<Float<Bits>>(this);
+    }
+
+    func Asin()->Float<Bits> {
+        return __asin<Float<Bits>>(this);
+    }
+
+    func Acos()->Float<Bits> {
+        return __acos<Float<Bits>>(this);
+    }
+
     func Floor()->Float<Bits> {
         return __floor<Float<Bits>>(this);
     }

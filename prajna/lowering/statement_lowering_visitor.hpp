@@ -2342,11 +2342,11 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("tan"), "__tan");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("atan"),"__atan");
+            this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("atan"), "__atan");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("acos"),"__acos");
+            this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("acos"), "__acos");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
-            this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("asin"),"__asin");
+            this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("asin"), "__asin");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateFloatTypeIntrinsicUnaryFunctionTemplate("sqrt"), "__sqrt");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(

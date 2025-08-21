@@ -7,6 +7,13 @@ func myKernel(tensor: gpu::Tensor<f32, 1>){
     tensor[0] = tmp.Sin();
 }
 
+@kernel
+@target("amdgpu")
+func tanKernel(tensor: gpu::Tensor<f32, 1>){
+    var tmp = 3.1415 / 4.0;  // π/4, tan(π/4) = 1.0
+    tensor[0] = tmp.Tan();
+}
+
 @test
 func TestSin(){
     var shape = [1];
@@ -17,3 +24,15 @@ func TestSin(){
     var host_tensor = gpu_tensor.ToHost();
     test::Assert(host_tensor[0] == 1.0f32);
 }
+
+@test
+func TestTan(){
+    var shape = [1];
+    var gpu_tensor = gpu::Tensor<f32, 1>::Create(shape);
+    tanKernel<|[1,1,1], [1,1,1]|>(gpu_tensor);
+    gpu::Synchronize();
+
+    var host_tensor = gpu_tensor.ToHost();
+    test::Assert(host_tensor[0] == 1.0f32);
+}
+

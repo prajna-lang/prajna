@@ -1,0 +1,5 @@
+func Main(){
+    var test_number = 1.0f32;
+    var tan_value = test_number.Asin();
+    tan_value.PrintLine();
+}

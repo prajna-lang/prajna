@@ -10,7 +10,11 @@ func myKernel(tensor: gpu::Tensor<f32, 1>){
 @kernel
 @target("amdgpu")
 func tanKernel(tensor: gpu::Tensor<f32, 1>){
+<<<<<<< HEAD
     var tmp = 3.1415159265 / 4.0;  // π/4, tan(π/4) = 1.0
+=======
+    var tmp = 3.1415 / 4.0;  // π/4, tan(π/4) = 1.0
+>>>>>>> b056d80 (feat: Add Tan() function and complete GPU math function support)
     tensor[0] = tmp.Tan();
 }
 

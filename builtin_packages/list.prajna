@@ -11,6 +11,9 @@ implement Node<ValueType> {
     /// @warning 确保节点前面存在节点
     func InsertBefore(value: ValueType){
         var new_node = ptr<Node<ValueType>>::New();
+
+        initialize<ValueType>(&new_node->value);
+
         new_node->value = value;
         new_node->prev = this.prev;
         this.prev->next = new_node;
@@ -21,6 +24,9 @@ implement Node<ValueType> {
     /// @warning 确保节点后面存在节点
     func InsertAfter(value: ValueType){
         var new_node = ptr<Node<ValueType>>::New();
+
+        initialize<ValueType>(&new_node->value);
+
         new_node->value = value;
         new_node->next = this.next;
         this.next->prev = new_node;

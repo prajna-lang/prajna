@@ -178,7 +178,7 @@ func TestLinearLayer() {
     test::Assert(output.Shape()[1] == 2);
 }
 
-// @test
+@test
 func TestNeuralNetwork() {
     "Testing Neural Network...".PrintLine();
 

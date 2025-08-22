@@ -1,10 +1,10 @@
-# Prajna 编译器异构 GPU 后端支持实践：：NVIDIA & AMD 一站式适配
+# Prajna 编译器异构 GPU 后端支持实践:NVIDIA & AMD 一站式适配
 
 在 GPU 计算时代，如何让自研的 DSL 语言或编译器高效地跑在 NVIDIA/AMD GPU 上，成为许多开发者关注的问题。Prajna 编译器也不例外，我们在实现过程中选择了 LLVM 的 NVPTX（NVIDIA）和 AMDGPU（AMD）后端，借助其提供的低级汇编能力，实现了对主流 GPU 的灵活支持。本文全面介绍 Prajna 在双后端支持下的实现机制、工程架构、关键代码及平台适配经验。
 
 ## Prajna IR的分离
 
-Prajna为了更好地实现编译器, 设计了一套更为上层的IR, 也就是Prajna IR. 我的编译器的主药流程如下图所示
+Prajna为了更好地实现编译器, 设计了一套更为上层的IR, 也就是Prajna IR. 我的编译器的主要流程如下图所示
 
 ```mermaid
 flowchart LR
@@ -20,27 +20,28 @@ flowchart LR
   A("Prajna IR") -->|"通过@target或调用关系"| E("Amdgpu Module") --> Backend3("AmdGPU IR") --> Hsaco("Hsaco")
 ```
 
-我们会通过下面的方式进行标注
+我们会通过下面的方式进行标注（一般可省略）
+>@target 和 @kernel 均可由系统根据调用关系与GPU 原语自动识别；只有在需要固定平台或增强可读性时再显式标注。
 
 ```prajna
-@target("amdgpu")
+@target("amdgpu") 
 func AmdGpuFun()->void \\ amdgpu平台代码
 
 @target("nvptx")
 func NvGpuFun() ->void \\ nvgpu平台代码
 ```
 
-只有平台相关的代码需要标注, 大部分代码可以根据调用关系来判断归属平台.
-
-核函数必须通过@kernel标注
+核函数也可自动识别（@kernel 可省略），需要时可显式写出：
 
 ```prajna
 @kernel
-func TestKernel() -> void \\
+func Kernel() -> void \\
 ```
 
-我们会根据__launch__<TestKernel, nvgpu|amdgpu>来确定核函数的平台, 如果是平台相关的核函数, 我们也可以通过”@target(...)"来限制
-
+大部分代码无需标注；平台在调用处确定：
+```prajna
+launch<Kernel, amdgpu|nvgpu>(.....);
+```
 ---
 
 ## 什么是 NVPTX / AMDGPU
@@ -85,7 +86,7 @@ flowchart TD
     F0 -- "启动/管理 kernel" --> F2
 ```
 
-**文字流程描述：**
+**流程描述：**
 
 1. **Prajna IR 阶段**
 
@@ -273,6 +274,44 @@ flowchart TD
 4. 不同平台统一调度接口，后端/平台切换一行代码完成，无需重构业务逻辑。
 
 ---
+
+
+
+## 使用示例
+
+```prajna
+use ::amdgpu as gpu;
+// @kernel 可省略，系统可自动识别为 kernel
+func myKernel(tensor: gpu::Tensor<i64, 1>) {
+  let tid = gpu::ThreadIndex()[0];
+  tensor.data[tid] = tid;
+}
+
+@test
+func TestKernel() {
+  let n = 13;
+  let grid = [1,1,1];
+  let block = [n,1,1];
+  let t = gpu::Tensor<i64,1>::Create([n]);
+
+  // AMD 平台
+  launch<myKernel, amdgpu>(grid, block, t);
+  gpu::Synchronize();
+
+  // NVIDIA 平台
+  launch<myKernel, nvgpu>(grid, block, t);
+}
+```
+---
+
+## Prajna 的亮点
+
+* **按调用关系自动判定目标平台**：除显式 `@target` 标注外，Prajna 能根据调用图将函数划归 Host/NVIDIA/AMD 模块，减少手工标注，降低出错率。
+* **自动识别 kernel（@kernel @target 可选）与模板化 `launch<kernel, target>` 调用**：平台切换由模板参数显式指定或由上下文推导，调用侧最小改动。
+* **LLVM 原生 API 产物生成**：直接通过 LLVM NVPTX/AMDGPU 后端生成 PTX/HSACO，无需依赖外部 `llc/clang`，便于 JIT 与嵌入式场景。
+* **双 Loader 封装**：分别适配 CUDA Driver 与 HIP Runtime 的加载、符号解析、启动参数与同步；对上层透明。
+
+
 
 ## 实战经验与开发建议
 

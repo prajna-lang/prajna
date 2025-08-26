@@ -1,0 +1,33 @@
+@test
+func TestTrigonometric(){ 
+        {
+            var pi = (3.1415926).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Sin(), 0.0, 0.001);
+            pi = (3.1415926/2.0).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Sin(), 1.0, 0.001);
+            pi = (2.0*3.1415926).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Sin(), 0.0, 0.01);
+            var value = (0.5).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(value.Sin(), 0.47943, 0.001);
+        }
+        {
+            var pi = (3.1415926).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Cos(), -1.0, 0.001);
+            pi = (3.1415926/2.0).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Cos(), 0.0, 0.001);
+            pi = (2.0 * 3.1415926).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Cos(), 1.0, 0.001);
+            var value = (0.5).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(value.Cos(), 0.87758, 0.001);
+        }
+
+        {
+            // Testing Tan
+            var pi = (3.1415926/4.0).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Tan(), 1.0, 0.001);
+            pi = (0.0).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Tan(), 0.0, 0.001);
+            var value = (0.5).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(value.Tan(), 0.54630, 0.001);
+        }
+}

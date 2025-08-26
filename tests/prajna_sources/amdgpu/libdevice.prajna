@@ -3,7 +3,7 @@ use ::amdgpu as gpu;
 @kernel
 @target("amdgpu")
 func myKernel(tensor: gpu::Tensor<f32, 1>){
-    var tmp = 3.1415 * 0.5;
+    var tmp = 3.1415159265 * 0.5;
     tensor[0] = tmp.Sin();
 }
 

@@ -592,10 +592,11 @@ inline bool TopAlloca(std::shared_ptr<ir::Module> ir_module) {
 
 inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_nvptx_module) {
     std::list<ir::Function> ir_llvm_intrinsics;
-    std::map<std::string, std::string> name_map = {{"llvm.sin.f32", "__nv_sinf"},
-                                                   {"llvm.cos.f32", "__nv_cosf"},
-                                                   {"llvm.asin.f32", "__nv_asinf"},
-                                                   {"llvm.acos.f32", "__nv_acosf"}};
+    std::map<std::string, std::string> name_map = {
+        {"llvm.sin.f32", "__nv_sinf"},   {"llvm.cos.f32", "__nv_cosf"},
+        {"llvm.tan.f32", "__nv_tanf"},   {"llvm.asin.f32", "__nv_asinf"},
+        {"llvm.acos.f32", "__nv_acosf"}, {"llvm.atan.f32", "__nv_atanf"},
+        {"llvm.pow.f32", "__nv_powf"}};
     for (auto ir_function : ir_nvptx_module->functions) {
         if (name_map.count(ir_function->fullname)) {
             ir_function->fullname = name_map[ir_function->fullname];
@@ -616,10 +617,11 @@ inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_n
 inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir_amdgpu_module) {
     std::list<ir::Function> ir_llvm_intrinsics;
     // 替换 LLVM intrinsics 为 OCML 函数
-    std::map<std::string, std::string> name_map = {{"llvm.sin.f32", "__ocml_sin_f32"},
-                                                   {"llvm.cos.f32", "__ocml_cos_f32"},
-                                                   {"llvm.asin.f32", "__ocml_asin_f32"},
-                                                   {"llvm.acos.f32", "__ocml_acos_f32"}};
+    std::map<std::string, std::string> name_map = {
+        {"llvm.sin.f32", "__ocml_sin_f32"},   {"llvm.cos.f32", "__ocml_cos_f32"},
+        {"llvm.tan.f32", "__ocml_tan_f32"},   {"llvm.asin.f32", "__ocml_asin_f32"},
+        {"llvm.acos.f32", "__ocml_acos_f32"}, {"llvm.atan.f32", "__ocml_atan_f32"},
+        {"llvm.pow.f32", "__ocml_pow_f32"}};
     for (auto ir_function : ir_amdgpu_module->functions) {
         if (name_map.count(ir_function->fullname)) {
             ir_function->fullname = name_map[ir_function->fullname];

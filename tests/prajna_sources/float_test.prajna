@@ -47,6 +47,16 @@ template FloatTest <Bits> {
             var value = (0.5).Cast<Float<Bits>>();
             AssertNear<Float<Bits>>(value.Cos(), 0.87758, 0.001);
         }
+
+        {
+            // Testing Tan
+            var pi = (3.1415926/4.0).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Tan(), 1.0, 0.001);
+            pi = (0.0).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(pi.Tan(), 0.0, 0.001);
+            var value = (0.5).Cast<Float<Bits>>();
+            AssertNear<Float<Bits>>(value.Tan(), 0.54630, 0.001);
+        }
         {
             var value = (1.3).Cast<Float<Bits>>();
             var expect = (1.0).Cast<Float<Bits>>();

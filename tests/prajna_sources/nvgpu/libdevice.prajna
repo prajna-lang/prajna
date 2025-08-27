@@ -10,11 +10,7 @@ func myKernel(tensor: gpu::Tensor<f32, 1>){
 @kernel
 @target("nvptx")
 func tanKernel(tensor: gpu::Tensor<f32, 1>){
-<<<<<<< HEAD
     var tmp = 3.1415159265 / 4.0;  // π/4, tan(π/4) = 1.0
-=======
-    var tmp = 3.14159265 / 4.0;  // π/4, tan(π/4) = 1.0
->>>>>>> 67508f0 ( Improve precision in GPU math function tests)
     tensor[0] = tmp.Tan();
 }
 

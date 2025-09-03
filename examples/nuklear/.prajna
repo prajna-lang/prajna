@@ -1,0 +1,72 @@
+#link("libnuklear");
+
+// 基本类型定义
+struct nk_context { _dummy: i32; }
+struct nk_rect { x: f32; y: f32; w: f32; h: f32; }
+struct nk_vec2 { x: f32; y: f32; }
+struct nk_color { r: u8; g: u8; b: u8; a: u8; }
+
+// 常量定义（使用函数避免全局变量问题）
+func NK_WINDOW_BORDER() -> u32 { return 1u32; }
+func NK_WINDOW_MOVABLE() -> u32 { return 2u32; }
+func NK_WINDOW_CLOSABLE() -> u32 { return 4u32; }
+func NK_WINDOW_MINIMIZABLE() -> u32 { return 8u32; }
+func NK_WINDOW_TITLE() -> u32 { return 16u32; }
+
+// 外部函数声明
+@extern func nk_init_fixed(ctx: ptr<nk_context>, memory: ptr<undef>, size: u64, font: ptr<undef>) -> i32;
+@extern func nk_begin(ctx: ptr<nk_context>, title: ptr<char>, bounds: nk_rect, flags: u32) -> i32;
+@extern func nk_end(ctx: ptr<nk_context>);
+@extern func nk_layout_row_dynamic(ctx: ptr<nk_context>, height: f32, cols: i32);
+@extern func nk_label(ctx: ptr<nk_context>, text: ptr<char>, alignment: u32);
+@extern func nk_button_label(ctx: ptr<nk_context>, text: ptr<char>) -> i32;
+@extern func nk_free(ctx: ptr<nk_context>);
+
+// Prajna 友好的封装类
+struct NuklearApp {
+    _ctx: nk_context;
+    _memory: array<char, 1048576>;  // 1024 * 1024 = 1048576
+    _font: ptr<undef>;
+}
+
+implement NuklearApp {
+    func __initialize__() {
+        nk_init_fixed(&this._ctx, bit_cast<ptr<char>, ptr<undef>>(&this._memory[0]), 1048576u64, ptr<undef>::Null());
+        this._font = ptr<undef>::Null();
+    }
+    
+    @static
+    func Create() -> NuklearApp {
+        var app: NuklearApp;
+        return app;
+    }
+    
+    func __finalize__() {
+        nk_free(&this._ctx);
+    }
+    
+    func BeginWindow(title: String, x: f32, y: f32, w: f32, h: f32, flags: u32) -> bool {
+        var rect: nk_rect;
+        rect.x = x;
+        rect.y = y;
+        rect.w = w;
+        rect.h = h;
+        return nk_begin(&this._ctx, title.CStringRawPointer(), rect, flags) != 0i32;
+    }
+    
+    func EndWindow() {
+        nk_end(&this._ctx);
+    }
+    
+    func Label(text: String) {
+        nk_label(&this._ctx, text.CStringRawPointer(), 0u32);
+    }
+    
+    func Button(text: String) -> bool {
+        return nk_button_label(&this._ctx, text.CStringRawPointer()) != 0i32;
+    }
+    
+    func LayoutRowDynamic(height: f32, cols: i32) {
+        nk_layout_row_dynamic(&this._ctx, height, cols);
+    }
+}

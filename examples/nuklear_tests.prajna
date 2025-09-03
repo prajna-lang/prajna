@@ -1,0 +1,7 @@
+use examples::nuklear;
+
+func Main() {
+    "Testing real Nuklear module import...".PrintLine();
+    
+    
+}

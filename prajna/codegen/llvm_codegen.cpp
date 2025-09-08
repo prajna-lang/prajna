@@ -27,6 +27,8 @@
 #include "llvm/Linker/Linker.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_ostream.h"
 #include "prajna/global_config.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
@@ -866,7 +868,29 @@ void GenerateLlvmPass(std::shared_ptr<ir::Module> ir_module) {
     MPM.run(*ir_module->llvm_module, MAM);
 
     if (GlobalConfig::Instance().get<bool>("prajna.dump_llvm_ir", false)) {
-        ir_module->llvm_module->dump();
+        auto module_name = ir_module->name;
+        // 跳过内建包与占位未定义名字的模块
+        bool skip = (module_name.find("builtin") != std::string::npos) ||
+                    (module_name.find("NameIsUndefined") != std::string::npos);
+
+        if (!skip) {
+            std::error_code EC;
+            auto ts = std::chrono::system_clock::now().time_since_epoch().count();
+
+            for (auto &ch : module_name) {
+                if (ch == '/' || ch == '\\' || ch == ' ') {
+                    ch = '_';  // 替换为下划线
+                }
+            }
+            std::string filename = "/tmp/prajna" + module_name + "_" + std::to_string(ts) + ".ll";
+
+            llvm::raw_fd_ostream out(filename, EC, llvm::sys::fs::OF_Text);
+            if (EC) {
+                llvm::errs() << "Error opening file " << filename << ": " << EC.message() << "\n";
+            } else {
+                ir_module->llvm_module->print(out, nullptr);
+            }
+        }
     }
 
     // no errors, return false

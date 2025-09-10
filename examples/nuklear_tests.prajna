@@ -1,7 +1,47 @@
-use examples::nuklear;
+// 测试简单的 Nuklear 函数，不需要图形界面
+use examples::nuklear::*;
 
 func Main() {
-    "Testing real Nuklear module import...".PrintLine();
+    "=== Nuklear 简单函数测试 ===".PrintLine();
     
+    // 测试应用创建
+    "1. 测试应用创建...".PrintLine();
+    var app = NuklearApp::Create();
+    "   ✓ NuklearApp 创建成功".PrintLine();
     
+    // 测试颜色创建
+    "2. 测试颜色函数...".PrintLine();
+    var red = app.CreateColor(255i32, 0i32, 0i32);
+    "   ✓ 红色创建: r=".Print(); red.r.PrintLine();
+    
+    var blue_alpha = app.CreateColorWithAlpha(0i32, 0i32, 255i32, 128i32);
+    "   ✓ 蓝色(带透明度)创建: b=".Print(); blue_alpha.b.Print(); ", a=".Print(); blue_alpha.a.PrintLine();
+    
+    // 测试哈希函数
+    "3. 测试字符串哈希...".PrintLine();
+    var hash1 = app.HashString("Hello");
+    var hash2 = app.HashString("World");
+    var hash3 = app.HashString("Hello");  // 应该和 hash1 相同
+    
+    "   ✓ 'Hello' 哈希值: ".Print(); hash1.PrintLine();
+    "   ✓ 'World' 哈希值: ".Print(); hash2.PrintLine();
+    "   ✓ 'Hello' 再次哈希: ".Print(); hash3.PrintLine();
+    
+    if (hash1 == hash3) {
+        "   ✓ 相同字符串产生相同哈希值".PrintLine();
+    } else {
+        "   ✗ 哈希函数可能有问题".PrintLine();
+    }
+    
+    // 测试常量函数
+    "4. 测试常量函数...".PrintLine();
+    var border_flag = NK_WINDOW_BORDER();
+    var movable_flag = NK_WINDOW_MOVABLE();
+    var combined_flags = border_flag.__or__(movable_flag);
+    
+    "   ✓ NK_WINDOW_BORDER: ".Print(); border_flag.PrintLine();
+    "   ✓ NK_WINDOW_MOVABLE: ".Print(); movable_flag.PrintLine();
+    "   ✓ 组合标志: ".Print(); combined_flags.PrintLine();
+    
+    "=== 所有测试完成 ===".PrintLine();
 }

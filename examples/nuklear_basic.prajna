@@ -1,0 +1,48 @@
+// 最基本的 Nuklear 绑定测试，不调用 C 函数
+use examples::nuklear::*;
+
+func Main() {
+    "=== Nuklear 基础测试（无 C 函数调用）===".PrintLine();
+    
+    // 测试常量函数
+    "1. 测试常量函数...".PrintLine();
+    var border_flag = NK_WINDOW_BORDER();
+    var movable_flag = NK_WINDOW_MOVABLE();
+    var closable_flag = NK_WINDOW_CLOSABLE();
+    
+    "   ✓ NK_WINDOW_BORDER: ".Print(); border_flag.PrintLine();
+    "   ✓ NK_WINDOW_MOVABLE: ".Print(); movable_flag.PrintLine();
+    "   ✓ NK_WINDOW_CLOSABLE: ".Print(); closable_flag.PrintLine();
+    
+    // 测试标志组合
+    var combined = border_flag.__or__(movable_flag).__or__(closable_flag);
+    "   ✓ 组合标志: ".Print(); combined.PrintLine();
+    
+    // 测试颜色结构体创建（不调用 C 函数）
+    "2. 测试颜色结构体...".PrintLine();
+    var red_color: nk_color;
+    red_color.r = 255u8;
+    red_color.g = 0u8;
+    red_color.b = 0u8;
+    red_color.a = 255u8;
+    
+    "   ✓ 红色: r=".Print(); red_color.r.PrintLine();
+    "   ✓ 红色: g=".Print(); red_color.g.PrintLine();
+    "   ✓ 红色: b=".Print(); red_color.b.PrintLine();
+    "   ✓ 红色: a=".Print(); red_color.a.PrintLine();
+    
+    // 测试矩形结构体
+    "3. 测试矩形结构体...".PrintLine();
+    var rect: nk_rect;
+    rect.x = 100.0f32;
+    rect.y = 200.0f32;
+    rect.w = 300.0f32;
+    rect.h = 400.0f32;
+    
+    "   ✓ 矩形: x=".Print(); rect.x.PrintLine();
+    "   ✓ 矩形: y=".Print(); rect.y.PrintLine();
+    "   ✓ 矩形: w=".Print(); rect.w.PrintLine();
+    "   ✓ 矩形: h=".Print(); rect.h.PrintLine();
+    
+    "=== 基础测试完成，模块导入正常 ===".PrintLine();
+}

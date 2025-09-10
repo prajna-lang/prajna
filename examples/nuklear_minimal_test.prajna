@@ -1,0 +1,32 @@
+// 最小化的 Nuklear 测试，逐步排查段错误
+use examples::nuklear::*;
+
+func Main() {
+    "=== Nuklear 最小化测试 ===".PrintLine();
+    
+    // 只测试不会导致段错误的函数
+    "1. 测试颜色函数...".PrintLine();
+    var red = nk_rgb(255i32, 0i32, 0i32);
+    "   颜色创建成功".PrintLine();
+    
+    "2. 测试哈希函数...".PrintLine();
+    var test_str = "Test";
+    var cstr = test_str.CStringRawPointer();
+    var len = test_str.Length().Cast<i32>();
+    var hash = nk_murmur_hash(bit_cast<ptr<char>, ptr<undef>>(cstr), len, 0u32);
+    "   哈希计算成功".PrintLine();
+    
+    "3. 测试上下文（不调用 nk_free）...".PrintLine();
+    {
+        var ctx: nk_context;
+        var memory: array<char, 4096>;
+        
+        var result = nk_init_fixed(&ctx, bit_cast<ptr<char>, ptr<undef>>(&memory[0]), 4096u64, ptr<undef>::Null());
+        "   上下文初始化成功".PrintLine();
+        
+        // 不调用 nk_free，看是否还有段错误
+        "   跳过 nk_free 调用".PrintLine();
+    }
+    
+    "4. 测试完成，准备退出...".PrintLine();
+}

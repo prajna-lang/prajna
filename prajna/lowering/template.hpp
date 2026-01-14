@@ -41,7 +41,7 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
     };
 
     static int conceptCompatibility(Symbol template_argument, Symbol template_concept) {
-        if (template_concept.which() == 0) {
+        if (std::holds_alternative<std::nullptr_t>(template_concept)) {
             return 1;
         }
 
@@ -164,7 +164,7 @@ class TemplateStruct : public Named, public std::enable_shared_from_this<Templat
 inline std::string GetTemplateArgumentsPostify(std::list<Symbol> symbol_list) {
     std::string re = "<";
     for (auto iter = symbol_list.begin(); iter != symbol_list.end(); ++iter) {
-        re.append(SymbolGetFullname(*iter));
+        re.append(iter->GetFullname());
         if (std::next(iter) == symbol_list.end()) {
             break;
         }

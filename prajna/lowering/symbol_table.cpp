@@ -1,69 +1,49 @@
 #include "prajna/lowering/symbol_table.hpp"
 
-#include "boost/variant/variant.hpp"
 #include "prajna/ir/ir.hpp"
 #include "prajna/lowering/template.hpp"
 
 namespace prajna::lowering {
 
-std::string SymbolGetName(Symbol symbol) {
-    return boost::apply_visitor(
+std::string Symbol::GetName() const {
+    return std::visit(
         overloaded{[](auto x) { return x->name; }, [](std::nullptr_t) { return std::string(); },
                    [](std::shared_ptr<ir::ConstantInt> ir_constant_int) {
                        return std::to_string(ir_constant_int->value);
                    }},
-        symbol);
+        *this);
 }
 
-std::string SymbolGetFullname(Symbol symbol) {
-    return boost::apply_visitor(
+std::string Symbol::GetFullname() const {
+    return std::visit(
         overloaded{
             [](auto x) { return x->fullname; }, [](std::nullptr_t) { return std::string(); },
             [](std::shared_ptr<ir::ConstantInt> ir_constant_int) {
                 return std::to_string(ir_constant_int->value);
             },
             [](std::shared_ptr<SymbolTable> symbol_table) { return symbol_table->Fullname(); }},
-        symbol);
+        *this);
 }
 
-void SymbolSetName(std::string name, Symbol symbol) {
-    boost::apply_visitor(
-        overloaded{[](std::string name, auto x) { x->name = name; },
-                   [](std::string, std::nullptr_t) { PRAJNA_UNREACHABLE; },
-                   [](std::string name, std::shared_ptr<ir::ConstantInt> ir_constant_int) {
-                       PRAJNA_UNREACHABLE;
-                   }},
-        boost::variant<std::string>(name), symbol);
+void Symbol::SetName(std::string name) {
+    std::visit(
+        overloaded{[&](auto x) { x->name = name; }, [&](std::nullptr_t) { PRAJNA_UNREACHABLE; },
+                   [&](std::shared_ptr<ir::ConstantInt>) { PRAJNA_UNREACHABLE; }},
+        *this);
 }
 
-void SymbolSetFullname(std::string fullname, Symbol symbol) {
-    boost::apply_visitor(
-        overloaded{
-            [](std::string fullname, auto x) { x->fullname = fullname; },
-            [](std::string, std::nullptr_t) { PRAJNA_UNREACHABLE; },
-            [](std::string, std::shared_ptr<ir::ConstantInt> ir_constant_int) {
-                PRAJNA_UNREACHABLE;
-            },
-            [](std::string, std::shared_ptr<SymbolTable> symbol_table) { PRAJNA_UNREACHABLE; }},
-        boost::variant<std::string>(fullname), symbol);
+void Symbol::SetFullname(std::string fullname) {
+    std::visit(overloaded{[&](auto x) { x->fullname = fullname; },
+                          [&](std::nullptr_t) { PRAJNA_UNREACHABLE; },
+                          [&](std::shared_ptr<ir::ConstantInt>) { PRAJNA_UNREACHABLE; },
+                          [&](std::shared_ptr<SymbolTable>) { PRAJNA_UNREACHABLE; }},
+               *this);
 }
 
 void SymbolTable::SetWithAssigningName(Symbol value, const std::string& name) {
-    SymbolSetName(name, value);
-    SymbolSetFullname(this->Fullname() + "::" + name, value);
+    value.SetName(name);
+    value.SetFullname(this->Fullname() + "::" + name);
     current_symbol_dict[name] = value;
-}
-
-ast::SourceLocation SymbolGetSourceLocation(Symbol symbol) {
-    return boost::apply_visitor(
-        overloaded{[](auto x) -> ast::SourceLocation {
-                       PRAJNA_TODO;
-                       return ast::SourceLocation();
-                   },
-                   [](std::shared_ptr<ir::Value> ir_value) -> ast::SourceLocation {
-                       return ir_value->source_location;
-                   }},
-        symbol);
 }
 
 }  // namespace prajna::lowering

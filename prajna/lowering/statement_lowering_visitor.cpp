@@ -4,6 +4,7 @@
 #include <fstream>
 #include <future>
 #include <optional>
+#include <variant>
 
 #include "boost/process/v1/io.hpp"
 #include "boost/process/v1/search_path.hpp"
@@ -42,7 +43,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         } else {
             symbol = ir_builder->symbol_table;
         }
-        PRAJNA_ASSERT(symbol.which() != 0);
+        PRAJNA_ASSERT(!std::holds_alternative<std::nullptr_t>(symbol));
 
         bool is_first_module = true;
 
@@ -51,11 +52,11 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
         for (; iter_ast_identifier != ast_import.identifier_path.identifiers.end();
              ++iter_ast_identifier) {
             std::string identifier = iter_ast_identifier->identifier;
-            if (symbol.type() != typeid(std::shared_ptr<SymbolTable>)) {
+            if (!std::holds_alternative<std::shared_ptr<SymbolTable>>(symbol)) {
                 break;
             }
 
-            symbol = boost::apply_visitor(
+            symbol = std::visit(
                 overloaded{
                     [=](auto x) -> Symbol {
                         PRAJNA_UNREACHABLE;
@@ -64,7 +65,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                     [this, &is_first_module, identifier,
                      iter_ast_identifier](std::shared_ptr<SymbolTable> symbol_table) -> Symbol {
                         auto symbol = symbol_table->Get(identifier);
-                        if (symbol.which() != 0) {
+                        if (!std::holds_alternative<std::nullptr_t>(symbol)) {
                             return symbol;
                         } else {
                             auto new_symbol_table = lowering::SymbolTable::Create(symbol_table);
@@ -133,7 +134,7 @@ Symbol StatementLoweringVisitor::operator()(ast::Use ast_import) {
                 symbol);
 
             is_first_module = false;
-            PRAJNA_ASSERT(symbol.which() != 0);
+            PRAJNA_ASSERT(!std::holds_alternative<std::nullptr_t>(symbol));
         }
 
         ir_builder->symbol_table->Set(symbol,

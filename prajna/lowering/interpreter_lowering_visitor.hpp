@@ -54,7 +54,7 @@ class InterpreterLoweringVisitor {
 
         // 打印结果
         return ScopeExit::Create([=, ir_builder = _statement_lowering_visitor->ir_builder]() {
-            boost::apply_visitor(
+            std::visit(
                 overloaded{[=](auto x) {},
                            [=](std::shared_ptr<ir::Value> ir_result_value) {
                                if (!ir_result_value->type || !compiler->settings.print_result)

@@ -484,14 +484,14 @@ class ExpressionLoweringVisitor {
         } else {
             symbol = ir_builder->symbol_table;
         }
-        PRAJNA_ASSERT(symbol.which() != 0);
+        PRAJNA_ASSERT(!std::holds_alternative<std::nullptr_t>(symbol));
 
         bool first_identifier = true;
         for (auto iter_ast_identifier = ast_identifier_path.identifiers.begin();
              iter_ast_identifier != ast_identifier_path.identifiers.end(); ++iter_ast_identifier) {
             std::string flag = iter_ast_identifier->identifier;
 
-            symbol = boost::apply_visitor(
+            symbol = std::visit(
                 overloaded{
                     [=](auto x) -> Symbol {
                         PRAJNA_UNREACHABLE;
@@ -542,7 +542,7 @@ class ExpressionLoweringVisitor {
                         } else {
                             symbol = symbol_table->CurrentTableGet(iter_ast_identifier->identifier);
                         }
-                        if (symbol.which() == 0) {
+                        if (std::holds_alternative<std::nullptr_t>(symbol)) {
                             logger->Error("the symbol is not found",
                                           iter_ast_identifier->identifier);
                         }
@@ -590,7 +590,7 @@ class ExpressionLoweringVisitor {
 
     std::shared_ptr<ir::Value> operator()(ast::IdentifierPath ast_identifier_path) {
         auto symbol = this->ApplyIdentifierPath(ast_identifier_path);
-        return boost::apply_visitor(
+        return std::visit(
             overloaded{
                 [](std::shared_ptr<ir::Value> ir_value) -> std::shared_ptr<ir::Value> {
                     return ir_value;
@@ -601,7 +601,7 @@ class ExpressionLoweringVisitor {
                     PRAJNA_ASSERT(ir_constant_int->type == ir::i64);
                     return ir_builder->GetConstant<int64_t>(ir_constant_int->value);
                 },
-                [=](auto x) {
+                [=](auto x) -> std::shared_ptr<ir::Value> {
                     logger->Error("use invalid symbol as a value", ast_identifier_path);
                     return nullptr;
                 }},
@@ -619,7 +619,7 @@ class ExpressionLoweringVisitor {
             ir_builder->GetConstant<int64_t>(ast_array_values.size()));
 
         auto symbol_array = ir_builder->symbol_table->Get("Array");
-        PRAJNA_VERIFY(symbol_array.type() == typeid(std::shared_ptr<TemplateStruct>),
+        PRAJNA_VERIFY(std::holds_alternative<std::shared_ptr<TemplateStruct>>(symbol_array),
                       "system libs is bad");
         auto array_template = SymbolGet<TemplateStruct>(symbol_array);
         auto ir_array_type =

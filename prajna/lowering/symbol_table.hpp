@@ -2,10 +2,11 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <unordered_map>
+#include <variant>
 
-#include "boost/variant.hpp"
 #include "prajna/ast/ast.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
@@ -24,29 +25,42 @@ namespace prajna::lowering {
 
 class SymbolTable;
 class TemplateStruct;
-
 class Template;
 
-using Symbol = boost::variant<std::nullptr_t, std::shared_ptr<ir::Value>, std::shared_ptr<ir::Type>,
+// Symbol now inherits from std::variant
+class Symbol
+    : public std::variant<std::nullptr_t, std::shared_ptr<ir::Value>, std::shared_ptr<ir::Type>,
+                          std::shared_ptr<TemplateStruct>, std::shared_ptr<Template>,
+                          std::shared_ptr<ir::InterfacePrototype>, std::shared_ptr<SymbolTable>,
+                          std::shared_ptr<ir::ConstantInt>> {
+    using base = std::variant<std::nullptr_t, std::shared_ptr<ir::Value>, std::shared_ptr<ir::Type>,
                               std::shared_ptr<TemplateStruct>, std::shared_ptr<Template>,
                               std::shared_ptr<ir::InterfacePrototype>, std::shared_ptr<SymbolTable>,
                               std::shared_ptr<ir::ConstantInt>>;
 
+   public:
+    using base::variant;  // inherit constructors
+
+    Symbol() : base(nullptr) {}
+
+    std::string GetName() const;
+    std::string GetFullname() const;
+    void SetName(std::string name);
+    void SetFullname(std::string fullname);
+};
+
 template <typename _T>
-inline bool SymbolIs(Symbol symbol) {
-    return symbol.type() == typeid(std::shared_ptr<_T>);
+inline bool SymbolIs(const Symbol& symbol) {
+    return std::holds_alternative<std::shared_ptr<_T>>(symbol);
 }
 
 template <typename _T>
-inline auto SymbolGet(Symbol symbol) -> std::shared_ptr<_T> {
-    if (SymbolIs<_T>(symbol)) {
-        return boost::get<std::shared_ptr<_T>>(symbol);
-    } else {
-        return nullptr;
-    }
+inline auto SymbolGet(const Symbol& symbol) -> std::shared_ptr<_T> {
+    if (auto ptr = std::get_if<std::shared_ptr<_T>>(&symbol)) return *ptr;
+    return nullptr;
 }
 
-class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Named {
+class SymbolTable : public std::enable_shared_from_this<SymbolTable> {
     SymbolTable() = default;
 
     SymbolTable(std::shared_ptr<SymbolTable> parent) : parent_symbol_table(parent) {}
@@ -57,7 +71,7 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
         return self;
     }
 
-    void Set(Symbol value, const std::string& name) { current_symbol_dict[name] = value; }
+    void Set(const Symbol& value, const std::string& name) { current_symbol_dict[name] = value; }
 
     void SetWithAssigningName(Symbol value, const std::string& name);
 
@@ -66,10 +80,10 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
 
         if (parent_symbol_table) {
             auto par_re = parent_symbol_table->Get(name);
-            if (par_re.which() != 0) return par_re;
+            if (!std::holds_alternative<std::nullptr_t>(par_re)) return par_re;
         }
 
-        return nullptr;
+        return Symbol(nullptr);
     }
 
     bool CurrentTableHas(const std::string& name) {
@@ -80,26 +94,26 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
 
     bool Has(const std::string& name) {
         auto symbol = this->Get(name);
-        return symbol.which() == 0 ? false : true;
+        return !std::holds_alternative<std::nullptr_t>(symbol);
     }
 
     void Each(std::function<void(Symbol)> callback) {
         for (auto [key, symbol] : current_symbol_dict) {
-            boost::apply_visitor(overloaded{[callback](auto x) { callback(x); },
-                                            [callback](std::shared_ptr<SymbolTable> symbol_table) {
-                                                symbol_table->Each(callback);
-                                            }},
-                                 symbol);
+            std::visit(overloaded{[callback](auto x) { callback(x); },
+                                  [callback](std::shared_ptr<SymbolTable> symbol_table) {
+                                      symbol_table->Each(callback);
+                                  }},
+                       symbol);
         }
     }
 
     void Finalize() {
         for (auto [key, symbol] : current_symbol_dict) {
-            boost::apply_visitor(overloaded{[](auto) {},
-                                            [](std::shared_ptr<SymbolTable> symbol_table) {
-                                                symbol_table->Finalize();
-                                            }},
-                                 symbol);
+            std::visit(overloaded{[](auto) {},
+                                  [](std::shared_ptr<SymbolTable> symbol_table) {
+                                      symbol_table->Finalize();
+                                  }},
+                       symbol);
         }
 
         parent_symbol_table = nullptr;
@@ -133,15 +147,5 @@ class SymbolTable : public std::enable_shared_from_this<SymbolTable>, public Nam
     std::shared_ptr<SymbolTable> parent_symbol_table = nullptr;
     std::unordered_map<std::string, Symbol> current_symbol_dict;
 };
-
-std::string SymbolGetName(Symbol symbol);
-
-std::string SymbolGetFullname(Symbol symbol);
-
-void SymbolSetName(std::string name, Symbol symbol);
-
-void SymbolSetFullname(std::string fullname, Symbol symbol);
-
-ast::SourceLocation SymbolGetSourceLocation(Symbol symbol);
 
 }  // namespace prajna::lowering

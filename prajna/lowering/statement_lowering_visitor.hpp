@@ -304,7 +304,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 if (ir_type != ir_initial_value->type) {
                     logger->Error(fmt::format("the declaration type is \"{}\", but the initialize "
                                               "value's type is \"{}\"",
-                                              ir_type->name, ir_initial_value->type->name),
+                                              ir_type->Name(), ir_initial_value->type->Name()),
                                   ast_variable_declaration.initialize_optional.get());
                 }
             }
@@ -441,10 +441,10 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             // 加入struct里
             if (ir_builder->current_implement_type) {
                 if (ir_builder->is_static_function) {
-                    ir_builder->current_implement_type->static_function_dict[ir_function->name] =
+                    ir_builder->current_implement_type->static_function_dict[ir_function->Name()] =
                         ir_function;
                 } else {
-                    ir_builder->current_implement_type->member_function_dict[ir_function->name] =
+                    ir_builder->current_implement_type->member_function_dict[ir_function->Name()] =
                         ir_function;
                 }
             }
@@ -555,7 +555,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto ir_return_type = ir_builder->function_stack.top()->function_type->return_type;
         if (ir_return->type != ir_return_type) {
             logger->Error(fmt::format("the type is {} , but then function return type is {}",
-                                      ir_return->type->fullname, ir_return_type->fullname),
+                                      ir_return->type->Fullname(), ir_return_type->Fullname()),
                           ast_return);
         }
 
@@ -690,7 +690,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_type = expression_lowering_visitor->ApplyType(ast_implement.type);
 
             ir_builder->PushSymbolTable();
-            ir_builder->symbol_table->name = ir_type->name;
+            ir_builder->symbol_table->name = ir_type->Name();
             PRAJNA_ASSERT(!ir_builder->current_implement_type);
             ir_builder->current_implement_type = ir_type;
             auto guard = ScopeExit::Create([this]() {
@@ -704,7 +704,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     continue;
                 }
                 if (auto lowering_template = SymbolGet<Template>(symbol_function)) {
-                    ir_type->template_any_dict[lowering_template->name] = lowering_template;
+                    ir_type->template_any_dict[lowering_template->Name()] = lowering_template;
                     continue;
                 }
                 PRAJNA_TODO;
@@ -722,7 +722,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_type = expression_lowering_visitor->ApplyType(ast_implement.type);
 
             ir_builder->PushSymbolTable();
-            ir_builder->symbol_table->name = ir_type->name;
+            ir_builder->symbol_table->name = ir_type->Name();
             PRAJNA_ASSERT(!ir_builder->current_implement_type);
             ir_builder->current_implement_type = ir_type;
 
@@ -732,16 +732,16 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             if (!ir_interface_prototype) {
                 logger->Error("not invalid interface", ast_implement.interface);
             }
-            ir_interface->name = ir_interface_prototype->name;
+            ir_interface->Name(ir_interface_prototype->Name());
             ir_interface->prototype = ir_interface_prototype;
-            ir_interface->fullname = ConcatFullname(ir_type->fullname, ir_interface->name);
-            if (ir_type->interface_dict[ir_interface->name]) {
+            ir_interface->Fullname(ConcatFullname(ir_type->Fullname(), ir_interface->Name()));
+            if (ir_type->interface_dict[ir_interface->Name()]) {
                 logger->Error("interface has implemented", ast_implement.interface);
             }
-            ir_type->interface_dict[ir_interface->name] = ir_interface;
+            ir_type->interface_dict[ir_interface->Name()] = ir_interface;
 
             ir_builder->PushSymbolTable();
-            ir_builder->symbol_table->name = ir_interface->name;
+            ir_builder->symbol_table->name = ir_interface->Name();
             ir_builder->current_implement_interface = ir_interface;
 
             auto guard = ScopeExit::Create([=]() {
@@ -755,7 +755,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto is_matched_with_function_prototype =
                 [logger = this->logger](std::shared_ptr<ir::Function> ir_function0,
                                         std::shared_ptr<ir::Function> ir_function1) {
-                    if (ir_function0->name == ir_function1->name) {
+                    if (ir_function0->Name() == ir_function1->Name()) {
                         if (ir_function0->type == ir_function1->type) {
                             return true;
                         } else {
@@ -797,7 +797,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                 auto iter = std::ranges::find_if(
                     ir_function_prototype_list,
                     [=](std::shared_ptr<ir::Function> ir_function_prototype) {
-                        if (ir_function->name == ir_function_prototype->name) {
+                        if (ir_function->Name() == ir_function_prototype->Name()) {
                             if (is_matched_with_prototype(ir_function->function_type,
                                                           ir_function_prototype->function_type)) {
                                 return true;
@@ -826,8 +826,9 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             // 包装一个undef this pointer的函数
             for (auto ir_function : ir_interface->functions) {
-                if (std::ranges::none_of(ir_interface_prototype->functions,
-                                         [=](auto x) { return x->name == ir_function->name; })) {
+                if (std::ranges::none_of(ir_interface_prototype->functions, [=](auto x) {
+                        return x->Name() == ir_function->Name();
+                    })) {
                     continue;
                 }
 
@@ -840,7 +841,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     ir::FunctionType::Create(ir_undef_this_pointer_function_argument_types,
                                              ir_function->function_type->return_type);
                 auto ir_undef_this_pointer_function = ir_builder->CreateFunction(
-                    ir_interface->name + "::" + ir_function->name + "/undef",
+                    ir_interface->Name() + "::" + ir_function->Name() + "/undef",
                     ir_undef_this_pointer_function_type);
 
                 ir_interface->undef_this_pointer_functions.insert(
@@ -875,14 +876,15 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                     ir_interface->dynamic_type_creator->parameters.front(), "ToUndef", {}),
                 ir_builder->AccessField(ir_self, "object_pointer"));
             for (auto ir_function : ir_interface->functions) {
-                if (std::ranges::none_of(ir_interface_prototype->functions,
-                                         [=](auto x) { return x->name == ir_function->name; })) {
+                if (std::ranges::none_of(ir_interface_prototype->functions, [=](auto x) {
+                        return x->Name() == ir_function->Name();
+                    })) {
                     continue;
                 }
 
                 auto iter_field = std::ranges::find_if(
                     ir_interface->prototype->dynamic_type->fields,
-                    [=](auto ir_field) { return ir_field->name == ir_function->name + "/fp"; });
+                    [=](auto ir_field) { return ir_field->name == ir_function->Name() + "/fp"; });
                 PRAJNA_ASSERT(iter_field != ir_interface->prototype->dynamic_type->fields.end());
                 auto ir_function_pointer =
                     ir_builder->Create<ir::AccessField>(ir_self, *iter_field);
@@ -1255,7 +1257,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_function_type = ir::FunctionType::Create(ir_argument_list, ir_float_type);
             // 声明所需intrinsic
             auto ir_intrinsic_function = ir::Function::Create(ir_function_type);
-            ir_intrinsic_function->fullname = "llvm." + intrinsic_name + "." + ir_float_type->name;
+            ir_intrinsic_function->Fullname("llvm." + intrinsic_name + "." + ir_float_type->Name());
             ir_module->AddFunction(ir_intrinsic_function);
 
             auto ir_tmp_builder = IrBuilder::Create(symbol_table, ir_module, logger);
@@ -1415,7 +1417,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             });
             if (iter_interface == ir_value_type->interface_dict.end()) {
                 logger->Error(fmt::format("the interface {} is not implemented",
-                                          ir_interface_prototype->fullname));
+                                          ir_interface_prototype->Fullname()));
             }
 
             auto ir_interface = iter_interface->second;
@@ -1496,7 +1498,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_rawptr_i64_1 = ir_tmp_builder->Call(
                 ir_rawptr_to_i64_cast_function,
                 ir_tmp_builder->AccessField(
-                    ir_dynamic_object, ir_interface_implement->functions.front()->name + "/fp"));
+                    ir_dynamic_object, ir_interface_implement->functions.front()->Name() + "/fp"));
             auto ir_condition =
                 ir_tmp_builder->CallBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
             auto ir_if = ir_tmp_builder->Create<ir::If>(ir_condition, ir::Block::Create(),
@@ -1585,7 +1587,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_rawptr_i64_1 = ir_tmp_builder->Call(
                 ir_rawptr_to_i64_cast_function,
                 ir_tmp_builder->AccessField(
-                    ir_dynamic_object, ir_interface_implement->functions.front()->name + "/fp"));
+                    ir_dynamic_object, ir_interface_implement->functions.front()->Name() + "/fp"));
             auto ir_condition =
                 ir_tmp_builder->CallBinaryOperator(ir_rawptr_i64_0, "==", ir_rawptr_i64_1);
             ir_tmp_builder->Create<ir::Return>(ir_condition);
@@ -1998,15 +2000,15 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
             auto ir_builder = IrBuilder::Create(symbol_table, ir_module, logger);
             auto ir_struct_type = ir::StructType::Create(ir_fields);
-            ir_struct_type->name = "Tuple";
-            ir_struct_type->fullname = "Tuple";
+            ir_struct_type->Name("Tuple");
+            ir_struct_type->Fullname("Tuple");
             ir_struct_type->Update();
 
             int tuple_size = ir_fields.size();
             auto type_id = GetTemplateArgumentsPostify(symbol_template_arguments);
 
             auto template_get = Template::Create();
-            template_get->name = "Get";
+            template_get->Name("Get");
             template_get->generator = [ir_fields, ir_struct_type, symbol_table, logger, tuple_size,
                                        type_id](std::list<Symbol> get_args,
                                                 std::shared_ptr<ir::Module> module) -> Symbol {
@@ -2097,15 +2099,15 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             }
 
             auto ir_struct_type = ir::StructType::Create(ir_fields);
-            ir_struct_type->name = "Variant";
-            ir_struct_type->fullname = "Variant";
+            ir_struct_type->Name("Variant");
+            ir_struct_type->Fullname("Variant");
             ir_struct_type->Update();
 
             auto type_id = GetTemplateArgumentsPostify(symbol_template_arguments);
             int variant_size = variant_types.size();
 
             auto set_template = Template::Create();
-            set_template->name = "Set";
+            set_template->Name("Set");
             set_template->generator = [variant_types, ir_struct_type, symbol_table, logger, type_id,
                                        variant_size](std::list<Symbol> set_args,
                                                      std::shared_ptr<ir::Module> module) -> Symbol {
@@ -2160,7 +2162,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_struct_type->template_any_dict["Set"] = set_template;
 
             auto get_template = Template::Create();
-            get_template->name = "Get";
+            get_template->Name("Get");
             get_template->generator = [variant_types, ir_struct_type, symbol_table, logger, type_id,
                                        variant_size](std::list<Symbol> get_args,
                                                      std::shared_ptr<ir::Module> module) -> Symbol {
@@ -2207,7 +2209,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             ir_struct_type->template_any_dict["Get"] = get_template;
 
             auto is_template = Template::Create();
-            is_template->name = "Is";
+            is_template->Name("Is");
             is_template->generator = [variant_types, ir_struct_type, symbol_table, logger, type_id,
                                       variant_size](std::list<Symbol> is_args,
                                                     std::shared_ptr<ir::Module> module) -> Symbol {
@@ -2262,10 +2264,10 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto char_type = ir::CharType::Create();
         auto void_type = ir::VoidType::Create();
         auto undef_type = ir::UndefType::Create();
-        ir_builder->symbol_table->Set(bool_type, bool_type->name);
-        ir_builder->symbol_table->Set(char_type, char_type->name);
-        ir_builder->symbol_table->Set(void_type, void_type->name);
-        ir_builder->symbol_table->Set(undef_type, undef_type->name);
+        ir_builder->symbol_table->Set(bool_type, bool_type->Name());
+        ir_builder->symbol_table->Set(char_type, char_type->Name());
+        ir_builder->symbol_table->Set(void_type, void_type->Name());
+        ir_builder->symbol_table->Set(undef_type, undef_type->Name());
     }
 
     void Stage1() {
@@ -2443,7 +2445,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         for (auto ast_function_declaration : ast_interface_prototype.functions) {
             ir_builder->PushSymbolTable();
             auto guard = ScopeExit::Create([=]() { this->ir_builder->PopSymbolTable(); });
-            ir_builder->symbol_table->name = ir_interface_prototype->name;
+            ir_builder->symbol_table->name = ir_interface_prototype->Name();
             auto symbol_function = (*this)(ast_function_declaration);
             auto ir_function = Cast<ir::Function>(SymbolGet<ir::Value>(symbol_function));
             ir_interface_prototype->functions.push_back(ir_function);
@@ -2462,8 +2464,8 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             "object_pointer", ir_builder->GetManagedPtrType(ir::UndefType::Create()));
         auto ir_interface_struct = ir_interface_prototype->dynamic_type;
         ir_interface_struct->fields.push_back(field_object_pointer);
-        ir_interface_struct->name = ir_interface_prototype->name;
-        ir_interface_struct->fullname = ir_interface_prototype->fullname;
+        ir_interface_struct->Name(ir_interface_prototype->Name());
+        ir_interface_struct->Fullname(ir_interface_prototype->Fullname());
 
         PRAJNA_ASSERT(!ir_builder->current_implement_type);
         ir_builder->current_implement_type = ir_interface_struct;
@@ -2477,7 +2479,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
                                                            ir_function->function_type->return_type);
 
             auto field_function_pointer = ir::Field::Create(
-                ir_function->name + "/fp", ir::PointerType::Create(ir_callee_type));
+                ir_function->Name() + "/fp", ir::PointerType::Create(ir_callee_type));
             ir_interface_struct->fields.push_back(field_function_pointer);
             ir_interface_struct->Update();
 
@@ -2491,10 +2493,10 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto ir_member_function_type = ir::FunctionType::Create(
                 ir_member_function_argument_types, ir_function->function_type->return_type);
             auto ir_member_function = ir_builder->CreateFunction(
-                ir_interface_prototype->name + "::" + ir_function->name + "/member",
+                ir_interface_prototype->Name() + "::" + ir_function->Name() + "/member",
                 ir_member_function_type);
-            ir_member_function->name = ir_function->name;
-            ir_member_function->fullname = ir_function->fullname;
+            ir_member_function->Name(ir_function->Name());
+            ir_member_function->Fullname(ir_function->Fullname());
 
             // 这里还是使用类型IrBuilder
             ir_builder->CreateTopBlockForFunction(ir_member_function);
@@ -2626,7 +2628,7 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
             auto function =
                 ir_builder->CreateFunction(ast::Identifier(function_name), function_type);
             function->annotation_dict["inline"];
-            function->fullname = function_name;
+            function->Fullname(function_name);
 
             ir_builder->CreateTopBlockForFunction(function);
 

@@ -142,7 +142,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         }
         if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
             auto llvm_struct_type =
-                llvm::StructType::create(static_llvm_context, ir_struct_type->fullname);
+                llvm::StructType::create(static_llvm_context, ir_struct_type->Fullname());
             ir_struct_type->llvm_type = llvm_struct_type;
             std::vector<llvm::Type *> llvm_types(ir_struct_type->fields.size());
             std::ranges::transform(ir_struct_type->fields, llvm_types.begin(),
@@ -168,7 +168,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         PRAJNA_ASSERT(ir::Verify(ir_module));
 
         PRAJNA_ASSERT(!ir_module->llvm_module);
-        ir_module->llvm_module = new llvm::Module(ir_module->name, static_llvm_context);
+        ir_module->llvm_module = new llvm::Module(ir_module->Name(), static_llvm_context);
 
         PRAJNA_ASSERT(ir_module->global_variables.empty());
         for (auto ir_global_alloca : ir_module->global_allocas) {
@@ -213,7 +213,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
 
     void EmitFunctionDeclaration(std::shared_ptr<ir::Function> ir_function) {
         std::string function_fullname =
-            MangledNameForGpuLLVMBackend(ir_function->fullname, this->ir_target);
+            MangledNameForGpuLLVMBackend(ir_function->Fullname(), this->ir_target);
         PRAJNA_ASSERT(ir_function->function_type->llvm_type);
         llvm::FunctionType *llvm_fun_type =
             static_cast<llvm::FunctionType *>(ir_function->function_type->llvm_type);
@@ -411,7 +411,7 @@ class LlvmCodegen : public prajna::ir::Visitor {
         // 事实上llvm::GlobalVariable其实获取一个个指针
         auto llvm_global_variable = new llvm::GlobalVariable(
             *(ir_global_alloca->GetParentModule()->llvm_module), ir_value_type->llvm_type, false,
-            llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, ir_global_alloca->fullname,
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, ir_global_alloca->Fullname(),
             nullptr, llvm::GlobalValue::NotThreadLocal, ir_global_alloca->address_space, false);
 
         if (!ir_global_alloca->is_external) {
@@ -460,12 +460,12 @@ class LlvmCodegen : public prajna::ir::Visitor {
         if (ir_alloca->alignment > 0) {
             ir_alloca->llvm_value = new llvm::AllocaInst(
                 ir_alloca_type->value_type->llvm_type, 0, ir_alloca->Length()->llvm_value,
-                llvm::Align(ir_alloca->alignment), ir_alloca->name, llvm_basic_block);
+                llvm::Align(ir_alloca->alignment), ir_alloca->Name(), llvm_basic_block);
         } else {
             // llvm会使用当前平台的默认alignment
             ir_alloca->llvm_value = new llvm::AllocaInst(ir_alloca_type->value_type->llvm_type, 0,
                                                          ir_alloca->Length()->llvm_value,
-                                                         ir_alloca->name, llvm_basic_block);
+                                                         ir_alloca->Name(), llvm_basic_block);
         }
     }
 

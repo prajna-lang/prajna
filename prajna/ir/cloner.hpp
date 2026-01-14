@@ -166,8 +166,8 @@ class FunctionCloner : public Visitor {
         }
         std::shared_ptr<LocalVariable> ir_new = LocalVariable::Create(ir_local_variable->type);
         ir_new->annotation_dict = ir_local_variable->annotation_dict;
-        ir_new->fullname = ir_local_variable->fullname;
-        ir_new->name = ir_local_variable->name;
+        ir_new->Fullname(ir_local_variable->Fullname());
+        ir_new->Name(ir_local_variable->Name());
         this->value_dict[ir_local_variable] = ir_new;
     }
 
@@ -288,8 +288,8 @@ class FunctionCloner : public Visitor {
             return;
         } else {
             auto ir_new = GlobalAlloca::Create(ir_global_alloca->type);
-            ir_new->name = ir_global_alloca->name;
-            ir_new->fullname = ir_global_alloca->fullname;
+            ir_new->Name(ir_global_alloca->Name());
+            ir_new->Fullname(ir_global_alloca->Fullname());
             ir_new->is_external = true;
             ir_new->address_space = ir_global_alloca->address_space;
             this->ir_module->AddGlobalAlloca(ir_new);

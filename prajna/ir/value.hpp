@@ -53,13 +53,21 @@ class Module;
 
 }  // namespace llvm
 
+namespace prajna {
+
+inline std::string ConcatFullname(std::string base_name, std::string name) {
+    return base_name + "::" + name;
+}
+
+}  // namespace prajna
+
 namespace prajna::ir {
 
 class Block;
 class Function;
 class Module;
 
-class Value : public Named, public std::enable_shared_from_this<Value> {
+class Value : public std::enable_shared_from_this<Value> {
    protected:
     Value() {}
 
@@ -68,8 +76,8 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
         this->annotation_dict = other.annotation_dict;
         this->tag = other.tag;
 
-        this->name = other.name;
-        this->fullname = other.fullname;
+        this->_name = other._name;
+        this->_fullname = other._fullname;
 
         this->parent.reset();
         this->instruction_with_index_list.clear();
@@ -125,8 +133,16 @@ class Value : public Named, public std::enable_shared_from_this<Value> {
 
     virtual void ApplyVisitor(std::shared_ptr<Visitor> interpreter) { PRAJNA_UNREACHABLE; }
 
+    std::string Name() const { return _name; }
+    void Name(const std::string& name) { _name = name; }
+
+    std::string Fullname() const { return _fullname; }
+    void Fullname(const std::string& fullname) { _fullname = fullname; }
+
    private:
     bool is_finalized = false;
+    std::string _name = "NameIsUndefined";
+    std::string _fullname = "FullnameIsUndefined";
 
    public:
     std::shared_ptr<Type> type = nullptr;
@@ -1571,7 +1587,7 @@ class Module : public Value {
 
     void AddGlobalAlloca(std::shared_ptr<GlobalAlloca> ir_global_alloca) {
         PRAJNA_ASSERT(std::ranges::count_if(this->global_allocas, [&](auto x) {
-                          return x->fullname == ir_global_alloca->fullname;
+                          return x->Fullname() == ir_global_alloca->Fullname();
                       }) == 0);
         ir_global_alloca->parent = shared_from_this();
         this->global_allocas.push_back(ir_global_alloca);
@@ -1746,7 +1762,7 @@ inline void Value::Finalize() {
 }
 
 inline std::string GetKernelFunctionAddressName(std::shared_ptr<Function> ir_kernel_function) {
-    return ConcatFullname(ir_kernel_function->fullname, "kernel_function_address");
+    return ConcatFullname(ir_kernel_function->Fullname(), "kernel_function_address");
 }
 
 inline std::shared_ptr<Function> Type::GetMemberFunction(std::string member_function_name) {
@@ -1758,7 +1774,7 @@ inline std::shared_ptr<Function> Type::GetMemberFunction(std::string member_func
         if (!ir_interface) continue;
 
         for (auto ir_function : ir_interface->functions) {
-            if (ir_function->name == member_function_name) {
+            if (ir_function->Name() == member_function_name) {
                 return ir_function;
             }
         }
@@ -1770,7 +1786,7 @@ inline std::shared_ptr<Function> Type::GetMemberFunction(std::string member_func
 inline std::shared_ptr<ir::Function> GetFunctionByName(
     std::list<std::shared_ptr<ir::Function>> function_list, std::string name) {
     auto iter_function = std::ranges::find_if(
-        function_list, [=](auto ir_function) { return ir_function->name == name; });
+        function_list, [=](auto ir_function) { return ir_function->Name() == name; });
     PRAJNA_ASSERT(iter_function != function_list.end(), name);
     return *iter_function;
 }

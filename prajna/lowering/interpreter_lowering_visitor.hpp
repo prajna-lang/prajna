@@ -40,8 +40,9 @@ class InterpreterLoweringVisitor {
         auto ir_fun_type = ir::FunctionType::Create({}, ir::VoidType::Create());
         auto ir_function = ir::Function::Create(ir_fun_type);
         ir_function->annotation_dict.insert({"\\command", {}});
-        ir_function->name = "\\command" + std::to_string(_command_id++);
-        ir_function->fullname = ir_function->name;
+        std::string cmd_name = "\\command" + std::to_string(_command_id++);
+        ir_function->Name(cmd_name);
+        ir_function->Fullname(cmd_name);
         _statement_lowering_visitor->ir_builder->module->AddFunction(ir_function);
 
         auto ir_builder = _statement_lowering_visitor->ir_builder;

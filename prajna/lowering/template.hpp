@@ -6,7 +6,6 @@
 #include "prajna/exception.hpp"
 #include "prajna/ir/ir.hpp"
 #include "prajna/lowering/symbol_table.hpp"
-#include "prajna/named.hpp"
 
 namespace std {
 
@@ -27,9 +26,20 @@ struct hash<prajna::lowering::Symbol> {
 
 namespace prajna::lowering {
 
-class Template : public Named, public std::enable_shared_from_this<Template> {
+class Template : public std::enable_shared_from_this<Template> {
    protected:
     Template() = default;
+
+   public:
+    std::string Name() const { return _name; }
+    void Name(const std::string& name) { _name = name; }
+
+    std::string Fullname() const { return _fullname; }
+    void Fullname(const std::string& fullname) { _fullname = fullname; }
+
+   private:
+    std::string _name = "NameIsUndefined";
+    std::string _fullname = "FullnameIsUndefined";
 
    public:
     using Generator = std::function<Symbol(std::list<Symbol>, std::shared_ptr<ir::Module>)>;
@@ -106,9 +116,20 @@ class Template : public Named, public std::enable_shared_from_this<Template> {
 
 // };
 
-class TemplateStruct : public Named, public std::enable_shared_from_this<TemplateStruct> {
+class TemplateStruct : public std::enable_shared_from_this<TemplateStruct> {
    protected:
     TemplateStruct() = default;
+
+   public:
+    std::string Name() const { return _name; }
+    void Name(const std::string& name) { _name = name; }
+
+    std::string Fullname() const { return _fullname; }
+    void Fullname(const std::string& fullname) { _fullname = fullname; }
+
+   private:
+    std::string _name = "NameIsUndefined";
+    std::string _fullname = "FullnameIsUndefined";
 
    public:
     static std::shared_ptr<TemplateStruct> Create() {

@@ -141,8 +141,8 @@ class IrBuilder {
             return this->intrinsic_dict[llvm_intrinsic_name];
         } else {
             auto ir_intrinsic = this->Create<ir::Function>(ir_function_type);
-            ir_intrinsic->name = llvm_intrinsic_name;
-            ir_intrinsic->fullname = llvm_intrinsic_name;
+            ir_intrinsic->Name(llvm_intrinsic_name);
+            ir_intrinsic->Fullname(llvm_intrinsic_name);
             ir_intrinsic->annotation_dict["intrinsic"].push_back(llvm_intrinsic_name);
             this->intrinsic_dict[llvm_intrinsic_name] = ir_intrinsic;
             return ir_intrinsic;
@@ -238,8 +238,8 @@ class IrBuilder {
             ir_variable_liked = this->Create<ir::LocalVariable>(ir_value->type);
             auto ir_write_variable_liked =
                 this->Create<ir::WriteVariableLiked>(ir_value, ir_variable_liked);
-            ir_variable_liked->fullname = ir_value->fullname + "_tmp";
-            ir_variable_liked->name = ir_value->name + "_tmp";
+            ir_variable_liked->Fullname(ir_value->Fullname() + "_tmp");
+            ir_variable_liked->Name(ir_value->Name() + "_tmp");
             return ir_variable_liked;
         }
     }

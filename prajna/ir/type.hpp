@@ -10,7 +10,6 @@
 
 #include "prajna/assert.hpp"
 #include "prajna/helper.hpp"
-#include "prajna/named.hpp"
 
 namespace llvm {
 
@@ -45,7 +44,7 @@ struct Property {
 
 using AnnotationDict = std::unordered_map<std::string, std::list<std::string>>;
 
-class Type : public Named {
+class Type {
    protected:
     Type() = default;
 
@@ -55,6 +54,16 @@ class Type : public Named {
     virtual bool IsFirstClass() { return true; }
 
     std::shared_ptr<Function> GetMemberFunction(std::string member_function_name);
+
+    std::string Name() const { return _name; }
+    void Name(const std::string& name) { _name = name; }
+
+    std::string Fullname() const { return _fullname; }
+    void Fullname(const std::string& fullname) { _fullname = fullname; }
+
+   private:
+    std::string _name = "NameIsUndefined";
+    std::string _fullname = "FullnameIsUndefined";
 
    public:
     // @ref https://llvm.org/docs/LangRef.html#langref-datalayout bytes是多少可参阅datalyout的描述
@@ -97,8 +106,8 @@ class FloatType : public RealNumberType {
         std::shared_ptr<FloatType> self(new FloatType);
         self->bits = bits;
         self->bytes = bits / 8;
-        self->name = "f" + std::to_string(bits);
-        self->fullname = "f" + std::to_string(bits);
+        self->Name("f" + std::to_string(bits));
+        self->Fullname("f" + std::to_string(bits));
         global_context.created_types.push_back(self);
         return self;
     }
@@ -130,8 +139,8 @@ class IntType : public RealNumberType {
         self->bits = bits;
         self->bytes = (bits + 7) / 8;
         self->is_signed = is_signed;
-        self->name = std::string(is_signed ? "i" : "u") + std::to_string(bits);
-        self->fullname = std::string(is_signed ? "i" : "u") + std::to_string(bits);
+        self->Name(std::string(is_signed ? "i" : "u") + std::to_string(bits));
+        self->Fullname(std::string(is_signed ? "i" : "u") + std::to_string(bits));
         global_context.created_types.push_back(self);
         return self;
     }
@@ -157,8 +166,8 @@ class BoolType : public IntType {
         // i1 默认为1个字节
         self->bits = 8;
         self->bytes = 1;
-        self->name = "bool";
-        self->fullname = "bool";
+        self->Name("bool");
+        self->Fullname("bool");
         global_context.created_types.push_back(self);
         return self;
     }
@@ -183,8 +192,8 @@ class CharType : public IntType {
         self->is_signed = false;
         self->bytes = 1;
 
-        self->name = "char";
-        self->fullname = "char";
+        self->Name("char");
+        self->Fullname("char");
         global_context.created_types.push_back(self);
         return self;
     }
@@ -203,9 +212,9 @@ class VoidType : public Type {
         }
 
         std::shared_ptr<VoidType> self(new VoidType);
-        self->name = "void";
+        self->Name("void");
         self->bytes = 0;  // 应该是个无效值
-        self->fullname = "void";
+        self->Fullname("void");
         global_context.created_types.push_back(self);
         return self;
     }
@@ -226,9 +235,9 @@ class UndefType : public Type {
         }
 
         std::shared_ptr<UndefType> self(new UndefType);
-        self->name = "undef";
+        self->Name("undef");
         self->bytes = 1;  // 应该是个无效值
-        self->fullname = "undef";
+        self->Fullname("undef");
         global_context.created_types.push_back(self);
         return self;
     }
@@ -257,21 +266,22 @@ class FunctionType : public Type {
         self->return_type = return_type;
         self->parameter_types = ir_parameter_types;
 
-        self->name = "(";
+        std::string name_str = "(";
         auto iter = self->parameter_types.begin();
         while (iter != self->parameter_types.end()) {
             PRAJNA_ASSERT((*iter)->IsFirstClass());
-            self->name += (*iter)->fullname;
+            name_str += (*iter)->Fullname();
             ++iter;
             if (iter == self->parameter_types.end()) {
-                self->name += ")";
+                name_str += ")";
                 break;
             }
-            self->name += ", ";
+            name_str += ", ";
         }
-        self->name += "->";
-        self->name += self->return_type->fullname;
-        self->fullname = self->name;
+        name_str += "->";
+        name_str += self->return_type->Fullname();
+        self->Name(name_str);
+        self->Fullname(name_str);
         global_context.created_types.push_back(self);
         return self;
     }
@@ -303,8 +313,9 @@ class PointerType : public Type {
         std::shared_ptr<PointerType> self(new PointerType);
         self->value_type = value_type;
         self->bytes = ADDRESS_BITS / 8;
-        self->name = value_type->fullname + "*";
-        self->fullname = self->name;
+        std::string name_str = value_type->Fullname() + "*";
+        self->Name(name_str);
+        self->Fullname(name_str);
         global_context.created_types.push_back(self);
         return self;
     }
@@ -331,8 +342,9 @@ class ArrayType : public Type {
         self->value_type = value_type;
         self->size = size;
         self->bytes = value_type->bytes * size;
-        self->name = value_type->name + "[" + std::to_string(size) + "]";
-        self->fullname = self->name;
+        std::string name_str = value_type->Name() + "[" + std::to_string(size) + "]";
+        self->Name(name_str);
+        self->Fullname(name_str);
         global_context.created_types.push_back(self);
         return self;
     }
@@ -360,8 +372,9 @@ class VectorType : public Type {
         self->value_type = value_type;
         self->size = size;
         self->bytes = value_type->bytes * size;
-        self->name = value_type->name + "[" + std::to_string(size) + "]";
-        self->fullname = self->name;
+        std::string name_str = value_type->Name() + "[" + std::to_string(size) + "]";
+        self->Name(name_str);
+        self->Fullname(name_str);
         global_context.created_types.push_back(self);
         return self;
     }
@@ -400,8 +413,8 @@ class StructType : public Type {
         std::shared_ptr<StructType> self(new StructType);
         self->fields = fields;
         global_context.created_types.push_back(self);
-        self->name = "PleaseDefineStructTypeName";
-        self->fullname = "PleaseDefineStructTypeFullname";
+        self->Name("PleaseDefineStructTypeName");
+        self->Fullname("PleaseDefineStructTypeFullname");
         self->Update();
 
         return self;
@@ -422,7 +435,7 @@ class StructType : public Type {
     bool is_declaration = false;
 };
 
-class InterfacePrototype : public Named {
+class InterfacePrototype {
    public:
     InterfacePrototype() = default;
 
@@ -430,11 +443,21 @@ class InterfacePrototype : public Named {
     static std::shared_ptr<InterfacePrototype> Create() {
         std::shared_ptr<InterfacePrototype> self(new InterfacePrototype);
 
-        self->name = "PleaseDefineInterfacePrototypeName";
-        self->fullname = "PleaseDefineInterafcePrototypeFullname";
+        self->Name("PleaseDefineInterfacePrototypeName");
+        self->Fullname("PleaseDefineInterafcePrototypeFullname");
 
         return self;
     };
+
+    std::string Name() const { return _name; }
+    void Name(const std::string& name) { _name = name; }
+
+    std::string Fullname() const { return _fullname; }
+    void Fullname(const std::string& fullname) { _fullname = fullname; }
+
+   private:
+    std::string _name = "NameIsUndefined";
+    std::string _fullname = "FullnameIsUndefined";
 
    public:
     std::list<std::shared_ptr<Function>> functions;
@@ -447,7 +470,7 @@ class InterfacePrototype : public Named {
     std::any template_arguments;
 };
 
-class InterfaceImplement : public Named {
+class InterfaceImplement {
    public:
     InterfaceImplement() = default;
 
@@ -455,11 +478,21 @@ class InterfaceImplement : public Named {
     static std::shared_ptr<InterfaceImplement> Create() {
         std::shared_ptr<InterfaceImplement> self(new InterfaceImplement);
 
-        self->name = "PleaseDefineInterfaceImplementName";
-        self->fullname = "PleaseDefineInterfaceImplementFullname";
+        self->Name("PleaseDefineInterfaceImplementName");
+        self->Fullname("PleaseDefineInterfaceImplementFullname");
 
         return self;
     };
+
+    std::string Name() const { return _name; }
+    void Name(const std::string& name) { _name = name; }
+
+    std::string Fullname() const { return _fullname; }
+    void Fullname(const std::string& fullname) { _fullname = fullname; }
+
+   private:
+    std::string _name = "NameIsUndefined";
+    std::string _fullname = "FullnameIsUndefined";
 
    public:
     std::list<std::shared_ptr<Function>> functions;
@@ -488,8 +521,9 @@ class SimdType : public Type {
         self->value_type = value_type;
         self->size = size;
         self->bytes = value_type->bytes * size;
-        self->name = value_type->name + "[" + std::to_string(size) + "]";
-        self->fullname = self->name;
+        std::string name_str = value_type->Name() + "[" + std::to_string(size) + "]";
+        self->Name(name_str);
+        self->Fullname(name_str);
         global_context.created_types.push_back(self);
         return self;
     }

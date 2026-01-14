@@ -197,7 +197,7 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
 
         if (ir_sub_module->target == ir::Target::nvptx) {
             std::string ptx_code =
-                gpu_compiler.CompileToPTXCode(ir_sub_module->llvm_module, ir_sub_module->name);
+                gpu_compiler.CompileToPTXCode(ir_sub_module->llvm_module, ir_sub_module->Name());
 
             auto &cuda_loader = CudaRuntimeLoader::GetInstance();
 
@@ -211,8 +211,8 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
                     auto kernel_fun_address_name = GetKernelFunctionAddressName(ir_function);
                     auto test_kernel_fun =
                         reinterpret_cast<int64_t *>(this->GetValue(kernel_fun_address_name));
-                    std::string function_name =
-                        MangledNameForGpuLLVMBackend(ir_function->fullname, ir_sub_module->target);
+                    std::string function_name = MangledNameForGpuLLVMBackend(
+                        ir_function->Fullname(), ir_sub_module->target);
                     auto cu_re =
                         cu_library_get_kernel(test_kernel_fun, cu_library, function_name.c_str());
                     PRAJNA_ASSERT(cu_re == 0, std::to_string(cu_re));
@@ -220,13 +220,13 @@ void ExecutionEngine::AddIRModule(std::shared_ptr<ir::Module> ir_module) {
             }
         } else if (ir_sub_module->target == ir::Target::amdgpu) {
             std::string hsaco_data =
-                gpu_compiler.CompileToHSACO(ir_sub_module->llvm_module, ir_sub_module->name);
+                gpu_compiler.CompileToHSACO(ir_sub_module->llvm_module, ir_sub_module->Name());
             auto &hip_loader = HipRuntimeLoader::Instance();
             // 内核函数的地址存储到 JIT 环境中
             for (auto ir_function : ir_sub_module->functions) {
                 if (ir_function->annotation_dict.count("kernel")) {
-                    std::string function_name =
-                        MangledNameForGpuLLVMBackend(ir_function->fullname, ir_sub_module->target);
+                    std::string function_name = MangledNameForGpuLLVMBackend(
+                        ir_function->Fullname(), ir_sub_module->target);
                     hipFunction_t kernel_func =
                         hip_loader.LoadKernelFunction(hsaco_data, function_name);
                     auto kernel_name_address_name = GetKernelFunctionAddressName(ir_function);

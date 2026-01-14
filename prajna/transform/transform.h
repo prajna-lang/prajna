@@ -89,15 +89,15 @@ inline bool DeclareExternalFunction(std::shared_ptr<ir::Module> ir_module) {
                 if (ir_function->GetParentModule() != ir_module) {
                     std::shared_ptr<ir::Function> ir_decl_function = nullptr;
                     auto iter_fun = std::ranges::find_if(ir_module->functions, [=](auto ir_x) {
-                        return ir_x->fullname == ir_function->fullname;
+                        return ir_x->Fullname() == ir_function->Fullname();
                     });
                     // 声明过了, 就不在声明了
                     if (iter_fun != ir_module->functions.end()) {
                         ir_decl_function = *iter_fun;
                     } else {
                         ir_decl_function = ir::Function::Create(ir_function->function_type);
-                        ir_decl_function->fullname = ir_function->fullname;
-                        ir_decl_function->name = ir_function->name;
+                        ir_decl_function->Fullname(ir_function->Fullname());
+                        ir_decl_function->Name(ir_function->Name());
                         ir_decl_function->parent = ir_module;
                         ir_module->functions.push_front(ir_decl_function);
                     }
@@ -153,7 +153,7 @@ inline void PartitionGpuKernelsAndMarkTargets(std::shared_ptr<ir::Module> ir_mod
             if (!ir_callee) continue;
 
             // 规范化 fullname，移除可选的全局前缀 ::
-            std::string fullname = ir_callee->fullname;
+            std::string fullname = ir_callee->Fullname();
             if (fullname.rfind("::", 0) == 0) {
                 fullname = fullname.substr(2);
             }
@@ -199,8 +199,8 @@ inline void PartitionGpuKernelsAndMarkTargets(std::shared_ptr<ir::Module> ir_mod
             // module里获取的kernel函数的symbol value
             std::shared_ptr<ir::GlobalVariable> ir_global_variable =
                 ir::GlobalVariable::Create(ir_function->type);
-            ir_global_variable->name = global_variable_fullname;
-            ir_global_variable->fullname = ir_global_variable->name;
+            ir_global_variable->Name(global_variable_fullname);
+            ir_global_variable->Fullname(global_variable_fullname);
             ir_global_variable->annotation_dict = ir_function->annotation_dict;
             ir_global_variable->is_external = false;
             ir_module->AddGlobalVariable(ir_global_variable);
@@ -304,8 +304,8 @@ inline void ConvertKernelFunctionCallToKernelLaunch(std::shared_ptr<ir::Module> 
 inline void ConvertGlobalVariableToGlobalAlloca(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_global_variable : Clone(ir_module->global_variables)) {
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_global_variable->type);
-        ir_global_alloca->name = ir_global_variable->name;
-        ir_global_alloca->fullname = ir_global_variable->fullname;
+        ir_global_alloca->Name(ir_global_variable->Name());
+        ir_global_alloca->Fullname(ir_global_variable->Fullname());
         // ir_global_variable->is_external默认为false
         ir_global_alloca->is_external = ir_global_variable->is_external;
         ir_module->AddGlobalAlloca(ir_global_alloca);
@@ -416,7 +416,7 @@ inline bool WrapIntrinsicFunction(std::shared_ptr<ir::Module> ir_module) {
             PRAJNA_ASSERT(!ir_function->annotation_dict["intrinsic"].empty());
             auto intrinsic_function_name = ir_function->annotation_dict["intrinsic"].front();
             auto ir_decl_function = ir::Function::Create(ir_function->function_type);
-            ir_decl_function->fullname = intrinsic_function_name;
+            ir_decl_function->Fullname(intrinsic_function_name);
             ir_decl_function->parent = ir_module;
             ir_module->functions.push_front(ir_decl_function);
 
@@ -462,7 +462,7 @@ inline bool ConvertClosure(std::shared_ptr<ir::Module> ir_module) {
                     if (ir_operand->GetParentFunction() != ir_function) {
                         if (!ir_value_field_map[ir_operand]) {
                             ir_value_field_map[ir_operand] =
-                                ir::Field::Create(ir_value->name, ir_operand->type);
+                                ir::Field::Create(ir_value->Name(), ir_operand->type);
                         }
                         auto ir_field = ir_value_field_map[ir_operand];
                         auto ir_access_field =
@@ -504,9 +504,9 @@ inline bool ExternCFunction(std::shared_ptr<ir::Module> ir_module) {
     for (auto ir_function : ir_module->functions) {
         if (ir_function->annotation_dict.count("extern")) {
             // @extern的全名不加前缀
-            ir_function->fullname = ir_function->name;
+            ir_function->Fullname(ir_function->Name());
             // auto ir_decl_function = ir::Function::Create(ir_function->function_type);
-            // ir_decl_function->fullname = ir_function->name;
+            // ir_decl_function->Fullname(ir_function->Name());
             // ir_decl_function->parent_module = ir_module;
             // ir_module->functions.push_front(ir_decl_function);
 
@@ -598,8 +598,8 @@ inline void ConvertLLVMIntrinsicToNVVMLibdevice(std::shared_ptr<ir::Module> ir_n
         {"llvm.acos.f32", "__nv_acosf"}, {"llvm.atan.f32", "__nv_atanf"},
         {"llvm.pow.f32", "__nv_powf"}};
     for (auto ir_function : ir_nvptx_module->functions) {
-        if (name_map.count(ir_function->fullname)) {
-            ir_function->fullname = name_map[ir_function->fullname];
+        if (name_map.count(ir_function->Fullname())) {
+            ir_function->Fullname(name_map[ir_function->Fullname()]);
         }
     };
 }
@@ -623,8 +623,8 @@ inline void ConvertLLVMIntrinsicToAmdGPULibdevice(std::shared_ptr<ir::Module> ir
         {"llvm.acos.f32", "__ocml_acos_f32"}, {"llvm.atan.f32", "__ocml_atan_f32"},
         {"llvm.pow.f32", "__ocml_pow_f32"}};
     for (auto ir_function : ir_amdgpu_module->functions) {
-        if (name_map.count(ir_function->fullname)) {
-            ir_function->fullname = name_map[ir_function->fullname];
+        if (name_map.count(ir_function->Fullname())) {
+            ir_function->Fullname(name_map[ir_function->Fullname()]);
         }
     };
 }
@@ -636,9 +636,9 @@ inline void ConvertSharedMemoryLocalVariableToGlobalAllocaWithAddressSpace3(
 
         auto ir_global_alloca = ir::GlobalAlloca::Create(ir_shared_variable->type);
         ir_global_alloca->address_space = 3;  // nvptx/amd shared memory
-        ir_global_alloca->name = ir_shared_variable->name;
-        ir_global_alloca->fullname =
-            MangledNameForGpuLLVMBackend(ir_shared_variable->fullname, ir_module->target);
+        ir_global_alloca->Name(ir_shared_variable->Name());
+        ir_global_alloca->Fullname(
+            MangledNameForGpuLLVMBackend(ir_shared_variable->Fullname(), ir_module->target));
 
         ir_global_alloca->is_external = false;
         ir_module->AddGlobalAlloca(ir_global_alloca);
@@ -667,7 +667,7 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
     auto ir_calls = utility::GetAll<ir::Call>(ir_module);
     for (auto ir_call : ir_calls) {
         if (auto ir_callee = Cast<ir::Function>(ir_call->Function())) {
-            if (ir_callee->fullname == "::test::Assert") {
+            if (ir_callee->Fullname() == "::test::Assert") {
                 auto iter = ir_call->GetBlockIterator();
                 auto ir_builder =
                     lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);
@@ -686,7 +686,7 @@ inline bool InsertLocationForAssert(std::shared_ptr<ir::Module> ir_module) {
                 ir_call->Finalize();
                 continue;
             }
-            if (ir_callee->fullname == "::debug::Assert") {
+            if (ir_callee->Fullname() == "::debug::Assert") {
                 auto iter = ir_call->GetBlockIterator();
                 auto ir_builder =
                     lowering::IrBuilder::Create(ir_module->symbol_table, ir_module, nullptr);

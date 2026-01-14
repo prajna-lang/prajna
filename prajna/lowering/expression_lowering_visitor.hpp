@@ -171,7 +171,7 @@ class ExpressionLoweringVisitor {
             }
 
             logger->Error(
-                fmt::format("{} is not a member of {}", member_name, ir_lhs->type->fullname),
+                fmt::format("{} is not a member of {}", member_name, ir_lhs->type->Fullname()),
                 ast_binary_operation.operand);
         } catch (CompileError compile_error) {
             this->logger->Note(ast_binary_operation);
@@ -192,7 +192,7 @@ class ExpressionLoweringVisitor {
         auto ir_index = ir_arguments.front();
         if (ir_index->type != ir::i64) {
             logger->Error(
-                fmt::format("the index type must be i64, but it's {}", ir_index->type->fullname),
+                fmt::format("the index type must be i64, but it's {}", ir_index->type->Fullname()),
                 ast_binary_operation.operand);
         }
         // 之所以没包装成模板函数, 是因为需要包装成属性过于复杂了. 这样反而比较简单
@@ -525,7 +525,7 @@ class ExpressionLoweringVisitor {
 
                         logger->Error(
                             fmt::format("the static/member function {} is not exit in type {}",
-                                        name, ir_type->fullname),
+                                        name, ir_type->Fullname()),
                             name);
 
                         return nullptr;
@@ -731,8 +731,8 @@ class ExpressionLoweringVisitor {
         ir_arguemnts.back() = this->applyOperand(ast_binary_operation.operand);
         if (ir_arguemnts.back()->type != ir_function->function_type->parameter_types.back()) {
             logger->Error(fmt::format("the types {}, {} are not matched",
-                                      ir_function->function_type->parameter_types.back()->fullname,
-                                      ir_arguemnts.back()->type->fullname),
+                                      ir_function->function_type->parameter_types.back()->Fullname(),
+                                      ir_arguemnts.back()->type->Fullname()),
                           ast_binary_operation.operand);
         }
         return ir_builder->Call(ir_function, ir_arguemnts);

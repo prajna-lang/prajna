@@ -101,7 +101,7 @@ class IRPrinter : public Visitor {
         output << GetVariableName(ir_member_function_with_this_pointer)
                << " = member_function_with_this_pointer "
                << GetVariableName(ir_member_function_with_this_pointer->this_pointer) << "."
-               << ir_member_function_with_this_pointer->function_prototype->name << ";\n";
+               << ir_member_function_with_this_pointer->function_prototype->Name() << ";\n";
     }
 
     void Visit(std::shared_ptr<LocalVariable> ir_local_variable) override {
@@ -205,7 +205,7 @@ class IRPrinter : public Visitor {
     }
 
     void Visit(std::shared_ptr<Call> ir_call) override {
-        output << "Call " << GetVariableName(ir_call) << " = Call  @" << ir_call->Function()->name
+        output << "Call " << GetVariableName(ir_call) << " = Call  @" << ir_call->Function()->Name()
                << "(";
         for (int64_t i = 0; i < ir_call->ArgumentSize(); ++i) {
             if (i > 0) output << ", ";
@@ -485,7 +485,7 @@ class IRPrinter : public Visitor {
 
     void Visit(std::shared_ptr<Function> ir_function) override {
         output << "define " << TypeToString(ir_function->function_type->return_type) << " @"
-               << ir_function->name << "(";
+               << ir_function->Name() << "(";
         bool first = true;
         for (auto ir_param : ir_function->parameters) {
             if (!first) output << ", ";
@@ -633,7 +633,7 @@ class IRPrinter : public Visitor {
             std::cout << type;
             return "void";
         }
-        return type->name;
+        return type->Name();
     }
     // 获取变量名
     std::string GetVariableName(std::shared_ptr<Value> value) {
@@ -641,8 +641,8 @@ class IRPrinter : public Visitor {
             return var_name_dict[value];
         }
         std::string name;
-        if (!value->name.empty() && value->name != "NameIsUndefined") {
-            return "%" + value->name;
+        if (!value->Name().empty() && value->Name() != "NameIsUndefined") {
+            return "%" + value->Name();
         } else {
             name = "%" + std::to_string(var_counter++);
         }

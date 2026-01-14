@@ -10,7 +10,6 @@
 #include "prajna/ast/ast.hpp"
 #include "prajna/helper.hpp"
 #include "prajna/ir/ir.hpp"
-#include "prajna/named.hpp"
 
 namespace std {
 

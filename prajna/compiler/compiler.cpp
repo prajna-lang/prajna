@@ -84,13 +84,14 @@ std::shared_ptr<ir::Module> Compiler::CompileCode(
     PRAJNA_ASSERT(ast);
     auto ir_lowering_module =
         prajna::lowering::lower(ast, symbol_table, logger, shared_from_this(), is_interpreter);
-    ir_lowering_module->name = file_name;
-    ir_lowering_module->fullname = ir_lowering_module->name;
+    ir_lowering_module->Name(file_name);
+    ir_lowering_module->Fullname(file_name);
     for (auto ir_sub_module : ir_lowering_module->modules) {
         if (ir_sub_module == nullptr) continue;
-        ir_sub_module->name =
-            ir_lowering_module->name + "_" + ir::TargetToString(ir_sub_module->target);
-        ir_sub_module->fullname = ir_sub_module->name;
+        std::string sub_module_name =
+            ir_lowering_module->Name() + "_" + ir::TargetToString(ir_sub_module->target);
+        ir_sub_module->Name(sub_module_name);
+        ir_sub_module->Fullname(sub_module_name);
     }
     auto ir_ssa_module = prajna::transform::Transform(ir_lowering_module);
     auto ir_codegen_module = prajna::codegen::LlvmCodegen(ir_ssa_module);
@@ -123,7 +124,7 @@ void Compiler::ExecuteCodeInRelp(std::string script_code) {
         // @note 会有一次输入多个句子的情况
         for (auto ir_function : ir_module->functions) {
             if (ir_function->annotation_dict.count("\\command")) {
-                auto fun_fullname = ir_function->fullname;
+                auto fun_fullname = ir_function->Fullname();
                 auto fun_ptr = reinterpret_cast<void (*)(void)>(GetSymbolValue(fun_fullname));
                 fun_ptr();
             }
@@ -142,7 +143,7 @@ void Compiler::ExecuteProgram(std::filesystem::path program_path) {
     if (is_script) {
         for (auto ir_function : ir_module->functions) {
             if (ir_function->annotation_dict.count("\\command")) {
-                auto fun_fullname = ir_function->fullname;
+                auto fun_fullname = ir_function->Fullname();
                 auto fun_ptr = reinterpret_cast<void (*)(void)>(GetSymbolValue(fun_fullname));
                 fun_ptr();
             }
@@ -158,13 +159,13 @@ void Compiler::ExecutateMainFunction() {
     this->_symbol_table->Each([this, &main_functions](lowering::Symbol symbol) {
         if (auto ir_value = lowering::SymbolGet<ir::Value>(symbol)) {
             if (auto ir_function = Cast<ir::Function>(ir_value)) {
-                if (ir_function->name == "Main") {
+                if (ir_function->Name() == "Main") {
                     main_functions.insert(ir_function);
                     if (main_functions.size() >= 2) {
                         return;
                     }
 
-                    auto function_pointer = GetSymbolValue(ir_function->fullname);
+                    auto function_pointer = GetSymbolValue(ir_function->Fullname());
                     jit_engine->CatchRuntimeError();
                     reinterpret_cast<void (*)(void)>(function_pointer)();
                 }
@@ -203,13 +204,13 @@ void Compiler::RunTests(std::filesystem::path prajna_source_package_path) {
     for (auto ir_function : ir_module->functions) {
         try {
             if (ir_function->annotation_dict.count("test")) {
-                auto function_pointer = GetSymbolValue(ir_function->fullname);
-                print_callback("test function: " + ir_function->name + "\n");
+                auto function_pointer = GetSymbolValue(ir_function->Fullname());
+                print_callback("test function: " + ir_function->Name() + "\n");
                 jit_engine->CatchRuntimeError();
                 reinterpret_cast<void (*)(void)>(function_pointer)();
             }
         } catch (RuntimeError error) {
-            logger->Error("test function: " + ir_function->name + " failed",
+            logger->Error("test function: " + ir_function->Name() + " failed",
                           ir_function->source_location);
         }
     }

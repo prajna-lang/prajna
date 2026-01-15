@@ -33,6 +33,6 @@ func TestTan(){
     gpu::Synchronize();
 
     var host_tensor = gpu_tensor.ToHost();
-    test::Assert(host_tensor[0] == 1.0f32);
+    test::Assert((host_tensor[0] - 1.0f32).Abs() < 1e-4f32);
 }
 

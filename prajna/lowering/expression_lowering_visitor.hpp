@@ -730,10 +730,11 @@ class ExpressionLoweringVisitor {
         ir_arguemnts.front() = ir_this_pointer;
         ir_arguemnts.back() = this->applyOperand(ast_binary_operation.operand);
         if (ir_arguemnts.back()->type != ir_function->function_type->parameter_types.back()) {
-            logger->Error(fmt::format("the types {}, {} are not matched",
-                                      ir_function->function_type->parameter_types.back()->Fullname(),
-                                      ir_arguemnts.back()->type->Fullname()),
-                          ast_binary_operation.operand);
+            logger->Error(
+                fmt::format("the types {}, {} are not matched",
+                            ir_function->function_type->parameter_types.back()->Fullname(),
+                            ir_arguemnts.back()->type->Fullname()),
+                ast_binary_operation.operand);
         }
         return ir_builder->Call(ir_function, ir_arguemnts);
     }

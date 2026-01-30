@@ -1,0 +1,83 @@
+use ::nvgpu as gpu;
+use ::nvgpu_wmma as wmma;
+use ::test;
+
+// ------------------------------------------------------------
+// WMMA 最小测试（Tensor Core 冒烟测试）
+// ------------------------------------------------------------
+//
+// 目的：
+// - 验证 Prajna 能够：
+//   1) 表达 WMMA fragment 类型（literal struct + v2f16）
+//   2) 调用 NVVM WMMA intrinsics（load/mma/store）
+//   3) 经过 NVPTX 后端选择并生成 Tensor Core 指令
+//   4) 在 GPU 上正确执行并得到正确结果
+//
+// 配置：
+// - 计算的 tile：m16n16k16
+// - A/B：f16，累加/输出：f32
+// - A row-major，B col-major（与对应 intrinsic 匹配）
+// - 使用一个 block 的一个 warp（32 线程）执行一次 WMMA
+//
+// 期望：
+// - A 与 B 全 1：则 C 的每个元素 = sum_{k=0..15} 1*1 = 16
+//
+
+@kernel
+@target("nvptx")
+func WmmaKernel(a: ptr<f16>, b: ptr<f16>, c: ptr<f32>) {
+    // WMMA 是 warp 级别协同操作：每个 lane 持有 fragment 的一部分寄存器。
+    var tid = gpu::ThreadIndex()[0];
+
+    var frag_c: wmma::WmmaFragAcc;
+    // 累加器清零（C fragment 填 0）
+    wmma::WmmaFill_m16n16k16_acc_f32(&frag_c, 0.0f32);
+    // 直接从全局内存加载：
+    // - A：row-major，stride=16
+    // - B：col-major，stride=16
+    var frag_a: wmma::WmmaFragA = wmma::WmmaLoadA_row_m16n16k16_f16(a, 16i32);
+    var frag_b: wmma::WmmaFragB = wmma::WmmaLoadB_col_m16n16k16_f16(b, 16i32);
+    // 执行一次 Tensor Core MMA：frag_c = A*B + frag_c
+    frag_c = wmma::WmmaMma_row_col_m16n16k16_f16_f32(frag_a, frag_b, frag_c);
+    // 存回全局内存（row-major，stride=16）
+    wmma::WmmaStoreD_row_m16n16k16_f32(c, frag_c, 16i32);
+
+    if tid == 0 {
+        // 这里不做额外工作：store 已经把整个 16x16 tile 写回了全局内存。
+        // 注意：虽然这里只让 lane0 进入分支，但 store 是分支前执行的。
+    }
+}
+
+@test
+func TestWmmaMinimal() {
+    // 1) 准备 host 端输入：A/B 均为 16x16（展开成一维 256）
+    var host_a = ::Tensor<f16, 1>::Create([256]);
+    var host_b = ::Tensor<f16, 1>::Create([256]);
+    for i in 0 to 256 {
+        host_a[i] = 1.0f16;
+        host_b[i] = 1.0f16;
+    }
+
+    // 2) 拷到 GPU，并分配输出 C（f32，16x16）
+    var gpu_a = host_a.ToGpu();
+    var gpu_b = host_b.ToGpu();
+    var gpu_c = gpu::Tensor<f32, 1>::Create([256]);
+
+    // 3) 启动 kernel：一个 block，一个 warp（32 线程）
+    var GridShape = [1, 1, 1];
+    var BlockShape = [32, 1, 1]; // 一个 warp
+    WmmaKernel<|GridShape, BlockShape|>(gpu_a.data, gpu_b.data, gpu_c.data);
+    gpu::Synchronize();
+
+    // 4) 拷回 host，并校验若干位置（所有元素应该都接近 16）
+    var host_c = gpu_c.ToHost();
+    var eps = 0.1f32;
+    test::Assert((host_c[0] - 16.0f32).Abs() < eps);
+    test::Assert((host_c[5] - 16.0f32).Abs() < eps);
+    test::Assert((host_c[10] - 16.0f32).Abs() < eps);
+    test::Assert((host_c[64] - 16.0f32).Abs() < eps);
+    test::Assert((host_c[127] - 16.0f32).Abs() < eps);
+    test::Assert((host_c[128] - 16.0f32).Abs() < eps);
+    test::Assert((host_c[200] - 16.0f32).Abs() < eps);
+    test::Assert((host_c[255] - 16.0f32).Abs() < eps);
+}

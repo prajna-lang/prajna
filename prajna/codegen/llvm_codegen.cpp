@@ -141,16 +141,30 @@ class LlvmCodegen : public prajna::ir::Visitor {
             return;
         }
         if (auto ir_struct_type = Cast<ir::StructType>(ir_type)) {
-            auto llvm_struct_type =
-                llvm::StructType::create(static_llvm_context, ir_struct_type->Fullname());
-            ir_struct_type->llvm_type = llvm_struct_type;
+            // struct 的 LLVM 表示分两类：
+            // 1) 具名 struct：先创建占位类型（可用于自引用/递归），再 setBody。
+            // 2) literal struct（匿名）：LLVM 不支持前向声明，只能在字段类型都确定后一次性构造。
+            llvm::StructType* llvm_struct_type = nullptr;
+            if (!ir_struct_type->is_literal) {
+                llvm_struct_type =
+                    llvm::StructType::create(static_llvm_context, ir_struct_type->Fullname());
+                ir_struct_type->llvm_type = llvm_struct_type;
+            }
             std::vector<llvm::Type *> llvm_types(ir_struct_type->fields.size());
             std::ranges::transform(ir_struct_type->fields, llvm_types.begin(),
                                    [this](std::shared_ptr<ir::Field> field) {
                                        this->EmitType(field->type);
                                        return field->type->llvm_type;
                                    });
-            llvm_struct_type->setBody(llvm_types, true);
+            if (ir_struct_type->is_literal) {
+                // WMMA/NVVM intrinsic 的签名使用 literal struct，并且 packed/non-packed 也属于类型的一部分。
+                // 这里必须按 non-packed（isPacked=false）生成，才能与 LLVM 内建签名精确匹配。
+                ir_struct_type->llvm_type =
+                    llvm::StructType::get(static_llvm_context, llvm_types, /*isPacked=*/false);
+            } else {
+                // 注意：这里保持 prajna-project 现有普通 struct 的 packed 语义不变，避免影响既有 ABI/layout。
+                llvm_struct_type->setBody(llvm_types, /*isPacked=*/true);
+            }
             return;
         }
         if (auto ir_simd_type = Cast<ir::SimdType>(ir_type)) {

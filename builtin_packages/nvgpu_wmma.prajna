@@ -1,0 +1,160 @@
+// ================================================================
+// NVGPU WMMA（Tensor Core）内建绑定（m16n16k16, A/B=f16, Acc/D=f32）
+// ================================================================
+//
+// 这份文件的目标：把 NVIDIA Tensor Core 的 WMMA 指令能力，暴露为 Prajna
+// 可直接调用的一组函数（在 nvptx target 下使用）。
+//
+// 实现方式：
+// - 不走 MLIR 的 nvgpu dialect，而是直接绑定 LLVM NVVM 的官方 intrinsic：
+//     llvm.nvvm.wmma.m16n16k16.load.*
+//     llvm.nvvm.wmma.m16n16k16.mma.*
+//     llvm.nvvm.wmma.m16n16k16.store.*
+// - 由 Prajna 前端/后端保证“类型签名完全一致”，让 LLVM NVPTX 后端能够把
+//   intrinsic 选择（Select）并 lower 成 PTX 的 mma.sync 等指令。
+//
+// 为什么要这么做：
+// - WMMA intrinsic 的签名非常“苛刻”，尤其是 fragment 的表示必须匹配 LLVM 的
+//   literal struct（匿名 struct）聚合类型；如果类型不一致，LLVM 会把它当成
+//   “完全不同的类型”，从而无法选择并报错。
+//
+// 依赖的编译器侧能力（本仓库已经补齐）：
+// - @literal_struct：让 struct 在 LLVM IR 里生成 literal struct（匿名、non-packed）
+// - vec<Len, Elem>：让 `vec<2, f16>` 映射为 LLVM `<2 x half>`（常见记法 v2f16）
+//
+// 注意：
+// - WMMA 需要 GPU 架构至少 sm_70（Volta）以上；测试机上 RTX 3050 是 compute 8.6。
+// - 下方 intrinsic 名称采用 LLVM NVVM 的命名规则，并包含指针地址空间后缀：
+//   当指针地址空间为 0 时，LLVM 19/20 常见为 `.p0` 后缀。
+//
+// ================================================================
+
+// ------------------------
+// 1) WMMA Fragment 类型
+// ------------------------
+//
+// NVVM WMMA intrinsic 的 fragment 在 LLVM IR 中通常表示成“匿名 struct 聚合”，
+// 例如 A/B fragment 由 8 个 `<2 x half>` 组成，Acc/D fragment 由 8 个 f32 组成。
+// 因此这里用 @literal_struct + 明确字段列表来精确匹配签名。
+
+// A fragment：m16n16k16，row-major，元素类型 half
+@literal_struct
+struct WmmaFragA {
+    a0: vec<2, f16>; a1: vec<2, f16>; a2: vec<2, f16>; a3: vec<2, f16>;
+    a4: vec<2, f16>; a5: vec<2, f16>; a6: vec<2, f16>; a7: vec<2, f16>;
+}
+
+// B fragment：m16n16k16，col-major，元素类型 half
+@literal_struct
+struct WmmaFragB {
+    b0: vec<2, f16>; b1: vec<2, f16>; b2: vec<2, f16>; b3: vec<2, f16>;
+    b4: vec<2, f16>; b5: vec<2, f16>; b6: vec<2, f16>; b7: vec<2, f16>;
+}
+
+// Acc fragment：m16n16k16，累加/结果类型 float
+@literal_struct
+struct WmmaFragAcc {
+    c0: f32; c1: f32; c2: f32; c3: f32;
+    c4: f32; c5: f32; c6: f32; c7: f32;
+}
+
+// ------------------------
+// 2) 底层 NVVM intrinsics
+// ------------------------
+//
+// 这里声明的函数“本身不会有实现”，它们会被 transform 阶段识别为 @intrinsic，
+// 并最终在 LLVM IR 中生成对应的 `call @llvm.nvvm.*`。
+//
+// 注意：这些 intrinsic 的参数签名不是“传 fragment struct”，而经常是“展开字段”
+//（flattened），例如 mma 会把 A 的 8 个 v2f16 + B 的 8 个 v2f16 + C 的 8 个 f32
+// 展平成 24 个参数。
+
+// load A（row-major），stride 以 element 为单位（典型就是 leading dimension）
+@target("nvptx")
+@intrinsic("llvm.nvvm.wmma.m16n16k16.load.a.row.stride.f16.p0")
+func __wmma_load_a_row_stride_f16(src: ptr<f16>, stride: i32)->WmmaFragA;
+
+// load B（col-major）
+@target("nvptx")
+@intrinsic("llvm.nvvm.wmma.m16n16k16.load.b.col.stride.f16.p0")
+func __wmma_load_b_col_stride_f16(src: ptr<f16>, stride: i32)->WmmaFragB;
+
+// mma：layout=row.col，A/B=half，Acc/D=float
+//
+// 说明：LLVM 侧的 intrinsic 命名会随版本略有差异；此处使用项目当前 LLVM 版本
+// 下实际可用的名字（*.f32.f32），其含义是“输入 half，累加/输出 float”。
+@target("nvptx")
+@intrinsic("llvm.nvvm.wmma.m16n16k16.mma.row.col.f32.f32")
+func __wmma_mma_row_col_f16_f32(
+    a0: vec<2, f16>, a1: vec<2, f16>, a2: vec<2, f16>, a3: vec<2, f16>,
+    a4: vec<2, f16>, a5: vec<2, f16>, a6: vec<2, f16>, a7: vec<2, f16>,
+    b0: vec<2, f16>, b1: vec<2, f16>, b2: vec<2, f16>, b3: vec<2, f16>,
+    b4: vec<2, f16>, b5: vec<2, f16>, b6: vec<2, f16>, b7: vec<2, f16>,
+    c0: f32, c1: f32, c2: f32, c3: f32,
+    c4: f32, c5: f32, c6: f32, c7: f32)->WmmaFragAcc;
+
+// store D（row-major），stride 以 element 为单位
+@target("nvptx")
+@intrinsic("llvm.nvvm.wmma.m16n16k16.store.d.row.stride.f32.p0")
+func __wmma_store_d_row_stride_f32(
+    dst: ptr<f32>,
+    d0: f32, d1: f32, d2: f32, d3: f32,
+    d4: f32, d5: f32, d6: f32, d7: f32,
+    stride: i32);
+
+// ------------------------
+// 3) 对外封装（更易用的 API）
+// ------------------------
+//
+// 这些函数是用户侧应该调用的接口：
+// - 输入/输出以 fragment struct 作为参数
+// - 内部根据 NVVM intrinsic 的签名要求，把字段展开后调用底层 intrinsic
+
+// 用一个标量把累加 fragment 填满
+//
+// 说明：有些 LLVM 版本提供 wmma.fill，但 NVPTX 后端可能不会 lower 成 PTX。
+// 为了稳定起见，这里直接构造 struct 并赋值。
+@target("nvptx")
+@inline
+func WmmaFill_m16n16k16_acc_f32(acc: ptr<WmmaFragAcc>, value: f32) {
+    var frag: WmmaFragAcc;
+    frag.c0 = value; frag.c1 = value; frag.c2 = value; frag.c3 = value;
+    frag.c4 = value; frag.c5 = value; frag.c6 = value; frag.c7 = value;
+    acc[0] = frag;
+}
+
+// 从全局内存加载 A（row-major）
+@target("nvptx")
+@inline
+func WmmaLoadA_row_m16n16k16_f16(src: ptr<f16>, stride: i32)->WmmaFragA {
+    return __wmma_load_a_row_stride_f16(src, stride);
+}
+
+// 从全局内存加载 B（col-major）
+@target("nvptx")
+@inline
+func WmmaLoadB_col_m16n16k16_f16(src: ptr<f16>, stride: i32)->WmmaFragB {
+    return __wmma_load_b_col_stride_f16(src, stride);
+}
+
+// 执行一次 WMMA：D = A * B + C（row.col，m16n16k16）
+@target("nvptx")
+@inline
+func WmmaMma_row_col_m16n16k16_f16_f32(a: WmmaFragA, b: WmmaFragB, c: WmmaFragAcc)->WmmaFragAcc {
+    // NVVM intrinsic 需要“展平参数”，这里把 fragment 字段逐个拆出来。
+    return __wmma_mma_row_col_f16_f32(
+        a.a0, a.a1, a.a2, a.a3, a.a4, a.a5, a.a6, a.a7,
+        b.b0, b.b1, b.b2, b.b3, b.b4, b.b5, b.b6, b.b7,
+        c.c0, c.c1, c.c2, c.c3, c.c4, c.c5, c.c6, c.c7);
+}
+
+// 把 fragment 写回全局内存（row-major）
+@target("nvptx")
+@inline
+func WmmaStoreD_row_m16n16k16_f32(dst: ptr<f32>, frag: WmmaFragAcc, stride: i32) {
+    __wmma_store_d_row_stride_f32(dst,
+        frag.c0, frag.c1, frag.c2, frag.c3,
+        frag.c4, frag.c5, frag.c6, frag.c7,
+        stride);
+}
+

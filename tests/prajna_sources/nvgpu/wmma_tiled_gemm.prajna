@@ -1,0 +1,110 @@
+use ::nvgpu as gpu;
+use ::nvgpu_wmma as wmma;
+use ::test;
+
+// ------------------------------------------------------------
+// WMMA 分块 GEMM 测试（多 tile、多 K 分块）
+// ------------------------------------------------------------
+//
+// 目的：
+// - 在 wmma_minimal 的基础上，再验证：
+//   1) 网格维度（多个 block）覆盖多个 16x16 输出 tile
+//   2) K 维度分块循环（多次 WMMA，累加到同一个 frag_c）
+//
+// 选择参数：
+// - M=N=K=32（所以输出是 2x2 个 tile）
+// - 每个 tile 使用一个 block 的一个 warp（32 线程）计算
+// - K=32 => k_tiles=2（每次 16）
+//
+// 期望：
+// - A/B 均为全 1：则 C 的每个元素 = K = 32
+//
+
+@kernel
+@target("nvptx")
+func WmmaTiledGemmKernel(a: ptr<f16>, b: ptr<f16>, c: ptr<f32>, k_tiles: i64, lda: i32, ldb: i32, ldc: i32) {
+    // 每个 block 计算一个 16x16 的 C tile。
+    // GridShape = [1, M/16, N/16]
+    // - BlockIndex()[1] 选择 tile 的行（tile_m）
+    // - BlockIndex()[2] 选择 tile 的列（tile_n）
+    var tile_m = gpu::BlockIndex()[1];
+    var tile_n = gpu::BlockIndex()[2];
+
+    var frag_c: wmma::WmmaFragAcc;
+    // 先把累加器清 0，然后在 K 分块循环里不断累加
+    wmma::WmmaFill_m16n16k16_acc_f32(&frag_c, 0.0f32);
+
+    for kt in 0 to k_tiles {
+        // 当前 K tile 的起始偏移（以元素计）
+        var k_off = kt * 16i64;
+        // A 的偏移：tile_m*16 行 + k_off 列
+        var a_off = tile_m * 16i64 * lda.Cast<i64>() + k_off;
+        // B 是 col-major：tile_n*16 列 + k_off 行（对应 col-major 的 leading dimension）
+        var b_off = tile_n * 16i64 * ldb.Cast<i64>() + k_off;
+
+        // 从全局内存加载当前 16x16 的 A/B 子块，并做一次 MMA 累加
+        var frag_a: wmma::WmmaFragA = wmma::WmmaLoadA_row_m16n16k16_f16(&a[a_off], lda);
+        var frag_b: wmma::WmmaFragB = wmma::WmmaLoadB_col_m16n16k16_f16(&b[b_off], ldb);
+        frag_c = wmma::WmmaMma_row_col_m16n16k16_f16_f32(frag_a, frag_b, frag_c);
+    }
+
+    // 把计算完成的 16x16 tile 写回 C（row-major）
+    var c_off = tile_m * 16i64 * ldc.Cast<i64>() + tile_n * 16i64;
+    wmma::WmmaStoreD_row_m16n16k16_f32(&c[c_off], frag_c, ldc);
+}
+
+@test
+func TestWmmaTiledGemm() {
+    // GEMM：C[M,N] = A[M,K] * B[K,N]
+    // 约定：
+    // - A：row-major
+    // - B：col-major（匹配 WmmaLoadB_col_*）
+    // - C：row-major
+    //
+    // 这里选 M=N=K=32：
+    // - 输出 C 有 2x2 个 16x16 tile（共 4 个 block）
+    // - K=32 => 每个 block 内部做 2 次 WMMA（k_tiles=2）
+    var M = 32i64;
+    var N = 32i64;
+    var K = 32i64;
+
+    // leading dimension（以元素计）
+    var lda = K.Cast<i32>();
+    var ldb = K.Cast<i32>();
+    var ldc = N.Cast<i32>();
+    var k_tiles = K / 16i64;
+
+    // 1) host 端初始化：A/B 全 1
+    var host_a = ::Tensor<f16, 1>::Create([M * K]);
+    var host_b = ::Tensor<f16, 1>::Create([K * N]);
+    for i in 0 to (M * K) {
+        host_a[i] = 1.0f16;
+    }
+    for i in 0 to (K * N) {
+        host_b[i] = 1.0f16;
+    }
+
+    // 2) 拷到 GPU，并分配输出
+    var gpu_a = host_a.ToGpu();
+    var gpu_b = host_b.ToGpu();
+    var gpu_c = gpu::Tensor<f32, 1>::Create([M * N]);
+
+    // 3) 2x2 个 block，每个 block 一个 warp
+    var GridShape = [1, M / 16i64, N / 16i64];
+    var BlockShape = [32, 1, 1]; // 一个 warp
+    WmmaTiledGemmKernel<|GridShape, BlockShape|>(gpu_a.data, gpu_b.data, gpu_c.data, k_tiles, lda, ldb, ldc);
+    gpu::Synchronize();
+
+    // 4) 校验：因为 A/B 全 1，所以每个输出元素应该等于 K（这里是 32）
+    var host_c = gpu_c.ToHost();
+    var expect = K.Cast<f32>();
+    var eps = 0.1f32;
+    // 覆盖多个 tile、多个位置，避免“只算了某个局部”也误通过。
+    test::Assert((host_c[0] - expect).Abs() < eps);               // (0,0)
+    test::Assert((host_c[31] - expect).Abs() < eps);              // (0,31)
+    test::Assert((host_c[15i64 * N + 15i64] - expect).Abs() < eps); // (15,15)
+    test::Assert((host_c[16i64 * N + 0] - expect).Abs() < eps);   // (16,0)
+    test::Assert((host_c[16i64 * N + 17i64] - expect).Abs() < eps); // (16,17)
+    test::Assert((host_c[31i64 * N + 0] - expect).Abs() < eps);   // (31,0)
+    test::Assert((host_c[M * N - 1i64] - expect).Abs() < eps);    // (31,31)
+}

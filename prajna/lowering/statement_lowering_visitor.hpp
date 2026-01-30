@@ -671,6 +671,21 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         ir_builder->instantiating_type_stack.push(ir_struct_type);
 
         ir_builder->SetSymbolWithTemplateArgumentsPostify(ir_struct_type, ast_struct.name);
+        // 通过注解控制是否生成 LLVM literal struct（匿名结构体类型）。
+        //
+        // 背景：NVVM WMMA intrinsic 的签名使用 literal struct（例如一组 v2f16 / f32 聚合字段），
+        // 因此需要让特定的 struct 以 literal（anonymous）形式生成，才能与 LLVM 内建签名精确匹配。
+        auto HasStructAnnotation = [&](const std::string& annotation_name) -> bool {
+            for (const auto& annotation : ast_struct.annotation_dict) {
+                if (annotation.name == annotation_name) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        if (HasStructAnnotation("literal_struct")) {
+            ir_struct_type->is_literal = true;
+        }
 
         std::list<std::shared_ptr<ir::Field>> ir_fields;
         std::ranges::transform(
@@ -1301,6 +1316,48 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
         auto template_struct_raw_array = TemplateStruct::Create();
         template_struct_raw_array->template_struct_impl = template_raw_array;
         return template_struct_raw_array;
+    }
+
+    std::shared_ptr<TemplateStruct> CreateRawVectorTypeTemplate() {
+        // vec<Len, Elem>：内建模板 generator，生成 LLVM 向量类型（ir::VectorType => `<Len x Elem>`）。
+        //
+        // 设计动机：
+        // - 语法仍然写成 vec<2, f16>，但解析阶段不再引入 AST/grammar 特例；
+        //   它会被解析为 IdentifierPath("vec") + TemplateArguments(<2, f16>)。
+        // - 具体含义在 lowering 阶段通过 RootSymbolTable 注册的内建模板 generator 解释，
+        //   这样 <> 的语义和 array/ptr 等保持一致，整体机制更统一。
+        //
+        // 和 Tensor Core/WMMA 的关系：
+        // - NVVM WMMA intrinsic 的签名里大量使用 `<2 x half>`（常见记法 v2f16），
+        //   因此 Prajna 需要一个可表达“向量类型”的类型构造器。
+        auto template_raw_vector = Template::Create();
+        template_raw_vector->generator = [=, symbol_table = this->ir_builder->symbol_table,
+                                          logger = this->logger](
+                                             std::list<Symbol> symbol_template_arguments,
+                                             std::shared_ptr<ir::Module> ir_module) -> Symbol {
+            if (symbol_template_arguments.size() != 2) {
+                logger->Error("should input 2 template argument");
+            }
+
+            // 第 1 个模板实参：Len，要求是编译期常量整型且 > 0（LLVM vector 长度必须是常量）。
+            auto ir_constant_length =
+                SymbolGet<ir::ConstantInt>(symbol_template_arguments.front());
+            if (!ir_constant_length || ir_constant_length->value <= 0) {
+                logger->Error("vector length should be a positive constant int");
+            }
+
+            // 第 2 个模板实参：Elem，要求是“一类类型”（不能是 void）。
+            auto ir_type = SymbolGet<ir::Type>(symbol_template_arguments.back());
+            if (!ir_type || Is<ir::VoidType>(ir_type)) {
+                logger->Error("vector element type should be a first class type");
+            }
+
+            return ir::VectorType::Create(ir_type, ir_constant_length->value);
+        };
+
+        auto template_struct_raw_vector = TemplateStruct::Create();
+        template_struct_raw_vector->template_struct_impl = template_raw_vector;
+        return template_struct_raw_vector;
     }
 
     std::shared_ptr<TemplateStruct> CreateRawPtrTypeTemplate() {
@@ -2286,6 +2343,10 @@ class StatementLoweringVisitor : public std::enable_shared_from_this<StatementLo
 
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateRawArrayTypeTemplate(), "array");
+        // 把 vec 注册到 RootSymbolTable：作为编译器内建类型构造器（不依赖用户源码），
+        // 以保证任何文件都能使用 vec<Len, Elem>，并与 array/ptr 的行为保持一致。
+        ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
+            this->CreateRawVectorTypeTemplate(), "vec");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(
             this->CreateRawPtrTypeTemplate(), "ptr");
         ir_builder->symbol_table->RootSymbolTable()->SetWithAssigningName(

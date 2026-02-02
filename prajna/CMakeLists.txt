@@ -15,6 +15,7 @@ target_link_libraries(prajna_config_target
     INTERFACE Boost::asio
     INTERFACE Boost::scope
     INTERFACE Boost::property_tree
+    INTERFACE Boost::multiprecision
     INTERFACE fmt::fmt
     INTERFACE nlohmann_json
 )

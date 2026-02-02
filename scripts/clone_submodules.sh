@@ -52,6 +52,7 @@ iostreams \
 iterator \
 lexical_cast \
 locale \
+math \
 move \
 mp11 \
 mpl \

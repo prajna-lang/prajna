@@ -295,6 +295,8 @@ struct TemplateParameter : SourceLocation {
 struct TemplateParameters : SourceLocation, std::list<TemplateParameter> {};
 
 struct Struct : SourceLocation {
+    // 支持像 @literal_struct 这样的结构体注解（用于 LLVM literal struct 等后端表示控制）。
+    AnnotationDict annotation_dict;
     Identifier name;
     std::list<Field> fields;
 };
@@ -366,7 +368,8 @@ BOOST_FUSION_ADAPT_STRUCT(prajna::ast::For, annotation_dict, index, first, last,
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Return, expr_optional)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Field, name, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::TemplateIdentifier, identifier, template_arguments_optional)
-BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Struct, name, fields)
+// Struct 支持 annotation_dict，语法层面允许：@foo @bar("x") struct S { ... }
+BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Struct, annotation_dict, name, fields)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::Parameter, name, type)
 BOOST_FUSION_ADAPT_STRUCT(prajna::ast::FunctionHeader, annotation_dict, name, parameters,
                           return_type_optional)

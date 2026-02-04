@@ -116,7 +116,9 @@ StatementGrammer<Iterator, Lexer>::StatementGrammer(const Lexer &tok,
     on_success(for_, success_handler_function);
 
     struct_.name("struct");
-    struct_ = tok.struct_ > identifier > fields;
+    // struct 支持注解：@foo @bar("x") struct S { ... }
+    // 注意这里用 >> 让解析可回溯，避免把函数/接口等前置注解误吞后无法回退。
+    struct_ = annotation_dict >> tok.struct_ > identifier > fields;
     on_error<fail>(struct_, error_handler_function);
     on_success(struct_, success_handler_function);
 

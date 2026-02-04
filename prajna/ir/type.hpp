@@ -433,6 +433,9 @@ class StructType : public Type {
     }
 
     bool is_declaration = false;
+    // 当为 true 时，codegen 会生成 LLVM literal（匿名）struct，而不是具名 struct。
+    // 这用于精确匹配 NVVM/WMMA 等 intrinsic 在 LLVM IR 里的固定签名（literal struct 不是 identified struct）。
+    bool is_literal = false;
 };
 
 class InterfacePrototype {
